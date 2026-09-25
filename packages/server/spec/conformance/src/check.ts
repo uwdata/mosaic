@@ -1,7 +1,7 @@
 import { arrowViolations } from './arrow.ts';
 import { substitute } from './cases.ts';
 import { schemaViolations } from './schema.ts';
-import { canonicalStatus, type Expectation, type Matcher, type Response, type Transport, type Violation } from './types.ts';
+import { canonicalStatus, type Expectation, type Matcher, type Response, type TableReference, type Transport, type Violation } from './types.ts';
 
 const arrowMediaType = 'application/vnd.apache.arrow.stream';
 const textDecoder = new TextDecoder();
@@ -94,7 +94,7 @@ export function checkResponse(
   }
 
   if (expectation.error) {
-    const { code, message } = expectation.error;
+    const { code, reason, field } = expectation.error;
     let text: string | undefined;
     if (response.kind === 'http') {
       const status = expectation.error.status ?? canonicalStatus[code];
@@ -113,11 +113,19 @@ export function checkResponse(
         out.push(v('error.not-json', `error body is not a JSON object: ${describeText(text)}`));
       } else {
         out.push(...schemaViolations('error.schema', 'Error', parsed));
-        const envelope = parsed as { code?: unknown; error?: unknown };
-        if (envelope.code !== code) out.push(v(`error.code.${typeof envelope.code === 'string' && /^[a-z_]+$/.test(envelope.code) ? envelope.code : 'missing'}`, `code ${JSON.stringify(envelope.code)} != ${code}`));
-        if (message !== undefined && typeof envelope.error === 'string') {
-          const problem = matchProblem('error message', envelope.error, message, vars);
-          if (problem) out.push(v('error.message', problem));
+        const envelope = parsed as { code?: unknown; reason?: unknown; field?: unknown; diagnosticId?: unknown; retryAfterMs?: unknown };
+        if (envelope.code !== code) out.push(v(`error.code.${token(envelope.code)}`, `code ${JSON.stringify(envelope.code)} != ${code}`));
+        if (reason !== undefined && envelope.reason !== reason) out.push(v(`error.reason.${token(envelope.reason)}`, `reason ${JSON.stringify(envelope.reason)} != ${reason}`));
+        if (field !== undefined && envelope.field !== field) out.push(v(`error.field.${token(envelope.field)}`, `field ${JSON.stringify(envelope.field)} != ${field}`));
+        if (response.kind === 'http') {
+          const requestId = response.headers.get('x-request-id');
+          if (requestId !== null && typeof envelope.diagnosticId === 'string' && requestId !== envelope.diagnosticId) {
+            out.push(v('error.diagnostic-id.mismatch', `X-Request-Id ${JSON.stringify(requestId)} != diagnosticId ${JSON.stringify(envelope.diagnosticId)}`));
+          }
+          const retryAfter = response.headers.get('retry-after');
+          if (retryAfter !== null && typeof envelope.retryAfterMs === 'number' && Number(retryAfter) !== Math.ceil(envelope.retryAfterMs / 1000)) {
+            out.push(v('error.retry-after.mismatch', `Retry-After ${JSON.stringify(retryAfter)} != ceil(${envelope.retryAfterMs} / 1000)`));
+          }
         }
       }
     }
@@ -142,6 +150,12 @@ export function checkResponse(
   }
 
   return out;
+}
+
+// Observed values become part of a violation id, so anything that is not a
+// plain identifier collapses to `missing`.
+function token(value: unknown) {
+  return typeof value === 'string' && /^[A-Za-z0-9_]+$/.test(value) ? value : 'missing';
 }
 
 function headerProblem(name: string, actual: string | null, matcher: Matcher, vars: Record<string, string>) {
@@ -202,6 +216,8 @@ function describeText(text: string | undefined) {
 
 // Captures never throw: a missing source becomes a violation and later steps
 // that depend on the value report `blocked.<name>` instead of running.
+// `body.a.b` walks the JSON body; `sqlname.a.b` renders the TableReference
+// found there as a quoted SQL name.
 export function captureValues(
   capture: Record<string, string> | undefined,
   response: Response,
@@ -221,18 +237,35 @@ export function captureValues(
       } else {
         vars[name] = value;
       }
-    } else if (scope === 'body') {
+    } else if (scope === 'body' || scope === 'sqlname') {
       const text = response.kind === 'http' ? textDecoder.decode(response.body) : response.kind === 'ws' ? response.text ?? '' : '';
-      const parsed = parseJson(text) as Record<string, unknown> | undefined;
-      if (!parsed || typeof parsed !== 'object' || !(key in parsed)) {
+      const value = rest.reduce<unknown>((node, part) => (node !== null && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined), parseJson(text));
+      if (value === undefined) {
         if (optional) vars[name] = '';
-        else out.push(v(`capture.${name}`, `cannot capture body.${key} from ${describeText(text)}`));
+        else out.push(v(`capture.${name}`, `cannot capture ${scope}.${key} from ${describeText(text)}`));
+      } else if (scope === 'sqlname') {
+        const rendered = sqlName(value);
+        if (rendered === undefined) out.push(v(`capture.${name}`, `${key} is not a TableReference: ${JSON.stringify(value)}`));
+        else vars[name] = rendered;
       } else {
-        vars[name] = String(parsed[key]);
+        vars[name] = typeof value === 'string' ? value : JSON.stringify(value);
       }
     } else {
       throw new Error(`unknown capture source ${source}`);
     }
   }
   return out;
+}
+
+function isReference(value: unknown): value is TableReference {
+  const r = value as Partial<TableReference> | null;
+  return typeof r === 'object' && r !== null
+    && typeof r.catalog === 'string' && r.catalog !== ''
+    && Array.isArray(r.schema) && r.schema.length > 0 && r.schema.every(s => typeof s === 'string' && s !== '')
+    && typeof r.table === 'string' && r.table !== '';
+}
+
+export function sqlName(value: unknown): string | undefined {
+  if (!isReference(value)) return undefined;
+  return [value.catalog, ...value.schema, value.table].map(part => `"${part.replaceAll('"', '""')}"`).join('.');
 }

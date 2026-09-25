@@ -3,12 +3,12 @@
 # `pnpm -F @uwdata/mosaic-server-spec conformance:docs`. The go-cache and
 # go-gatekeeper files cover the same binary under other flags.
 server: go
-notes: "Closest to the target and the intended first `preagg` implementation (#1234). Already conforming: WebSocket error frames carry `code` (`pkg/server/errors.go`); Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers."
+notes: "Closest to the target and the intended first `preagg` implementation (#1234). Already conforming: WebSocket error frames carry `code` (`pkg/server/errors.go`), though not yet `reason` (D19); Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers."
 failures:
   - area: HTTP errors are plain text
     current: "`http.Error` writes `text/plain` even though `classifyError` already yields a code (`pkg/server/server.go`)."
-    spec: JSON `Error` envelope (D4).
-    fix: Reuse `classifyError`; write `{error, code}` with `application/json`.
+    spec: JSON `Error` envelope (D4, D19).
+    fix: Reuse `classifyError`; write `{error, code, reason}` with `application/json`.
     cases:
       post/missing-type:
         - error.content-type
@@ -57,8 +57,15 @@ failures:
         - error.not-json
       ws/sql-parse-error:
         - error.code.internal_error
+        - error.schema.required.reason
+        - error.reason.missing
       ws/ws-pipeline-order:
         - s4.error.code.internal_error
+        - s2.error.schema.required.reason
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.schema.required.reason
+        - s4.error.reason.missing
       connector/rest-error:
         - connector.status
   - area: "`preagg` is unknown"
@@ -71,6 +78,45 @@ failures:
         - error.not-json
       ws/preagg-unsupported:
         - error.code.bad_request
+        - error.schema.required.reason
+        - error.reason.missing
+  - area: WebSocket errors lack `reason`
+    current: Frames carry `{code, error}` from `classifyError` (`pkg/server/errors.go`) but no `reason` or `field`, so a client cannot tell a missing field from an invalid one without parsing the message.
+    spec: "`reason`, and `field` for the field reasons (D19)."
+    fix: Extend `classifyError` to return a reason and, for decode failures, the property name; the HTTP envelope fix then inherits both.
+    cases:
+      ws/missing-type:
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/missing-sql:
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/empty-sql:
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/unknown-type:
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/sql-unknown-table:
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/sql-runtime-error:
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/exec-error:
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/ws-missing-sql-stays-open:
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+        - s1.error.field.missing
+      ws/ws-sql-error-stays-open:
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
   - area: Exec and side effects over GET
     current: GET runs `exec` and does not check the statement kind, so `CREATE TABLE` and `DELETE ... RETURNING` execute (`server.go`).
     spec: "`arrow` only (D3); read-only root required (D3a)."

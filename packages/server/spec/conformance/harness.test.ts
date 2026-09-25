@@ -1,9 +1,9 @@
 import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { describe, expect, it } from 'vitest';
 import { arrowViolations, walkStream } from './src/arrow.ts';
-import { captureValues, checkResponse } from './src/check.ts';
+import { captureValues, checkResponse, sqlName } from './src/check.ts';
 import { compare } from './src/harness.ts';
-import { classifyFetchError } from './src/http.ts';
+import { classifyFetchError, sendHttp } from './src/http.ts';
 import type { HttpResponse, Violation, WsResponse } from './src/types.ts';
 
 const ids = (violations: Violation[]) => violations.map(v => v.id).sort();
@@ -26,36 +26,59 @@ const stream = tableToIPC(tableFromArrays({ x: [1] }), { format: 'stream' })!;
 const file = tableToIPC(tableFromArrays({ x: [1] }), { format: 'file' })!;
 
 describe('error envelope violations', () => {
-  it('names the missing code rather than the whole schema', () => {
-    const out = checkResponse({ error: { code: 'bad_request' } }, text('{"error":"missing required \'type\' parameter"}'), 'ws', {});
-    expect(ids(out)).toEqual(['error.code.missing', 'error.schema.required.code']);
+  const missingType = { error: 'missing type', code: 'bad_request', reason: 'missing_field', field: 'type' };
+
+  it('names the missing code and reason rather than the whole schema', () => {
+    const out = checkResponse({ error: { code: 'bad_request', reason: 'missing_field', field: 'type' } }, text('{"error":"missing required \'type\' parameter"}'), 'ws', {});
+    expect(ids(out)).toEqual(['error.code.missing', 'error.field.missing', 'error.reason.missing', 'error.schema.required.code', 'error.schema.required.reason']);
+  });
+
+  it('accepts a conforming envelope regardless of message wording', () => {
+    expect(checkResponse({ error: { code: 'bad_request', reason: 'missing_field', field: 'type' } }, text(JSON.stringify(missingType)), 'ws', {})).toEqual([]);
+    expect(checkResponse({ error: { code: 'bad_request', reason: 'missing_field', field: 'type' } }, text(JSON.stringify({ ...missingType, error: "Object missing required field `type`" })), 'ws', {})).toEqual([]);
+  });
+
+  it('carries the observed reason and field in the id', () => {
+    const wrong = { ...missingType, reason: 'invalid_field', field: 'sql' };
+    const out = checkResponse({ error: { code: 'bad_request', reason: 'missing_field', field: 'type' } }, text(JSON.stringify(wrong)), 'ws', {});
+    expect(ids(out)).toEqual(['error.field.sql', 'error.reason.invalid_field']);
+  });
+
+  it('only checks reason and field when the case names them', () => {
+    const out = checkResponse({ error: { code: 'bad_request' } }, text('{"error":"x","code":"bad_request","reason":"sql_parse_error"}'), 'ws', {});
+    expect(out).toEqual([]);
   });
 
   it('distinguishes a leaked table reference from a missing code', () => {
-    const leak = text('{"error":"x","catalog":"a","schema":"b","table":"c"}');
+    const leak = text('{"error":"x","reason":"execution_failed","reference":{"catalog":"a","schema":["b"],"table":"c"}}');
     const out = checkResponse({ error: { code: 'bad_request' } }, leak, 'ws', {});
-    expect(ids(out)).toEqual([
-      'error.code.missing',
-      'error.schema.forbidden.catalog',
-      'error.schema.forbidden.schema',
-      'error.schema.forbidden.table',
-      'error.schema.required.code'
-    ]);
+    expect(ids(out)).toEqual(['error.code.missing', 'error.schema.forbidden.reference', 'error.schema.required.code']);
+    const flat = text('{"error":"x","code":"internal_error","reason":"execution_failed","catalog":"a","schema":"b","table":"c"}');
+    expect(ids(checkResponse({ error: { code: 'internal_error' } }, flat, 'ws', {}))).toEqual(['error.schema.forbidden.catalog', 'error.schema.forbidden.schema', 'error.schema.forbidden.table']);
   });
 
   it('carries the observed status and code in the id', () => {
-    const out = checkResponse({ error: { code: 'bad_request' } }, http(500, '{"error":"boom","code":"internal_error"}', json), 'post', {});
+    const out = checkResponse({ error: { code: 'bad_request' } }, http(500, '{"error":"boom","code":"internal_error","reason":"internal_failure"}', json), 'post', {});
     expect(ids(out)).toEqual(['error.code.internal_error', 'error.status.500']);
   });
 
   it('flags a success where a rejection was expected', () => {
     const out = checkResponse({ error: { code: 'bad_request' } }, http(200, '{"result":"accepted"}', json), 'post', {});
-    expect(ids(out)).toEqual(['error.code.missing', 'error.schema.required.code', 'error.schema.required.error', 'error.status.200']);
+    expect(ids(out)).toEqual(['error.code.missing', 'error.schema.required.code', 'error.schema.required.error', 'error.schema.required.reason', 'error.status.200']);
   });
 
   it('accepts a conforming table_not_found envelope', () => {
-    const body = '{"error":"gone","code":"table_not_found","catalog":"a","schema":"b","table":"c"}';
+    const body = '{"error":"gone","code":"table_not_found","reason":"materialization_missing","reference":{"catalog":"a","schema":["b"],"table":"c"}}';
     expect(checkResponse({ error: { code: 'table_not_found' } }, http(404, body, json), 'post', {})).toEqual([]);
+  });
+
+  it('checks X-Request-Id and Retry-After against the envelope only when both are present', () => {
+    const exhausted = { error: 'busy', code: 'resource_exhausted', reason: 'resource_limit_exceeded', retryAfterMs: 1500, diagnosticId: 'req_1' };
+    const expectation = { error: { code: 'resource_exhausted' as const } };
+    expect(checkResponse(expectation, http(429, JSON.stringify(exhausted), json), 'post', {})).toEqual([]);
+    expect(checkResponse(expectation, http(429, JSON.stringify(exhausted), { ...json, 'retry-after': '2', 'x-request-id': 'req_1' }), 'post', {})).toEqual([]);
+    const out = checkResponse(expectation, http(429, JSON.stringify(exhausted), { ...json, 'retry-after': '1', 'x-request-id': 'req_2' }), 'post', {});
+    expect(ids(out)).toEqual(['error.diagnostic-id.mismatch', 'error.retry-after.mismatch']);
   });
 });
 
@@ -129,6 +152,33 @@ describe('header matchers', () => {
   });
 });
 
+describe('table reference capture', () => {
+  const reference = { catalog: 'mem.ory', schema: ['mosaic', 'sco"pe'], table: 'preagg_c92f' };
+  const body = JSON.stringify({ reference, createdAt: '2026-09-25T10:00:00Z', rows: 10 });
+
+  it('quotes every component separately, keeping dots and doubling quotes', () => {
+    expect(sqlName(reference)).toBe('"mem.ory"."mosaic"."sco""pe"."preagg_c92f"');
+    expect(sqlName({ catalog: 'memory', schema: ['main'], table: 't' })).toBe('"memory"."main"."t"');
+  });
+
+  it('rejects flat, empty, or partial references', () => {
+    expect(sqlName({ catalog: 'a', schema: 'b', table: 'c' })).toBeUndefined();
+    expect(sqlName({ catalog: 'a', schema: [], table: 'c' })).toBeUndefined();
+    expect(sqlName({ catalog: 'a', schema: ['', 'b'], table: 'c' })).toBeUndefined();
+    expect(sqlName({ catalog: 'a', schema: ['b'] })).toBeUndefined();
+    expect(sqlName('a.b.c')).toBeUndefined();
+  });
+
+  it('captures nested body paths and rendered SQL names', () => {
+    const vars: Record<string, string> = {};
+    const out = captureValues({ target: 'sqlname.reference', catalog: 'body.reference.catalog', rows: 'body.rows', missing: 'sqlname.nothing' }, http(200, body, json), vars);
+    expect(ids(out)).toEqual(['capture.missing']);
+    expect(vars).toEqual({ target: '"mem.ory"."mosaic"."sco""pe"."preagg_c92f"', catalog: 'mem.ory', rows: '10' });
+    const flat = http(200, JSON.stringify({ catalog: 'a', schema: 'b', table: 'c' }), json);
+    expect(ids(captureValues({ target: 'sqlname.reference' }, flat, {}))).toEqual(['capture.target']);
+  });
+});
+
 describe('alternatives and connection outcomes', () => {
   it('prefixes the closest alternative when none matches', () => {
     const out = checkResponse(
@@ -154,6 +204,23 @@ describe('fetch error classification', () => {
     expect(classifyFetchError(failure('ECONNRESET', 'write ECONNRESET'))).toMatchObject({ reset: 'peer-closed' });
     expect(classifyFetchError(failure('EPIPE', 'write EPIPE'))).toMatchObject({ reset: 'peer-closed' });
     expect(classifyFetchError(failure('UND_ERR_SOCKET', 'other side closed'))).toMatchObject({ reset: 'socket-closed' });
+  });
+
+  it('treats a close after the status line the same as one before it', async () => {
+    const { createServer } = await import('node:net');
+    const server = createServer(socket => {
+      socket.write('HTTP/1.1 505 HTTP Version Not Supported\r\nContent-Length: 10\r\n\r\nab');
+      setTimeout(() => socket.destroy(), 10);
+    });
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    const { port } = server.address() as { port: number };
+    try {
+      const out = await sendHttp(`http://127.0.0.1:${port}/`, 'get', { request: { type: 'arrow', sql: 'SELECT 1' }, expect: {} }, {});
+      expect(out).toMatchObject({ kind: 'http-failed', reset: 'socket-closed' });
+      expect((out as { error: string }).error).toMatch(/^after status 505/);
+    } finally {
+      server.close();
+    }
   });
 
   it('leaves refusals, bad ports, DNS failures, and timeouts fatal', () => {

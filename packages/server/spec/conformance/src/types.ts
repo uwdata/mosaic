@@ -12,6 +12,31 @@ export type ErrorCode =
   | 'deadline_exceeded'
   | 'internal_error';
 
+export type ErrorReason =
+  | 'malformed_json'
+  | 'missing_field'
+  | 'invalid_field'
+  | 'sql_parse_error'
+  | 'multiple_statements'
+  | 'not_read_only'
+  | 'unsupported_statement'
+  | 'method_not_allowed'
+  | 'payload_too_large'
+  | 'unsupported_media_type'
+  | 'precondition_failed'
+  | 'authentication_required'
+  | 'authentication_failed'
+  | 'policy_denied'
+  | 'access_denied'
+  | 'materialization_missing'
+  | 'command_disabled'
+  | 'resource_limit_exceeded'
+  | 'command_deadline_exceeded'
+  | 'execution_failed'
+  | 'validation_failed'
+  | 'invalid_server_configuration'
+  | 'internal_failure';
+
 export const canonicalStatus: Record<ErrorCode, number> = {
   bad_request: 400,
   unauthenticated: 401,
@@ -46,7 +71,14 @@ export interface ArrowExpectation {
 export interface ErrorExpectation {
   status?: number;
   code: ErrorCode;
-  message?: string | { pattern: string };
+  reason?: ErrorReason;
+  field?: string;
+}
+
+export interface TableReference {
+  catalog: string;
+  schema: string[];
+  table: string;
 }
 
 export interface Expectation {

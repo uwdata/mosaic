@@ -78,12 +78,17 @@ failures:
         - s2.arrow.file-format
       ws/ws-pipeline-order:
         - s1.arrow.file-format
+        - s2.error.schema.required.code
         - s2.error.code.missing
         - s3.arrow.file-format
+        - s4.error.schema.required.code
         - s4.error.code.missing
         - s5.arrow.file-format
-        - s2.error.schema.required.code
-        - s4.error.schema.required.code
+        - s2.error.schema.required.reason
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.schema.required.reason
+        - s4.error.reason.missing
       ws/ws-pipeline-slow-first:
         - s1.arrow.file-format
         - s2.arrow.file-format
@@ -128,53 +133,85 @@ failures:
       get/get-preagg-rejected:
         - error.content-type
         - error.not-json
-  - area: WebSocket errors lack `code`
+  - area: WebSocket errors lack `code` and `reason`
     current: '`{"error"}` only (`websocket.rs`); the message also differs from HTTP.'
-    spec: Envelope with `code`, identical over both transports (D4).
+    spec: Envelope with `code` and `reason`, identical over both transports (D4, D19).
     fix: Shared mapper.
     cases:
       ws/missing-type:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
       ws/missing-sql:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
       ws/empty-sql:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
       ws/unknown-type:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
       ws/type-not-a-string:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
       ws/preagg-unsupported:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
       ws/sql-parse-error:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
       ws/sql-unknown-table:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
       ws/sql-runtime-error:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
       ws/exec-error:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
       ws/ws-malformed-json-stays-open:
+        - s1.error.schema.required.code
         - s1.error.code.missing
         - s2.arrow.file-format
-        - s1.error.schema.required.code
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
       ws/ws-missing-sql-stays-open:
+        - s1.error.schema.required.code
         - s1.error.code.missing
         - s2.arrow.file-format
-        - s1.error.schema.required.code
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+        - s1.error.field.missing
       ws/ws-sql-error-stays-open:
+        - s1.error.schema.required.code
         - s1.error.code.missing
         - s2.arrow.file-format
-        - s1.error.schema.required.code
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
   - area: Unknown `type` is 422
     current: serde enum rejection surfaces as axum's 422 `Failed to deserialize the JSON body`.
     spec: 400 `bad_request` (D6).

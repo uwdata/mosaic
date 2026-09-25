@@ -8,8 +8,8 @@ server: node
 failures:
   - area: HTTP errors are plain text
     current: "`res.error()` writes `String(err)` with no Content-Type (`data-server.js`)."
-    spec: JSON `Error` envelope with `application/json` on every failure (D4).
-    fix: Rewrite `error()` to emit `{error, code}`.
+    spec: JSON `Error` envelope with `application/json` on every failure (D4, D19).
+    fix: Rewrite `error()` to emit `{error, code, reason}`.
     cases:
       post/missing-type:
         - error.content-type
@@ -32,48 +32,72 @@ failures:
       post/exec-error:
         - error.content-type
         - error.not-json
-  - area: WebSocket errors lack `code`
+  - area: WebSocket errors lack `code` and `reason`
     current: '`{"error": String(err)}` with an `Error:` prefix; the status argument is dropped (`data-server.js`).'
-    spec: Envelope with `code` (D4).
+    spec: Envelope with `code` and `reason` (D4, D19).
     fix: Share the HTTP error mapper.
     cases:
       ws/missing-type:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
       ws/unknown-type:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
       ws/type-not-a-string:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
       ws/sql-unknown-table:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
       ws/sql-runtime-error:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
       ws/exec-error:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
       ws/ws-malformed-json-stays-open:
+        - s1.error.schema.required.code
         - s1.error.code.missing
         - s2.arrow.eos
-        - s1.error.schema.required.code
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
       ws/ws-sql-error-stays-open:
+        - s1.error.schema.required.code
         - s1.error.code.missing
         - s2.arrow.eos
-        - s1.error.schema.required.code
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
       ws/ws-pipeline-order:
         - s1.arrow.eos
+        - s2.error.schema.required.code
         - s2.error.code.missing
         - s3.arrow.eos
+        - s4.error.schema.required.code
         - s4.error.code.missing
         - s5.arrow.eos
-        - s2.error.schema.required.code
-        - s4.error.schema.required.code
+        - s2.error.schema.required.reason
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.schema.required.reason
+        - s4.error.reason.missing
   - area: "`sql` is not validated"
     current: A missing or empty `sql` reaches DuckDB and fails as a binder or parser error (500).
-    spec: 400 `bad_request` with `missing required 'sql' parameter` (D1).
+    spec: "400 `bad_request` / `missing_field` or `invalid_field` with `field: sql` (D1, D19)."
     fix: Validate before dispatch.
     cases:
       post/missing-sql:
@@ -85,17 +109,24 @@ failures:
         - error.content-type
         - error.not-json
       ws/missing-sql:
-        - error.code.missing
-        - error.message
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
       ws/empty-sql:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
       ws/ws-missing-sql-stays-open:
-        - s1.error.code.missing
-        - s1.error.message
-        - s2.arrow.eos
         - s1.error.schema.required.code
+        - s1.error.code.missing
+        - s2.arrow.eos
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+        - s1.error.field.missing
   - area: Parse errors are 500
     current: DuckDB parser errors surface as `internal_error`.
     spec: "`bad_request` (D7)."
@@ -106,8 +137,10 @@ failures:
         - error.content-type
         - error.not-json
       ws/sql-parse-error:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
       connector/rest-error:
         - connector.status
   - area: "`preagg` is unknown"
@@ -119,8 +152,10 @@ failures:
         - error.content-type
         - error.not-json
       ws/preagg-unsupported:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
   - area: GET is broken
     current: "`JSON.parse` is applied to the already-parsed query object, so every GET is a 400 `TypeError` (`data-server.js`)."
     spec: Flat `type`/`sql` parameters, `arrow` only, read-only SQL (D2, D3, D3a).
@@ -181,8 +216,10 @@ failures:
         - error.content-type
         - error.not-json
       ws/arrow-multi-statement:
-        - error.code.missing
         - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
   - area: Unsupported method is 400
     current: "`Unsupported HTTP method` with status 400 and no `Allow`."
     spec: "405 with `Allow: GET, POST, OPTIONS` and the envelope (D5)."

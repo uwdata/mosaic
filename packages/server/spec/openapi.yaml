@@ -44,10 +44,39 @@ info:
       in `ErrorCode`, including the `405`/`412`/`413`/`415` exceptions listed
       there for `bad_request`. Servers MUST NOT return plain-text or empty
       error bodies, and MUST NOT return `200` for a failed command.
+    * The envelope carries `code` (what the coordinator should do), `reason`
+      (a stable classification from `ErrorReason`), and `error` (text for
+      people, never parsed). Clients and the conformance suite assert on
+      `code`, `reason`, and `field`; the wording of `error` is not part of
+      the contract and MAY differ between servers.
+    * A server MAY attach a `diagnosticId` to a failed attempt and MAY send
+      the same value as the `X-Request-Id` response header on any response;
+      when both are present they MUST match. The value is server-generated
+      and opaque; clients MUST NOT supply one.
+    * `429` responses MAY carry `Retry-After` in seconds; when the envelope
+      also has `retryAfterMs`, the header MUST equal
+      `ceil(retryAfterMs / 1000)`.
     * Servers SHOULD accept request bodies and query strings of at least 1 MiB
       so that long generated SQL is not silently truncated. Servers MAY cap
       bodies and reject larger ones with `413` + `bad_request`.
     * Servers MAY compress response bodies per `Accept-Encoding`.
+
+    ### Failure guarantees
+
+    * `arrow`: a failure publishes no result. A response is either a complete
+      IPC stream or an error envelope, never both.
+    * `preagg`: publication is atomic. The reference in `PreaggResponse`
+      names a complete table; a build that fails or exceeds its deadline
+      leaves no partial table visible under any reference the server hands
+      out.
+    * `exec`: statements run in order and a later statement MAY fail after
+      earlier ones committed. The server reports the error and neither rolls
+      back nor retries; clients that need atomicity send an explicit
+      transaction.
+    * `deadline_exceeded` ends the attempt and follows the rule of the
+      command above: nothing is published for `arrow` and `preagg`, and
+      completed `exec` statements stay committed.
+    * Cancellation and other lifecycle commands are out of scope.
 
     ### Caching
 
@@ -199,6 +228,12 @@ components:
       description: Strong comparison against the current `ETag`; a mismatch yields `412`.
 
   headers:
+    X-Request-Id:
+      schema: { type: string, minLength: 1 }
+      description: |
+        Server-generated identifier of this request, for log correlation.
+        Optional on any response; equal to the envelope's `diagnosticId` when
+        both are present.
     ETag:
       schema: { type: string }
       description: Strong validator for the encoded body. Only on cacheable `GET` `arrow` responses.
@@ -219,6 +254,7 @@ components:
         ETag: { $ref: '#/components/headers/ETag' }
         Cache-Control: { $ref: '#/components/headers/Cache-Control' }
         Vary: { $ref: '#/components/headers/Vary' }
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
       content:
         application/vnd.apache.arrow.stream:
           schema:
@@ -233,10 +269,12 @@ components:
           schema:
             $ref: './schemas.yaml#/$defs/PreaggResponse'
           example:
-            catalog: memory
-            schema: mosaic_scope_a7
-            table: preagg_c92f
+            reference:
+              catalog: memory
+              schema: [mosaic_scope_a7]
+              table: preagg_c92f
             createdAt: "2026-09-08T20:00:00Z"
+            rows: 1204
     NotModified:
       description: The `If-None-Match` validator matched. No body.
       headers:
@@ -249,89 +287,132 @@ components:
         Allow:
           $ref: '#/components/headers/Allow'
           description: Only on `405`.
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
       content:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
           examples:
             missing_type:
-              value: { error: "missing required 'type' parameter", code: bad_request }
+              value: { error: "Missing required field: type", code: bad_request, reason: missing_field, field: type }
             missing_sql:
-              value: { error: "missing required 'sql' parameter", code: bad_request }
+              value: { error: "Missing required field: sql", code: bad_request, reason: missing_field, field: sql }
             unknown_type:
-              value: { error: "invalid 'type' parameter: csv", code: bad_request }
+              value: { error: "Unknown command type: csv", code: bad_request, reason: invalid_field, field: type }
             get_exec:
-              value: { error: "exec is not allowed over GET", code: bad_request }
+              value: { error: "Only arrow commands may be sent over GET", code: bad_request, reason: invalid_field, field: type }
             get_not_read_only:
-              value: { error: "only read-only statements are allowed over GET", code: bad_request }
+              value: { error: "GET accepts read-only statements only", code: bad_request, reason: not_read_only }
+            multiple_statements:
+              value: { error: "arrow accepts exactly one statement", code: bad_request, reason: multiple_statements }
             parse:
-              value: { error: "Parser Error: syntax error at or near \"SELEC\"", code: bad_request }
+              value:
+                error: "Parser Error: syntax error at or near \"SELEC\""
+                code: bad_request
+                reason: sql_parse_error
+                diagnostics:
+                  - message: "syntax error at or near \"SELEC\""
+                    provider: duckdb
+                    location: { start: 0, end: 5 }
             exec_disabled:
-              value: { error: "exec command is disabled when query validation is active", code: unsupported_command }
+              value: { error: "exec is disabled when query validation is active", code: unsupported_command, reason: command_disabled }
             preagg_disabled:
-              value: { error: "preagg is not enabled on this server", code: unsupported_command }
+              value: { error: "preagg is not enabled on this server", code: unsupported_command, reason: command_disabled }
     Unauthenticated:
       description: "`unauthenticated`."
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
       content:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
-          example: { error: "no allowed schemas found in request headers", code: unauthenticated }
+          example: { error: "No tenant credentials in request headers", code: unauthenticated, reason: authentication_required }
     Forbidden:
       description: "`forbidden`."
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
       content:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
           examples:
-            schema:
-              value: { error: "unauthorized access to schema 'other_tenant'", code: forbidden }
-            remote_uri:
-              value: { error: "remote URI prefix 's3://' is not allowed in path argument to function 'read_parquet'", code: forbidden }
+            policy:
+              summary: A statement denied by the deployment policy, with one diagnostic per violation.
+              value:
+                error: Query is not permitted
+                code: forbidden
+                reason: policy_denied
+                diagnostics:
+                  - message: Access to this table is not permitted
+                    provider: gatekeeper
+                    rule: table_not_allowed
+                    subject: { kind: table, catalog: analytics, schema: [finance], name: q3 }
+                    location: { start: 14 }
+                  - message: "remote URI prefix 's3://' is not allowed"
+                    provider: gatekeeper
+                    rule: remote_uri_not_allowed
+                    subject: { kind: function, name: read_parquet }
+            tenant:
+              value: { error: "Caller may not access schema 'other_tenant'", code: forbidden, reason: access_denied }
     TableNotFound:
       description: "`table_not_found`, with the authorized reference so the coordinator can rebuild a live preaggregate recipe."
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
       content:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
           example:
             error: Materialized table is unavailable
             code: table_not_found
-            catalog: memory
-            schema: mosaic_scope_a7
-            table: preagg_c92f
+            reason: materialization_missing
+            reference:
+              catalog: memory
+              schema: [mosaic_scope_a7]
+              table: preagg_c92f
     PreconditionFailed:
-      description: "`bad_request`; the `If-Match` validator did not match. No `ETag`."
+      description: "`bad_request` / `precondition_failed`; the `If-Match` validator did not match. No `ETag`."
       content:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
-          example: { error: "Precondition Failed", code: bad_request }
+          example: { error: "If-Match did not match the current ETag", code: bad_request, reason: precondition_failed }
     PayloadTooLarge:
-      description: "`bad_request`; body exceeded the server's limit."
+      description: "`bad_request` / `payload_too_large`; body exceeded the server's limit."
       content:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
-          example: { error: "Request Entity Too Large", code: bad_request }
+          example: { error: "Request body exceeds 16 MiB", code: bad_request, reason: payload_too_large }
     UnsupportedMediaType:
-      description: "`bad_request`; request `Content-Type` was not JSON."
+      description: "`bad_request` / `unsupported_media_type`; request `Content-Type` was not JSON."
       content:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
+          example: { error: "Content-Type must be application/json", code: bad_request, reason: unsupported_media_type }
     ResourceExhausted:
       description: "`resource_exhausted`."
       headers:
         Retry-After:
-          schema: { type: integer }
-          description: Optional seconds to wait before retrying.
+          schema: { type: integer, minimum: 0 }
+          description: Optional seconds to wait before retrying; `ceil(retryAfterMs / 1000)` when the envelope carries `retryAfterMs`.
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
       content:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
-          example: { error: "materialization queue is full", code: resource_exhausted }
+          example: { error: "Materialization capacity is temporarily exhausted", code: resource_exhausted, reason: resource_limit_exceeded, retryAfterMs: 1000 }
     InternalError:
       description: "`internal_error`, including unclassified DuckDB execution errors."
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
       content:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
-          example: { error: "Catalog Error: Table with name foo does not exist!", code: internal_error }
+          examples:
+            execution:
+              value: { error: "Catalog Error: Table with name foo does not exist!", code: internal_error, reason: execution_failed, diagnosticId: "req_01J9X4M2K8" }
+            validator:
+              summary: The validator itself failed; a statement the policy denies is `forbidden` instead.
+              value: { error: "Query validation failed", code: internal_error, reason: validation_failed, diagnosticId: "req_01J9X4M2K9" }
     DeadlineExceeded:
       description: "`deadline_exceeded`."
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
       content:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
-          example: { error: "command deadline exceeded after 30s", code: deadline_exceeded }
+          example: { error: "Command deadline exceeded after 30s", code: deadline_exceeded, reason: command_deadline_exceeded }

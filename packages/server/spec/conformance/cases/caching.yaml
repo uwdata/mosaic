@@ -73,14 +73,14 @@
 
 - id: cache-if-match
   title: If-Match is compared strongly, so only the exact strong tag passes
-  decisions: [D14, D5]
+  decisions: [D14, D5, D19]
   transports: [get]
   requires: [caching]
   steps:
     - request: { type: arrow, sql: "SELECT 1 AS x" }
       headers: { if-match: '"mismatch"' }
       expect:
-        error: { status: 412, code: bad_request }
+        error: { status: 412, code: bad_request, reason: precondition_failed }
         headers:
           etag: { absent: true }
     - request: { type: arrow, sql: "SELECT 1 AS x" }
@@ -89,7 +89,7 @@
     - request: { type: arrow, sql: "SELECT 1 AS x" }
       headers: { if-match: "W/{{etag}}" }
       expect:
-        error: { status: 412, code: bad_request }
+        error: { status: 412, code: bad_request, reason: precondition_failed }
         headers:
           etag: { absent: true }
     - request: { type: arrow, sql: "SELECT 1 AS x" }
@@ -103,7 +103,7 @@
   requires: [caching]
   request: { type: arrow, sql: "SELEC 1" }
   expect:
-    error: { code: bad_request }
+    error: { code: bad_request, reason: sql_parse_error }
     headers:
       cache-control: no-store
       etag: { absent: true }

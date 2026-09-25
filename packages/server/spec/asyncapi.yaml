@@ -38,6 +38,13 @@ info:
       are still answered. Servers MUST NOT close the socket for
       application-level failures. Servers MAY close with `1009` for frames
       above their size limit and `1002`/`1007` for protocol violations.
+    * The envelope is the one defined in `schemas.yaml`: `code`, `reason`,
+      `error`, and the code-specific `field`, `reference`, `diagnostics`,
+      `diagnosticId`, and `retryAfterMs`. There are no headers here, so
+      `retryAfterMs` is the only retry advice and `diagnosticId` the only
+      log-correlation handle. `diagnosticId` identifies one command attempt
+      for the server's logs; it is not a request identifier and clients MUST
+      NOT use it to match replies to commands, which stay positional.
     * Servers SHOULD accept command messages of at least 1 MiB.
     * Servers SHOULD answer WebSocket pings during long-running commands so
       proxies do not drop idle-looking connections, and MAY send pings.
@@ -145,9 +152,10 @@ components:
         $ref: './schemas.yaml#/$defs/PreaggResponse'
       examples:
         - payload:
-            catalog: memory
-            schema: mosaic_scope_a7
-            table: preagg_c92f
+            reference:
+              catalog: memory
+              schema: [mosaic_scope_a7]
+              table: preagg_c92f
             createdAt: "2026-09-08T20:00:00Z"
 
     Error:
@@ -157,12 +165,28 @@ components:
       payload:
         $ref: './schemas.yaml#/$defs/Error'
       examples:
-        - name: bad_request
-          payload: { error: "missing required 'sql' parameter", code: bad_request }
+        - name: missing_field
+          payload: { error: "Missing required field: sql", code: bad_request, reason: missing_field, field: sql }
+        - name: malformed_json
+          payload: { error: "Frame is not a JSON object", code: bad_request, reason: malformed_json }
+        - name: policy_denied
+          payload:
+            error: Query is not permitted
+            code: forbidden
+            reason: policy_denied
+            diagnostics:
+              - message: Access to this table is not permitted
+                provider: gatekeeper
+                rule: table_not_allowed
+                subject: { kind: table, catalog: analytics, schema: [finance], name: q3 }
         - name: table_not_found
           payload:
             error: Materialized table is unavailable
             code: table_not_found
-            catalog: memory
-            schema: mosaic_scope_a7
-            table: preagg_c92f
+            reason: materialization_missing
+            reference:
+              catalog: memory
+              schema: [mosaic_scope_a7]
+              table: preagg_c92f
+        - name: resource_exhausted
+          payload: { error: "Materialization capacity is temporarily exhausted", code: resource_exhausted, reason: resource_limit_exceeded, retryAfterMs: 1000, diagnosticId: "req_01J9X4M2K8" }
