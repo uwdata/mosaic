@@ -3,10 +3,12 @@ import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from 
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
+import { ConnectorError, isAbortError, PreAggregateModeError, referenceParts } from '../connectors/errors.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { QueryError } from '../util/query-error.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
+import { PreAggregateRegistry } from './PreAggregateRegistry.js';
 import { subqueryPushdown } from './subquery-pushdown.js';
 
 /**
@@ -15,11 +17,18 @@ import { subqueryPushdown } from './subquery-pushdown.js';
  */
 const Skip = Object.freeze({ skip: true });
 
+export type PreAggregateMode = 'exec' | 'preagg';
+
 export interface PreAggregateOptions {
-  /** Database schema (namespace) in which to write pre-aggregated materialized views (default 'mosaic'). */
+  /** Database schema (namespace) in which to write pre-aggregated materialized views (default 'mosaic'). Ignored in 'preagg' mode. */
   schema?: string;
   /** Flag to enable or disable the pre-aggregation. This flag can be updated later via the `enabled` property. */
   enabled?: boolean;
+  /**
+   * 'exec' (default) issues CREATE statements; 'preagg' sends preagg commands and the server assigns the table.
+   * @deprecated 'exec' mode will be removed once 'preagg' becomes the default; new code should set 'preagg'.
+   */
+  mode?: PreAggregateMode;
 }
 
 type ActivePredicate = (clause?: SelectionClause) => MaybeArray<ExprNode>;
@@ -31,7 +40,7 @@ interface ActiveColumnsResult {
 }
 
 interface PreAggregateInfoOptions {
-  table: TableRefNode;
+  table: TableRefNode | null;
   create: SelectQuery;
   active: ActiveColumnsResult;
   select: SelectQuery;
@@ -58,6 +67,10 @@ interface PreAggregateInfoOptions {
  */
 export class PreAggregator {
   public entries: Map<MosaicClient, PreAggregateInfo | typeof Skip | null>;
+  public readonly mode: PreAggregateMode;
+  /** Server-managed materializations; null in exec mode. */
+  public readonly registry: PreAggregateRegistry | null;
+  public resetGeneration = 0;
   private active: ActiveColumnsResult | null;
   private mc: Coordinator;
   private _schema: string;
@@ -70,13 +83,16 @@ export class PreAggregator {
    */
   constructor(coordinator: Coordinator, {
     schema = 'mosaic',
-    enabled = true
+    enabled = true,
+    mode = 'exec'
   }: PreAggregateOptions = {}) {
     this.entries = new Map();
     this.active = null;
     this.mc = coordinator;
     this._schema = schema;
     this._enabled = enabled;
+    this.mode = mode;
+    this.registry = mode === 'preagg' ? new PreAggregateRegistry(coordinator.manager) : null;
   }
 
   /**
@@ -109,6 +125,10 @@ export class PreAggregator {
    * @param schema The schema name to set.
    */
   set schema(schema: string) {
+    if (this.mode === 'preagg') {
+      this.mc.logger().warn('preagg.schema is ignored in preagg mode; the server assigns the schema.');
+      return;
+    }
     if (this._schema !== schema) {
       this.clear();
       this._schema = schema;
@@ -133,6 +153,11 @@ export class PreAggregator {
    * @returns A query result promise.
    */
   dropSchema(): Promise<unknown> {
+    if (this.mode === 'preagg') {
+      return Promise.reject(new PreAggregateModeError(
+        'dropSchema() is unavailable in preagg mode; the server owns materialized tables.'
+      ));
+    }
     this.clear();
     return this.mc.exec(`DROP SCHEMA IF EXISTS "${this.schema}" CASCADE`);
   }
@@ -140,12 +165,23 @@ export class PreAggregator {
   /**
    * Clear the cache of pre-aggregation entries for the current active
    * selection clause. This method does _not_ drop any existing materialized
-   * views. Use `dropSchema` to remove existing materialized view tables from
-   * the database.
+   * views or cancel in-progress builds. `dropSchema` (exec mode) drops the
+   * tables; `reset` (preagg mode) only forgets their references.
    */
   clear(): void {
     this.entries.clear();
     this.active = null;
+  }
+
+  /**
+   * Clear local state and, in preagg mode, forget all server-assigned table
+   * references and clear the query cache. Call before changing credentials
+   * or authorization scope on the connector.
+   */
+  reset(): void {
+    this.resetGeneration += 1;
+    this.clear();
+    this.registry?.reset();
   }
 
   /**
@@ -198,7 +234,11 @@ export class PreAggregator {
 
     // if we have cached pre-aggregate info, return that
     if (entries.has(client)) {
-      return entries.get(client)!;
+      const cached = entries.get(client)!;
+      if (cached instanceof PreAggregateInfo && this.registry && !this.isCurrent(cached)) {
+        this.materialize(cached);
+      }
+      return cached;
     }
 
     // get non-active materialized view columns
@@ -216,23 +256,55 @@ export class PreAggregator {
       const filter = selection.remove(source).predicate(client);
       const _info = preaggregateInfo(
         client.query(filter) as SelectQuery,
-        active, preaggCols, schema
+        active, preaggCols, this.mode === 'exec' ? schema : null
       );
-      const createQuery = [
-        createSchema(schema),
-        createTable(_info.table, _info.create, { temp: false })
-      ];
-      _info.result = mc.exec(createQuery);
-      // if create query fails, log and mark as failed
-      _info.result.catch((e: Error) => {
-        mc.logger().error(new QueryError(e, createQuery.join(';\n')));
-        _info.result = null; // indicate lack of preagg view
-      });
+      if (this.mode === 'exec') {
+        const createQuery = [
+          createSchema(schema),
+          createTable(_info.table!, _info.create, { temp: false })
+        ];
+        _info.result = mc.exec(createQuery);
+        // if create query fails, log and mark as failed
+        _info.result.catch((e: Error) => {
+          mc.logger().error(new QueryError(e, createQuery.join(';\n')));
+          _info.result = null; // indicate lack of preagg view
+        });
+      } else {
+        this.materialize(_info);
+      }
       info = _info;
     }
 
     entries.set(client, info);
     return info;
+  }
+
+  async recover(client: MosaicClient, info: PreAggregateInfo, table: TableRefNode | null, error: unknown): Promise<boolean> {
+    if (!this.registry || this.entries.get(client) !== info || !table
+      || !(error instanceof ConnectorError) || error.code !== 'table_not_found' || !error.reference
+      || referenceParts(error.reference).join('\0') !== table.table.join('\0')) {
+      return false;
+    }
+
+    this.registry.invalidate(info.create.toString(), table);
+    return this.materialize(info).then(() => true, () => false);
+  }
+
+  private isCurrent(info: PreAggregateInfo): boolean {
+    return info.result !== null
+      && (info.table === null || this.registry!.lookup(info.create.toString()) === info.table);
+  }
+
+  private materialize(info: PreAggregateInfo): Promise<void> {
+    const result = this.registry!.request(info.create.toString()).then(table => info.bind(table));
+    result.catch(err => {
+      if (info.result === result) info.result = null;
+      if (isAbortError(err)) return;
+      const refused = err instanceof ConnectorError && (err.code === 'lane_busy' || err.code === 'suppressed');
+      this.mc.logger()[refused ? 'debug' : 'warn'](err);
+    });
+    info.result = result;
+    return result;
   }
 }
 
@@ -337,14 +409,15 @@ function binInterval(
  * @param query The original client query.
  * @param active Active (selected) columns.
  * @param preaggCols Pre-aggregation columns.
- * @param schema Database schema name.
+ * @param schema Database schema name, or null if the server assigns the
+ *  table reference asynchronously.
  * @returns Pre-aggregation information.
  */
 function preaggregateInfo(
   query: SelectQuery,
   active: ActiveColumnsResult,
   preaggCols: PreAggColumnsResult,
-  schema: string
+  schema: string | null
 ): PreAggregateInfo {
   query = deepClone(query);
   const { groupby, having, orderby, output, preagg, qualify, source } = preaggCols;
@@ -368,14 +441,17 @@ function preaggregateInfo(
     .groupby(groupby, Object.keys(columns));
 
   // generate preagg table name using creation query hash
-  const id = (fnv_hash(create.toString()) >>> 0).toString(16);
-  const table = new TableRefNode([schema, `preagg_${id}`]);
+  let table: TableRefNode | null = null;
+  if (schema !== null) {
+    const id = (fnv_hash(create.toString()) >>> 0).toString(16);
+    table = new TableRefNode([schema, `preagg_${id}`]);
+  }
 
   // generate preaggregate select query from original query
   // replace select, from, groupby; sanitize orderby; remove CTEs, where
   const select = query
     .setSelect(output)
-    .setFrom(table)
+    .setFrom(...(table ? [table] : []))
     .setGroupby(groupby)
     .setHaving(having)
     .setQualify(qualify)
@@ -418,8 +494,8 @@ function replaceIndices(exprs: ExprNode[], select: SelectClauseNode[]) {
  * active clause and selection state.
  */
 export class PreAggregateInfo {
-  /** The name of the materialized view. */
-  table: TableRefNode;
+  /** Null in preagg mode until `ready` resolves. */
+  table: TableRefNode | null;
   /** The SQL query used to generate the materialized view. */
   create: SelectQuery;
   /**
@@ -451,6 +527,11 @@ export class PreAggregateInfo {
     this.active = active;
     this.select = select;
     this.skip = false;
+  }
+
+  bind(table: TableRefNode): void {
+    this.table = table;
+    this.select.setFrom(table);
   }
 
   /**
