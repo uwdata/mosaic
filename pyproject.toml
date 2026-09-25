@@ -28,6 +28,8 @@ extend-select = [
     "magic-value-comparison",
     "collapsible-else-if",
     "missing-required-import",
+    "exec-builtin",
+    "call-datetime-without-tzinfo",
 ]
 extend-safe-fixes = [
     "FA", 
