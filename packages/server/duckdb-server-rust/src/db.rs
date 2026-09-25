@@ -5,7 +5,6 @@ use duckdb::DuckdbConnectionManager;
 #[async_trait]
 pub trait Database: Send + Sync {
     async fn execute(&self, sql: &str) -> Result<()>;
-    async fn get_json(&self, sql: &str) -> Result<Vec<u8>>;
     async fn get_arrow(&self, sql: &str) -> Result<Vec<u8>>;
 }
 
@@ -31,20 +30,6 @@ impl Database for ConnectionPool {
         let conn = self.get()?;
         conn.execute_batch(sql)?;
         Ok(())
-    }
-
-    async fn get_json(&self, sql: &str) -> Result<Vec<u8>> {
-        let conn = self.get()?;
-        let mut stmt = conn.prepare(sql)?;
-        let arrow = stmt.query_arrow([])?;
-
-        let buf = Vec::new();
-        let mut writer = arrow::json::ArrayWriter::new(buf);
-        for batch in arrow {
-            writer.write(&batch)?;
-        }
-        writer.finish()?;
-        Ok(writer.into_inner())
     }
 
     async fn get_arrow(&self, sql: &str) -> Result<Vec<u8>> {

@@ -65,7 +65,7 @@ The supported _options_ are:
 // Loads file.json into the table "table1" with default options:
 // CREATE TABLE IF NOT EXISTS table1 AS
 //   SELECT *
-//   FROM read_json('file.json', auto_detect=true, json_format='auto')
+//   FROM read_json('file.json', auto_detect=true, format='auto')
 loadJSON("table1", "file.json");
 ```
 

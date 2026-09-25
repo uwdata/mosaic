@@ -13,6 +13,8 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/stretchr/testify/require"
+
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
 func TestCORSActualRequestNegotiation(t *testing.T) {
@@ -146,9 +148,9 @@ func TestCORSPreflightBypassesAuthorization(t *testing.T) {
 	var requestCalls atomic.Int32
 	handler := mustHandler(t, failOnCallExecutor{t},
 		WithCORS(CORSOptions{AllowedOrigins: []string{"https://app.example"}}),
-		WithAuthorizer(AuthorizerFunc(func(*http.Request) (CommandAuthorizer, error) {
+		WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
 			requestCalls.Add(1)
-			return func(context.Context, Command) error { return nil }, nil
+			return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return nil, nil }, nil
 		})),
 	)
 	res := httptest.NewRecorder()
@@ -299,9 +301,9 @@ func TestCrossOriginProtection(t *testing.T) {
 
 func TestCrossOriginGETExecRejectedBeforeAuthorizationAndExecution(t *testing.T) {
 	var requestCalls atomic.Int32
-	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc(func(*http.Request) (CommandAuthorizer, error) {
+	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
 		requestCalls.Add(1)
-		return func(context.Context, Command) error { return nil }, nil
+		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return nil, nil }, nil
 	})))
 	values := make(url.Values)
 	values.Set("type", string(CommandExec))
@@ -376,9 +378,9 @@ func TestWebSocketOriginPolicyPrecedesAuthorization(t *testing.T) {
 			var requestCalls atomic.Int32
 			handler := mustHandler(t, failOnCallExecutor{t},
 				WithWebSocket(tt.options),
-				WithAuthorizer(AuthorizerFunc(func(*http.Request) (CommandAuthorizer, error) {
+				WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
 					requestCalls.Add(1)
-					return func(context.Context, Command) error { return nil }, nil
+					return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return nil, nil }, nil
 				})),
 			)
 			server := newWebSocketTestServer(t, handler)

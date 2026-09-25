@@ -1,8 +1,9 @@
+import { SQLExpression } from './Expression.js';
 import { IntervalTransform } from './Interval.js';
 import { ParamRef } from './Param.js';
 
 /** A field argument to a data transform. */
-export type TransformField = string | ParamRef;
+export type TransformField = string | ParamRef | SQLExpression | Transform;
 
 export type FrameExclude = 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS';
 
@@ -24,7 +25,7 @@ export interface AggregateOptions {
 }
 
 /** A transform argument. */
-type Arg = string | number | boolean | ParamRef;
+type Arg = TransformField | number | boolean;
 
 /** A zero argument transform signature. */
 type Arg0 = null | [];
@@ -101,7 +102,7 @@ export interface Bin {
    * step sizes when performing numerical binning. When **step** is specified,
    * this option affects the binning end points (e.g., origin) only.
    */
-  nice?: true;
+  nice?: boolean;
   /**
    * Offset for computed bins (default `0`). For example, a value of `1` will
    * result in using the next consecutive bin boundary.
