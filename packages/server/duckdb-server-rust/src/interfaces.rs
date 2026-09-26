@@ -28,7 +28,6 @@ pub struct QueryParams {
 
 pub enum QueryResponse {
     Arrow(Vec<u8>),
-    Response(Response),
     Empty,
 }
 
@@ -41,7 +40,6 @@ impl IntoResponse for QueryResponse {
                 Bytes::from(bytes),
             )
                 .into_response(),
-            QueryResponse::Response(response) => response,
             QueryResponse::Empty => StatusCode::OK.into_response(),
         }
     }

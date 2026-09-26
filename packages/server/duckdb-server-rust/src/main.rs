@@ -14,7 +14,6 @@ mod db;
 mod https;
 mod interfaces;
 mod query;
-mod websocket;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -75,7 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => {
             tracing::warn!("No keys for HTTPS found.");
             tracing::info!(
-                "DuckDB Server listening on http://{0} and ws://{0}.",
+                "DuckDB Server listening on http://{0}.",
                 listener.local_addr()?
             );
 
@@ -84,7 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Some(config) => {
             tracing::info!(
-                "DuckDB Server listening on http(s)://{0} and ws(s)://{0}",
+                "DuckDB Server listening on http(s)://{0}",
                 listener.local_addr()?
             );
 
