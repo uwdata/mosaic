@@ -1,0 +1,135 @@
+# HTTP caching, only for deployments that enable it (D14). The `caching`
+# capability means the server was started with `Cache-Control: public, max-age=60`.
+
+- id: cache-get-etag
+  title: A cacheable cross-origin GET carries a strong ETag that changes with the body, the configured Cache-Control, and exposes ETag to browsers
+  decisions: [D14]
+  transports: [get]
+  requires: [caching]
+  steps:
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      headers: { origin: http://example.test }
+      expect:
+        arrow: { rows: [[1]] }
+        headers:
+          etag: { pattern: '^"[^"]+"$' }
+          cache-control: "public, max-age=60"
+          access-control-allow-origin: { anyOf: ["*", "http://example.test"] }
+          access-control-expose-headers: { tokens: [etag] }
+      capture: { etag: headers.etag }
+    - request: { type: arrow, sql: "SELECT 2 AS x" }
+      expect:
+        arrow: { rows: [[2]] }
+        headers:
+          etag: { not: "{{etag}}" }
+
+- id: cache-if-none-match
+  title: A matching If-None-Match yields 304 with the same validators and no body
+  decisions: [D14]
+  transports: [get]
+  requires: [caching]
+  steps:
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      expect: { arrow: true, headers: { etag: { present: true }, cache-control: { present: true } } }
+      capture: { etag: headers.etag, cacheControl: headers.cache-control, vary: headers.vary? }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      headers: { if-none-match: "{{etag}}" }
+      expect:
+        status: 304
+        empty: true
+        headers:
+          etag: "{{etag}}"
+          cache-control: "{{cacheControl}}"
+          vary: "{{vary}}"
+
+- id: cache-if-none-match-weak
+  title: If-None-Match is compared weakly and the 304 still carries the strong tag
+  decisions: [D14]
+  transports: [get]
+  requires: [caching]
+  steps:
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      expect: { arrow: true }
+      capture: { etag: headers.etag }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      headers: { if-none-match: "W/{{etag}}" }
+      expect:
+        status: 304
+        empty: true
+        headers:
+          etag: "{{etag}}"
+
+- id: cache-if-none-match-miss
+  title: A stale If-None-Match returns the full response
+  decisions: [D14]
+  transports: [get]
+  requires: [caching]
+  request: { type: arrow, sql: "SELECT 1 AS x" }
+  headers: { if-none-match: '"stale"' }
+  expect:
+    arrow: { rows: [[1]] }
+    headers:
+      etag: { present: true }
+
+- id: cache-if-match
+  title: If-Match is compared strongly, so only the exact strong tag passes
+  decisions: [D14, D5, D19]
+  transports: [get]
+  requires: [caching]
+  steps:
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      headers: { if-match: '"mismatch"' }
+      expect:
+        error: { status: 412, code: bad_request, reason: precondition_failed }
+        headers:
+          etag: { absent: true }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      expect: { arrow: true }
+      capture: { etag: headers.etag }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      headers: { if-match: "W/{{etag}}" }
+      expect:
+        error: { status: 412, code: bad_request, reason: precondition_failed }
+        headers:
+          etag: { absent: true }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      headers: { if-match: "{{etag}}" }
+      expect: { arrow: { rows: [[1]] } }
+
+- id: cache-error-no-store
+  title: Error responses are never cacheable
+  decisions: [D14]
+  transports: [get]
+  requires: [caching]
+  request: { type: arrow, sql: "SELEC 1" }
+  expect:
+    error: { code: bad_request, reason: sql_parse_error }
+    headers:
+      cache-control: no-store
+      etag: { absent: true }
+
+- id: cache-post-no-store
+  title: POST responses are never cacheable
+  decisions: [D14]
+  transports: [post]
+  requires: [caching]
+  request: { type: arrow, sql: "SELECT 1 AS x" }
+  expect:
+    arrow: { rows: [[1]] }
+    headers:
+      cache-control: no-store
+      etag: { absent: true }
+
+- id: cache-preflight-no-store
+  title: Preflight responses are never cacheable by shared caches
+  decisions: [D14]
+  transports: [post]
+  requires: [caching]
+  raw: { method: OPTIONS }
+  headers:
+    origin: http://example.test
+    access-control-request-method: GET
+  expect:
+    status: [200, 204]
+    headers:
+      cache-control: no-store

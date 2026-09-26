@@ -1,0 +1,164 @@
+name: Conformance
+
+# Validates the server protocol specification in conformance/ and runs the
+# conformance suite against every target: the four servers, the Go server's
+# other configurations, and the in-process connectors. Conformance is a
+# ratchet: each leg passes when its failures match
+# conformance/known-failures/<config>.yaml, and fails on a regression or on a
+# listed case that has started passing.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "conformance/**"
+      - "packages/server/**"
+      - "packages/mosaic/core/src/connectors/**"
+      - "packages/vgplot/widget/**"
+      - "data/penguins.parquet"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/conformance.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "conformance/**"
+      - "packages/server/**"
+      - "packages/mosaic/core/src/connectors/**"
+      - "packages/vgplot/widget/**"
+      - "data/penguins.parquet"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/conformance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint spec
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
+
+      - run: pnpm run conformance:lint
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck, lint, and unit-test the conformance harness
+        run: |
+          pnpm exec tsc --build
+          pnpm -F @uwdata/mosaic-conformance typecheck
+          pnpm -F @uwdata/mosaic-conformance lint
+          pnpm -F @uwdata/mosaic-conformance test
+
+      - name: Verify CONFORMANCE.md matches known-failures
+        run: |
+          pnpm -F @uwdata/mosaic-conformance status
+          git diff --exit-code -- conformance/STATUS.md
+
+  conformance:
+    name: Conformance (${{ matrix.target }})
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [node, python, rust, go, go-cache, go-gatekeeper, node-connector, wasm, widget]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Setup uv
+        if: matrix.target == 'python' || matrix.target == 'widget'
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ">=0.12.0"
+          enable-cache: true
+          cache-dependency-glob: |
+            uv.lock
+            **/pyproject.toml
+
+      - name: Sync Python server
+        if: matrix.target == 'python'
+        run: uv sync --package duckdb-server
+
+      - name: Sync Python widget
+        if: matrix.target == 'widget'
+        # anywidget requires the built static files to exist at import; the
+        # shim never serves them.
+        run: |
+          uv sync --package mosaic-widget
+          mkdir -p packages/vgplot/widget/mosaic_widget/static
+          touch packages/vgplot/widget/mosaic_widget/static/index.js packages/vgplot/widget/mosaic_widget/static/index.css
+
+      - name: Setup Rust
+        if: matrix.target == 'rust'
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+          cache-workspaces: |-
+            ./packages/server/duckdb-server-rust
+
+      - name: Build Rust server
+        if: matrix.target == 'rust'
+        run: cargo build --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml
+
+      - name: Setup Go
+        if: startsWith(matrix.target, 'go')
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.25"
+          cache-dependency-path: ./packages/server/duckdb-server-go/go.sum
+
+      - name: Cache DuckDB extensions
+        if: startsWith(matrix.target, 'go')
+        uses: actions/cache@v6
+        with:
+          path: ~/.duckdb/extensions
+          key: duckdb-extensions-v3-${{ runner.os }}-${{ hashFiles('packages/server/duckdb-server-go/go.sum') }}
+
+      - name: Build Go server
+        if: startsWith(matrix.target, 'go')
+        run: go build -tags=duckdb_arrow ./...
+        working-directory: ./packages/server/duckdb-server-go
+
+      - name: Run conformance suite
+        run: pnpm -F @uwdata/mosaic-conformance suite
+        env:
+          CONFORMANCE_TARGET: ${{ matrix.target }}
+
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: conformance-${{ matrix.target }}
+          path: conformance/.logs/
+          if-no-files-found: ignore

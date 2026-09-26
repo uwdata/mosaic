@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 SLOW_QUERY_THRESHOLD = 5000
+MAX_WS_MESSAGE_BYTES = 16 * 1024 * 1024
 
 
 class QueryParams(msgspec.Struct):
@@ -87,7 +88,7 @@ class HTTPHandler(Handler):
 
     def arrow(self, buffer: bytes) -> None:
         res = self.begin(200)
-        res.write_header("Content-Type", "application/octet-stream")
+        res.write_header("Content-Type", "application/vnd.apache.arrow.stream")
         res.end(buffer)
 
     def error(self, error: object, status: int = 500) -> None:
@@ -140,6 +141,11 @@ def on_error(error: object, res: Res, req: Req) -> None:
 class Serde:
     """Wraps `msgspec` to be [compatible] with `socketify`.
 
+    socketify calls `dumps(value).encode("utf-8")`, so `dumps` must return
+    `str` even though `msgspec.json.encode` produces `bytes`; returning bytes
+    raises inside socketify's `ws.send`, which swallows the error and drops
+    the frame.
+
     [compatible]: https://docs.socketify.dev/basics.html#using-ujson-orjson-or-any-custom-json-serializer
     """
 
@@ -150,11 +156,11 @@ class Serde:
         serialize: Callable[[Any], bytes],
         deserialize: Callable[[Buffer | str], Any],
     ) -> None:
-        self.dumps = serialize
+        self.dumps = lambda value: serialize(value).decode("utf-8")
         self.loads = deserialize
 
 
-def server(con: Con) -> None:
+def server(con: Con, port: int = 3000) -> None:
     app = App()
     app.json_serializer(Serde(serialize=json_encode, deserialize=json_decode_slow))
 
@@ -182,6 +188,7 @@ def server(con: Con) -> None:
         "/*",
         {
             "compression": CompressOptions.SHARED_COMPRESSOR,
+            "max_payload_length": MAX_WS_MESSAGE_BYTES,
             "message": ws_message,
             "drain": lambda ws: logger.warning(
                 f"WebSocket backpressure: {ws.get_buffered_amount()}"
@@ -194,7 +201,7 @@ def server(con: Con) -> None:
     app.set_error_handler(on_error)
 
     app.listen(
-        3000,
+        port,
         lambda config: sys.stdout.write(
             f"DuckDB Server listening at ws://localhost:{config.port} and http://localhost:{config.port}\n"
         ),

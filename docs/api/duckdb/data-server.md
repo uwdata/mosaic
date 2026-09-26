@@ -27,6 +27,8 @@ Once launched, the data server will accept HTTP POST requests containing JSON co
 
 A request without a _type_ is rejected with HTTP status 400.
 
+The full request, response, and error contract shared by all Mosaic server implementations is documented in the [Server Protocol](./server-protocol) reference.
+
 ### Examples
 
 Launch a data server in Node.js:
@@ -34,4 +36,10 @@ Launch a data server in Node.js:
 ``` js
 import { DuckDB, dataServer } from "@uwdata/mosaic-duckdb";
 dataServer(new DuckDB(), { rest: true, socket: true });
+```
+
+Or from the command line, with an optional database path (default in-memory) and `--port` (default `3000`):
+
+``` sh
+node packages/server/duckdb/bin/run-server.js data.db --port 3001
 ```
