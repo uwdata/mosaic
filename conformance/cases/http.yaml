@@ -1,0 +1,30 @@
+# HTTP-only behaviour: CORS preflight and cache headers when caching is off.
+
+- id: cors-preflight
+  title: Preflight allows the requesting origin, the POST method, and the Content-Type header
+  decisions: [D4]
+  transports: [post]
+  raw: { method: OPTIONS }
+  headers:
+    origin: http://example.test
+    access-control-request-method: POST
+    access-control-request-headers: content-type
+  expect:
+    status: [200, 204]
+    empty: true
+    headers:
+      access-control-allow-origin: { anyOf: ["*", "http://example.test"] }
+      access-control-allow-methods: { tokens: [POST] }
+      access-control-allow-headers: { tokens: [content-type] }
+
+- id: arrow-cors-origin
+  title: A cross-origin POST allows the requesting origin
+  decisions: [D4]
+  transports: [post]
+  headers:
+    origin: http://example.test
+  request: { type: arrow, sql: "SELECT 1 AS x" }
+  expect:
+    arrow: { rows: [[1]] }
+    headers:
+      access-control-allow-origin: { anyOf: ["*", "http://example.test"] }
