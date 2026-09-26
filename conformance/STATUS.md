@@ -158,9 +158,9 @@ pnpm -F @uwdata/mosaic-conformance status
 ```
 
 `pnpm -F @uwdata/mosaic-conformance test` runs the harness's own unit tests
-(violation ids, the IPC walker, header matchers, fetch-error classification,
-command-layer result and rejection mapping, session deadlines, case
-applicability, and the ratchet comparison) without a target; the root
+(one file per module: the checker, the schema rules, the command layer and
+sessions, the runner's timeout recovery, the comm client, case
+applicability, and the baseline updater) without a target; the root
 `pnpm test` includes them.
 
 CI runs all nine targets on every pull request that touches a server

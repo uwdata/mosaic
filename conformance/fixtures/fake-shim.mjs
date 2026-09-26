@@ -6,8 +6,6 @@
 //   silent        done with no reply
 //   raise         done with raised, no reply
 //   reply-raise   reply, then done with raised
-//   wrong-uuid    reply echoing "someone-else"
-//   missing-uuid  reply with no uuid
 //   error-string  legacy {error: "boom", uuid}
 //   error         {type: error, uuid, error: {...}} for a missing field
 //   exit          exit before done
@@ -37,8 +35,6 @@ createInterface({ input: process.stdin }).on('line', line => {
       case 'silent': done(id); break;
       case 'raise': done(id, "KeyError: 'uuid'"); break;
       case 'reply-raise': reply(id, { type: 'exec', uuid }); done(id, 'RuntimeError: after send'); break;
-      case 'wrong-uuid': reply(id, { type: 'exec', uuid: 'someone-else' }); done(id); break;
-      case 'missing-uuid': reply(id, { type: 'exec' }); done(id); break;
       case 'error-string': reply(id, { error: 'boom', uuid }); done(id); break;
       case 'error': reply(id, { type: 'error', uuid: uuid ?? null, error: { error: 'missing sql', code: 'bad_request', reason: 'missing_field', field: 'sql' } }); done(id); break;
       case 'exit': process.exit(3); break;

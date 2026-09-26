@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { inheritedFrom, observedFrom, refreshBaseline, type ResultRow } from './src/baseline.ts';
 import { rejectionStatus } from './src/check.ts';
+import { casesOf } from './implementations/index.ts';
+import { loadKnownFailures } from './src/known.ts';
 
 const source = `# comment stays
 server: python
@@ -25,9 +27,6 @@ describe('baseline refresh', () => {
     const withError = rows(['get/get-arrow', 'known', ['arrow.status.400']], ['get/large-request-1mib', 'error']);
     expect(() => observedFrom(withError, 'python-results.json')).toThrow(/harness error.*get\/large-request-1mib/);
     expect(() => observedFrom(rows(['x', 'pass']), 'r')).toThrow(/harness error/);
-  });
-
-  it('refuses inherited results with harness errors too', () => {
     const own = observedFrom(rows(['get/get-arrow', 'pass', []]), 'own');
     expect(() => refreshBaseline('server: go-cache\ninherits: go\nfailures: []\n', own, undefined)).toThrow(/inherits go/);
   });
@@ -190,5 +189,16 @@ describe('connector rejection status', () => {
     expect(rejectionStatus(new Error('syntax error at SELEC'))).toBeUndefined();
     expect(rejectionStatus(new Error('the server said HTTP status 400 was wrong'))).toBeUndefined();
     expect(rejectionStatus('not an error')).toBeUndefined();
+  });
+});
+
+describe('inheritance across transport sets', () => {
+  it('drops inherited entries for cases the child never expands and validates the parent against its own cases', () => {
+    const known = loadKnownFailures('go-cache', casesOf('go-cache'), casesOf);
+    const inherited = known.inherited.flatMap(f => Object.keys(f.cases));
+    expect(inherited).toContain('rest/sql-parse-error');
+    expect(inherited).not.toContain('rest/missing-type');
+    expect(inherited.every(id => casesOf('go-cache').has(id))).toBe(true);
+    expect(() => loadKnownFailures('go-cache', casesOf('go-cache'))).toThrow(/go\.yaml.*references unknown case (rest|socket)\//);
   });
 });

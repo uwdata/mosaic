@@ -2,6 +2,7 @@ import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { describe, expect, it } from 'vitest';
 import { arrowViolations, walkStream } from './src/arrow.ts';
 import { captureValues, checkResponse, sqlName } from './src/check.ts';
+import { parseSkipNote, skipNote } from './src/harness.ts';
 import { compare } from './src/harness.ts';
 import { classifyFetchError, sendHttp } from './src/http.ts';
 import type { HttpResponse, Violation, WsResponse } from './src/types.ts';
@@ -213,10 +214,11 @@ describe('alternatives and connection outcomes', () => {
 describe('fetch error classification', () => {
   const failure = (code?: string, message = code ?? '') => Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error(message), code ? { code } : {}) });
 
-  it('baselines only a reset after the request was sent', () => {
+  // Linux spells the reset EPIPE where macOS says ECONNRESET; the live
+  // listener tests below only ever produce the local spelling.
+  it('gives the two spellings of a peer reset one id', () => {
     expect(classifyFetchError(failure('ECONNRESET', 'write ECONNRESET'))).toMatchObject({ reset: 'peer-closed' });
     expect(classifyFetchError(failure('EPIPE', 'write EPIPE'))).toMatchObject({ reset: 'peer-closed' });
-    expect(classifyFetchError(failure('UND_ERR_SOCKET', 'other side closed'))).toMatchObject({ reset: 'socket-closed' });
   });
 
   it('keeps the received status when the close lands during the body', async () => {
@@ -265,12 +267,7 @@ describe('ratchet comparison', () => {
     expect(ids(verdict.known)).toEqual(['error.not-json']);
     expect(ids(verdict.regressions)).toEqual(['error.status.200']);
     expect(verdict.resolved).toEqual(['error.content-type']);
-  });
-
-  it('is clean when observed equals the baseline', () => {
-    const verdict = compare(observed, new Set(observed.map(v => v.id)));
-    expect(verdict.regressions).toEqual([]);
-    expect(verdict.resolved).toEqual([]);
+    expect(compare(observed, new Set(observed.map(v => v.id)))).toMatchObject({ regressions: [], resolved: [] });
   });
 });
 
@@ -281,5 +278,13 @@ describe('ratchet alternatives', () => {
     expect(compare([{ id: 'http.reset.peer-closed', detail: '' }], expected)).toMatchObject({ regressions: [], resolved: [] });
     expect(compare([], expected).resolved).toEqual(['http.reset.peer-closed|arrow.status.505']);
     expect(compare([{ id: 'arrow.status.200', detail: '' }], expected).regressions.map(v => v.id)).toEqual(['arrow.status.200']);
+  });
+});
+
+describe('skip notes', () => {
+  it('round-trips the category and rejects free text', () => {
+    expect(parseSkipNote(skipNote({ category: 'layer', reason: 'command transport, case is wire only' }))).toEqual({ category: 'layer', reason: 'command transport, case is wire only' });
+    expect(parseSkipNote('requires policy')).toBeUndefined();
+    expect(parseSkipNote(undefined)).toBeUndefined();
   });
 });

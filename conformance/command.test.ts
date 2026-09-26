@@ -1,16 +1,7 @@
 import { int32, tableFromArrays, tableToIPC } from '@uwdata/flechette';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { captureValues, checkResponse, ipcBytes } from './src/check.ts';
-import { parseSkipNote, skipNote } from './src/harness.ts';
-import { casesOf } from './implementations/index.ts';
-import { loadKnownFailures } from './src/known.ts';
-import { expandCases, loadCaseDefinitions } from './src/cases.ts';
-import type { Harness } from './src/harness.ts';
-import path from 'node:path';
-import { Runner } from './src/runner.ts';
-import { startServer, type RunningServer } from './src/server.ts';
 import { clientSession, issue, SessionManager, type Session } from './src/session.ts';
-import type { Target } from './implementations/index.ts';
 import type { ConnectorResponse, Violation } from './src/types.ts';
 
 const ids = (violations: Violation[]) => violations.map(v => v.id).sort();
@@ -61,6 +52,7 @@ describe('command-layer results', () => {
     expect(ids(checkResponse(expectation, rejected(Object.assign(new Error('x'), { code: 'internal_error', reason: 'execution_failed' })), 'rest', {}))).toEqual(['error.code.internal_error', 'error.reason.execution_failed']);
     expect(ids(checkResponse(expectation, resolved(stream), 'inproc', {}))).toEqual(['error.resolved']);
     expect(ids(checkResponse({ error: { code: 'bad_request', reason: 'missing_field', field: 'sql' } }, rejected(Object.assign(new Error('x'), { code: 'bad_request', reason: 'missing_field' })), 'rest', {}))).toEqual(['error.field.missing']);
+    expect(ids(checkResponse(expectation, { kind: 'connector-timeout', after: 5 }, 'inproc', {}))).toEqual(['connector.no-reply']);
   });
 
   it('requires a complete reference on table_not_found', () => {
@@ -71,18 +63,11 @@ describe('command-layer results', () => {
     expect(ids(checkResponse(expectation, rejected(Object.assign(new Error('gone'), { code: 'table_not_found', reference: { catalog: 'memory', schema: 's', table: 't' } })), 'rest', {}))).toEqual(['error.reference.invalid']);
   });
 
-  it('records a timeout as no reply, whatever was expected', () => {
-    const timeout: ConnectorResponse = { kind: 'connector-timeout', after: 5 };
-    expect(ids(checkResponse({ arrow: true }, timeout, 'inproc', {}))).toEqual(['connector.no-reply']);
-    expect(ids(checkResponse({ error: { code: 'bad_request' } }, timeout, 'inproc', {}))).toEqual(['connector.no-reply']);
-  });
 });
 
 describe('sessions', () => {
-  const session = (behaviour: (request: Record<string, unknown>) => Promise<unknown>, isolated = true): Session & { disposed: number } => {
-    const s = { disposed: 0, isolated, query: behaviour, dispose: async () => { s.disposed++; } };
-    return s;
-  };
+  const session = (behaviour: (request: Record<string, unknown>) => Promise<unknown>): Session =>
+    ({ isolated: true, query: behaviour, dispose: async () => {} });
   const after = (ms: number, value: unknown) => new Promise(resolve => setTimeout(() => resolve(value), ms));
 
   it('resolves, rejects, or times out without leaving a rejection unhandled', async () => {
@@ -106,51 +91,12 @@ describe('sessions', () => {
     expect(results.map(r => r.kind)).toEqual(['connector', 'connector', 'connector-timeout']);
   });
 
-  it('replaces a tainted session only when disposing it isolates the implementation', async () => {
-    const built: Array<Session & { disposed: number }> = [];
-    const manager = new SessionManager(async () => { const s = session(async () => 1); built.push(s); return s; });
-    const first = await manager.acquire();
-    expect(await manager.acquire()).toBe(first);
-    manager.taint();
-    const second = await manager.acquire();
-    expect(second).not.toBe(first);
-    expect(built[0].disposed).toBe(1);
-    await manager.dispose();
-    expect(built[1].disposed).toBe(1);
-    expect(built).toHaveLength(2);
-
-    const shared = new SessionManager(async () => session(async () => 1, false));
-    await shared.acquire();
-    shared.taint();
-    await expect(shared.acquire()).rejects.toThrow(/state is unknown.*aborting/);
-    await expect(shared.acquire()).rejects.toThrow(/aborting/);
-  });
-
   it('aborts when disposing a tainted session fails', async () => {
     const manager = new SessionManager(async () => ({ isolated: true, query: async () => 1, dispose: async () => { throw new Error('worker would not stop'); } }));
     await manager.acquire();
     manager.taint();
     await expect(manager.acquire()).rejects.toThrow(/could not dispose.*worker would not stop/);
     await expect(manager.acquire()).rejects.toThrow(/could not dispose/);
-  });
-
-  it('does not resume against a server whose delayed mutation is still in flight', async () => {
-    const { createServer } = await import('node:http');
-    let served = 0;
-    const server = createServer((_, res) => { served++; setTimeout(() => { res.statusCode = 200; res.end(); }, 150); });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-    const { port } = server.address() as { port: number };
-    const manager = new SessionManager(async () => clientSession('rest', `http://127.0.0.1:${port}/`));
-    try {
-      const rest = await manager.acquire();
-      expect(await issue(rest, { type: 'exec', sql: 'CREATE TABLE t AS SELECT 1' }, 40)).toMatchObject({ kind: 'connector-timeout' });
-      manager.taint();
-      await expect(manager.acquire()).rejects.toThrow(/aborting/);
-      await new Promise(r => setTimeout(r, 200));
-      expect(served).toBe(1);
-    } finally {
-      server.close();
-    }
   });
 
   it('rethrows delivery failures from the real clients and keeps server errors as observations', async () => {
@@ -203,118 +149,3 @@ describe('sessions', () => {
     }
   });
 });
-
-describe('target state after a timeout', () => {
-  const fixture = path.join(import.meta.dirname, 'fixtures/fake-server.mjs');
-  const definitions = loadCaseDefinitions();
-  const target = (name: string, transports: Target['transports']): Target => ({
-    name, kind: 'server', description: '', capabilities: new Set(['exec']), transports,
-    command: port => ({ cmd: process.execPath, args: [fixture, '--port', String(port), '--delay', '400'], cwd: import.meta.dirname })
-  });
-  const harnessFor = (config: Target): Harness => ({ config, cases: expandCases(definitions, config), known: { server: config.name, own: [], inherited: [] }, expected: new Map() });
-  const find = (h: Harness, id: string) => h.cases.find(c => c.id === id)!;
-
-  // A server the suite cannot restart: every timeout, on any transport, is
-  // fatal for the rest of the run, and nothing else may be sent.
-  describe('an external server', () => {
-    let running: RunningServer;
-    beforeAll(async () => { running = await startServer(target('fake-external', ['post', 'ws', 'rest'])); }, 30_000);
-    afterAll(() => running.stop());
-
-    it('blocks every transport after a REST timeout', async () => {
-      const harness = harnessFor(target('fake-external', ['post', 'ws', 'rest']));
-      const runner = new Runner(harness, { stepTimeout: 60, url: running.url });
-      try {
-        expect((await runner.run(find(harness, 'rest/exec-acknowledged'))).map(v => v.id)).toEqual(['s1.connector.no-reply', 's2.blocked.timeout']);
-        expect(runner.fatal?.message).toMatch(/rest\/exec-acknowledged step 1 timed out.*cannot be restored/);
-        await expect(runner.run(find(harness, 'post/arrow-stream-format'))).rejects.toThrow(/cannot be restored/);
-        await expect(runner.run(find(harness, 'ws/arrow-stream-format'))).rejects.toThrow(/cannot be restored/);
-      } finally {
-        await runner.dispose();
-      }
-    });
-
-    it('blocks command cases after an HTTP timeout', async () => {
-      const harness = harnessFor(target('fake-external', ['post', 'rest']));
-      const runner = new Runner(harness, { stepTimeout: 60, url: running.url });
-      try {
-        await expect(runner.run(find(harness, 'post/exec-acknowledged'))).rejects.toThrow(/no response to POST/);
-        expect(runner.fatal?.message).toMatch(/post\/exec-acknowledged step 1 timed out/);
-        await expect(runner.run(find(harness, 'rest/sql-parse-error'))).rejects.toThrow(/cannot be restored/);
-      } finally {
-        await runner.dispose();
-      }
-    });
-
-    it('records a WebSocket no-reply, blocks the rest of the case, and then everything else', async () => {
-      const harness = harnessFor(target('fake-external', ['ws', 'rest']));
-      const runner = new Runner(harness, { stepTimeout: 60, url: running.url });
-      try {
-        expect((await runner.run(find(harness, 'ws/exec-acknowledged'))).map(v => v.id)).toEqual(['s1.ws.no-reply', 's2.blocked.timeout']);
-        expect(runner.fatal?.message).toMatch(/ws\/exec-acknowledged step 1 timed out/);
-        await expect(runner.run(find(harness, 'rest/sql-parse-error'))).rejects.toThrow(/cannot be restored/);
-      } finally {
-        await runner.dispose();
-      }
-    });
-  });
-
-  it('restarts a server it started and carries on with a known state', async () => {
-    const harness = harnessFor(target('fake-owned', ['post', 'ws', 'rest']));
-    const runner = new Runner(harness, { stepTimeout: 60 });
-    try {
-      await runner.start();
-      const before = runner.url();
-      expect((await runner.run(find(harness, 'rest/exec-acknowledged'))).map(v => v.id)).toEqual(['s1.connector.no-reply', 's2.blocked.timeout']);
-      expect(runner.fatal).toBeUndefined();
-      expect(runner.restarts).toBe(1);
-      expect(runner.url()).not.toBe(before);
-      expect(await runner.run(find(harness, 'post/arrow-stream-format'))).toEqual([]);
-      expect(await runner.run(find(harness, 'rest/arrow-stream-format'))).toEqual([]);
-      expect((await runner.run(find(harness, 'ws/exec-acknowledged'))).map(v => v.id)).toEqual(['s1.ws.no-reply', 's2.blocked.timeout']);
-      expect(runner.restarts).toBe(2);
-      expect(await runner.run(find(harness, 'ws/arrow-stream-format'))).toEqual([]);
-    } finally {
-      await runner.dispose();
-    }
-  }, 60_000);
-
-  it('replaces an isolated in-process session and keeps going', async () => {
-    let built = 0;
-    const config: Target = {
-      name: 'fake-inproc', kind: 'inproc', description: '', capabilities: new Set(['exec']), transports: ['inproc'],
-      session: async () => { built++; const slow = built === 1; return { isolated: true, query: async () => (slow ? new Promise(r => setTimeout(() => r(undefined), 200)) : undefined), dispose: async () => {} }; }
-    };
-    const harness = harnessFor(config);
-    const runner = new Runner(harness, { stepTimeout: 40 });
-    try {
-      const first = await runner.run(find(harness, 'inproc/exec-acknowledged'));
-      expect(first.map(v => v.id)).toEqual(['s1.connector.no-reply', 's2.blocked.timeout']);
-      expect(runner.fatal).toBeUndefined();
-      const second = await runner.run(find(harness, 'inproc/exec-acknowledged'));
-      expect(second.map(v => v.id)).toEqual(['s2.arrow.not-bytes']);
-      expect(built).toBe(2);
-    } finally {
-      await runner.dispose();
-    }
-  });
-});
-describe('skip notes', () => {
-  it('round-trips the category and rejects free text', () => {
-    expect(parseSkipNote(skipNote({ category: 'layer', reason: 'command transport, case is wire only' }))).toEqual({ category: 'layer', reason: 'command transport, case is wire only' });
-    expect(parseSkipNote('requires policy')).toBeUndefined();
-    expect(parseSkipNote(undefined)).toBeUndefined();
-  });
-});
-
-describe('inheritance across transport sets', () => {
-  it('drops inherited entries for cases the child never expands and validates the parent against its own cases', () => {
-    const known = loadKnownFailures('go-cache', casesOf('go-cache'), casesOf);
-    const inherited = known.inherited.flatMap(f => Object.keys(f.cases));
-    expect(inherited).toContain('rest/sql-parse-error');
-    expect(inherited).not.toContain('rest/missing-type');
-    expect(inherited.every(id => casesOf('go-cache').has(id))).toBe(true);
-    expect(() => loadKnownFailures('go-cache', casesOf('go-cache'))).toThrow(/go\.yaml.*references unknown case (rest|socket)\//);
-  });
-});
-

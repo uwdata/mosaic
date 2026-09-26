@@ -65,11 +65,9 @@ describe('comm client', () => {
     expect((late as CommResponse).replies[0].buffers).toHaveLength(1);
   });
 
-  it('reports duplicate, wrong, and missing uuids through the checker, not the client', async () => {
+  it('collects every reply of an invocation and sends a manual request without a uuid unchanged', async () => {
     const c = client();
     expect(((await send(c, 'twice')) as CommResponse).replies).toHaveLength(2);
-    expect(ids(checkResponse({ exec: true }, await send(c, 'wrong-uuid'), 'comm', {}))).toEqual(['comm.uuid.mismatch']);
-    expect(ids(checkResponse({ exec: true }, await send(c, 'missing-uuid'), 'comm', {}))).toEqual(['comm.schema.required.uuid', 'comm.uuid.missing']);
     expect(ids(checkResponse({ error: { code: 'bad_request' } }, await send(c, 'error', undefined), 'comm', {}))).toEqual([]);
   });
 

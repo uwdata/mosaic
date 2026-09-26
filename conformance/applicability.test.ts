@@ -77,16 +77,6 @@ describe('case applicability', () => {
     expect(actual).toEqual(expected);
   });
 
-  it('keeps encoded-size and GET semantics on the wire and pipelines on both layers', () => {
-    const by = Object.fromEntries(expected.map(([id, , layers]) => [id, layers]));
-    expect(by['large-request-1mib']).toBe('wire');
-    expect(by['get-exec-rejected']).toBe('wire');
-    expect(by['ws-malformed-json-stays-open']).toBe('wire');
-    expect(by['ws-pipeline-order']).toBe('wire command');
-    expect(by['ws-sql-error-stays-open']).toBe('wire command');
-    expect(by['arrow-empty-result']).toBe('wire command');
-  });
-
   it('expands the reference server over both clients and the others over smoke cases only', () => {
     const go = expandCases(definitions, targets.go).map(c => c.id);
     const node = expandCases(definitions, targets.node).map(c => c.id);

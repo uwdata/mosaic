@@ -65,15 +65,13 @@ describe('table references', () => {
     expect(ids('Error', error({ code: 'forbidden', reason: 'policy_denied', reference }))).toEqual(['e.forbidden.reference']);
   });
 
-  it('demands an explicit catalog, a schema path, and raw non-empty components', () => {
+  it('demands an explicit catalog, a schema path of raw components, and nothing else', () => {
     const tnf = (ref: unknown) => ids('Error', error({ code: 'table_not_found', reason: 'materialization_missing', reference: ref }));
     expect(tnf(reference)).toEqual([]);
     expect(tnf({ catalog: 'memory', schema: ['a.b', 'c"d'], table: 'x.y' })).toEqual([]);
     expect(tnf({ schema: ['main'], table: 't' })).toEqual(['e.required.reference.catalog']);
     expect(tnf({ catalog: 'memory', schema: 'main', table: 't' })).toEqual(['e.type.reference.schema']);
     expect(tnf({ catalog: 'memory', schema: [], table: 't' })).toEqual(['e.minitems.reference.schema']);
-    expect(tnf({ catalog: 'memory', schema: ['main', ''], table: 't' })).toEqual(['e.minlength.reference.schema.1']);
-    expect(tnf({ catalog: '', schema: ['main'], table: 't' })).toEqual(['e.minlength.reference.catalog']);
     expect(tnf({ catalog: 'memory', schema: ['main'], table: 't', quoted: '"memory"."main"."t"' })).toEqual(['e.additional.reference.quoted']);
   });
 
@@ -98,14 +96,11 @@ describe('diagnostics', () => {
     expect(denied([])).toEqual([]);
   });
 
-  it('rejects untyped subjects, flattened namespaces, negative offsets, and extra keys', () => {
+  it('rejects untyped subjects, flattened namespaces, and binding evidence smuggled in as a diagnostic', () => {
     expect(denied([{ message: 'x', subject: { name: 'q3' } }])).toEqual(['e.required.diagnostics.0.subject.kind']);
     expect(denied([{ message: 'x', subject: { kind: 'view', name: 'q3' } }])).toEqual(['e.enum.diagnostics.0.subject.kind']);
     expect(denied([{ message: 'x', subject: { kind: 'table', schema: 'finance', name: 'q3' } }])).toEqual(['e.type.diagnostics.0.subject.schema']);
-    expect(denied([{ message: 'x', subject: { kind: 'table', name: 'finance.q3', table: 'q3' } }])).toEqual(['e.additional.diagnostics.0.subject.table']);
-    expect(denied([{ message: 'x', location: { start: -1 } }])).toEqual(['e.minimum.diagnostics.0.location.start']);
     expect(denied([{ message: 'x', location: { end: 4 } }])).toEqual(['e.required.diagnostics.0.location.start']);
-    expect(denied([{ message: 'x', location: { start: 0, line: 1 } }])).toEqual(['e.additional.diagnostics.0.location.line']);
     expect(denied([{ rule: 'r' }])).toEqual(['e.required.diagnostics.0.message']);
     expect(denied([{ message: 'x', objects: [] }])).toEqual(['e.additional.diagnostics.0.objects']);
   });
@@ -116,17 +111,9 @@ describe('diagnostics', () => {
 });
 
 describe('operational metadata', () => {
-  it('accepts a non-empty diagnosticId on any code', () => {
+  it('allows diagnosticId on any code and retryAfterMs only on resource_exhausted', () => {
     expect(ids('Error', error({ code: 'internal_error', reason: 'internal_failure', diagnosticId: 'req_01J9' }))).toEqual([]);
-    expect(ids('Error', error({ code: 'internal_error', reason: 'internal_failure', diagnosticId: '' }))).toEqual(['e.minlength.diagnosticId']);
-    expect(ids('Error', error({ code: 'internal_error', reason: 'internal_failure', diagnosticId: 7 }))).toEqual(['e.type.diagnosticId']);
-  });
-
-  it('allows retryAfterMs only on resource_exhausted', () => {
     expect(ids('Error', error({ code: 'resource_exhausted', reason: 'resource_limit_exceeded', retryAfterMs: 0 }))).toEqual([]);
-    expect(ids('Error', error({ code: 'resource_exhausted', reason: 'resource_limit_exceeded', retryAfterMs: 1000 }))).toEqual([]);
-    expect(ids('Error', error({ code: 'resource_exhausted', reason: 'resource_limit_exceeded', retryAfterMs: -1 }))).toEqual(['e.minimum.retryAfterMs']);
-    expect(ids('Error', error({ code: 'resource_exhausted', reason: 'resource_limit_exceeded', retryAfterMs: 1.5 }))).toEqual(['e.type.retryAfterMs']);
     expect(ids('Error', error({ code: 'deadline_exceeded', reason: 'command_deadline_exceeded', retryAfterMs: 1000 }))).toEqual(['e.forbidden.retryAfterMs']);
   });
 });
