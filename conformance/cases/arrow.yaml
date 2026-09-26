@@ -1,0 +1,50 @@
+# Arrow result encoding.
+
+- id: arrow-stream-format
+  title: Results are Arrow IPC streams with the Arrow stream media type
+  decisions: [D8]
+  smoke: true
+  request: { type: arrow, sql: "SELECT 1 AS x" }
+  expect:
+    arrow: { columns: [x], rows: [[1]] }
+
+- id: arrow-empty-result
+  title: A zero-row result still carries the schema and end-of-stream marker
+  decisions: [D8]
+  request: { type: arrow, sql: "SELECT 1 AS x WHERE false" }
+  expect:
+    arrow: { columns: [x], rowCount: 0 }
+
+- id: arrow-scalar-types
+  title: Common scalar types round-trip
+  decisions: [D8]
+  request: { type: arrow, sql: "SELECT 1::INTEGER AS i, 2::BIGINT AS b, 1.5::DOUBLE AS d, 'a' AS s, true AS t, NULL::VARCHAR AS n" }
+  expect:
+    arrow:
+      columns: [i, b, d, s, t, n]
+      rows: [[1, 2, 1.5, a, true, null]]
+
+- id: arrow-many-rows
+  title: Large results span several record batches and decode completely
+  decisions: [D8]
+  request: { type: arrow, sql: "SELECT range::INTEGER AS i FROM range(100000)" }
+  expect:
+    arrow: { columns: [i], rowCount: 100000 }
+
+- id: arrow-from-parquet
+  title: Reading a Parquet file from the shared data directory works
+  decisions: [D8]
+  transports: [post]
+  requires: [files]
+  request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM read_parquet('$DATA/penguins.parquet')" }
+  expect:
+    arrow: { columns: [n], rows: [[342]] }
+
+- id: large-request-1mib
+  layers: [wire]
+  title: A command whose encoded body, query string, or frame is exactly 1 MiB is accepted
+  decisions: [D13]
+  transports: [post, get, ws]
+  request: { type: arrow, sql: "SELECT 1 AS x /* $PAD(1048576) */" }
+  expect:
+    arrow: { columns: [x], rows: [[1]] }

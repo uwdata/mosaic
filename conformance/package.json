@@ -1,0 +1,31 @@
+{
+  "name": "@uwdata/mosaic-conformance",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Wire contract for Mosaic DuckDB servers and the conformance suite that checks implementations against it.",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint src implementations *.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "suite": "vitest run --config vitest.conformance.config.ts",
+    "baseline": "node --experimental-strip-types update-baseline.ts",
+    "status": "node --experimental-strip-types generate-conformance-md.ts"
+  },
+  "dependencies": {
+    "@uwdata/flechette": "^2.5.0",
+    "@uwdata/mosaic-core": "workspace:*",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@duckdb/duckdb-wasm": "1.33.1-dev57.0",
+    "@types/node": "^26.0.0",
+    "@types/ws": "^8.18.1",
+    "@uwdata/mosaic-duckdb": "workspace:*",
+    "web-worker": "1.2.0",
+    "ws": "^8.21.3"
+  }
+}

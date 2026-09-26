@@ -1,0 +1,255 @@
+# Known conformance failures for `duckdb-server` (`packages/server/duckdb-server`).
+# Source of truth for the Python table in ../STATUS.md; regenerate with
+# `pnpm -F @uwdata/mosaic-conformance status`.
+server: python
+failures:
+  - area: WebSocket errors lack `code` and `reason`
+    current: "`{\"error\": str(e)}` only (`SocketHandler.error`); msgspec's decode message is the only classification."
+    spec: Envelope with `code`, `reason`, and `field` (D4, D19).
+    fix: Share an error mapper with the HTTP handler; map msgspec `ValidationError` to `missing_field`/`invalid_field` with the field name.
+    cases:
+      ws/missing-type:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/missing-sql:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/empty-sql:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/unknown-type:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/type-not-a-string:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/preagg-unsupported:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/sql-parse-error:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/sql-unknown-table:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/sql-runtime-error:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/exec-error:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/ws-malformed-json-stays-open:
+        - s1.error.schema.required.code
+        - s1.error.code.missing
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+      ws/ws-missing-sql-stays-open:
+        - s1.error.schema.required.code
+        - s1.error.code.missing
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+        - s1.error.field.missing
+      ws/ws-sql-error-stays-open:
+        - s1.error.schema.required.code
+        - s1.error.code.missing
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+  - area: HTTP errors are plain text
+    current: "`handler.error()` ends the response with `str(error)` and no Content-Type."
+    spec: JSON `Error` envelope (D4, D19).
+    fix: Emit `{error, code, reason}` with `application/json`.
+    cases:
+      post/missing-type:
+        - error.content-type
+        - error.not-json
+      post/missing-sql:
+        - error.content-type
+        - error.not-json
+      post/unknown-type:
+        - error.content-type
+        - error.not-json
+      post/type-not-a-string:
+        - error.content-type
+        - error.not-json
+      post/malformed-json-body:
+        - error.content-type
+        - error.not-json
+      post/sql-unknown-table:
+        - error.content-type
+        - error.not-json
+      post/sql-runtime-error:
+        - error.content-type
+        - error.not-json
+      post/exec-error:
+        - error.content-type
+        - error.not-json
+  - area: Empty `sql`
+    current: '`msgspec` accepts `""`, then `get_arrow_bytes` fails on a `None` result (500).'
+    spec: 400 `bad_request` (D1).
+    fix: Add `min_length=1` to the struct or validate before dispatch.
+    cases:
+      post/empty-sql:
+        - error.status.500
+        - error.content-type
+        - error.not-json
+  - area: Parse errors are 500
+    current: Every DuckDB exception is `handler.error(e)` with the default 500.
+    spec: "`bad_request` for `duckdb.ParserException` (D7)."
+    fix: Map exception classes to codes.
+    cases:
+      rest/sql-parse-error:
+        - error.status.500
+      rest/ws-pipeline-order:
+        - s4.error.status.500
+      post/sql-parse-error:
+        - error.status.500
+        - error.content-type
+        - error.not-json
+  - area: "`preagg` is unknown"
+    current: "`msgspec` rejects it as an invalid enum value."
+    spec: "`unsupported_command` (D6)."
+    fix: Accept the literal and answer `unsupported_command` until implemented.
+    cases:
+      post/preagg-unsupported:
+        - error.content-type
+        - error.not-json
+  - area: GET reads `?query=<json>`
+    current: The flat form is rejected with `missing required 'query' parameter`; the JSON form runs `exec`.
+    spec: Flat `type`/`sql`, `arrow` only, read-only SQL (D2, D3, D3a).
+    fix: Read flat parameters; reject `exec`/`preagg`; check the statement kind with `duckdb.extract_statements()`.
+    cases:
+      get/get-arrow:
+        - arrow.status.400
+      get/get-plus-in-sql:
+        - arrow.status.400
+      get/get-cte-allowed:
+        - arrow.status.400
+      get/get-set-operation-allowed:
+        - arrow.status.400
+      get/get-missing-type:
+        - error.content-type
+        - error.not-json
+      get/get-json-wrapped-query-rejected:
+        - error.status.200
+        - error.content-type
+        - error.not-json
+      get/get-exec-rejected:
+        - s1.error.content-type
+        - s1.error.not-json
+      get/get-preagg-rejected:
+        - error.content-type
+        - error.not-json
+      get/get-ddl-rejected:
+        - s1.error.content-type
+        - s1.error.not-json
+      get/get-delete-returning-rejected:
+        - s2.error.content-type
+        - s2.error.not-json
+      get/arrow-multi-statement:
+        - error.content-type
+        - error.not-json
+  - area: Multi-statement `arrow`
+    current: All statements run and the last result is returned.
+    spec: "`bad_request` (D16)."
+    fix: Count statements with `duckdb.extract_statements()`.
+    cases:
+      post/arrow-multi-statement:
+        - error.status.200
+        - error.content-type
+        - error.not-json
+      ws/arrow-multi-statement:
+        - error.frame
+      ws/ws-pipeline-order:
+        - s2.error.schema.required.code
+        - s2.error.code.missing
+        - s4.error.schema.required.code
+        - s4.error.code.missing
+        - s2.error.schema.required.reason
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.schema.required.reason
+        - s4.error.reason.missing
+  - area: Unsupported method is 400
+    current: "`Unsupported HTTP method` with status 400 and no `Allow`."
+    spec: 405 with `Allow` and the envelope (D5).
+    fix: Change the status and add the header.
+    cases:
+      post/method-put:
+        - error.status.400
+        - error.content-type
+        - error.not-json
+        - header.allow
+      post/method-head:
+        - status.400
+        - header.allow
+  - area: Client connectors expose no error code
+    current: "`restConnector` rejects with `Error('Query failed with HTTP status …')` and `socketConnector` with the frame's `error` string, so the coordinator sees no `code`, `reason`, or `field`."
+    spec: "Rejections carry the envelope's `code`, `reason`, and `field` as structured properties (D19, D24)."
+    fix: "#1224 adds `ConnectorError` with `code`, `status`, and `reference`; `reason` and `field` need a follow-up there. Over HTTP the code also depends on this server emitting the JSON envelope."
+    cases:
+      rest/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      socket/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      rest/ws-sql-error-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+      socket/ws-sql-error-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+      rest/ws-pipeline-order:
+        - s2.error.code.missing
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.code.missing
+        - s4.error.reason.missing
+      socket/ws-pipeline-order:
+        - s2.error.code.missing
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.code.missing
+        - s4.error.reason.missing
+  - area: CORS
+    current: "`Access-Control-Request-Method` is emitted as a response header; no `Access-Control-Expose-Headers`."
+    spec: Drop the request header; expose `ETag` if caching is ever added.
+    fix: Edit `CORS_HEADERS`.
+    cases: {}
+  - area: Concurrency
+    current: A synchronous handler blocks the event loop for every connection.
+    spec: No wire requirement; prerequisite for deadlines.
+    fix: Run queries in a thread pool.
+    cases: {}
+  - area: Large GET request lines reset the connection
+    current: uWebSockets answers a request line over its header buffer with a 505 and closes; the client sees the 505, a write error (`ECONNRESET` on macOS, `EPIPE` on Linux), or the close while reading the 505 body, depending on which lands first.
+    spec: Servers SHOULD accept at least 1 MiB (D13); a rejection should be a consistent HTTP status.
+    fix: Probably not configurable in socketify; document the limit.
+    cases:
+      get/large-request-1mib:
+        - http.reset.peer-closed|arrow.status.505|http.reset.after-505.socket-closed

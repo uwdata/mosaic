@@ -1,0 +1,344 @@
+# Known conformance failures for the `duckdb-server` crate (`packages/server/duckdb-server-rust`).
+# Source of truth for the Rust table in ../STATUS.md; regenerate with
+# `pnpm -F @uwdata/mosaic-conformance status`.
+server: rust
+failures:
+  - area: Arrow IPC file format
+    current: "`FileWriter` output (`ARROW1` magic plus footer) under the stream media type (`db.rs`, `interfaces.rs`)."
+    spec: IPC stream format (D8).
+    fix: Use `StreamWriter`; update the `test.rs` assertion. Row contents are still compared, so this only hides framing.
+    cases:
+      get/get-arrow:
+        - arrow.file-format
+      get/get-plus-in-sql:
+        - arrow.file-format
+      get/get-cte-allowed:
+        - arrow.file-format
+      get/get-set-operation-allowed:
+        - arrow.file-format
+      post/arrow-stream-format:
+        - arrow.file-format
+      post/arrow-empty-result:
+        - arrow.file-format
+      post/arrow-scalar-types:
+        - arrow.file-format
+      post/arrow-many-rows:
+        - arrow.file-format
+      post/arrow-from-parquet:
+        - arrow.file-format
+      post/arrow-trailing-semicolon:
+        - arrow.file-format
+      post/application-fields-pass-through:
+        - arrow.file-format
+      post/protocol-fields-not-shadowed:
+        - arrow.file-format
+      post/content-type-with-charset:
+        - arrow.file-format
+      post/arrow-cors-origin:
+        - arrow.file-format
+      post/large-request-1mib:
+        - arrow.file-format
+      post/exec-acknowledged:
+        - s2.arrow.file-format
+      post/exec-multi-statement:
+        - s2.arrow.file-format
+      ws/arrow-stream-format:
+        - arrow.file-format
+      ws/arrow-empty-result:
+        - arrow.file-format
+      ws/arrow-scalar-types:
+        - arrow.file-format
+      ws/arrow-many-rows:
+        - arrow.file-format
+      ws/arrow-trailing-semicolon:
+        - arrow.file-format
+      ws/application-fields-pass-through:
+        - arrow.file-format
+      ws/protocol-fields-not-shadowed:
+        - arrow.file-format
+      ws/large-request-1mib:
+        - arrow.file-format
+      ws/exec-acknowledged:
+        - s2.arrow.file-format
+      ws/exec-multi-statement:
+        - s2.arrow.file-format
+      ws/ws-pipeline-order:
+        - s1.arrow.file-format
+        - s2.error.schema.required.code
+        - s2.error.code.missing
+        - s3.arrow.file-format
+        - s4.error.schema.required.code
+        - s4.error.code.missing
+        - s5.arrow.file-format
+        - s2.error.schema.required.reason
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.schema.required.reason
+        - s4.error.reason.missing
+      ws/ws-pipeline-slow-first:
+        - s1.arrow.file-format
+        - s2.arrow.file-format
+  - area: HTTP errors are plain text or empty
+    current: "Rejections are serde/axum text (`interfaces.rs`); DuckDB errors are `Something went wrong: …`; 405 and 415 have plain or empty bodies."
+    spec: JSON `Error` envelope on every status (D4, D5).
+    fix: Custom rejection handlers and a shared error mapper.
+    cases:
+      post/missing-type:
+        - error.content-type
+        - error.not-json
+      post/missing-sql:
+        - error.content-type
+        - error.not-json
+      post/type-not-a-string:
+        - error.content-type
+        - error.not-json
+      post/malformed-json-body:
+        - error.content-type
+        - error.not-json
+      post/sql-unknown-table:
+        - error.content-type
+        - error.not-json
+      post/sql-runtime-error:
+        - error.content-type
+        - error.not-json
+      post/exec-error:
+        - error.content-type
+        - error.not-json
+      post/content-type-not-json:
+        - alt1.error.content-type
+        - alt1.error.not-json
+      post/method-put:
+        - error.content-type
+        - error.not-json
+      get/get-missing-type:
+        - error.content-type
+        - error.not-json
+      get/get-json-wrapped-query-rejected:
+        - error.content-type
+        - error.not-json
+      get/get-preagg-rejected:
+        - error.content-type
+        - error.not-json
+  - area: WebSocket errors lack `code` and `reason`
+    current: '`{"error"}` only (`websocket.rs`); the message also differs from HTTP.'
+    spec: Envelope with `code` and `reason`, identical over both transports (D4, D19).
+    fix: Shared mapper.
+    cases:
+      ws/missing-type:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/missing-sql:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/empty-sql:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/unknown-type:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/type-not-a-string:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/preagg-unsupported:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/sql-parse-error:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/sql-unknown-table:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/sql-runtime-error:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/exec-error:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/ws-malformed-json-stays-open:
+        - s1.error.schema.required.code
+        - s1.error.code.missing
+        - s2.arrow.file-format
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+      ws/ws-missing-sql-stays-open:
+        - s1.error.schema.required.code
+        - s1.error.code.missing
+        - s2.arrow.file-format
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+        - s1.error.field.missing
+      ws/ws-sql-error-stays-open:
+        - s1.error.schema.required.code
+        - s1.error.code.missing
+        - s2.arrow.file-format
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+  - area: Unknown `type` is 422
+    current: serde enum rejection surfaces as axum's 422 `Failed to deserialize the JSON body`.
+    spec: 400 `bad_request` (D6).
+    fix: Decode `type` as a string and match manually.
+    cases:
+      post/unknown-type:
+        - error.status.422
+        - error.content-type
+        - error.not-json
+  - area: "`preagg` is unknown"
+    current: Same 422 path as any unknown variant.
+    spec: "`unsupported_command` (D6)."
+    fix: Add the variant and answer `unsupported_command` until implemented.
+    cases:
+      post/preagg-unsupported:
+        - error.status.422
+        - error.content-type
+        - error.not-json
+  - area: Parse errors and empty `sql` are 500
+    current: "Every `duckdb::Error` is `Something went wrong` with 500; an empty string yields `Error code 1: Unknown error code`."
+    spec: "`bad_request` for parse errors and empty SQL (D1, D7)."
+    fix: Validate `sql`; map `duckdb::Error` variants to codes.
+    cases:
+      rest/sql-parse-error:
+        - error.status.500
+      rest/ws-pipeline-order:
+        - s4.error.status.500
+      post/sql-parse-error:
+        - error.status.500
+        - error.content-type
+        - error.not-json
+      post/empty-sql:
+        - error.status.500
+        - error.content-type
+        - error.not-json
+  - area: Exec and side effects over GET
+    current: "`handle_get` runs any `type` and does not check the statement kind; the follow-up probes confirm the table was created and the row deleted."
+    spec: "`arrow` only (D3); read-only root required (D3a)."
+    fix: Reject `exec` in `handle_get`; check the statement type before execution.
+    cases:
+      get/get-exec-rejected:
+        - s1.error.status.200
+        - s1.error.content-type
+        - s1.error.not-json
+        - s2.arrow.file-format
+        - s2.arrow.rows
+      get/get-ddl-rejected:
+        - s1.error.status.200
+        - s1.error.content-type
+        - s1.error.not-json
+        - s2.arrow.file-format
+        - s2.arrow.rows
+      get/get-delete-returning-rejected:
+        - s2.error.status.200
+        - s2.error.content-type
+        - s2.error.not-json
+        - s3.arrow.file-format
+        - s3.arrow.rows
+  - area: Multi-statement `arrow`
+    current: Runs and returns a result rather than rejecting.
+    spec: "`bad_request` (D16)."
+    fix: Count statements before execution.
+    cases:
+      post/arrow-multi-statement:
+        - error.status.200
+        - error.content-type
+        - error.not-json
+      ws/arrow-multi-statement:
+        - error.frame
+      get/arrow-multi-statement:
+        - error.status.200
+        - error.content-type
+        - error.not-json
+  - area: HEAD runs the query
+    current: axum's GET route also serves HEAD, so `HEAD /?type=arrow&sql=…` executes and returns 200.
+    spec: 405 with `Allow` (D5).
+    fix: Add an explicit fallback for other methods.
+    cases:
+      post/method-head:
+        - status.200
+        - header.allow
+  - area: WebSocket binary frames are ignored
+    current: "`Message::Binary` is dropped with no reply (`websocket.rs`)."
+    spec: SHOULD accept; MUST reply (D11).
+    fix: Treat as text or answer with `bad_request`.
+    cases:
+      ws/ws-binary-frame:
+        - alt0.ws.no-reply
+  - area: Client connectors expose no error code
+    current: "`restConnector` rejects with `Error('Query failed with HTTP status …')` and `socketConnector` with the frame's `error` string, so the coordinator sees no `code`, `reason`, or `field`."
+    spec: "Rejections carry the envelope's `code`, `reason`, and `field` as structured properties (D19, D24)."
+    fix: "#1224 adds `ConnectorError` with `code`, `status`, and `reference`; `reason` and `field` need a follow-up there. Over HTTP the code also depends on this server emitting the JSON envelope."
+    cases:
+      rest/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      socket/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      rest/ws-sql-error-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+      socket/ws-sql-error-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+      rest/ws-pipeline-order:
+        - s2.error.code.missing
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.code.missing
+        - s4.error.reason.missing
+      socket/ws-pipeline-order:
+        - s2.error.code.missing
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.code.missing
+        - s4.error.reason.missing
+  - area: Malformed upgrade falls through to GET
+    current: A bad upgrade request reaches the GET handler (`app.rs`).
+    spec: 400 envelope.
+    fix: Return the upgrade rejection.
+    cases: {}
+  - area: README GET example
+    current: "`?query={…}` is documented but the code reads flat parameters."
+    spec: Flat parameters (D2).
+    fix: Fix the README.
+    cases: {}
+  - area: CORS and caching headers
+    current: No `Access-Control-Expose-Headers`; no cache headers.
+    spec: Expose `ETag`; caching optional (D14).
+    fix: Edit `CorsLayer`; add cache headers if wanted.
+    cases: {}
+  - area: Timeouts
+    current: None; DuckDB calls block tokio workers (`db.rs`).
+    spec: "`deadline_exceeded`."
+    fix: "`spawn_blocking` plus `duckdb_interrupt`."
+    cases: {}
+  - area: Large GET query strings are rejected
+    current: hyper rejects a 1 MiB request line with 431.
+    spec: Servers SHOULD accept at least 1 MiB (D13).
+    fix: Raise `http1_max_buf_size`, or document the limit.
+    cases:
+      get/large-request-1mib:
+        - arrow.status.431

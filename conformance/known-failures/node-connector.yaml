@@ -1,0 +1,77 @@
+# Known conformance failures for the in-process `NodeConnector`
+# (`packages/mosaic/core/src/connectors/NodeConnector.ts` over
+# `packages/server/duckdb/src/DuckDB.js`). Source of truth for its table in
+# ../STATUS.md; regenerate with `pnpm -F @uwdata/mosaic-conformance status`.
+server: node-connector
+failures:
+  - area: "`type` is not validated"
+    current: "Anything other than `exec` runs as `arrow` (`NodeConnector.ts`), so a missing, unknown, or non-string `type`, and `preagg`, run the SQL and resolve a result."
+    spec: "`missing_field`/`invalid_field` for a bad `type`; `unsupported_command` for `preagg` until implemented (D1, D6, D24)."
+    fix: Check `type` before dispatch and reject with a `ConnectorError`.
+    cases:
+      inproc/missing-type:
+        - error.resolved
+      inproc/unknown-type:
+        - error.resolved
+      inproc/type-not-a-string:
+        - error.resolved
+      inproc/preagg-unsupported:
+        - error.resolved
+      inproc/ws-pipeline-order:
+        - s2.error.resolved
+  - area: Rejections carry no code
+    current: DuckDB errors from `@duckdb/node-api` are rethrown as plain `Error`s; a missing or empty `sql` reaches DuckDB and fails as a binder or parser error.
+    spec: "`ConnectorError` with `code`, `reason`, and `field` (D19, D24)."
+    fix: "Map engine exceptions to codes in the connector; validate `sql` before dispatch. #1224 adds the error type without `reason`/`field`."
+    cases:
+      inproc/missing-sql:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      inproc/empty-sql:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      inproc/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      inproc/sql-unknown-table:
+        - error.code.missing
+        - error.reason.missing
+      inproc/sql-runtime-error:
+        - error.code.missing
+        - error.reason.missing
+      inproc/exec-error:
+        - error.code.missing
+        - error.reason.missing
+      inproc/arrow-multi-statement:
+        - error.code.missing
+        - error.reason.missing
+      inproc/ws-missing-sql-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+        - s1.error.field.missing
+      inproc/ws-sql-error-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+      inproc/ws-pipeline-order:
+        - s4.error.code.missing
+        - s4.error.reason.missing
+  - area: "`exec` resolves the database"
+    current: "`DuckDB.exec` returns `this`, and the connector passes it through despite the `Promise<void>` signature."
+    spec: "`exec` resolves `undefined` (D24)."
+    fix: Return nothing from the `exec` branch.
+    cases:
+      inproc/exec-acknowledged:
+        - s1.exec.result
+      inproc/exec-multi-statement:
+        - s1.exec.result
+  - area: Zero rows and a trailing semicolon go through `to_arrow_ipc`
+    current: "`arrowBuffer` wraps the SQL as `to_arrow_ipc((sql))`, so a trailing `;` is a parse error and a zero-row result yields `[]`, which does not decode to a table."
+    spec: Trailing `;` allowed (D16); a zero-row result decodes with its schema (D24).
+    fix: Strip a trailing `;`; emit a schema-only stream for zero rows, as the Node server also needs (D8).
+    cases:
+      inproc/arrow-trailing-semicolon:
+        - arrow.rejected
+      inproc/arrow-empty-result:
+        - arrow.decode

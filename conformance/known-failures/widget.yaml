@@ -1,0 +1,91 @@
+# Known conformance failures for the Python widget's comm handler
+# (`packages/vgplot/widget/mosaic_widget/__init__.py`, `_handle_custom_msg`),
+# driven through `packages/vgplot/widget/conformance/shim.py`. Source of truth
+# for its table in ../STATUS.md; regenerate with
+# `pnpm -F @uwdata/mosaic-conformance status`.
+server: widget
+failures:
+  - area: A malformed message gets no reply
+    current: "`content[\"uuid\"]`, `content[\"sql\"]`, and `content[\"type\"]` are read before the `try` (`__init__.py:139-143`), so a message missing any of them raises `KeyError` out of the handler and nothing is sent; the JS side's promise never settles."
+    spec: "Exactly one reply per message: an `error` reply with `missing_field` and the field name, uncorrelated (`uuid: null`) when the uuid itself is missing (D25)."
+    fix: "Move the reads inside the `try`, validate `uuid` first, and reply `{type: error, uuid: <uuid or null>, error: {...}}`."
+    cases:
+      comm/comm-missing-uuid:
+        - comm.no-reply
+      comm/missing-sql:
+        - comm.no-reply
+      comm/missing-type:
+        - comm.no-reply
+      comm/ws-missing-sql-stays-open:
+        - s1.comm.no-reply
+      comm/comm-pipeline-association:
+        - s2.comm.no-reply
+      comm/ws-pipeline-order:
+        - s2.comm.no-reply
+  - area: An invalid `uuid` is echoed and the command still runs
+    current: "`uuid` is passed through unchecked: an empty string or a number is echoed on a normal `arrow`/`exec` reply, and the SQL executes; the follow-up probe finds the table the rejected `exec` should not have created."
+    spec: "Validate `uuid` before executing; empty or non-string is `invalid_field` with `uuid: null` and nothing runs (D25)."
+    fix: Check `isinstance(uuid, str) and uuid` before dispatch.
+    cases:
+      comm/comm-empty-uuid:
+        - comm.reply.type.arrow
+        - comm.uuid.not-null
+        - comm.buffers.1
+        - comm.error.not-object
+      comm/comm-invalid-uuid-not-executed:
+        - s1.comm.reply.type.exec
+        - s1.comm.uuid.not-null
+        - s1.comm.error.not-object
+        - s2.arrow.rows
+  - area: Errors are a bare string
+    current: "Failures reply `{error: str(e), uuid}`: no `type: error` framing, and the payload is the message text rather than the `Error` envelope, so there is no `code`, `reason`, or `field`. An unknown `type` and `preagg` fall into the same path."
+    spec: "`{type: error, uuid, error: Error}` with the envelope's classification (D19, D26); `preagg` is `unsupported_command` / `command_disabled` until implemented."
+    fix: Map exceptions to codes and wrap them in the envelope; recognise `preagg`.
+    cases:
+      comm/empty-sql:
+        - comm.reply.type.missing
+        - comm.error.not-object
+      comm/unknown-type:
+        - comm.reply.type.missing
+        - comm.error.not-object
+      comm/type-not-a-string:
+        - comm.reply.type.missing
+        - comm.error.not-object
+      comm/preagg-unsupported:
+        - comm.reply.type.missing
+        - comm.error.not-object
+      comm/sql-parse-error:
+        - comm.reply.type.missing
+        - comm.error.not-object
+      comm/sql-unknown-table:
+        - comm.reply.type.missing
+        - comm.error.not-object
+      comm/sql-runtime-error:
+        - comm.reply.type.missing
+        - comm.error.not-object
+      comm/exec-error:
+        - comm.reply.type.missing
+        - comm.error.not-object
+      comm/ws-sql-error-stays-open:
+        - s1.comm.reply.type.missing
+        - s1.comm.error.not-object
+      comm/ws-pipeline-order:
+        - s4.comm.reply.type.missing
+        - s4.comm.error.not-object
+      comm/comm-pipeline-association:
+        - s4.comm.reply.type.missing
+        - s4.comm.error.not-object
+  - area: Multi-statement `arrow`
+    current: "`con.query(sql)` runs every statement and a result is returned."
+    spec: "`bad_request` / `multiple_statements` (D16)."
+    fix: Count statements with `duckdb.extract_statements()` before running.
+    cases:
+      comm/arrow-multi-statement:
+        - comm.reply.type.arrow
+        - comm.buffers.1
+        - comm.error.not-object
+  - area: JS handler
+    current: "`src/index.js` treats `error: \"\"` as success, throws on a reply whose `uuid` it does not know, and rejects with a raw string."
+    spec: Log and drop uncorrelated or unknown replies; reject with a structured error (D25, D26).
+    fix: Guard `openQueries.get`, check `typeof msg.error === 'object'`, build a `ConnectorError`. Not reachable from this target; needs a fake-model unit test in the widget package.
+    cases: {}

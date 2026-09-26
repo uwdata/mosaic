@@ -230,6 +230,43 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1
 
+  conformance:
+    dependencies:
+      '@uwdata/flechette':
+        specifier: ^2.5.0
+        version: 2.5.0
+      '@uwdata/mosaic-core':
+        specifier: workspace:*
+        version: link:../packages/mosaic/core
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.1
+    devDependencies:
+      '@duckdb/duckdb-wasm':
+        specifier: 1.33.1-dev57.0
+        version: 1.33.1-dev57.0
+      '@types/node':
+        specifier: ^26.0.0
+        version: 26.6.2
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+      '@uwdata/mosaic-duckdb':
+        specifier: workspace:*
+        version: link:../packages/server/duckdb
+      web-worker:
+        specifier: 1.2.0
+        version: 1.2.0
+      ws:
+        specifier: ^8.21.3
+        version: 8.21.3
+
   packages/examples/svelte-example:
     dependencies:
       '@uwdata/mosaic-core':
@@ -1841,6 +1878,9 @@ packages:
 
   '@types/web-bluetooth@0.0.21':
     resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
+
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
   '@typescript-eslint/eslint-plugin@8.70.1':
     resolution: {integrity: sha512-nDNrUQ/4ruSNYbu749TRY7cfrzPtoLHEXSNBI8aaNY32LlZCajixqRf3FqcKC4p5Cam4VOHYx/t+i5+nKXvrqA==}
@@ -4952,6 +4992,9 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
+  web-worker@1.2.0:
+    resolution: {integrity: sha512-PgF341avzqyx60neE9DD+XS26MMNMoUQRz9NOZwW32nPQrF6p77f1htcnjBSEV8BGMKZ16choqUG4hyI0Hx7mA==}
+
   webidl-conversions@8.0.1:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
     engines: {node: '>=20'}
@@ -6331,6 +6374,10 @@ snapshots:
   '@types/unist@3.0.3': {}
 
   '@types/web-bluetooth@0.0.21': {}
+
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 26.6.2
 
   '@typescript-eslint/eslint-plugin@8.70.1(@typescript-eslint/parser@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(supports-color@5.5.0))(supports-color@5.5.0))(@typescript/typescript6@6.0.2)(eslint@10.11.0(supports-color@5.5.0))(supports-color@5.5.0)':
     dependencies:
@@ -10007,6 +10054,8 @@ snapshots:
   wcwidth@1.0.1:
     dependencies:
       defaults: 1.0.4
+
+  web-worker@1.2.0: {}
 
   webidl-conversions@8.0.1: {}
 
