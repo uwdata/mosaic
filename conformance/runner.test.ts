@@ -81,23 +81,29 @@ describe('target state after a timeout', () => {
     }
   }, 60_000);
 
-  it('replaces an isolated in-process session and keeps going', async () => {
-    let built = 0;
+  it('disposes an isolated in-process session before replacing it, and the replacement on shutdown', async () => {
+    const events: string[] = [];
     const config: Target = {
       name: 'fake-inproc', kind: 'inproc', description: '', capabilities: new Set(['exec']), transports: ['inproc'],
-      session: async () => { built++; const slow = built === 1; return { isolated: true, query: async () => (slow ? new Promise(r => setTimeout(() => r(undefined), 200)) : undefined), dispose: async () => {} }; }
+      session: async () => {
+        const n = events.filter(e => e.startsWith('build')).length + 1;
+        events.push(`build ${n}`);
+        return {
+          isolated: true,
+          query: async () => (n === 1 ? new Promise(r => setTimeout(() => r(undefined), 200)) : undefined),
+          dispose: async () => { events.push(`dispose ${n}`); }
+        };
+      }
     };
     const harness = harnessFor(config);
     const runner = new Runner(harness, { stepTimeout: 40 });
-    try {
-      const first = await runner.run(find(harness, 'inproc/exec-acknowledged'));
-      expect(first.map(v => v.id)).toEqual(['s1.connector.no-reply', 's2.blocked.timeout']);
-      expect(runner.fatal).toBeUndefined();
-      const second = await runner.run(find(harness, 'inproc/exec-acknowledged'));
-      expect(second.map(v => v.id)).toEqual(['s2.arrow.not-bytes']);
-      expect(built).toBe(2);
-    } finally {
-      await runner.dispose();
-    }
+    const first = await runner.run(find(harness, 'inproc/exec-acknowledged'));
+    expect(first.map(v => v.id)).toEqual(['s1.connector.no-reply', 's2.blocked.timeout']);
+    expect(runner.fatal).toBeUndefined();
+    const second = await runner.run(find(harness, 'inproc/exec-acknowledged'));
+    expect(second.map(v => v.id)).toEqual(['s2.arrow.not-bytes']);
+    expect(events).toEqual(['build 1', 'dispose 1', 'build 2']);
+    await runner.dispose();
+    expect(events).toEqual(['build 1', 'dispose 1', 'build 2', 'dispose 2']);
   });
 });

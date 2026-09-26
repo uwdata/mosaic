@@ -110,6 +110,28 @@ describe('diagnostics', () => {
   });
 });
 
+// Bounds the schema itself imposes, one assertion each, so that loosening a
+// constraint (dropping `minimum: 0`, say) is caught here even though the
+// remaining tests only look at which code permits a field.
+describe('value bounds', () => {
+  const bounds: Array<[what: string, envelope: Record<string, unknown>, violation: string]> = [
+    ['empty catalog', { code: 'table_not_found', reason: 'materialization_missing', reference: { catalog: '', schema: ['s'], table: 't' } }, 'e.minlength.reference.catalog'],
+    ['empty schema component', { code: 'table_not_found', reason: 'materialization_missing', reference: { catalog: 'c', schema: ['s', ''], table: 't' } }, 'e.minlength.reference.schema.1'],
+    ['empty field', { code: 'bad_request', reason: 'invalid_field', field: '' }, 'e.minlength.field'],
+    ['negative offset', { code: 'forbidden', reason: 'policy_denied', diagnostics: [{ message: 'x', location: { start: -1 } }] }, 'e.minimum.diagnostics.0.location.start'],
+    ['location extras', { code: 'forbidden', reason: 'policy_denied', diagnostics: [{ message: 'x', location: { start: 0, line: 1 } }] }, 'e.additional.diagnostics.0.location.line'],
+    ['subject extras', { code: 'forbidden', reason: 'policy_denied', diagnostics: [{ message: 'x', subject: { kind: 'table', name: 'q', table: 'q' } }] }, 'e.additional.diagnostics.0.subject.table'],
+    ['negative retry', { code: 'resource_exhausted', reason: 'resource_limit_exceeded', retryAfterMs: -1 }, 'e.minimum.retryAfterMs'],
+    ['fractional retry', { code: 'resource_exhausted', reason: 'resource_limit_exceeded', retryAfterMs: 1.5 }, 'e.type.retryAfterMs'],
+    ['empty diagnosticId', { code: 'internal_error', reason: 'internal_failure', diagnosticId: '' }, 'e.minlength.diagnosticId'],
+    ['numeric diagnosticId', { code: 'internal_error', reason: 'internal_failure', diagnosticId: 7 }, 'e.type.diagnosticId']
+  ];
+
+  it.each(bounds)('rejects %s', (_, envelope, violation) => {
+    expect(ids('Error', error(envelope))).toEqual([violation]);
+  });
+});
+
 describe('operational metadata', () => {
   it('allows diagnosticId on any code and retryAfterMs only on resource_exhausted', () => {
     expect(ids('Error', error({ code: 'internal_error', reason: 'internal_failure', diagnosticId: 'req_01J9' }))).toEqual([]);
