@@ -2,25 +2,21 @@ import { readFileSync } from 'node:fs';
 import http from 'node:http';
 import http2 from 'node:http2';
 import url from 'node:url';
-import { WebSocketServer } from 'ws';
 import { findCertificates } from './https.js';
 
 export function dataServer(db, {
   rest = true,
-  socket = true,
   port = 3000
 } = {}) {
   const handleQuery = queryHandler(db);
   const certificates = findCertificates();
   const secure = !!certificates;
   const app = createHTTPServer(handleQuery, rest, certificates);
-  if (socket) createSocketServer(app, handleQuery);
 
   const server = app.listen(port);
   console.log(`Data server running on port ${port}`);
   if (secure) console.log(`  TLS certificate: ${certificates.cert}`);
   if (rest) console.log(`  http${secure ? 's' : ''}://localhost:${port}/`);
-  if (socket) console.log(`  ws${secure ? 's' : ''}://localhost:${port}/`);
   return server;
 }
 
@@ -62,19 +58,6 @@ function createHTTPServer(handleQuery, rest, certificates) {
       default:
         res.error(`Unsupported HTTP method: ${req.method}`, 400);
     }
-  });
-}
-
-function createSocketServer(server, handleQuery) {
-  const wss = new WebSocketServer({ server });
-
-  wss.on('connection', socket => {
-    const res = socketResponse(socket);
-    // answer messages in the order received, so clients can match by position
-    let last = Promise.resolve();
-    socket.on('message', data => {
-      last = last.then(() => handleQuery(res, data));
-    });
   });
 }
 
@@ -139,25 +122,4 @@ function httpResponse(res) {
       res.end(String(err));
     }
   }
-}
-
-export function socketResponse(ws) {
-  const STRING = { binary: false, fin: true };
-  const BINARY = { binary: true, fin: true };
-
-  return {
-    arrow(data) {
-      ws.send(Buffer.concat(data), BINARY);
-    },
-    json(data) {
-      ws.send(JSON.stringify(data), STRING);
-    },
-    done() {
-      this.json({});
-    },
-    error(err) {
-      console.error(err);
-      this.json({ error: String(err) });
-    }
-  };
 }

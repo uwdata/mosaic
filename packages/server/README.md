@@ -11,7 +11,7 @@ pnpm mkcert
 pnpm server:node # or server:rust / server:go
 ```
 
-Connect to `https://localhost:3000` or `wss://localhost:3000`. The certificate also covers `127.0.0.1` and `::1`. HTTPS supports HTTP/2 and HTTP/1.1. Python's current server does not participate in this setup.
+Connect to `https://localhost:3000`. The certificate also covers `127.0.0.1` and `::1`. HTTPS supports HTTP/2 and HTTP/1.1. Python's current server does not participate in this setup.
 
 The helper uses [FiloSottile/mkcert](https://github.com/FiloSottile/mkcert) from `PATH`, or downloads a pinned, checksum-verified native binary into the OS user cache under `mosaic/mkcert`. This is not the npm package named `mkcert`; no Go installation is needed. Downloads and trust installation happen only when you run the helper.
 
@@ -34,7 +34,7 @@ Each directory contains `localhost.pem` and `localhost-key.pem`. mkcert keeps it
 3. For Rust, a complete pair at its compile-time `CARGO_MANIFEST_DIR`.
 4. A complete pair in the shared directory above.
 
-Incomplete pairs are skipped; files from different directories are never combined. An invalid selected pair fails startup. Without a pair, servers use plaintext HTTP/WebSockets. Rust retains its existing dual HTTP/HTTPS listener when certificates are present.
+Incomplete pairs are skipped; files from different directories are never combined. An invalid selected pair fails startup. Without a pair, servers use plaintext HTTP. Rust retains its existing dual HTTP/HTTPS listener when certificates are present.
 
 To override shared certificates, place or mount a pair in the working directory. `pnpm server:node` runs from the repository root; `server:rust` and `server:go` run from their package directories. PEM files are ignored throughout the repository.
 
