@@ -59,7 +59,7 @@ The Mosaic project consists of a suite of packages.
   Declarative specification of Mosaic-powered applications as JSON or YAML files.
   This package provides a parser and code generation framework for reading specifications in a JSON format and generating live Mosaic visualizations and dashboards using the [`vgplot`](/vgplot/) API.
 * [`duckdb-server`](/server/):
-  A Python-based server that runs a local DuckDB instance and supports queries over Web Sockets or HTTP, returning data in [Apache Arrow](https://arrow.apache.org/) or JSON format.
+  A Python-based server that runs a local DuckDB instance and supports queries over HTTP, returning data in [Apache Arrow](https://arrow.apache.org/) or JSON format.
 * [`mosaic-widget`](/jupyter/):
   A Jupyter widget for Mosaic that renders vgplot specifications in Jupyter notebook cells, with data processing by DuckDB in the Python kernel.
 

@@ -1,6 +1,6 @@
 # Mosaic DuckDB Server
 
-The Mosaic `duckdb-server` package provides a Python-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
+The Mosaic `duckdb-server` package provides a Python-based server that runs a local DuckDB instance and supports queries over HTTP, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
 
 ::: tip
 This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` from the [`mosaic-core`](/core/) package.
