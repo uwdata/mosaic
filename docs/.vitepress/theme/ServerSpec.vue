@@ -9,7 +9,7 @@ import schemasText from '../../../conformance/schemas.yaml?raw';
 const SCALAR_URL = 'https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.68.0';
 
 // Scalar does not dereference cross-file $refs, so inline schemas.yaml into
-// each document's components.schemas. Mirrors conformance/index.html.
+// each document's components.schemas.
 const shared = parse(schemasText);
 function inline(doc) {
   const text = JSON.stringify({ ...doc, components: { ...doc.components, schemas: shared.$defs } })
