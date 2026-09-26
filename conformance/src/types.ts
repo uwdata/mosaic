@@ -2,12 +2,12 @@
 // headers, and ordering; command transports go through a `Connector` and are
 // checked for what the coordinator can observe: results, rejections, and
 // association of concurrent calls.
-export type WireTransport = 'post' | 'get' | 'ws';
+export type WireTransport = 'post' | 'get' | 'ws' | 'comm';
 export type CommandTransport = 'rest' | 'socket' | 'inproc';
 export type Transport = WireTransport | CommandTransport;
 export type Layer = 'wire' | 'command';
 
-export const wireTransports: readonly WireTransport[] = ['post', 'get', 'ws'];
+export const wireTransports: readonly WireTransport[] = ['post', 'get', 'ws', 'comm'];
 export const commandTransports: readonly CommandTransport[] = ['rest', 'socket', 'inproc'];
 
 export function layerOf(transport: Transport): Layer {
@@ -116,6 +116,9 @@ export interface RawRequest {
 
 export interface Step {
   transport?: WireTransport;
+  // Comm only: `auto` (default) gives the request a fresh uuid; `manual`
+  // sends it exactly as written so malformed correlation can be exercised.
+  correlation?: 'auto' | 'manual';
   request?: Record<string, unknown>;
   raw?: RawRequest;
   headers?: Record<string, string>;
@@ -130,6 +133,7 @@ export interface CaseDefinition {
   transports?: WireTransport[];
   layers?: Layer[];
   smoke?: boolean;
+  correlation?: 'auto' | 'manual';
   requires?: Capability[];
   unless?: Capability[];
   request?: Record<string, unknown>;
@@ -190,4 +194,24 @@ export interface ConnectorTimeout {
 
 export type ConnectorResponse = ConnectorResolved | ConnectorRejected | ConnectorTimeout;
 
-export type Response = HttpResponse | WsResponse | HttpFailure | ConnectorResponse;
+export interface CommReply {
+  content: unknown;
+  buffers: Uint8Array[];
+}
+
+// One handler invocation as seen through the shim: every reply it sent, and
+// whether it raised. `uuid` is what the harness put in the request, or
+// undefined when the request carried no valid one.
+export interface CommResponse {
+  kind: 'comm';
+  uuid: string | undefined;
+  replies: CommReply[];
+  raised?: string;
+}
+
+export interface CommTimeout {
+  kind: 'comm-timeout';
+  after: number;
+}
+
+export type Response = HttpResponse | WsResponse | HttpFailure | ConnectorResponse | CommResponse | CommTimeout;

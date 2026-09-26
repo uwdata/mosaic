@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { loadCases, repoRoot } from '../src/cases.ts';
+import type { CommSpawn } from '../src/comm.ts';
 import type { Session } from '../src/session.ts';
 import { nodeSession, wasmSession } from './inproc.ts';
 import type { Capability, Transport } from '../src/types.ts';
@@ -25,6 +26,7 @@ export interface Target {
   smoke?: Transport[];
   command?: (port: number) => ServerCommand;
   session?: (url: string | undefined) => Promise<Session>;
+  comm?: CommSpawn;
 }
 
 // Every server accepts `--port`, so an adapter is just the launcher plus any
@@ -98,6 +100,14 @@ export const targets: Record<string, Target> = {
     capabilities: new Set(['exec', 'files']),
     transports: ['inproc'],
     session: () => nodeSession()
+  },
+  widget: {
+    name: 'widget',
+    kind: 'comm',
+    description: '`MosaicWidget._handle_custom_msg` (`packages/vgplot/widget/mosaic_widget/__init__.py`), driven over stdio by `packages/vgplot/widget/conformance/shim.py`; this exercises the Python callback boundary, not Jupyter message scheduling',
+    capabilities: new Set(['exec', 'files']),
+    transports: ['comm'],
+    comm: { cmd: 'uv', args: ['run', 'python', 'conformance/shim.py'], cwd: path.join(repoRoot, 'packages/vgplot/widget') }
   },
   wasm: {
     name: 'wasm',

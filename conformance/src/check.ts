@@ -1,7 +1,7 @@
 import { arrowViolations } from './arrow.ts';
 import { substitute } from './cases.ts';
 import { schemaViolations } from './schema.ts';
-import { canonicalStatus, type ConnectorResponse, type Expectation, type Matcher, type Response, type TableReference, type Transport, type Violation, type WsResponse } from './types.ts';
+import { canonicalStatus, type CommResponse, type CommTimeout, type ConnectorResponse, type ErrorExpectation, type Expectation, type Matcher, type Response, type TableReference, type Transport, type Violation, type WsResponse } from './types.ts';
 
 const arrowMediaType = 'application/vnd.apache.arrow.stream';
 const textDecoder = new TextDecoder();
@@ -45,6 +45,9 @@ export function checkResponse(
   }
   if (response.kind === 'connector' || response.kind === 'connector-rejected' || response.kind === 'connector-timeout') {
     return checkConnectorResponse(expectation, response, sql);
+  }
+  if (response.kind === 'comm' || response.kind === 'comm-timeout') {
+    return checkCommResponse(expectation, response, sql);
   }
 
   const out: Violation[] = [];
@@ -100,7 +103,7 @@ export function checkResponse(
   }
 
   if (expectation.error) {
-    const { code, reason, field } = expectation.error;
+    const { code } = expectation.error;
     let text: string | undefined;
     if (response.kind === 'http') {
       const status = expectation.error.status ?? canonicalStatus[code];
@@ -118,12 +121,8 @@ export function checkResponse(
       if (parsed === undefined || typeof parsed !== 'object' || parsed === null) {
         out.push(v('error.not-json', `error body is not a JSON object: ${describeText(text)}`));
       } else {
-        out.push(...schemaViolations('error.schema', 'Error', parsed));
-        const envelope = parsed as { code?: unknown; reason?: unknown; field?: unknown; diagnostics?: unknown; diagnosticId?: unknown; retryAfterMs?: unknown };
-        if (envelope.code !== code) out.push(v(`error.code.${token(envelope.code)}`, `code ${JSON.stringify(envelope.code)} != ${code}`));
-        if (reason !== undefined && envelope.reason !== reason) out.push(v(`error.reason.${token(envelope.reason)}`, `reason ${JSON.stringify(envelope.reason)} != ${reason}`));
-        if (field !== undefined && envelope.field !== field) out.push(v(`error.field.${token(envelope.field)}`, `field ${JSON.stringify(envelope.field)} != ${field}`));
-        out.push(...locationViolations(envelope.diagnostics, sql));
+        out.push(...envelopeViolations(parsed, expectation.error, sql));
+        const envelope = parsed as { diagnosticId?: unknown; retryAfterMs?: unknown };
         if (response.kind === 'http') {
           const requestId = response.headers.get('x-request-id');
           if (requestId !== null && typeof envelope.diagnosticId === 'string' && requestId !== envelope.diagnosticId) {
@@ -156,6 +155,76 @@ export function checkResponse(
     throw new Error('status/headers/empty expectations only apply to HTTP transports');
   }
 
+  return out;
+}
+
+// The error envelope check shared by every transport that carries one as
+// JSON: schema, then the code, reason, and field the case names, then
+// diagnostic spans.
+function envelopeViolations(envelope: unknown, expected: ErrorExpectation, sql: string | undefined): Violation[] {
+  const out = schemaViolations('error.schema', 'Error', envelope);
+  const e = envelope as { code?: unknown; reason?: unknown; field?: unknown; diagnostics?: unknown };
+  if (e.code !== expected.code) out.push(v(`error.code.${token(e.code)}`, `code ${JSON.stringify(e.code)} != ${expected.code}`));
+  if (expected.reason !== undefined && e.reason !== expected.reason) out.push(v(`error.reason.${token(e.reason)}`, `reason ${JSON.stringify(e.reason)} != ${expected.reason}`));
+  if (expected.field !== undefined && e.field !== expected.field) out.push(v(`error.field.${token(e.field)}`, `field ${JSON.stringify(e.field)} != ${expected.field}`));
+  out.push(...locationViolations(e.diagnostics, sql));
+  return out;
+}
+
+// A comm invocation is judged on what the handler sent: exactly one reply,
+// echoing the request's uuid (or `null` when the request had no valid one),
+// framed as `{type, uuid}` with the payload nested or in a buffer. The
+// shim's own failures never reach here; they throw in CommClient.
+function checkCommResponse(expectation: Expectation, response: CommResponse | CommTimeout, sql: string | undefined): Violation[] {
+  if (response.kind === 'comm-timeout') {
+    return [v('comm.timeout', `handler did not finish within ${response.after} ms`)];
+  }
+  const out: Violation[] = [];
+  if (response.replies.length === 0) {
+    return [v('comm.no-reply', response.raised ? `handler raised without replying: ${response.raised}` : 'handler finished without replying')];
+  }
+  if (response.raised) out.push(v('comm.handler-raised', `handler raised after replying: ${response.raised}`));
+  if (response.replies.length > 1) out.push(v('comm.surplus-reply', `${response.replies.length} replies to one message`));
+  const reply = response.replies[0];
+  if (!isPlainObject(reply.content)) {
+    out.push(v('comm.reply.not-object', `reply is not a JSON object: ${describeValue(reply.content)}`));
+    return out;
+  }
+  const content = reply.content as { type?: unknown; uuid?: unknown; result?: unknown; error?: unknown };
+  const expectedType = expectation.arrow ? 'arrow' : expectation.exec ? 'exec' : expectation.json ? 'preagg' : expectation.error ? 'error' : undefined;
+  if (expectedType !== undefined && content.type !== expectedType) {
+    out.push(v(`comm.reply.type.${token(content.type)}`, `reply type ${JSON.stringify(content.type)} != ${expectedType}`));
+  }
+  if (response.uuid === undefined) {
+    if (content.uuid !== null) out.push(v('comm.uuid.not-null', `reply to a request without a valid uuid must carry uuid null, got ${JSON.stringify(content.uuid)}`));
+  } else if (content.uuid !== response.uuid) {
+    out.push(v(`comm.uuid.${content.uuid === undefined ? 'missing' : 'mismatch'}`, `reply uuid ${JSON.stringify(content.uuid)} != ${response.uuid}`));
+  }
+  const buffers = (n: number) => {
+    if (reply.buffers.length !== n) out.push(v(`comm.buffers.${reply.buffers.length}`, `${reply.buffers.length} buffer(s) != ${n}`));
+  };
+
+  if (expectation.arrow) {
+    buffers(1);
+    if (content.type === 'arrow') out.push(...schemaViolations('comm.schema', 'CommArrowReply', content));
+    if (reply.buffers.length >= 1) out.push(...arrowViolations(reply.buffers[0], expectation.arrow));
+  }
+  if (expectation.exec) {
+    buffers(0);
+    if (content.type === 'exec') out.push(...schemaViolations('comm.schema', 'CommExecReply', content));
+  }
+  if (expectation.json) {
+    buffers(0);
+    if (content.type === 'preagg') out.push(...schemaViolations('comm.schema', 'CommPreaggReply', content));
+    if (isPlainObject(content.result)) out.push(...schemaViolations('json.schema', expectation.json, content.result));
+    else out.push(v('json.not-object', `result is not an object: ${describeValue(content.result)}`));
+  }
+  if (expectation.error) {
+    buffers(0);
+    if (content.type === 'error') out.push(...schemaViolations('comm.schema', 'CommErrorReply', content, path => path.startsWith('/error')));
+    if (isPlainObject(content.error)) out.push(...envelopeViolations(content.error, expectation.error, sql));
+    else out.push(v('comm.error.not-object', `error payload is not an envelope object: ${describeValue(content.error)}`));
+  }
   return out;
 }
 
@@ -375,11 +444,13 @@ export function captureValues(
       }
     } else if (scope === 'body' || scope === 'sqlname') {
       const text = response.kind === 'http' ? textDecoder.decode(response.body) : response.kind === 'ws' ? response.text ?? '' : '';
-      const root = response.kind === 'connector' ? response.result : parseJson(text);
+      const root = response.kind === 'connector' ? response.result
+        : response.kind === 'comm' ? (response.replies[0]?.content as { result?: unknown } | undefined)?.result
+          : parseJson(text);
       const value = rest.reduce<unknown>((node, part) => (node !== null && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined), root);
       if (value === undefined) {
         if (optional) vars[name] = '';
-        else out.push(v(`capture.${name}`, `cannot capture ${scope}.${key} from ${response.kind === 'connector' ? describeValue(response.result) : describeText(text)}`));
+        else out.push(v(`capture.${name}`, `cannot capture ${scope}.${key} from ${response.kind === 'connector' || response.kind === 'comm' ? describeValue(root) : describeText(text)}`));
       } else if (scope === 'sqlname') {
         const rendered = sqlName(value);
         if (rendered === undefined) out.push(v(`capture.${name}`, `${key} is not a TableReference: ${JSON.stringify(value)}`));

@@ -11,7 +11,7 @@ const begin = '<!-- conformance:begin -->';
 const end = '<!-- conformance:end -->';
 const target = path.resolve(import.meta.dirname, 'STATUS.md');
 
-const order = ['go', 'go-cache', 'go-gatekeeper', 'rust', 'python', 'node', 'node-connector', 'wasm'];
+const order = ['go', 'go-cache', 'go-gatekeeper', 'rust', 'python', 'node', 'node-connector', 'wasm', 'widget'];
 const headings: Record<string, string> = {
   go: '## Go `duckdb-server-go`',
   'go-cache': '### With `--cache-control`',
@@ -20,7 +20,8 @@ const headings: Record<string, string> = {
   python: '## Python `duckdb-server`',
   node: '## Node `@uwdata/mosaic-duckdb`',
   'node-connector': '## In-process `NodeConnector`',
-  wasm: '## In-process `DuckDBWASMConnector`'
+  wasm: '## In-process `DuckDBWASMConnector`',
+  widget: '## Python widget (Jupyter comm)'
 };
 
 

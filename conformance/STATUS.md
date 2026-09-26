@@ -41,6 +41,8 @@ Where the servers disagreed, the spec picks one behaviour. Each is revisable.
 | D21 | `diagnostics` | Optional array of typed findings (`message`, `provider`, `rule`, `subject`, `location`) on any error; `subject` is a `table` or `function` with the D20 namespace components; `location` is zero-based UTF-8 byte offsets with an exclusive `end`. Diagnostics may be incomplete or omitted, never authorize or trigger recovery, and are subject to the deployment's disclosure policy. Gatekeeper violations map one-to-one; its successful-binding evidence (`objects`, `functions`, `caller_objects`) is not an error diagnostic. | Gatekeeper already returns per-violation rule, message, object, function, and position; without a typed shape each server would flatten them into `error` text or invent a `details` bag. |
 | D22 | `diagnosticId` and `retryAfterMs` | `diagnosticId` is an optional server-generated opaque id of one command attempt, also sendable as `X-Request-Id` over HTTP (equal when both present); clients never supply it and WebSocket replies stay positional. `retryAfterMs` is an optional non-negative advisory delay, only on `resource_exhausted`; HTTP `Retry-After` is `ceil(retryAfterMs / 1000)`. No generic `retryable` flag. | A client-supplied request id would become a correlation channel by habit and erode D11; whether a retry is safe depends on the command's publication guarantee, not on the error. |
 | D24 | Command layer | Cases free of encoding concerns also run through a `Connector`: the real `restConnector`/`socketConnector` against a server (all cases on the reference server, `smoke: true` cases on the rest), and in-process connectors as targets of their own. At that layer a result must decode to the expected table in whatever IPC framing (D8 is a wire rule; `Connector` promises decodable `ArrowIPCBytes`), `exec` resolves `undefined`, rejections carry `code`/`reason`/`field`/`reference` as structured properties, and concurrent calls are checked for association rather than order. Encoded size, GET semantics, framing, headers, and positional ordering stay wire-only. | Running the six hand-written connector smoke cases only; applying the stream/EOS framing checks to connectors, which would have flagged behaviour the coordinator does not depend on. |
+| D25 | Comm correlation | Over the widget's Jupyter comm every message gets exactly one reply, correlated by a client-chosen `uuid` unique among its outstanding requests. `uuid` is validated before anything else: absent is `missing_field`, present but not a non-empty string is `invalid_field`, both with `field: uuid`, replied with `uuid: null`, and no SQL runs. Replies may arrive in any order; clients must log and drop `null` or unknown `uuid`s (a client-side test, not this suite). | The widget echoes whatever `uuid` it received, including `""` and `42`, and runs the command anyway; a missing `uuid` raises `KeyError` before the `try`, so no reply is sent and the JS promise hangs. |
+| D26 | Comm framing | Replies are a flat `{type, uuid}` envelope with the payload nested: `arrow` as exactly one IPC-stream buffer, `exec` bare, `preagg` under `result` (`PreaggResponse`), errors under `error` (`Error`). `ExecResponse` and `PreaggResponse` are closed objects, so spreading them into the envelope is not possible; nesting the error too keeps one shape. An implementation without preaggregation answers `preagg` with `unsupported_command` / `command_disabled`. | The widget sends `{error: "<text>", uuid}`, which the JS side detects by truthiness and rejects as a raw string. |
 | D23 | Failure guarantees | `arrow` and `preagg` publish nothing on failure and `preagg` publication is atomic. `exec` guarantees neither atomicity nor rollback: a later statement may fail after earlier ones took effect, committed effects may remain, an explicit transaction follows the engine's transaction semantics, and the server never retries on the client's behalf. `deadline_exceeded` follows the same per-command rule. `ReadOnlySql` prohibits state changes anywhere in the statement, not only at the root. Cancellation is out of scope. | DuckDB has no data-modifying CTEs, so the nested-DML rule is unobservable on the reference servers and stated for engines that do. An earlier wording said the server "does not roll back", which would have forbidden cleaning up an aborted transaction before a pooled connection is reused. |
 
 ## Common gaps (all four servers)
@@ -71,8 +73,11 @@ CONFORMANCE_TARGET=go pnpm -F @uwdata/mosaic-conformance suite
 ```
 
 Targets are defined in `implementations/index.ts`: the servers `node`,
-`python`, `rust`, `go`, `go-cache`, `go-gatekeeper`, and the in-process
-connectors `node-connector` and `wasm`. Each declares capabilities
+`python`, `rust`, `go`, `go-cache`, `go-gatekeeper`, the in-process
+connectors `node-connector` and `wasm`, and the Python `widget`, whose comm
+handler is driven over stdio by `packages/vgplot/widget/conformance/shim.py`
+(the Python callback boundary, not Jupyter's message scheduling; the JS side
+of the widget is out of reach here). Each declares capabilities
 (`exec`, `preagg`, `caching`, `files`, `policy`), which cases gate on with
 `requires`/`unless`, and transports. Wire transports (`post`, `get`, `ws`)
 check the encoded protocol; command transports (`rest`, `socket`, `inproc`)
@@ -141,7 +146,7 @@ command-layer result and rejection mapping, session deadlines, case
 applicability, and the ratchet comparison) without a target; the root
 `pnpm test` includes them.
 
-CI runs all eight targets on every pull request that touches a server
+CI runs all nine targets on every pull request that touches a server
 or the spec (`.github/workflows/conformance.yml`) and fails if the tables
 below are stale.
 
@@ -723,6 +728,47 @@ Configuration: `DuckDBWASMConnector` (`packages/mosaic/core/src/connectors/wasm.
   - `inproc/ws-pipeline-order`: `s4.error.code.missing`, `s4.error.reason.missing`
 - **Multi-statement `arrow` returns the first statement**
   - `inproc/arrow-multi-statement`: `error.resolved`
+
+</details>
+
+## Python widget (Jupyter comm)
+
+Configuration: `MosaicWidget._handle_custom_msg` (`packages/vgplot/widget/mosaic_widget/__init__.py`), driven over stdio by `packages/vgplot/widget/conformance/shim.py`; this exercises the Python callback boundary, not Jupyter message scheduling. Transports: comm.
+
+| Area | Current | Spec | Fix | Cases |
+|------|---------|------|-----|-------|
+| A malformed message gets no reply | `content["uuid"]`, `content["sql"]`, and `content["type"]` are read before the `try` (`__init__.py:139-143`), so a message missing any of them raises `KeyError` out of the handler and nothing is sent; the JS side's promise never settles. | Exactly one reply per message: an `error` reply with `missing_field` and the field name, uncorrelated (`uuid: null`) when the uuid itself is missing (D25). | Move the reads inside the `try`, validate `uuid` first, and reply `{type: error, uuid: <uuid or null>, error: {...}}`. | 6 |
+| An invalid `uuid` is echoed and the command still runs | `uuid` is passed through unchecked: an empty string or a number is echoed on a normal `arrow`/`exec` reply, and the SQL executes; the follow-up probe finds the table the rejected `exec` should not have created. | Validate `uuid` before executing; empty or non-string is `invalid_field` with `uuid: null` and nothing runs (D25). | Check `isinstance(uuid, str) and uuid` before dispatch. | 2 |
+| Errors are a bare string | Failures reply `{error: str(e), uuid}`: no `type: error` framing, and the payload is the message text rather than the `Error` envelope, so there is no `code`, `reason`, or `field`. An unknown `type` and `preagg` fall into the same path. | `{type: error, uuid, error: Error}` with the envelope's classification (D19, D26); `preagg` is `unsupported_command` / `command_disabled` until implemented. | Map exceptions to codes and wrap them in the envelope; recognise `preagg`. | 11 |
+| Multi-statement `arrow` | `con.query(sql)` runs every statement and a result is returned. | `bad_request` / `multiple_statements` (D16). | Count statements with `duckdb.extract_statements()` before running. | 1 |
+| JS handler | `src/index.js` treats `error: ""` as success, throws on a reply whose `uuid` it does not know, and rejects with a raw string. | Log and drop uncorrelated or unknown replies; reject with a structured error (D25, D26). | Guard `openQueries.get`, check `typeof msg.error === 'object'`, build a `ConnectorError`. Not reachable from this target; needs a fake-model unit test in the widget package. | not observable |
+
+<details><summary>Baselined violations by case</summary>
+
+- **A malformed message gets no reply**
+  - `comm/comm-missing-uuid`: `comm.no-reply`
+  - `comm/missing-sql`: `comm.no-reply`
+  - `comm/missing-type`: `comm.no-reply`
+  - `comm/ws-missing-sql-stays-open`: `s1.comm.no-reply`
+  - `comm/comm-pipeline-association`: `s2.comm.no-reply`
+  - `comm/ws-pipeline-order`: `s2.comm.no-reply`
+- **An invalid `uuid` is echoed and the command still runs**
+  - `comm/comm-empty-uuid`: `comm.reply.type.arrow`, `comm.uuid.not-null`, `comm.buffers.1`, `comm.error.not-object`
+  - `comm/comm-invalid-uuid-not-executed`: `s1.comm.reply.type.exec`, `s1.comm.uuid.not-null`, `s1.comm.error.not-object`, `s2.arrow.rows`
+- **Errors are a bare string**
+  - `comm/empty-sql`: `comm.reply.type.missing`, `comm.error.not-object`
+  - `comm/unknown-type`: `comm.reply.type.missing`, `comm.error.not-object`
+  - `comm/type-not-a-string`: `comm.reply.type.missing`, `comm.error.not-object`
+  - `comm/preagg-unsupported`: `comm.reply.type.missing`, `comm.error.not-object`
+  - `comm/sql-parse-error`: `comm.reply.type.missing`, `comm.error.not-object`
+  - `comm/sql-unknown-table`: `comm.reply.type.missing`, `comm.error.not-object`
+  - `comm/sql-runtime-error`: `comm.reply.type.missing`, `comm.error.not-object`
+  - `comm/exec-error`: `comm.reply.type.missing`, `comm.error.not-object`
+  - `comm/ws-sql-error-stays-open`: `s1.comm.reply.type.missing`, `s1.comm.error.not-object`
+  - `comm/ws-pipeline-order`: `s4.comm.reply.type.missing`, `s4.comm.error.not-object`
+  - `comm/comm-pipeline-association`: `s4.comm.reply.type.missing`, `s4.comm.error.not-object`
+- **Multi-statement `arrow`**
+  - `comm/arrow-multi-statement`: `comm.reply.type.arrow`, `comm.buffers.1`, `comm.error.not-object`
 
 </details>
 

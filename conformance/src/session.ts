@@ -11,7 +11,11 @@ export interface Session {
   dispose(): Promise<void>;
 }
 
-export type SessionFactory = () => Promise<Session>;
+export type SessionFactory<T extends Disposable = Session> = () => Promise<T>;
+
+export interface Disposable {
+  dispose(): Promise<void>;
+}
 
 // A deadline only stops the harness waiting; the query may still be running.
 // The response records that, and the manager below recreates the session
@@ -33,13 +37,13 @@ export function issue(session: Session, request: Record<string, unknown>, timeou
 // across cases (an in-process engine is the implementation under test, not
 // per-case state), except that a timed-out case leaves the session tainted
 // and it is replaced before the next one.
-export class SessionManager {
-  private current?: Promise<Session>;
+export class SessionManager<T extends Disposable = Session> {
+  private current?: Promise<T>;
   private tainted = false;
 
-  constructor(private readonly factory: SessionFactory) {}
+  constructor(private readonly factory: SessionFactory<T>) {}
 
-  async acquire(): Promise<Session> {
+  async acquire(): Promise<T> {
     if (this.tainted) {
       await this.dispose();
       this.tainted = false;

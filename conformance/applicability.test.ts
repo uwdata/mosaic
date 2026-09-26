@@ -20,6 +20,10 @@ const expected: Array<[id: string, wire: string, layers: string, smoke?: true]> 
   ['cache-error-no-store', 'get', 'wire'],
   ['cache-post-no-store', 'post', 'wire'],
   ['cache-preflight-no-store', 'post', 'wire'],
+  ['comm-missing-uuid', 'comm', 'wire'],
+  ['comm-empty-uuid', 'comm', 'wire'],
+  ['comm-invalid-uuid-not-executed', 'comm', 'wire'],
+  ['comm-pipeline-association', 'comm', 'wire'],
   ['sql-parse-error', 'post ws', 'wire command', true],
   ['sql-unknown-table', 'post ws', 'wire command'],
   ['sql-runtime-error', 'post ws', 'wire command'],
@@ -93,6 +97,19 @@ describe('case applicability', () => {
     expect(node.filter(id => id.startsWith('post/'))).toEqual(go.filter(id => id.startsWith('post/')));
     const applicable = expandCases(definitions, targets.go).filter(c => c.transport === 'rest' && c.applicable);
     expect(applicable).toHaveLength(command);
+  });
+
+  it('expands the widget over comm: every command-level case plus the comm-only ones, nothing HTTP or frame specific', () => {
+    const widget = expandCases(definitions, targets.widget);
+    expect(widget.every(c => c.transport === 'comm' && c.applicable)).toBe(true);
+    const ids = widget.map(c => c.id);
+    expect(ids).toContain('comm/comm-missing-uuid');
+    expect(ids).toContain('comm/sql-parse-error');
+    expect(ids).toContain('comm/ws-pipeline-order');
+    expect(ids).not.toContain('comm/method-put');
+    expect(ids).not.toContain('comm/large-request-1mib');
+    expect(ids).not.toContain('comm/get-arrow');
+    expect(expandCases(definitions, targets.go).map(c => c.id)).not.toContain('comm/comm-missing-uuid');
   });
 
   it('expands an in-process target over inproc only, skipping wire-only cases by layer', () => {

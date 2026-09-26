@@ -20,21 +20,26 @@ CONFORMANCE_TARGET=go pnpm -F @uwdata/mosaic-conformance suite
 ```
 
 `CONFORMANCE_TARGET` is one of the targets in `implementations/index.ts`:
-the servers `node`, `python`, `rust`, `go`, `go-cache`, `go-gatekeeper`, and
-the in-process connectors `node-connector` and `wasm`. A server target is
-built on first launch and needs its toolchain installed; set
-`CONFORMANCE_URL` to test a server you started yourself. In-process targets
-run `@uwdata/mosaic-core`'s own connectors inside the test process, the WASM
-one on the duckdb-wasm Node bundle in a worker thread.
+the servers `node`, `python`, `rust`, `go`, `go-cache`, `go-gatekeeper`, the
+in-process connectors `node-connector` and `wasm`, and the Python `widget`.
+A server target is built on first launch and needs its toolchain installed;
+set `CONFORMANCE_URL` to test a server you started yourself. In-process
+targets run `@uwdata/mosaic-core`'s own connectors inside the test process,
+the WASM one on the duckdb-wasm Node bundle in a worker thread. The widget
+target drives `MosaicWidget._handle_custom_msg` through
+`packages/vgplot/widget/conformance/shim.py` over stdio (`uv` required; the
+widget's static files must exist, empty is fine) and speaks the Jupyter comm
+framing (D25, D26).
 
 ### Layers
 
 Cases are checked at two layers, and a target declares which transports it
 runs each on:
 
-- **Wire** (`post`, `get`, `ws`): the encoded protocol. Framing, media types,
-  headers, status codes, the error envelope, and, over WebSocket, positional
-  ordering and connection lifetime.
+- **Wire** (`post`, `get`, `ws`, `comm`): the encoded protocol. Framing,
+  media types, headers, status codes, the error envelope, and, over
+  WebSocket, positional ordering and connection lifetime; over the comm,
+  `uuid` correlation and reply cardinality.
 - **Command** (`rest`, `socket`, `inproc`): what the coordinator sees through
   a `Connector`. Results must decode to the expected table whatever the IPC
   framing, `exec` resolves `undefined`, `preagg` resolves a

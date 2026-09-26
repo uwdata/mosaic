@@ -55,6 +55,33 @@ info:
       MUST NOT require a header the browser `WebSocket` API cannot send unless
       a proxy adds it. Authentication failure on the upgrade returns an HTTP
       `401` with the `Error` envelope instead of upgrading.
+
+    ### Jupyter comm framing
+
+    The Python widget carries the same commands over a Jupyter comm between
+    the notebook front end and the kernel (`jupyter` server, `widget`
+    channel). The transport has no request order guarantee and no frames of
+    its own, so:
+
+    * The client sends a `CommRequest`: the `Request` plus a `uuid` that is
+      unique among its outstanding requests. There are no buffers on the way
+      in.
+    * The server validates `uuid` before anything else: absent is
+      `bad_request` / `missing_field`, present but not a non-empty string is
+      `bad_request` / `invalid_field`, both with `field: uuid`, and in neither
+      case is any SQL executed.
+    * Exactly one `CommReply` is sent per message. Its `uuid` echoes the
+      request's; when the request had no valid `uuid` the reply is an error
+      with `uuid: null`. `null` never appears on a success reply.
+    * Replies MAY arrive in any order; clients correlate by `uuid`, and MUST
+      log and drop a reply whose `uuid` is `null` or unknown rather than
+      fail. Conformance of that client rule is a client-side test, not part
+      of this suite.
+    * `arrow` results travel as exactly one comm buffer holding the Arrow IPC
+      stream (D8 applies). `exec`, `preagg`, and error replies carry none;
+      their payloads are nested under `result` and `error`.
+    * An implementation without preaggregation answers `preagg` with
+      `unsupported_command` / `command_disabled`.
   license:
     name: BSD-3-Clause
 
@@ -65,10 +92,26 @@ servers:
     host: localhost:3000
     protocol: ws
     description: Default for all reference servers. `wss` when TLS is configured.
+  jupyter:
+    host: kernel
+    protocol: jupyter-comm
+    description: The Mosaic widget's comm between notebook front end and kernel; see *Jupyter comm framing*.
 
 channels:
+  widget:
+    address: mosaic_widget
+    servers:
+      - $ref: '#/servers/jupyter'
+    description: The widget's comm; commands in, uuid-correlated replies out, Arrow as a comm buffer.
+    messages:
+      commRequest:
+        $ref: '#/components/messages/CommRequest'
+      commReply:
+        $ref: '#/components/messages/CommReply'
   commands:
     address: /
+    servers:
+      - $ref: '#/servers/local'
     description: Single bidirectional channel carrying commands and their positional replies.
     messages:
       command:
@@ -83,6 +126,19 @@ channels:
         $ref: '#/components/messages/Error'
 
 operations:
+  receiveComm:
+    action: receive
+    channel:
+      $ref: '#/channels/widget'
+    summary: The kernel receives a comm message and replies exactly once, correlated by uuid.
+    messages:
+      - $ref: '#/channels/widget/messages/commRequest'
+    reply:
+      channel:
+        $ref: '#/channels/widget'
+      messages:
+        - $ref: '#/channels/widget/messages/commReply'
+
   receiveCommand:
     action: receive
     channel:
@@ -112,6 +168,39 @@ operations:
 
 components:
   messages:
+    CommRequest:
+      name: CommRequest
+      title: Comm request
+      contentType: application/json
+      payload:
+        $ref: './schemas.yaml#/$defs/CommRequest'
+      examples:
+        - payload: { type: arrow, sql: "SELECT 1 AS x", uuid: "5f0b2d0e-7c1a-4c1e-9c3f-2a5e6d7b8c9d" }
+
+    CommReply:
+      name: CommReply
+      title: Comm reply
+      contentType: application/json
+      payload:
+        $ref: './schemas.yaml#/$defs/CommReply'
+      examples:
+        - name: arrow
+          summary: One buffer with the IPC stream accompanies this content.
+          payload: { type: arrow, uuid: "5f0b2d0e-7c1a-4c1e-9c3f-2a5e6d7b8c9d" }
+        - name: exec
+          payload: { type: exec, uuid: "5f0b2d0e-7c1a-4c1e-9c3f-2a5e6d7b8c9d" }
+        - name: error
+          payload:
+            type: error
+            uuid: "5f0b2d0e-7c1a-4c1e-9c3f-2a5e6d7b8c9d"
+            error: { error: "Missing required field: sql", code: bad_request, reason: missing_field, field: sql }
+        - name: uncorrelated
+          summary: The request had no valid uuid, so nothing ran and the reply cannot be correlated.
+          payload:
+            type: error
+            uuid: null
+            error: { error: "Missing required field: uuid", code: bad_request, reason: missing_field, field: uuid }
+
     Command:
       name: Command
       title: Command (text frame)

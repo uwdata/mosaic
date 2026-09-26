@@ -1,6 +1,7 @@
 import { afterAll, describe } from 'vitest';
 import { captureValues, checkResponse, surplusViolations } from './src/check.ts';
 import { expandRequest, unresolvedVars } from './src/cases.ts';
+import { CommClient, newUuid } from './src/comm.ts';
 import { conformanceTest, createHarness, skipReason, type Harness } from './src/harness.ts';
 import { sendHttp } from './src/http.ts';
 import { clientSession, issue, SessionManager, type Session } from './src/session.ts';
@@ -10,8 +11,11 @@ import { WsClient } from './src/ws.ts';
 const harness = createHarness();
 
 // One session per command transport for the whole run; see SessionManager
-// for when it is replaced.
+// for when it is replaced. The comm shim is managed the same way.
 const sessions = new Map<CommandTransport, SessionManager>();
+const comm = harness.config.kind === 'comm'
+  ? new SessionManager<CommClient>(async () => new CommClient(harness.config.comm!))
+  : undefined;
 
 function manager(transport: CommandTransport): SessionManager {
   let found = sessions.get(transport);
@@ -28,6 +32,7 @@ function manager(transport: CommandTransport): SessionManager {
 
 afterAll(async () => {
   for (const m of sessions.values()) await m.dispose();
+  await comm?.dispose();
 });
 
 describe(`protocol conformance: ${harness.config.name}`, () => {
@@ -36,7 +41,9 @@ describe(`protocol conformance: ${harness.config.name}`, () => {
       harness,
       conformanceCase.id,
       skipReason(harness.config, conformanceCase),
-      () => (layerOf(conformanceCase.transport) === 'wire' ? runWireCase(harness, conformanceCase) : runCommandCase(conformanceCase))
+      () => (conformanceCase.transport === 'comm' ? runCommCase(conformanceCase)
+        : layerOf(conformanceCase.transport) === 'wire' ? runWireCase(harness, conformanceCase)
+          : runCommandCase(conformanceCase))
     );
   }
 });
@@ -127,6 +134,59 @@ async function runCommandCase(c: ConformanceCase): Promise<Violation[]> {
   return violations;
 }
 
+// The comm wire: each step is one message to the widget handler. A fresh
+// uuid is injected unless the step (or case) says `correlation: manual`, in
+// which case the request goes exactly as written; the checker then expects
+// an uncorrelated reply when no valid uuid was sent. Pipelined steps are all
+// sent before any is awaited and associated by the shim's invocation id, so
+// reply order is free. A timeout taints the shim like any other session.
+async function runCommCase(c: ConformanceCase): Promise<Violation[]> {
+  const vars: Record<string, string> = {};
+  const violations: Violation[] = [];
+  const client = await comm!.acquire();
+  const message = (step: Step) => {
+    const request = expandRequest(step.request ?? {}, vars, 'comm');
+    const manual = (step.correlation ?? c.definition.correlation) === 'manual';
+    if (manual) {
+      const given = request.uuid;
+      return { request, uuid: typeof given === 'string' && given !== '' ? given : undefined };
+    }
+    const uuid = newUuid();
+    return { request: { ...request, uuid }, uuid };
+  };
+
+  if (c.pipeline) {
+    const pending = c.steps.map(step => { const m = message(step); return client.send(m.request, m.uuid); });
+    for (const [index, step] of c.steps.entries()) {
+      const response = await pending[index];
+      if (response.kind === 'comm-timeout') comm!.taint();
+      violations.push(...prefix(c, index, assess(c, step, response, vars)));
+    }
+    return violations;
+  }
+
+  let timedOut = false;
+  for (const [index, step] of c.steps.entries()) {
+    if (timedOut) {
+      violations.push(...prefix(c, index, [{ id: 'blocked.timeout', detail: 'skipped: an earlier step timed out and left the widget state unknown' }]));
+      continue;
+    }
+    const missing = unresolvedVars(step, vars);
+    if (missing.length) {
+      violations.push(...prefix(c, index, blocked(missing)));
+      continue;
+    }
+    const m = message(step);
+    const response = await client.send(m.request, m.uuid);
+    if (response.kind === 'comm-timeout') {
+      timedOut = true;
+      comm!.taint();
+    }
+    violations.push(...prefix(c, index, assess(c, step, response, vars)));
+  }
+  return violations;
+}
+
 function prefix(c: ConformanceCase, index: number, list: Violation[]): Violation[] {
   return c.steps.length > 1 ? list.map(x => ({ id: `s${index + 1}.${x.id}`, detail: `step ${index + 1}: ${x.detail}` })) : list;
 }
@@ -136,10 +196,10 @@ function blocked(missing: string[]): Violation[] {
 }
 
 function assess(c: ConformanceCase, step: Step, response: Response, vars: Record<string, string>): Violation[] {
-  const transport = layerOf(c.transport) === 'wire' ? step.transport ?? c.transport : c.transport;
+  const transport = c.transport === 'comm' || layerOf(c.transport) === 'command' ? c.transport : step.transport ?? c.transport;
   const sql = step.request ? expandRequest(step.request, vars, transport).sql : undefined;
   const violations = checkResponse(step.expect, response, transport, vars, typeof sql === 'string' ? sql : undefined);
-  const answered = response.kind === 'http' || response.kind === 'connector' || (response.kind === 'ws' && response.frame !== 'close' && response.frame !== 'timeout');
+  const answered = response.kind === 'http' || response.kind === 'connector' || (response.kind === 'comm' && response.replies.length > 0) || (response.kind === 'ws' && response.frame !== 'close' && response.frame !== 'timeout');
   if (answered) {
     violations.push(...captureValues(step.capture, response, vars));
   } else {

@@ -9,6 +9,7 @@ export const repoRoot = path.resolve(conformanceRoot, '..');
 const casesDir = path.join(conformanceRoot, 'cases');
 const defaultTransports: WireTransport[] = ['post', 'ws'];
 const validTransports = new Set<string>(wireTransports);
+const validCorrelation = new Set<string>(['auto', 'manual']);
 const validLayers = new Set<string>(['wire', 'command']);
 
 export function loadCaseDefinitions(): CaseDefinition[] {
@@ -42,6 +43,12 @@ function validateDefinition(def: CaseDefinition, file: string) {
     if (!validLayers.has(l)) throw new Error(`${where}: unknown layer ${l}`);
   }
   if (def.smoke && !layersOf(def).includes('command')) throw new Error(`${where}: a smoke case must apply to the command layer`);
+  for (const c of [def.correlation, ...(def.steps ?? []).map(s => s.correlation)]) {
+    if (c !== undefined && !validCorrelation.has(c)) throw new Error(`${where}: correlation must be auto or manual`);
+  }
+  if ((def.correlation === 'manual' || def.steps?.some(s => s.correlation === 'manual')) && !(def.transports ?? []).every(t => t === 'comm')) {
+    throw new Error(`${where}: manual correlation only applies to comm`);
+  }
   const hasInline = def.request !== undefined || def.raw !== undefined;
   if (hasInline === (def.steps !== undefined)) {
     throw new Error(`${where}: provide either request/raw + expect or steps`);
@@ -88,7 +95,9 @@ export interface Transports {
 // Expands definitions over a target's transports: wire transports the case
 // lists (default POST and WebSocket), command transports the target runs the
 // whole corpus on, and smoke transports the target runs only `smoke: true`
-// cases on. A case that reaches a transport of the wrong layer is expanded
+// cases on. The comm wire carries whole commands but no HTTP or frame
+// details, so every command-level case reaches it as well as the cases that
+// name it. A case that reaches a transport of the wrong layer is expanded
 // anyway and skipped as `layer` at run time, so the results record it.
 export function expandCases(definitions: CaseDefinition[], target: Transports): ConformanceCase[] {
   const cases: ConformanceCase[] = [];
@@ -102,16 +111,20 @@ export function expandCases(definitions: CaseDefinition[], target: Transports): 
       expect: definition.expect!
     }];
     const layers = layersOf(definition);
+    const listed = definition.transports ?? defaultTransports;
+    const wire = new Set<Transport>(listed.filter(t => full.has(t)));
+    if (full.has('comm') && !listed.includes('comm') && layers.includes('command')) wire.add('comm');
     const transports: Transport[] = [
-      ...(definition.transports ?? defaultTransports).filter(t => full.has(t)),
+      ...wire,
       ...commandTransports.filter(t => full.has(t) || (smoke.has(t) && definition.smoke))
     ];
     for (const transport of transports) {
+      const explicit = listed.includes(transport as WireTransport);
       cases.push({
         id: `${transport}/${definition.id}`,
         transport,
         layer: layerOf(transport),
-        applicable: layers.includes(layerOf(transport)),
+        applicable: transport === 'comm' ? explicit || layers.includes('command') : layers.includes(layerOf(transport)),
         definition,
         steps,
         pipeline: definition.pipeline === true

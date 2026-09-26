@@ -169,6 +169,83 @@ $defs:
       publication guarantee. `rows` and `bytes` are informational; clients
       MUST NOT depend on their presence or exactness.
 
+  Uuid:
+    type: string
+    minLength: 1
+    description: |
+      Client-chosen correlation id for the Jupyter comm transport, unique
+      among that client's outstanding requests. Opaque to the server.
+
+  CommRequest:
+    description: |
+      A command as sent over a Jupyter comm by the Mosaic widget: the
+      `Request` plus a `uuid` the reply echoes. Servers MUST validate `uuid`
+      before running the command: absent is `missing_field`, present but not
+      a non-empty string is `invalid_field`, both with `field: uuid`, and
+      neither executes any SQL.
+    allOf:
+      - $ref: '#/$defs/Request'
+      - type: object
+        required: [uuid]
+        properties:
+          uuid: { $ref: '#/$defs/Uuid' }
+
+  CommArrowReply:
+    type: object
+    required: [type, uuid]
+    properties:
+      type: { const: arrow }
+      uuid: { $ref: '#/$defs/Uuid' }
+    additionalProperties: false
+    description: The result travels as exactly one comm buffer holding the Arrow IPC stream.
+
+  CommExecReply:
+    type: object
+    required: [type, uuid]
+    properties:
+      type: { const: exec }
+      uuid: { $ref: '#/$defs/Uuid' }
+    additionalProperties: false
+    description: Acknowledgement of a completed `exec`; no buffers.
+
+  CommPreaggReply:
+    type: object
+    required: [type, uuid, result]
+    properties:
+      type: { const: preagg }
+      uuid: { $ref: '#/$defs/Uuid' }
+      result: { $ref: '#/$defs/PreaggResponse' }
+    additionalProperties: false
+
+  CommErrorReply:
+    type: object
+    required: [type, uuid, error]
+    properties:
+      type: { const: error }
+      uuid:
+        oneOf:
+          - $ref: '#/$defs/Uuid'
+          - type: 'null'
+        description: |
+          The request's `uuid`, or `null` when the request had no valid one
+          and the reply therefore cannot be correlated. `null` is only ever
+          sent on an error reply.
+      error: { $ref: '#/$defs/Error' }
+    additionalProperties: false
+
+  CommReply:
+    description: |
+      Exactly one reply per comm message, correlated by `uuid`. Framing is
+      the flat `type`/`uuid` envelope; the semantic payload is nested
+      (`result`, `error`) or carried as a buffer (`arrow`). Replies MAY
+      arrive in any order. Clients MUST log and drop a reply whose `uuid` is
+      `null` or unknown rather than fail.
+    oneOf:
+      - $ref: '#/$defs/CommArrowReply'
+      - $ref: '#/$defs/CommExecReply'
+      - $ref: '#/$defs/CommPreaggReply'
+      - $ref: '#/$defs/CommErrorReply'
+
   ErrorCode:
     type: string
     description: |
@@ -186,7 +263,7 @@ $defs:
       | `unauthenticated`     | 401  | Caller identity required but absent or invalid.                                        |
       | `forbidden`           | 403  | Authenticated caller denied by source/function/external-access policy, or a disallowed cross-origin request. |
       | `table_not_found`     | 404  | A table in the caller's managed namespace does not exist. `reference` MUST be included so the coordinator can rebuild it. |
-      | `unsupported_command` | 400  | The command is known but not available in this deployment (for example `preagg` on a server without preaggregation, or `exec` when query validation is active). Clients MUST NOT fall back to `exec`. |
+      | `unsupported_command` | 400  | The command is known but not available in this implementation or deployment (for example `preagg` on an implementation without preaggregation, or `exec` when query validation is active). Clients MUST NOT fall back to `exec`. |
       | `resource_exhausted`  | 429  | Admission, quota, row/byte, or concurrency limit reached. Clients suppress immediate retries; `retryAfterMs` MAY advise when. |
       | `deadline_exceeded`   | 504  | The server's command deadline elapsed. The attempt is over and no result or materialization was published; for `exec`, effects committed before the deadline MAY remain and the client MUST NOT assume rollback or retry automatically. |
       | `internal_error`      | 500  | Any other server-side failure, including DuckDB execution errors not classified above. |

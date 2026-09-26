@@ -39,13 +39,16 @@ const wrappers = new Set(['if', 'then', 'else', 'oneOf', 'anyOf', 'allOf', 'not'
 // One violation per concrete schema failure, identified by keyword and the
 // property it concerns (`required.code`, `forbidden.catalog`, `enum.code`),
 // so a baseline names which rules a server breaks rather than "the schema".
-export function schemaViolations(prefix: string, definition: string, value: unknown): SchemaViolation[] {
+// `skip` leaves out errors under an instance path another check already
+// reports on, such as a nested envelope.
+export function schemaViolations(prefix: string, definition: string, value: unknown, skip?: (instancePath: string) => boolean): SchemaViolation[] {
   const fn = validator(definition);
   if (fn(value)) return [];
   const seen = new Set<string>();
   const out: SchemaViolation[] = [];
   for (const error of fn.errors ?? []) {
     if (wrappers.has(error.keyword)) continue;
+    if (skip?.(error.instancePath)) continue;
     const at = error.instancePath.split('/').filter(Boolean);
     const params = error.params as Record<string, unknown>;
     let id: string;
