@@ -2,7 +2,7 @@ import path from 'node:path';
 import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { afterEach, describe, expect, it } from 'vitest';
 import { checkResponse } from './src/check.ts';
-import { CommClient } from './src/comm.ts';
+import { CommClient, parseShimRecord } from './src/comm.ts';
 import type { CommResponse, Violation } from './src/types.ts';
 
 const ids = (violations: Violation[]) => violations.map(v => v.id).sort();
@@ -89,5 +89,33 @@ describe('comm client', () => {
     const dead = client();
     await send(dead, 'exit').catch(() => {});
     await expect(send(dead, 'ok')).rejects.toThrow(/exited/);
+  });
+
+  it('treats malformed or incomplete shim records as harness failures, never as replies', async () => {
+    await expect(send(client(), 'not-done')).rejects.toThrow(/unknown kind "not-done"/);
+    await expect(send(client(), 'null')).rejects.toThrow(/not an object/);
+    await expect(send(client(), 'bad-buffers')).rejects.toThrow(/buffers are not base64/);
+    await expect(send(client(), 'double-done')).rejects.toThrow(/done twice/);
+    expect(parseShimRecord({ id: 1, kind: 'reply', content: {}, buffers: ['AQ=='] })).toMatchObject({ kind: 'reply' });
+    expect(parseShimRecord({ id: 1, kind: 'done', raised: null })).toMatchObject({ kind: 'done' });
+    expect(parseShimRecord({ id: 1, kind: 'done', raised: 5 })).toMatch(/non-string raised/);
+    expect(parseShimRecord({ id: 'x', kind: 'done', raised: null })).toMatch(/integer id/);
+    expect(parseShimRecord([])).toMatch(/not an object/);
+  });
+
+  it('surfaces a shim death once when several sends are outstanding, with no unhandled rejections', async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      const c = client();
+      const settled = await Promise.allSettled([send(c, 'defer:500', 'a'), send(c, 'defer:500', 'b'), send(c, 'exit', 'c')]);
+      expect(settled.map(s => s.status)).toEqual(['rejected', 'rejected', 'rejected']);
+      expect(String((settled[0] as PromiseRejectedResult).reason)).toMatch(/exited/);
+      await new Promise(r => setTimeout(r, 50));
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
   });
 });

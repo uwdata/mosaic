@@ -4,7 +4,7 @@ import { captureValues, checkResponse, ipcBytes } from './src/check.ts';
 import { parseSkipNote, skipNote } from './src/harness.ts';
 import { casesOf } from './implementations/index.ts';
 import { loadKnownFailures } from './src/known.ts';
-import { issue, SessionManager, type Session } from './src/session.ts';
+import { clientSession, issue, SessionManager, type Session } from './src/session.ts';
 import type { ConnectorResponse, Violation } from './src/types.ts';
 
 const ids = (violations: Violation[]) => violations.map(v => v.id).sort();
@@ -73,8 +73,8 @@ describe('command-layer results', () => {
 });
 
 describe('sessions', () => {
-  const session = (behaviour: (request: Record<string, unknown>) => Promise<unknown>): Session & { disposed: number } => {
-    const s = { disposed: 0, query: behaviour, dispose: async () => { s.disposed++; } };
+  const session = (behaviour: (request: Record<string, unknown>) => Promise<unknown>, isolated = true): Session & { disposed: number } => {
+    const s = { disposed: 0, isolated, query: behaviour, dispose: async () => { s.disposed++; } };
     return s;
   };
   const after = (ms: number, value: unknown) => new Promise(resolve => setTimeout(() => resolve(value), ms));
@@ -100,7 +100,7 @@ describe('sessions', () => {
     expect(results.map(r => r.kind)).toEqual(['connector', 'connector', 'connector-timeout']);
   });
 
-  it('replaces a tainted session before the next acquire and disposes on shutdown', async () => {
+  it('replaces a tainted session only when disposing it isolates the implementation', async () => {
     const built: Array<Session & { disposed: number }> = [];
     const manager = new SessionManager(async () => { const s = session(async () => 1); built.push(s); return s; });
     const first = await manager.acquire();
@@ -112,6 +112,60 @@ describe('sessions', () => {
     await manager.dispose();
     expect(built[1].disposed).toBe(1);
     expect(built).toHaveLength(2);
+
+    const shared = new SessionManager(async () => session(async () => 1, false));
+    await shared.acquire();
+    shared.taint();
+    await expect(shared.acquire()).rejects.toThrow(/state is unknown.*aborting/);
+    await expect(shared.acquire()).rejects.toThrow(/aborting/);
+  });
+
+  it('aborts when disposing a tainted session fails', async () => {
+    const manager = new SessionManager(async () => ({ isolated: true, query: async () => 1, dispose: async () => { throw new Error('worker would not stop'); } }));
+    await manager.acquire();
+    manager.taint();
+    await expect(manager.acquire()).rejects.toThrow(/could not dispose.*worker would not stop/);
+    await expect(manager.acquire()).rejects.toThrow(/could not dispose/);
+  });
+
+  it('does not resume against a server whose delayed mutation is still in flight', async () => {
+    const { createServer } = await import('node:http');
+    let served = 0;
+    const server = createServer((_, res) => { served++; setTimeout(() => { res.statusCode = 200; res.end(); }, 150); });
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    const { port } = server.address() as { port: number };
+    const manager = new SessionManager(async () => clientSession('rest', `http://127.0.0.1:${port}/`));
+    try {
+      const rest = await manager.acquire();
+      expect(await issue(rest, { type: 'exec', sql: 'CREATE TABLE t AS SELECT 1' }, 40)).toMatchObject({ kind: 'connector-timeout' });
+      manager.taint();
+      await expect(manager.acquire()).rejects.toThrow(/aborting/);
+      await new Promise(r => setTimeout(r, 200));
+      expect(served).toBe(1);
+    } finally {
+      server.close();
+    }
+  });
+
+  it('rethrows delivery failures from the real clients and keeps server errors as observations', async () => {
+    const rest = clientSession('rest', 'http://127.0.0.1:1/');
+    await expect(issue(rest, { type: 'arrow', sql: 'SELECT 1' })).rejects.toThrow(/could not deliver the request over rest/);
+    const { createServer } = await import('node:net');
+    const closed = createServer(socket => socket.destroy());
+    await new Promise<void>(resolve => closed.listen(0, '127.0.0.1', resolve));
+    const { port } = closed.address() as { port: number };
+    try {
+      const socket = clientSession('socket', `http://127.0.0.1:${port}/`);
+      await expect(issue(socket, { type: 'arrow', sql: 'SELECT 1' })).rejects.toThrow(/WebSocket connection failed/);
+    } finally {
+      closed.close();
+    }
+    const engine = clientSession('rest', 'http://127.0.0.1:1/');
+    engine.query = async () => { throw new Error('Parser Error: syntax error at or near "SELEC"'); };
+    expect(await issue(engine, { type: 'arrow', sql: 'SELEC 1' })).toMatchObject({ kind: 'connector-rejected' });
+    const reset = clientSession('rest', 'http://127.0.0.1:1/');
+    reset.query = async () => { throw Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' }) }); };
+    expect(await issue(reset, { type: 'arrow', sql: 'SELECT 1' })).toMatchObject({ kind: 'connector-rejected' });
   });
 });
 

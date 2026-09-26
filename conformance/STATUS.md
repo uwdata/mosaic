@@ -107,7 +107,19 @@ only a connection the server tears down after accepting the request is
 recorded, as `http.reset.peer-closed` or `http.reset.socket-closed` before a
 status line and `http.reset.after-<status>.<reset>` once one was received, so
 a truncated 505 rejection and a truncated 200 result never share an id;
-refusals, bad URLs, DNS or TLS failures, and timeouts fail the run. Every step of a multi-step case runs even after an earlier step
+refusals, bad URLs, DNS or TLS failures, and timeouts fail the run. The same
+line is drawn at the command layer: a rejection the client connector raises
+because the request never left (undici's `fetch failed` without a post-send
+reset, a WebSocket `error` event) is a harness error, while an engine or
+server error the connector passes through is an observation. A command or
+comm step that reaches its deadline is recorded (`connector.no-reply`,
+`comm.timeout`) and taints the session; when disposing the session isolates
+the implementation (an in-process engine is terminated, the shim process is
+killed) a fresh one serves the next case, but a client connector cannot stop
+SQL already running on a server, so for `rest` and `socket` the target's
+state is unknown and every remaining case fails as a harness error rather
+than run against it. The shim's own protocol is validated record by record;
+a malformed or duplicate record is a harness error, never a reply. Every step of a multi-step case runs even after an earlier step
 misbehaved, so follow-up checks such as "the connection is still usable" or
 "the table was not created" are observed independently. After the last
 expected WebSocket reply the socket is watched for a further

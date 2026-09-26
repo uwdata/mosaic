@@ -104,9 +104,9 @@ async function runCommandCase(c: ConformanceCase): Promise<Violation[]> {
   const request = (step: Step) => expandRequest(step.request ?? {}, vars, transport);
 
   if (c.pipeline) {
-    const pending = c.steps.map(step => issue(session, request(step)));
+    const pending = settleAll(c.steps.map(step => issue(session, request(step))));
     for (const [index, step] of c.steps.entries()) {
-      const response = await pending[index];
+      const response = unwrap(await pending[index]);
       if (response.kind === 'connector-timeout') m.taint();
       violations.push(...prefix(c, index, assess(c, step, response, vars)));
     }
@@ -156,9 +156,9 @@ async function runCommCase(c: ConformanceCase): Promise<Violation[]> {
   };
 
   if (c.pipeline) {
-    const pending = c.steps.map(step => { const m = message(step); return client.send(m.request, m.uuid); });
+    const pending = settleAll(c.steps.map(step => { const m = message(step); return client.send(m.request, m.uuid); }));
     for (const [index, step] of c.steps.entries()) {
-      const response = await pending[index];
+      const response = unwrap(await pending[index]);
       if (response.kind === 'comm-timeout') comm!.taint();
       violations.push(...prefix(c, index, assess(c, step, response, vars)));
     }
@@ -185,6 +185,21 @@ async function runCommCase(c: ConformanceCase): Promise<Violation[]> {
     violations.push(...prefix(c, index, assess(c, step, response, vars)));
   }
   return violations;
+}
+
+// Every pipelined promise gets a handler the moment it is issued and none of
+// the settled results ever rejects, so a harness failure that rejects them
+// all surfaces once, from the first one awaited, instead of as unhandled
+// rejections for the rest.
+type Settled<T> = { value: T } | { error: unknown };
+
+function settleAll<T>(promises: Promise<T>[]): Promise<Settled<T>>[] {
+  return promises.map(p => p.then(value => ({ value }), (error: unknown) => ({ error })));
+}
+
+function unwrap<T>(outcome: Settled<T>): T {
+  if ('error' in outcome) throw outcome.error;
+  return outcome.value;
 }
 
 function prefix(c: ConformanceCase, index: number, list: Violation[]): Violation[] {

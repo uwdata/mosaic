@@ -13,6 +13,7 @@ const dataDir = path.join(repoRoot, 'data');
 export async function nodeSession(): Promise<Session> {
   const connector = await NodeConnector.make();
   return {
+    isolated: true,
     query: request => connector.query(request as never),
     dispose: async () => { (connector as unknown as { _db: { close(): void } })._db.close(); }
   };
@@ -39,6 +40,7 @@ export async function wasmSession(): Promise<Session> {
   }
   const connector = wasmConnector({ duckdb: db });
   return {
+    isolated: true,
     query: request => connector.query(request as never),
     dispose: async () => { await db.terminate(); }
   };

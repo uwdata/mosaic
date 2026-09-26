@@ -20,9 +20,31 @@ type ShimRecord =
 interface Pending {
   uuid: string | undefined;
   replies: CommReply[];
+  done: boolean;
   resolve: (response: CommResponse | CommTimeout) => void;
   reject: (error: Error) => void;
   deadline: NodeJS.Timeout;
+}
+
+const base64 = /^[A-Za-z0-9+/]*={0,2}$/;
+
+// A record is exactly one of the two shapes the shim writes; anything else
+// is the shim misbehaving, which is a harness failure, not something the
+// widget did.
+export function parseShimRecord(value: unknown): ShimRecord | string {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return 'record is not an object';
+  const r = value as Record<string, unknown>;
+  if (typeof r.id !== 'number' || !Number.isInteger(r.id)) return 'record has no integer id';
+  if (r.kind === 'reply') {
+    if (!('content' in r)) return `reply ${r.id} has no content`;
+    if (!Array.isArray(r.buffers) || !r.buffers.every(b => typeof b === 'string' && base64.test(b))) return `reply ${r.id} buffers are not base64 strings`;
+    return { id: r.id, kind: 'reply', content: r.content, buffers: r.buffers as string[] };
+  }
+  if (r.kind === 'done') {
+    if (r.raised !== null && typeof r.raised !== 'string') return `done ${r.id} has a non-string raised`;
+    return { id: r.id, kind: 'done', raised: r.raised as string | null };
+  }
+  return `record ${r.id} has unknown kind ${JSON.stringify(r.kind)}`;
 }
 
 // Talks the shim's line protocol (packages/vgplot/widget/conformance/shim.py).
@@ -46,30 +68,44 @@ export class CommClient {
     this.child.once('exit', (code, signal) => {
       if (this.pending.size) this.fail(new Error(`comm shim exited (${signal ?? `code ${code}`}) with ${this.pending.size} invocation(s) outstanding`));
     });
-    createInterface({ input: this.child.stdout! }).on('line', line => this.onLine(line));
+    createInterface({ input: this.child.stdout! }).on('line', line => {
+      try {
+        this.onLine(line);
+      } catch (err) {
+        this.fail(err instanceof Error ? err : new Error(String(err)));
+      }
+    });
   }
+
+  // Killing the shim ends the widget handler with it, so a replacement
+  // starts from nothing.
+  readonly isolated = true;
 
   private onLine(line: string) {
     if (!line.trim()) return;
-    let record: ShimRecord;
+    let parsed: unknown;
     try {
-      record = JSON.parse(line);
+      parsed = JSON.parse(line);
     } catch {
       return this.fail(new Error(`comm shim wrote a line that is not JSON: ${line.slice(0, 120)}`));
     }
+    const record = parseShimRecord(parsed);
+    if (typeof record === 'string') return this.fail(new Error(`comm shim wrote a malformed record: ${record}: ${line.slice(0, 120)}`));
     const pending = this.pending.get(record.id);
     if (!pending) return this.fail(new Error(`comm shim answered for unknown invocation ${record.id}`));
     if (record.kind === 'reply') {
       pending.replies.push({ content: record.content, buffers: record.buffers.map(b => new Uint8Array(Buffer.from(b, 'base64'))) });
       return;
     }
+    if (pending.done) return this.fail(new Error(`comm shim reported invocation ${record.id} done twice`));
+    pending.done = true;
     // After `done`, replies are still collected for a short settle window
     // so a late one is seen as surplus. That is a bounded check, not
     // support for asynchronous handlers, which the shim does not model.
     clearTimeout(pending.deadline);
     const raised = record.raised;
     setTimeout(() => {
-      this.pending.delete(record.id);
+      if (!this.pending.delete(record.id)) return;
       pending.resolve({ kind: 'comm', uuid: pending.uuid, replies: pending.replies, ...(raised ? { raised } : {}) });
     }, settleTimeout).unref();
   }
@@ -93,7 +129,7 @@ export class CommClient {
         resolve({ kind: 'comm-timeout', after: timeout });
       }, timeout);
       deadline.unref();
-      this.pending.set(id, { uuid, replies: [], resolve, reject, deadline });
+      this.pending.set(id, { uuid, replies: [], done: false, resolve, reject, deadline });
       this.child.stdin!.write(`${JSON.stringify({ id, content })}\n`);
     });
   }

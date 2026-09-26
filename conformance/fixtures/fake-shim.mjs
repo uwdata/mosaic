@@ -12,6 +12,10 @@
 //   error         {type: error, uuid, error: {...}} for a missing field
 //   exit          exit before done
 //   garbage       write a non-JSON line
+//   not-done      reply, then a record of an unknown kind and no done
+//   null          write JSON null
+//   bad-buffers   reply whose buffers is not an array of strings
+//   double-done   done twice
 //   defer:<ms>    hold the reply until after <ms> (lets a later message be answered first)
 //   hang          never answer
 import { createInterface } from 'node:readline';
@@ -39,6 +43,10 @@ createInterface({ input: process.stdin }).on('line', line => {
       case 'error': reply(id, { type: 'error', uuid: uuid ?? null, error: { error: 'missing sql', code: 'bad_request', reason: 'missing_field', field: 'sql' } }); done(id); break;
       case 'exit': process.exit(3); break;
       case 'garbage': process.stdout.write('not json\n'); break;
+      case 'not-done': reply(id, { type: 'exec', uuid }); emit({ id, kind: 'not-done' }); break;
+      case 'null': process.stdout.write('null\n'); break;
+      case 'bad-buffers': emit({ id, kind: 'reply', content: { type: 'arrow', uuid }, buffers: [42] }); done(id); break;
+      case 'double-done': reply(id, { type: 'exec', uuid }); done(id); done(id); break;
       case 'hang': break;
       default: reply(id, { type: 'arrow', uuid }, [stream]); done(id);
     }
