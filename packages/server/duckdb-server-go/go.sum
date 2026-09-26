@@ -4,8 +4,6 @@ github.com/apache/arrow-go/v18 v18.7.0 h1:Vw/i+cJyebUofT7JlqFpe65LrmwxULn166jjwS
 github.com/apache/arrow-go/v18 v18.7.0/go.mod h1:PM6IigLJkdMwIpeHXnymo+xZ52f42a9EYiLtRel4p/A=
 github.com/apache/thrift v0.24.0 h1:zy31L1a49QTNB2bG1BBfMXol3yJrTH975G3pPubQVLQ=
 github.com/apache/thrift v0.24.0/go.mod h1:zPt6WxgvTOM6hF92y8C+MkEM5LMxZuk4JcQOiU4Esvs=
-github.com/coder/websocket v1.8.15 h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=
-github.com/coder/websocket v1.8.15/go.mod h1:NX3SzP+inril6yawo5CQXx8+fk145lPDC6pumgx0mVg=
 github.com/duckdb/duckdb-go-bindings v0.10505.0 h1:/0pPsTLrcCsTGxT0VrHgJWnOcPe1tQL1vrki1v3jbAI=
 github.com/duckdb/duckdb-go-bindings v0.10505.0/go.mod h1:HoD5xePkDj3VZbBnVVfxVVYIljZ9khCprWA7FgwIiC4=
 github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.10505.0 h1:FrMqquFBQlMsi34h2KZgCku54rqA8xEbXZ0NLVDKwYs=

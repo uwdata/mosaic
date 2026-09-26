@@ -1,6 +1,6 @@
 # DuckDB Go Server
 
-A Go-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP/HTTPS, returning data in [Apache Arrow](https://arrow.apache.org/) format.
+A Go-based server that runs a local DuckDB instance and supports queries over HTTP/HTTPS, returning data in [Apache Arrow](https://arrow.apache.org/) format.
 
 _Note:_ This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` in the [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/mosaic-core) package.
 
@@ -35,7 +35,7 @@ You can customize the server behavior with the following command-line flags:
 
 By default, the server looks for `localhost.pem` and `localhost-key.pem` in the current directory, then in the shared OS user configuration directory under `mosaic/https`, if the `--cert` and `--key` flags are not provided.
 
-For compatibility, the installed binary permits all HTTP and WebSocket origins. A cross-site page can therefore submit
+For compatibility, the installed binary permits all HTTP origins. A cross-site page can therefore submit
 commands, including side-effecting `exec` commands over GET, to a running server. Do not expose the binary to untrusted
 browsers or cookie credentials without an outer proxy that enforces an origin or CSRF policy. Programs embedding
 `pkg/server` instead receive safe zero-value origin defaults and can configure exact allowed origins.
@@ -79,11 +79,10 @@ aborts the connection. Extensions are trusted native code, so load only trusted 
 ### Programmatic Authorization
 
 Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
-`server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once before POST
-decoding or WebSocket upgrade and returns a `CommandAuthorizer[T]` called for every decoded command, including each
-WebSocket message, before policy validation or execution. If it reads `r.Body`, it must restore it; both
-authorizers must be concurrency-safe. Outer middleware must decide whether CORS preflight `OPTIONS` requests may reach
-the server.
+`server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once per request,
+before POST decoding, and returns a `CommandAuthorizer[T]` called for the decoded command before policy validation or
+execution. If it reads `r.Body`, it must restore it; both authorizers must be concurrency-safe. Outer middleware must
+decide whether CORS preflight `OPTIONS` requests may reach the server.
 
 Omitting `WithAuthorizer` adds no application authorization. A request authorizer that fails or returns a nil command callback fails
 closed. `ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400; unexpected
@@ -104,7 +103,7 @@ handler, err := server.New(db,
 )
 ```
 
-`WithCacheControl(value)` sets the complete header value on successful GET `arrow` responses. The application chooses storage, sharing, and freshness directives, such as `no-store`, `private, max-age=60`, or `public, max-age=60, s-maxage=300`. An omitted or empty value preserves existing behavior, including any headers set by outer middleware. Configured values replace an existing Cache-Control header; other responses, including errors, `exec`, POST, OPTIONS, and WebSocket handshakes, receive `no-store`. HEAD is unsupported and returns `405`; only GET query responses are cacheable.
+`WithCacheControl(value)` sets the complete header value on successful GET `arrow` responses. The application chooses storage, sharing, and freshness directives, such as `no-store`, `private, max-age=60`, or `public, max-age=60, s-maxage=300`. An omitted or empty value preserves existing behavior, including any headers set by outer middleware. Configured values replace an existing Cache-Control header; other responses, including errors, `exec`, POST, and OPTIONS, receive `no-store`. HEAD is unsupported and returns `405`; only GET query responses are cacheable.
 
 For GET `arrow` responses, enabling Cache-Control also generates a strong ETag from the response format and serialized bytes. A matching `If-None-Match` returns `304` with no body and the applicable Cache-Control, ETag, and Vary headers. Tag lists, weak comparisons, and `*` are supported. `If-Match` uses strong comparison and takes precedence, returning `412` without an ETag on a mismatch. Other command types and methods, including `exec` and POST, ignore conditional request headers; `If-Match` cannot guard an `exec` command. Authorization, query validation, execution, serialization, and hashing of the complete response still run before evaluating validators: revalidation saves transfer bandwidth. Changes to data do not invalidate already-fresh HTTP cache entries before their configured lifetime expires. Compressed responses carry an encoding-specific ETag; see [HTTP Response Compression](#http-response-compression).
 
@@ -122,7 +121,7 @@ duckdb-server-go --cache-control='private, max-age=60' --vary=X-Tenant-Id
 
 ### HTTP Response Compression
 
-HTTP responses of at least 1 KiB are compressed with gzip or zstd according to the request's `Accept-Encoding` header, preferring zstd when the client accepts both, and every command response carries `Vary: Accept-Encoding`. Compression is always enabled and cannot be configured; outer middleware and proxies should not compress again. Compressed request bodies are not accepted. WebSocket messages use the per-message compression negotiated during the handshake.
+HTTP responses of at least 1 KiB are compressed with gzip or zstd according to the request's `Accept-Encoding` header, preferring zstd when the client accepts both, and every command response carries `Vary: Accept-Encoding`. Compression is always enabled and cannot be configured; outer middleware and proxies should not compress again. Compressed request bodies are not accepted.
 
 A compressed GET `arrow` response keeps a strong ETag with `-gzip` or `-zstd` inserted before the closing quote, so the tag identifies the encoded representation as [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3.1) requires. The server determines the representation it will send, including the size threshold, before evaluating `If-None-Match` and `If-Match`, so a tag from a differently encoded response does not match and a `304` carries the selected representation's tag. Responses below the size threshold and clients that do not accept compression receive the plain tag.
 
@@ -157,17 +156,17 @@ handler, err := server.New(db,
 )
 ```
 
-Each POST or WebSocket command decodes into a fresh `T` using `encoding/json`. `Payload()` returns that value without copying; mutations cannot change the authoritative `Type()` or `SQL()`. Custom decoders are responsible for their own sharing and must account for protocol keys (`type`, `sql`, `name`) when rejecting unknown fields.
+Each POST command decodes into a fresh `T` using `encoding/json`. `Payload()` returns that value without copying; mutations cannot change the authoritative `Type()` or `SQL()`. Custom decoders are responsible for their own sharing and must account for protocol keys (`type`, `sql`, `name`) when rejecting unknown fields.
 
 Use structs, maps, or custom `UnmarshalJSON` implementations as needed. `json.RawMessage` preserves JSON value bytes, not surrounding whitespace. If no application fields are needed, `struct{}` skips application decoding; existing authorizers can migrate to `AuthorizerFunc[struct{}]`, `CommandAuthorizer[struct{}]`, and `Command[struct{}]`.
 
-GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); capture query parameters in `AuthorizeRequest`. Payload decoding failures reject the command before command authorization with HTTP 400 or a recoverable WebSocket `bad_request`, and log a warning without payload values.
+GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); capture query parameters in `AuthorizeRequest`. Payload decoding failures reject the command before command authorization with HTTP 400 and log a warning without payload values.
 
 Application fields are untrusted: combine them with authenticated identity, as shown in the compiled [`ExampleNew`](pkg/server/example_test.go). Client caching can bypass the connector, and consolidation can discard query options. If fields affect results or access, isolate coordinator/cache/consolidation state per scope or disable that reuse.
 
-`WithMaxMessageBytes(n)` requires a positive byte limit for entire HTTP request bodies and decompressed WebSocket messages. The body limit wraps every request, including WebSocket handshakes, before request authorization, so an authorizer may read the body within the limit and must restore it; reading past the limit fails the request. Defaults are unbounded request bodies and 32 KiB WebSocket messages. Exceeding the limit returns HTTP 413 with `Connection: close` or closes the WebSocket with code 1009.
+`WithMaxMessageBytes(n)` requires a positive byte limit for entire HTTP request bodies. The limit wraps every request before request authorization, so an authorizer may read the body within the limit and must restore it; reading past the limit fails the request. Request bodies are unbounded by default. Exceeding the limit returns HTTP 413 with `Connection: close`.
 
-POST and WebSocket messages require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400 or close the WebSocket with code 1007. Validation and authorization errors leave a healthy WebSocket session open.
+POST bodies require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400.
 
 ### Gatekeeper Configuration
 
@@ -183,15 +182,15 @@ For Go applications, load Gatekeeper during trusted setup and call `query.Config
 
 `db.Query(ctx, sql, policy)` returns the complete Arrow IPC result as `[]byte`, or nil on error. Pass `*query.ValidationPolicy` directly or from `WithAuthorizer` to narrow the global policy. Use `JSON: &document` or typed `AllowedTables`, `BlockedTables`, `AllowedFunctions`, `BlockedFunctions`, and `UseDefaultFunctions` fields; the two forms cannot be mixed. Nil slices omit options; empty slices remain explicit arrays. `TableRule.Catalog` and `UseDefaultFunctions` are pointers. Names are passed unchanged, including whitespace.
 
-`ValidateSQL(ctx, sql, policy)` returns `(ValidationResult, error)` without executing. `Details` contains diagnostics and violations; successful results include `CallerObjects`, transitive `Objects`, and `Functions`. Use `errors.As` with `query.ErrorDetails`, or `errors.Is` with `ErrValidation`, `ErrAccessDenied`, `ErrUnsupportedStatement`, and `ErrInvalidPolicy`. HTTP/WebSocket validation errors are sanitized: policy denials return 403, SQL errors 400, and invalid application policies or validator failures 500.
+`ValidateSQL(ctx, sql, policy)` returns `(ValidationResult, error)` without executing. `Details` contains diagnostics and violations; successful results include `CallerObjects`, transitive `Objects`, and `Functions`. Use `errors.As` with `query.ErrorDetails`, or `errors.Is` with `ErrValidation`, `ErrAccessDenied`, `ErrUnsupportedStatement`, and `ErrInvalidPolicy`. HTTP validation errors are sanitized: policy denials return 403, SQL errors 400, and invalid application policies or validator failures 500.
 
 Validated execution uses the same connection for validation and execution and rejects `exec`; disable Mosaic pre-aggregation with `preagg: { enabled: false }`. Trusted views/macros can expose their dependencies. See Gatekeeper's [policy schema](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.3.0/docs/policy-v1.schema.json) and [security model](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.3.0/docs/security.md) for policy semantics and resource boundaries.
 
 ## API
 
-The server supports queries via HTTP GET and POST, and WebSockets. GET uses `type` and `sql` query parameters, for example [this URL](<http://localhost:3000/?type=arrow&sql=select%201>).
+The server supports queries via HTTP GET and POST. GET uses `type` and `sql` query parameters, for example [this URL](<http://localhost:3000/?type=arrow&sql=select%201>).
 
-POST and WebSocket requests take a JSON object with the command in `type` and query text in `sql`. The server supports the following commands.
+POST requests take a JSON object with the command in `type` and query text in `sql`. The server supports the following commands.
 
 ### `exec`
 

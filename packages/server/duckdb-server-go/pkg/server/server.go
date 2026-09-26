@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
 	"github.com/klauspost/compress/gzhttp"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
@@ -27,12 +25,11 @@ type queryParams struct {
 type commandResponse struct {
 	data        []byte
 	contentType string
-	wsMessage   websocket.MessageType
 }
 
 var commandResponses = map[CommandType]commandResponse{
-	CommandExec:  {wsMessage: websocket.MessageText},
-	CommandArrow: {contentType: "application/vnd.apache.arrow.stream", wsMessage: websocket.MessageBinary},
+	CommandExec:  {},
+	CommandArrow: {contentType: "application/vnd.apache.arrow.stream"},
 }
 
 type queryParamsError string
@@ -49,17 +46,16 @@ type commandExecutor interface {
 }
 
 type handler struct {
-	db               commandExecutor
-	logger           *slog.Logger
-	authorizer       requestAuthorizer
-	httpHandler      http.Handler
-	websocketOptions WebSocketOptions
-	maxMessageBytes  int64
-	cacheControl     string
-	varyHeaders      []string
+	db              commandExecutor
+	logger          *slog.Logger
+	authorizer      requestAuthorizer
+	httpHandler     http.Handler
+	maxMessageBytes int64
+	cacheControl    string
+	varyHeaders     []string
 }
 
-// New constructs a Mosaic HTTP and WebSocket handler backed by db. Omitting
+// New constructs a Mosaic HTTP handler backed by db. Omitting
 // WithAuthorizer preserves unrestricted command behavior.
 func New(db *query.DB, opts ...Option) (http.Handler, error) {
 	if db == nil {
@@ -76,13 +72,12 @@ func New(db *query.DB, opts ...Option) (http.Handler, error) {
 
 func newHandler(db commandExecutor, cfg config) *handler {
 	s := &handler{
-		db:               db,
-		logger:           cfg.logger,
-		authorizer:       cfg.authorizer,
-		websocketOptions: cfg.websocket,
-		maxMessageBytes:  cfg.maxMessageBytes,
-		cacheControl:     cfg.cacheControl,
-		varyHeaders:      cfg.varyHeaders,
+		db:              db,
+		logger:          cfg.logger,
+		authorizer:      cfg.authorizer,
+		maxMessageBytes: cfg.maxMessageBytes,
+		cacheControl:    cfg.cacheControl,
+		varyHeaders:     cfg.varyHeaders,
 	}
 
 	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, gzhttp.GzipHandler(http.HandlerFunc(s.handleHTTP)))
@@ -99,12 +94,6 @@ func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(s.varyHeaders) > 0 {
 		w.Header().Add("Vary", strings.Join(s.varyHeaders, ", "))
-	}
-
-	if strings.EqualFold(r.Header.Get("Connection"), "upgrade") &&
-		strings.EqualFold(r.Header.Get("Upgrade"), "websocket") {
-		s.handleWebSocket(w, r)
-		return
 	}
 
 	s.httpHandler.ServeHTTP(w, r)
@@ -129,93 +118,6 @@ func (s *handler) commandAuthorizer(r *http.Request) (commandAuthorizer, error) 
 func (s *handler) writeHTTPError(w http.ResponseWriter, err error) {
 	response := s.classifyAndLogError(err)
 	http.Error(w, response.message, response.status)
-}
-
-func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	if !webSocketOriginAllowed(r, s.websocketOptions) {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		return
-	}
-
-	authorize, err := s.commandAuthorizer(r)
-	if err != nil {
-		s.writeHTTPError(w, err)
-		return
-	}
-
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		InsecureSkipVerify: s.websocketOptions.AllowAllOrigins,
-		OriginPatterns:     s.websocketOptions.AllowedOrigins,
-		CompressionMode:    websocket.CompressionContextTakeover,
-	})
-	if err != nil {
-		s.logger.Error("server: failed to accept websocket connection", "error", err)
-		return
-	}
-
-	if s.maxMessageBytes > 0 {
-		conn.SetReadLimit(s.maxMessageBytes)
-	}
-
-	ctx, cancel := context.WithCancel(r.Context())
-	defer cancel()
-
-	defer func() {
-		err = conn.Close(websocket.StatusInternalError, "connection closed")
-		if err != nil {
-			s.logger.Error("server: error closing websocket", "error", err)
-		}
-	}()
-
-	for {
-		err = s.handleWebSocketMessage(ctx, conn, authorize)
-		if err != nil {
-			s.logger.Error("server: websocket error, breaking connection", "error", err)
-			break
-		}
-	}
-}
-
-// A returned error closes the connection. Command errors are written to the
-// client and return nil so the session survives them.
-func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, authorize commandAuthorizer) error {
-	_, raw, err := conn.Read(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to read websocket message: %w", err)
-	}
-
-	var params queryParams
-	if err = json.Unmarshal(raw, &params); err != nil {
-		return errors.Join(
-			fmt.Errorf("failed to decode websocket message: %w", err),
-			conn.Close(websocket.StatusInvalidFramePayloadData, "failed to unmarshal JSON"),
-		)
-	}
-	params.raw = raw
-
-	response, err := s.execCommand(ctx, params, authorize)
-	if err != nil {
-		errResponse := s.classifyAndLogError(err)
-		writeErr := wsjson.Write(ctx, conn, map[string]string{
-			"error": errResponse.message,
-			"code":  errResponse.code,
-		})
-		if writeErr != nil {
-			return fmt.Errorf("server: failed to write error response: %w", writeErr)
-		}
-
-		return nil
-	}
-
-	payload := response.data
-	if response.contentType == "" {
-		payload = []byte("{}")
-	}
-	if err = conn.Write(ctx, response.wsMessage, payload); err != nil {
-		return fmt.Errorf("server: failed to write response: %w", err)
-	}
-
-	return nil
 }
 
 func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {

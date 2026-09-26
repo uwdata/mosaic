@@ -4,7 +4,6 @@ go 1.25.0
 
 require (
 	github.com/apache/arrow-go/v18 v18.7.0
-	github.com/coder/websocket v1.8.15
 	github.com/duckdb/duckdb-go/v2 v2.10505.0
 	github.com/klauspost/compress v1.19.0
 	github.com/rs/cors v1.11.1

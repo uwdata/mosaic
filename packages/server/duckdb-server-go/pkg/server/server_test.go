@@ -12,11 +12,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/apache/arrow-go/v18/arrow/ipc"
-	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
 
@@ -91,23 +88,6 @@ func arrowRows(t *testing.T, data []byte) []map[string]any {
 	return rows
 }
 
-type webSocketTestServer struct {
-	ctx          context.Context
-	httpURL, url string
-}
-
-func newWebSocketTestServer(t *testing.T, handler http.Handler) *webSocketTestServer {
-	t.Helper()
-	server := httptest.NewServer(handler)
-	t.Cleanup(server.Close)
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-	t.Cleanup(cancel)
-	return &webSocketTestServer{ctx: ctx, httpURL: server.URL, url: "ws" + strings.TrimPrefix(server.URL, "http")}
-}
-func (s *webSocketTestServer) dial(options *websocket.DialOptions) (*websocket.Conn, *http.Response, error) {
-	return websocket.Dial(s.ctx, s.url, options)
-}
-
 func TestArrowResponseFraming(t *testing.T) {
 	db := setupTestDB(t)
 	handler, err := New(db)
@@ -120,31 +100,22 @@ func TestArrowResponseFraming(t *testing.T) {
 	require.Equal(t, "application/vnd.apache.arrow.stream", res.Header().Get("Content-Type"))
 	want := []map[string]any{{"value": float64(1)}}
 	require.Equal(t, want, arrowRows(t, res.Body.Bytes()))
-	server := newWebSocketTestServer(t, handler)
-	conn, _, err := server.dial(nil)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, conn.CloseNow()) }()
-	require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(body)))
-	messageType, payload, err := conn.Read(server.ctx)
-	require.NoError(t, err)
-	require.Equal(t, websocket.MessageBinary, messageType)
-	require.Equal(t, want, arrowRows(t, payload))
 }
 
 func TestValidationErrorResponses(t *testing.T) {
 	for _, tc := range []struct {
-		name        string
-		err         error
-		status      int
-		code, level string
+		name   string
+		err    error
+		status int
+		level  string
 	}{
-		{"denial", query.ErrorDetails{Code: "forbidden", Message: "private-diagnostic"}, 403, "forbidden", "WARN"},
-		{"unsupported", query.ErrorDetails{Code: "unsupported", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
-		{"parser", query.ErrorDetails{Code: "parser", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
-		{"binding", query.ErrorDetails{Code: "binding", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
-		{"invalid SQL", query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
-		{"invalid policy", errors.Join(query.ErrInvalidPolicy, query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}), 500, "internal_error", "ERROR"},
-		{"driver failure", errors.New("private-diagnostic"), 500, "internal_error", "ERROR"},
+		{"denial", query.ErrorDetails{Code: "forbidden", Message: "private-diagnostic"}, 403, "WARN"},
+		{"unsupported", query.ErrorDetails{Code: "unsupported", Message: "private-diagnostic"}, 400, "WARN"},
+		{"parser", query.ErrorDetails{Code: "parser", Message: "private-diagnostic"}, 400, "WARN"},
+		{"binding", query.ErrorDetails{Code: "binding", Message: "private-diagnostic"}, 400, "WARN"},
+		{"invalid SQL", query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}, 400, "WARN"},
+		{"invalid policy", errors.Join(query.ErrInvalidPolicy, query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}), 500, "ERROR"},
+		{"driver failure", errors.New("private-diagnostic"), 500, "ERROR"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var logs synchronizedBuffer
@@ -159,23 +130,10 @@ func TestValidationErrorResponses(t *testing.T) {
 			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)))
 			require.Equal(t, tc.status, res.Code)
 			require.Equal(t, http.StatusText(tc.status)+"\n", res.Body.String())
-			server := newWebSocketTestServer(t, handler)
-			conn, _, err := server.dial(nil)
-			require.NoError(t, err)
-			defer func() { require.NoError(t, conn.CloseNow()) }()
-			for range 2 {
-				require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(body)))
-				var response map[string]string
-				require.NoError(t, wsjson.Read(server.ctx, conn, &response))
-				require.Equal(t, map[string]string{"code": tc.code, "error": http.StatusText(tc.status)}, response)
-			}
-			decoder := json.NewDecoder(bytes.NewReader(logs.Bytes()))
-			for range 3 {
-				var record map[string]any
-				require.NoError(t, decoder.Decode(&record))
-				require.Equal(t, tc.level, record["level"])
-				require.Contains(t, record["error"], "private-diagnostic")
-			}
+			var record map[string]any
+			require.NoError(t, json.NewDecoder(bytes.NewReader(logs.Bytes())).Decode(&record))
+			require.Equal(t, tc.level, record["level"])
+			require.Contains(t, record["error"], "private-diagnostic")
 		})
 	}
 }

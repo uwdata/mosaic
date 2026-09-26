@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -38,25 +37,11 @@ type CORSOptions struct {
 	MaxAge time.Duration
 }
 
-// WebSocketOptions configures cross-origin WebSocket access. Its zero value
-// retains the default same-host origin check.
-type WebSocketOptions struct {
-	// AllowedOrigins lists additional authorized origin host patterns. Patterns
-	// use path.Match syntax and are matched case-insensitively. A pattern that
-	// contains "://" is matched against scheme://host; other patterns are
-	// matched against the origin host.
-	AllowedOrigins []string
-	// AllowAllOrigins explicitly disables WebSocket origin verification. It
-	// cannot be combined with AllowedOrigins.
-	AllowAllOrigins bool
-}
-
 type config struct {
 	logger          *slog.Logger
 	authorizer      requestAuthorizer
 	cors            CORSOptions
 	corsProtection  *http.CrossOriginProtection
-	websocket       WebSocketOptions
 	maxMessageBytes int64
 	cacheControl    string
 	varyHeaders     []string
@@ -106,11 +91,9 @@ func WithLogger(logger *slog.Logger) Option {
 	})
 }
 
-// WithMaxMessageBytes limits HTTP request bodies and decompressed WebSocket
-// messages to n bytes, which must be positive. The body limit applies to every
-// request, including WebSocket handshakes, before request authorization.
-// Omitting it leaves request bodies unbounded and retains the WebSocket
-// library's 32 KiB limit.
+// WithMaxMessageBytes limits HTTP request bodies to n bytes, which must be
+// positive. The limit applies to every request before request authorization.
+// Omitting it leaves request bodies unbounded.
 func WithMaxMessageBytes(n int64) Option {
 	return optionFunc(func(cfg *config) error {
 		if n <= 0 {
@@ -178,30 +161,6 @@ func WithCORS(options CORSOptions) Option {
 		} else {
 			cfg.corsProtection = protection
 		}
-		return nil
-	})
-}
-
-func WithWebSocket(options WebSocketOptions) Option {
-	options.AllowedOrigins = append([]string(nil), options.AllowedOrigins...)
-	return optionFunc(func(cfg *config) error {
-		if options.AllowAllOrigins && len(options.AllowedOrigins) != 0 {
-			return errors.New("server: WebSocket AllowAllOrigins cannot be combined with AllowedOrigins")
-		}
-
-		origins, err := copyNonEmpty("WebSocket allowed origin", options.AllowedOrigins, true)
-		if err != nil {
-			return err
-		}
-		for _, origin := range origins {
-			if _, err := path.Match(origin, ""); err != nil {
-				return fmt.Errorf("server: invalid WebSocket allowed origin %q: %w", origin, err)
-			}
-		}
-
-		configured := options
-		configured.AllowedOrigins = origins
-		cfg.websocket = configured
 		return nil
 	})
 }

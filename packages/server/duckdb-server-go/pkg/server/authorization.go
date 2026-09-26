@@ -53,11 +53,10 @@ func (c Command[T]) Payload() T {
 // query.WithValidation. A non-nil error denies the command.
 type CommandAuthorizer[T any] func(context.Context, Command[T]) (*query.ValidationPolicy, error)
 
-// Authorizer creates the command authorizer used for a single HTTP request or
-// WebSocket session. AuthorizeRequest is called before a POST body is decoded
-// or a WebSocket is upgraded. It should normally inspect the request line,
-// headers, and context. If it reads r.Body, it must restore the body before
-// returning so the server can decode it.
+// Authorizer creates the command authorizer used for a single HTTP request.
+// AuthorizeRequest is called before a POST body is decoded. It should normally
+// inspect the request line, headers, and context. If it reads r.Body, it must
+// restore the body before returning so the server can decode it.
 type Authorizer[T any] interface {
 	AuthorizeRequest(*http.Request) (CommandAuthorizer[T], error)
 }
