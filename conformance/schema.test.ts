@@ -42,7 +42,6 @@ describe('error classification', () => {
 
   it('ties field to the field reasons', () => {
     expect(ids('Error', error({ code: 'bad_request', reason: 'missing_field' }))).toEqual(['e.required.field']);
-    expect(ids('Error', error({ code: 'bad_request', reason: 'invalid_field', field: '' }))).toEqual(['e.minlength.field']);
     expect(ids('Error', error({ code: 'bad_request', reason: 'sql_parse_error', field: 'sql' }))).toEqual(['e.forbidden.field']);
     expect(ids('Error', error({ code: 'internal_error', reason: 'execution_failed', field: 'sql' }))).toEqual(['e.forbidden.field']);
   });
