@@ -67,7 +67,7 @@ The Mosaic project consists of a suite of packages.
 
 * [`mosaic-core`](/core/):
   The core Mosaic components.
-  A central coordinator, parameters, and selections for linking values or query predicates (respectively) across Mosaic clients. The Mosaic coordinator can send queries over the network to a backing server (`socket` and `rest` connectors) or to a client-side [DuckDB-WASM](https://duckdb.org/2021/10/29/duckdb-wasm.html) instance (`wasm` connector). The binary [Apache Arrow](https://arrow.apache.org/) format is used for efficient data transfer.
+  A central coordinator, parameters, and selections for linking values or query predicates (respectively) across Mosaic clients. The Mosaic coordinator can send queries over the network to a backing server (`rest` connector) or to a client-side [DuckDB-WASM](https://duckdb.org/2021/10/29/duckdb-wasm.html) instance (`wasm` connector). The binary [Apache Arrow](https://arrow.apache.org/) format is used for efficient data transfer.
 * [`mosaic-sql`](/sql/):
   An API for convenient construction and analysis of SQL queries.
   Includes support for aggregate functions, window functions, and arbitrary expressions with dynamic parameters. Query objects coerce to SQL query strings.

@@ -19,12 +19,6 @@ Once instantiated, register a connector with the coordinator using the [`coordin
 
 Decode Arrow IPC bytes to an Arrow table. The _data_ argument is an `ArrowIPCBytes` value. The optional _options_ argument gives Arrow IPC extraction options; if unspecified, date and timestamp values are extracted as JavaScript `Date` objects. Use this to read query results directly from a connector, outside the coordinator.
 
-## socketConnector
-
-`socketConnector(uri)`
-
-Create a new Web Socket connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"ws://localhost:3000/"`).
-
 ## restConnector
 
 `restConnector(uri)`

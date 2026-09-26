@@ -36,7 +36,7 @@ This repository contains a set of related packages, spanning the core Mosaic arc
 
 ### Mosaic Architecture (`packages/mosaic`)
 
-* [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/core): The core Mosaic components. A central coordinator, parameters and selections for linking scalar values or query predicates (respectively) across Mosaic clients, and filter groups with materialized views of pre-aggregated data. The Mosaic coordinator can send queries either over the network to a backing server (`socket` and `rest` clients) or to a client-side [DuckDB-WASM](https://github.com/duckdb/duckdb-wasm) instance (`wasm` client).
+* [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/core): The core Mosaic components. A central coordinator, parameters and selections for linking scalar values or query predicates (respectively) across Mosaic clients, and filter groups with materialized views of pre-aggregated data. The Mosaic coordinator can send queries either over the network to a backing server (`rest` client) or to a client-side [DuckDB-WASM](https://github.com/duckdb/duckdb-wasm) instance (`wasm` client).
 * [`mosaic-sql`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/sql): An API for convenient construction and analysis of SQL queries. Query objects then coerce to SQL query strings.
 
 ### vgplot Libraries (`packages/vgplot`)
