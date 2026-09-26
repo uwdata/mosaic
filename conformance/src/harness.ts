@@ -1,4 +1,4 @@
-import { inject, it } from 'vitest';
+import { it } from 'vitest';
 import { casesOf, target, type Target } from '../implementations/index.ts';
 import { loadCases } from './cases.ts';
 import { areasFor, expectedViolations, loadKnownFailures, type KnownFailures } from './known.ts';
@@ -14,8 +14,6 @@ export const annotationTypes = {
 export interface Harness {
   config: Target;
   cases: ConformanceCase[];
-  url: () => string | undefined;
-  wsUrl: () => string | undefined;
   known: KnownFailures;
   expected: Map<string, Set<string>>;
 }
@@ -24,8 +22,7 @@ export function createHarness(): Harness {
   const config = target(process.env.CONFORMANCE_TARGET);
   const cases = loadCases(config);
   const known = loadKnownFailures(config.name, new Set(cases.map(c => c.id)), casesOf);
-  const url = () => (config.kind === 'server' ? inject('conformanceUrl') : undefined);
-  return { config, cases, url, wsUrl: () => url()?.replace(/^http/, 'ws'), known, expected: expectedViolations(known) };
+  return { config, cases, known, expected: expectedViolations(known) };
 }
 
 // Why a case does not run on this target. The category is what the results

@@ -6,7 +6,6 @@ export default defineConfig({
   test: {
     root: import.meta.dirname,
     include: ['**/*.conformance.ts'],
-    globalSetup: ['./src/global-setup.ts'],
     reporters: ['default', './src/reporter.ts'],
     fileParallelism: false,
     testTimeout: 30_000,

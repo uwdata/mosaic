@@ -1,10 +1,11 @@
-import { afterAll, describe } from 'vitest';
+import { afterAll, beforeAll, describe } from 'vitest';
 import { conformanceTest, createHarness, skipReason } from './src/harness.ts';
 import { Runner } from './src/runner.ts';
 
 const harness = createHarness();
 const runner = new Runner(harness);
 
+beforeAll(() => runner.start());
 afterAll(() => runner.dispose());
 
 describe(`protocol conformance: ${harness.config.name}`, () => {

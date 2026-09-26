@@ -23,7 +23,9 @@ CONFORMANCE_TARGET=go pnpm -F @uwdata/mosaic-conformance suite
 the servers `node`, `python`, `rust`, `go`, `go-cache`, `go-gatekeeper`, the
 in-process connectors `node-connector` and `wasm`, and the Python `widget`.
 A server target is built on first launch and needs its toolchain installed;
-set `CONFORMANCE_URL` to test a server you started yourself. In-process
+set `CONFORMANCE_URL` to test a server you started yourself (the suite
+cannot restart such a server after a timed-out command, and stops instead).
+In-process
 targets run `@uwdata/mosaic-core`'s own connectors inside the test process,
 the WASM one on the duckdb-wasm Node bundle in a worker thread. The widget
 target drives `MosaicWidget._handle_custom_msg` through

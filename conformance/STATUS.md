@@ -114,14 +114,16 @@ reset, a WebSocket `error` event) is a harness error, while an engine or
 server error the connector passes through is an observation. A server that
 accepts the request and then drops the connection is recorded under its own
 id (`connector.reset.peer-closed`, `connector.reset.body.socket-closed`,
-`connector.reset.socket-closed`), never as a missing envelope. A command or
-comm step that reaches its deadline is recorded (`connector.no-reply`,
-`comm.timeout`) and taints the session; when disposing the session isolates
-the implementation (an in-process engine is terminated, the shim process is
-killed) a fresh one serves the next case, but a client connector cannot stop
-SQL already running on a server, so for `rest` and `socket` the whole
-target's state is unknown and every remaining case, on any transport, fails
-as a harness error before sending anything. The shim's own protocol is validated record by record;
+`connector.reset.socket-closed`), never as a missing envelope. A step that
+reaches its deadline on any transport is recorded where that is an
+observation (`ws.no-reply`, `connector.no-reply`, `comm.timeout`; an HTTP
+timeout is a harness error), the rest of that case is blocked, and the
+target is restored to a known state before the next case: an in-process
+engine or the shim is disposed and rebuilt, and a server the suite spawned
+is stopped and started again, taking the client sessions bound to it along.
+A server the suite did not start (`CONFORMANCE_URL`) cannot be restored, so
+there every later case, on any transport, fails as a harness error before
+sending anything. The shim's own protocol is validated record by record;
 a malformed or duplicate record is a harness error, never a reply. Every step of a multi-step case runs even after an earlier step
 misbehaved, so follow-up checks such as "the connection is still usable" or
 "the table was not created" are observed independently. After the last

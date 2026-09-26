@@ -59,7 +59,7 @@ export class WsClient {
     }
   }
 
-  next(): Promise<WsResponse> {
+  next(timeout = stepTimeout): Promise<WsResponse> {
     const queued = this.inbox.shift();
     if (queued) return Promise.resolve(queued);
     if (this.closed) return Promise.resolve(this.closed);
@@ -67,7 +67,7 @@ export class WsClient {
       const timer = setTimeout(() => {
         this.waiters = this.waiters.filter(w => w !== waiter);
         resolve({ kind: 'ws', frame: 'timeout' });
-      }, stepTimeout);
+      }, timeout);
       const waiter: Waiter = response => {
         clearTimeout(timer);
         resolve(response);

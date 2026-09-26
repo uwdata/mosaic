@@ -17,6 +17,20 @@ const postSendResets: Record<string, string> = {
   UND_ERR_SOCKET: 'socket-closed'
 };
 
+// The step deadline elapsed while waiting for the response or its body. The
+// request was delivered, so the server may still be working on it; the
+// runner decides what that means for the rest of the run.
+export class RequestTimeout extends Error {
+  constructor(message: string, cause: unknown) {
+    super(message, { cause });
+    this.name = 'RequestTimeout';
+  }
+}
+
+function isTimeout(err: unknown) {
+  return (err as { name?: string } | null)?.name === 'TimeoutError' || (err as { cause?: { name?: string } } | null)?.cause?.name === 'TimeoutError';
+}
+
 export function classifyFetchError(err: unknown): HttpFailure | undefined {
   const cause = (err as { cause?: { code?: string; message?: string } }).cause;
   const code = cause?.code ?? '';
@@ -29,7 +43,8 @@ export async function sendHttp(
   baseUrl: string,
   transport: Transport,
   step: Step,
-  vars: Record<string, string>
+  vars: Record<string, string>,
+  timeout = defaultTimeout
 ): Promise<HttpResponse | HttpFailure> {
   const headers = new Headers();
   for (const [name, value] of Object.entries(step.headers ?? {})) {
@@ -61,11 +76,12 @@ export async function sendHttp(
       headers,
       body,
       redirect: 'manual',
-      signal: AbortSignal.timeout(defaultTimeout)
+      signal: AbortSignal.timeout(timeout)
     });
   } catch (err) {
     const failure = classifyFetchError(err);
     if (failure) return failure;
+    if (isTimeout(err)) throw new RequestTimeout(`no response to ${method} ${url.slice(0, 120)} within ${timeout} ms`, err);
     const cause = (err as { cause?: Error }).cause;
     throw new Error(`could not deliver ${method} ${url.slice(0, 120)}: ${(err as Error).message}${cause ? ` (${cause.message})` : ''}`, { cause: err });
   }
@@ -75,6 +91,7 @@ export async function sendHttp(
   } catch (err) {
     const failure = classifyFetchError(err);
     if (failure) return { ...failure, status: res.status, error: `after status ${res.status}: ${failure.error}` };
+    if (isTimeout(err)) throw new RequestTimeout(`the ${res.status} response to ${method} ${url.slice(0, 120)} did not finish within ${timeout} ms`, err);
     throw new Error(`could not read the ${res.status} response to ${method} ${url.slice(0, 120)}: ${(err as Error).message}`, { cause: err });
   }
   return { kind: 'http', status: res.status, headers: res.headers, body: bytes };

@@ -14,7 +14,7 @@ export interface RunningServer {
   stop: () => Promise<void>;
 }
 
-export async function startServer(config: Target): Promise<RunningServer> {
+export async function startServer(config: Target, label = config.name): Promise<RunningServer> {
   const port = await freePort();
   const url = `http://127.0.0.1:${port}/`;
   if (!config.command) throw new Error(`${config.name} is not a server target`);
@@ -40,7 +40,7 @@ export async function startServer(config: Target): Promise<RunningServer> {
   const stop = async () => {
     await killTree(child);
     mkdirSync(logDir, { recursive: true });
-    writeFileSync(path.join(logDir, `${config.name}.log`), log);
+    writeFileSync(path.join(logDir, `${label}.log`), log);
   };
 
   const started = Date.now();
