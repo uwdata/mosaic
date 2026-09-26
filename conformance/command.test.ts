@@ -4,7 +4,11 @@ import { captureValues, checkResponse, ipcBytes } from './src/check.ts';
 import { parseSkipNote, skipNote } from './src/harness.ts';
 import { casesOf } from './implementations/index.ts';
 import { loadKnownFailures } from './src/known.ts';
+import { expandCases, loadCaseDefinitions } from './src/cases.ts';
+import type { Harness } from './src/harness.ts';
+import { Runner } from './src/runner.ts';
 import { clientSession, issue, SessionManager, type Session } from './src/session.ts';
+import type { Target } from './implementations/index.ts';
 import type { ConnectorResponse, Violation } from './src/types.ts';
 
 const ids = (violations: Violation[]) => violations.map(v => v.id).sort();
@@ -165,7 +169,90 @@ describe('sessions', () => {
     expect(await issue(engine, { type: 'arrow', sql: 'SELEC 1' })).toMatchObject({ kind: 'connector-rejected' });
     const reset = clientSession('rest', 'http://127.0.0.1:1/');
     reset.query = async () => { throw Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' }) }); };
-    expect(await issue(reset, { type: 'arrow', sql: 'SELECT 1' })).toMatchObject({ kind: 'connector-rejected' });
+    expect(await issue(reset, { type: 'arrow', sql: 'SELECT 1' })).toMatchObject({ kind: 'connector-reset', reset: 'peer-closed' });
+    const terminated = clientSession('rest', 'http://127.0.0.1:1/');
+    terminated.query = async () => { throw Object.assign(new TypeError('terminated'), { cause: Object.assign(new Error('other side closed'), { code: 'UND_ERR_SOCKET' }) }); };
+    expect(await issue(terminated, { type: 'arrow', sql: 'SELECT 1' })).toMatchObject({ kind: 'connector-reset', reset: 'body.socket-closed' });
+    const dropped = clientSession('socket', 'http://127.0.0.1:1/');
+    dropped.query = async () => { throw 'Socket closed'; };
+    expect(await issue(dropped, { type: 'arrow', sql: 'SELECT 1' })).toMatchObject({ kind: 'connector-reset', reset: 'socket-closed' });
+  });
+
+  it('records a server that accepts the request and drops the connection as a reset, never as a missing envelope', async () => {
+    const { createServer } = await import('node:net');
+    const dropping = createServer(socket => socket.once('data', () => socket.destroy()));
+    const truncating = createServer(socket => socket.once('data', () => {
+      socket.write('HTTP/1.1 400 Bad Request\r\nContent-Type: application/json\r\nContent-Length: 200\r\n\r\n{"error":');
+      setTimeout(() => socket.destroy(), 10);
+    }));
+    await Promise.all([dropping, truncating].map(s => new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve))));
+    try {
+      const expectation = { error: { code: 'bad_request' as const, reason: 'missing_field' as const, field: 'type' } };
+      const drop = clientSession('rest', `http://127.0.0.1:${(dropping.address() as { port: number }).port}/`);
+      const out = ids(checkResponse(expectation, await issue(drop, { sql: 'SELECT 1' }), 'rest', {}));
+      expect(out).toHaveLength(1);
+      expect(out[0]).toMatch(/^connector\.reset\.(peer-closed|socket-closed)$/);
+      const trunc = clientSession('rest', `http://127.0.0.1:${(truncating.address() as { port: number }).port}/`);
+      const cut = ids(checkResponse(expectation, await issue(trunc, { sql: 'SELECT 1' }), 'rest', {}));
+      expect(cut).toEqual(['connector.reset.body.socket-closed']);
+    } finally {
+      dropping.close();
+      truncating.close();
+    }
+  });
+});
+
+describe('target-wide abort', () => {
+  it('stops every transport after a timeout the session cannot cancel, before anything else is sent', async () => {
+    const { createServer } = await import('node:http');
+    const requests: string[] = [];
+    const server = createServer((req, res) => {
+      requests.push(req.method!);
+      setTimeout(() => { res.statusCode = 200; res.end(); }, 150);
+    });
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    const url = `http://127.0.0.1:${(server.address() as { port: number }).port}/`;
+    const config: Target = { name: 'fake', kind: 'server', description: '', capabilities: new Set(['exec']), transports: ['post', 'rest'], command: () => { throw new Error('not spawned'); } };
+    const definitions = loadCaseDefinitions();
+    const cases = expandCases(definitions, config);
+    const harness: Harness = { config, cases, url: () => url, wsUrl: () => url.replace(/^http/, 'ws'), known: { server: 'fake', own: [], inherited: [] }, expected: new Map() };
+    const runner = new Runner(harness, { stepTimeout: 40 });
+    try {
+      const mutation = cases.find(c => c.id === 'rest/exec-acknowledged')!;
+      const observed = await runner.run(mutation);
+      expect(observed.map(v => v.id)).toEqual(['s1.connector.no-reply', 's2.blocked.timeout']);
+      expect(runner.fatal?.message).toMatch(/rest\/exec-acknowledged step 1 timed out.*state is unknown/);
+      const wire = cases.find(c => c.id === 'post/arrow-stream-format')!;
+      await expect(runner.run(wire)).rejects.toThrow(/state is unknown/);
+      const socket = cases.find(c => c.id === 'rest/sql-parse-error')!;
+      await expect(runner.run(socket)).rejects.toThrow(/state is unknown/);
+      await new Promise(r => setTimeout(r, 200));
+      expect(requests).toEqual(['POST']);
+    } finally {
+      await runner.dispose();
+      server.close();
+    }
+  });
+
+  it('replaces an isolated in-process session and keeps going', async () => {
+    let built = 0;
+    const config: Target = {
+      name: 'fake-inproc', kind: 'inproc', description: '', capabilities: new Set(['exec']), transports: ['inproc'],
+      session: async () => { built++; const slow = built === 1; return { isolated: true, query: async () => (slow ? new Promise(r => setTimeout(() => r(undefined), 200)) : undefined), dispose: async () => {} }; }
+    };
+    const cases = expandCases(loadCaseDefinitions(), config);
+    const harness: Harness = { config, cases, url: () => undefined, wsUrl: () => undefined, known: { server: 'fake-inproc', own: [], inherited: [] }, expected: new Map() };
+    const runner = new Runner(harness, { stepTimeout: 40 });
+    try {
+      const first = await runner.run(cases.find(c => c.id === 'inproc/exec-acknowledged')!);
+      expect(first.map(v => v.id)).toEqual(['s1.connector.no-reply', 's2.blocked.timeout']);
+      expect(runner.fatal).toBeUndefined();
+      const second = await runner.run(cases.find(c => c.id === 'inproc/exec-acknowledged')!);
+      expect(second.map(v => v.id)).toEqual(['s2.arrow.not-bytes']);
+      expect(built).toBe(2);
+    } finally {
+      await runner.dispose();
+    }
   });
 });
 

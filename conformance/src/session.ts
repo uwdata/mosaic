@@ -20,6 +20,9 @@ export interface Disposable {
 export interface Session extends Disposable {
   query(request: Record<string, unknown>): Promise<unknown>;
   transportFailure?(error: unknown): Error | undefined;
+  // A rejection meaning the server dropped the connection after accepting
+  // the request; returns the reset id to record.
+  reset?(error: unknown): string | undefined;
 }
 
 export type SessionFactory<T extends Disposable = Session> = () => Promise<T>;
@@ -43,6 +46,8 @@ export function issue(session: Session, request: Record<string, unknown>, timeou
     (error): ConnectorResponse => {
       const fatal = session.transportFailure?.(error);
       if (fatal) throw fatal;
+      const reset = session.reset?.(error);
+      if (reset) return { kind: 'connector-reset', reset, error: error instanceof Error ? `${error.message}: ${(error as { cause?: Error }).cause?.message ?? ''}` : String(error) };
       return { kind: 'connector-rejected', error };
     }
   );
@@ -108,11 +113,20 @@ export function clientSession(transport: CommandTransport, url: string): Session
       isolated: false,
       query: request => connector.query(request as never),
       // undici reports every network failure as `TypeError: fetch failed`
-      // with the real cause underneath. Only a reset after the request went
+      // with the real cause underneath, and a close while the body is being
+      // read as `TypeError: terminated`. Only a reset after the request went
       // out is server behaviour; anything else never reached the server.
+      // The connector does not expose the status of a truncated response,
+      // so the body-read reset carries no status here, unlike the wire.
       transportFailure: error => (error instanceof TypeError && error.message === 'fetch failed' && !classifyFetchError(error)
         ? new TransportError(`could not deliver the request over rest: ${(error as { cause?: Error }).cause?.message ?? error.message}`, error)
         : undefined),
+      reset: error => {
+        if (!(error instanceof TypeError)) return undefined;
+        const kind = classifyFetchError(error)?.reset;
+        if (!kind) return undefined;
+        return error.message === 'terminated' ? `body.${kind}` : kind;
+      },
       dispose: async () => {}
     };
   }
@@ -127,6 +141,9 @@ export function clientSession(transport: CommandTransport, url: string): Session
       transportFailure: error => (typeof error === 'object' && error !== null && (error as { type?: unknown }).type === 'error'
         ? new TransportError(socketClosed, error)
         : undefined),
+      // The connector fails every queued query with this string when the
+      // server closes the socket under them.
+      reset: error => (error === 'Socket closed' ? 'socket-closed' : undefined),
       // SocketConnector has no close API yet; the socket is reached directly.
       dispose: async () => { (connector as unknown as { _ws?: { close(): void } | null })._ws?.close(); }
     };

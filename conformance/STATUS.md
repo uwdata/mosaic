@@ -111,14 +111,17 @@ refusals, bad URLs, DNS or TLS failures, and timeouts fail the run. The same
 line is drawn at the command layer: a rejection the client connector raises
 because the request never left (undici's `fetch failed` without a post-send
 reset, a WebSocket `error` event) is a harness error, while an engine or
-server error the connector passes through is an observation. A command or
+server error the connector passes through is an observation. A server that
+accepts the request and then drops the connection is recorded under its own
+id (`connector.reset.peer-closed`, `connector.reset.body.socket-closed`,
+`connector.reset.socket-closed`), never as a missing envelope. A command or
 comm step that reaches its deadline is recorded (`connector.no-reply`,
 `comm.timeout`) and taints the session; when disposing the session isolates
 the implementation (an in-process engine is terminated, the shim process is
 killed) a fresh one serves the next case, but a client connector cannot stop
-SQL already running on a server, so for `rest` and `socket` the target's
-state is unknown and every remaining case fails as a harness error rather
-than run against it. The shim's own protocol is validated record by record;
+SQL already running on a server, so for `rest` and `socket` the whole
+target's state is unknown and every remaining case, on any transport, fails
+as a harness error before sending anything. The shim's own protocol is validated record by record;
 a malformed or duplicate record is a harness error, never a reply. Every step of a multi-step case runs even after an earlier step
 misbehaved, so follow-up checks such as "the connection is still usable" or
 "the table was not created" are observed independently. After the last
@@ -194,9 +197,9 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
 | Multi-statement `arrow` | duckdb-go `prepareStmts` runs every statement and returns the last result. | `bad_request` (D16). | Count statements before execution. | 5 |
 | JSON keys match case-insensitively | `encoding/json` lets `TYPE: exec` override `type: arrow`; the request ran as `exec` and returned an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 4 |
 | 405 without `Allow` | `Method not allowed` plain text, no `Allow` header. | Envelope plus `Allow: GET, POST, OPTIONS` (D5). | Set the header in the fallback branch. | 2 |
-| WebSocket malformed JSON closes the socket | `wsjson.Read` failure closes with 1007 (`server.go`). | `Error` frame, connection stays open (D12). | Read the raw frame and unmarshal manually. | 2 |
+| WebSocket malformed JSON closes the socket | `wsjson.Read` failure closes with 1007 (`server.go`); through the socket connector every queued query then fails with `Socket closed`. | `Error` frame, connection stays open (D12). | Read the raw frame and unmarshal manually. | 3 |
 | WebSocket read limit | 32 KiB library default; larger frames close with 1009. | Accept at least 1 MiB (D13). | Set a default via `WithMaxMessageBytes` and expose a CLI flag. | 1 |
-| Client connectors expose no error code | `restConnector` rejects with `Error('Query failed with HTTP status …')` and `socketConnector` with the frame's `error` string, so the coordinator sees no `code`, `reason`, or `field` even where the server sent them (WebSocket frames from this server already carry `code`). | Rejections carry the envelope's `code`, `reason`, and `field` as structured properties (D19, D24). | #1224 adds `ConnectorError` with `code`, `status`, and `reference`; `reason` and `field` need a follow-up there. Over HTTP the code also depends on the envelope fix above. | 26 |
+| Client connectors expose no error code | `restConnector` rejects with `Error('Query failed with HTTP status …')` and `socketConnector` with the frame's `error` string, so the coordinator sees no `code`, `reason`, or `field` even where the server sent them (WebSocket frames from this server already carry `code`). | Rejections carry the envelope's `code`, `reason`, and `field` as structured properties (D19, D24). | #1224 adds `ConnectorError` with `code`, `status`, and `reference`; `reason` and `field` need a follow-up there. Over HTTP the code also depends on the envelope fix above. | 25 |
 | 401 schema-match is plain text | `no allowed schemas found in request headers` via `http.Error`. | Envelope with `unauthenticated`. | Same mapper as the other HTTP errors. Needs an authorizer, which the CLI does not expose, so the suite cannot observe it. | not observable |
 | WebSocket close code and pings | Always `Close(1011)` on loop exit; pings are answered only inside `conn.Read`. | 1000 on a clean client close; SHOULD answer pings during execution. | Distinguish `CloseError`; add a reader goroutine or ping ticker. | not observable |
 | Upgrade detection | Whole-value `EqualFold` on `Connection` (`server.go`). | Token-based matching. | Scan `Connection` tokens. | not observable |
@@ -257,6 +260,7 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
 - **WebSocket malformed JSON closes the socket**
   - `ws/ws-malformed-json-stays-open`: `s1.ws.closed.1007`, `s2.ws.closed.1007`
   - `ws/type-not-a-string`: `ws.closed.1007`
+  - `socket/type-not-a-string`: `connector.reset.socket-closed`
 - **WebSocket read limit**
   - `ws/large-request-1mib`: `ws.closed.1009`
 - **Client connectors expose no error code**
@@ -281,7 +285,6 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
   - `socket/sql-parse-error`: `error.code.missing`, `error.reason.missing`
   - `socket/sql-runtime-error`: `error.code.missing`, `error.reason.missing`
   - `socket/sql-unknown-table`: `error.code.missing`, `error.reason.missing`
-  - `socket/type-not-a-string`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
   - `socket/unknown-type`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
   - `socket/ws-missing-sql-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`, `s1.error.field.missing`
   - `socket/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`

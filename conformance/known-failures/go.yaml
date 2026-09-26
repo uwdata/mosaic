@@ -184,7 +184,7 @@ failures:
       post/method-head:
         - header.allow
   - area: WebSocket malformed JSON closes the socket
-    current: "`wsjson.Read` failure closes with 1007 (`server.go`)."
+    current: "`wsjson.Read` failure closes with 1007 (`server.go`); through the socket connector every queued query then fails with `Socket closed`."
     spec: "`Error` frame, connection stays open (D12)."
     fix: Read the raw frame and unmarshal manually.
     cases:
@@ -193,6 +193,8 @@ failures:
         - s2.ws.closed.1007
       ws/type-not-a-string:
         - ws.closed.1007
+      socket/type-not-a-string:
+        - connector.reset.socket-closed
   - area: WebSocket read limit
     current: 32 KiB library default; larger frames close with 1009.
     spec: Accept at least 1 MiB (D13).
@@ -280,10 +282,6 @@ failures:
       socket/sql-unknown-table:
         - error.code.missing
         - error.reason.missing
-      socket/type-not-a-string:
-        - error.code.missing
-        - error.reason.missing
-        - error.field.missing
       socket/unknown-type:
         - error.code.missing
         - error.reason.missing

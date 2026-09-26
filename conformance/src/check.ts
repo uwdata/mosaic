@@ -43,7 +43,7 @@ export function checkResponse(
   if (response.kind === 'ws' && response.frame === 'timeout') {
     return [v('ws.no-reply', 'no response frame received before the timeout')];
   }
-  if (response.kind === 'connector' || response.kind === 'connector-rejected' || response.kind === 'connector-timeout') {
+  if (response.kind === 'connector' || response.kind === 'connector-rejected' || response.kind === 'connector-timeout' || response.kind === 'connector-reset') {
     return checkConnectorResponse(expectation, response, sql);
   }
   if (response.kind === 'comm' || response.kind === 'comm-timeout') {
@@ -235,6 +235,9 @@ function checkCommResponse(expectation: Expectation, response: CommResponse | Co
 function checkConnectorResponse(expectation: Expectation, response: ConnectorResponse, sql: string | undefined): Violation[] {
   if (response.kind === 'connector-timeout') {
     return [v('connector.no-reply', `query neither resolved nor rejected within ${response.after} ms`)];
+  }
+  if (response.kind === 'connector-reset') {
+    return [v(`connector.reset.${response.reset}`, `server closed the connection instead of answering: ${response.error}`)];
   }
   const out: Violation[] = [];
   const resolved = response.kind === 'connector';

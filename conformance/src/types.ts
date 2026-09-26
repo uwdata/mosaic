@@ -192,7 +192,17 @@ export interface ConnectorTimeout {
   after: number;
 }
 
-export type ConnectorResponse = ConnectorResolved | ConnectorRejected | ConnectorTimeout;
+// The server accepted the connection and then tore it down: before any
+// response (`reset`) or while the client was reading one (`body.<reset>`).
+// Server behaviour, so an observation, but never the same id as a missing
+// envelope.
+export interface ConnectorReset {
+  kind: 'connector-reset';
+  reset: string;
+  error: string;
+}
+
+export type ConnectorResponse = ConnectorResolved | ConnectorRejected | ConnectorTimeout | ConnectorReset;
 
 export interface CommReply {
   content: unknown;
