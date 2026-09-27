@@ -38,7 +38,7 @@ class Directive:
 @dataclass
 class Mark:
     mark: str
-    data: Any | None = None
+    data: MarkData = None
     enc: dict[str, Any] | None = None
 
     def to_dict(self, param_names: dict[int, str] | None = None) -> dict[str, Any]:

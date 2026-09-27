@@ -146,10 +146,10 @@ class TestDataFrames:
             from typing_extensions import assert_type
             from vgplot._types import MarkData
 
-            assert_type(mark_polars.data, MarkData)  # ty: ignore[type-assertion-failure] # pyright: ignore[reportAssertTypeFailure]
-            assert_type(mark_pandas.data, MarkData)  # ty: ignore[type-assertion-failure] # pyright: ignore[reportAssertTypeFailure]
-            assert_type(mark_duckdb.data, MarkData)  # ty: ignore[type-assertion-failure] # pyright: ignore[reportAssertTypeFailure]
-            assert_type(mark_pyarrow.data, MarkData)  # ty: ignore[type-assertion-failure] # pyright: ignore[reportAssertTypeFailure]
+            assert_type(mark_polars.data, MarkData)
+            assert_type(mark_pandas.data, MarkData)
+            assert_type(mark_duckdb.data, MarkData)
+            assert_type(mark_pyarrow.data, MarkData)
 
 
 if TYPE_CHECKING:
