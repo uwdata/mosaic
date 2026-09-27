@@ -41,7 +41,6 @@ test = [
   "pyarrow-hotfix",
   "pytest-cov",
   "pytest",
-  "pytest-env",
 ]
 
 [tool.hatch.version]
