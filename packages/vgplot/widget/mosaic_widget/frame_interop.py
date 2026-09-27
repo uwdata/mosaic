@@ -28,14 +28,6 @@ def is_registrable_frame(obj: Any) -> TypeIs[IntoFrame]:
 
 
 def frame_to_duckdb_registrable(frame: IntoFrame) -> object:
-    """Converts a native dataframe(-like) object to a DuckDB-registrable object.
-
-    If the passed `frame` is one of the backends supported by DuckDB to be registered as a virtual table with zero-copy guarantees,
-    we return the `frame` itself. Otherwise, we convert it to a Narwhals frame and then to an Arrow table. Based on the backend-specific implementation,
-    this may or may not be a zero-copy operation.
-
-    If the passed `frame` is a lazy frame, it is materialized.
-    """
     nw_frame = nw.from_native(frame)
     if nw_frame.implementation in _DUCKDB_NATIVE:
         return nw_frame.to_native()

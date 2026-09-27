@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import duckdb
 import pytest
 
 from mosaic_widget import MosaicWidget
@@ -136,7 +135,7 @@ def test_lazyframe_registered(
     request.applymarker(
         pytest.mark.xfail(
             lazyframe.implementation.is_duckdb(),
-            raises=duckdb.InvalidInputException,
+            raises=NotImplementedError,
             reason="https://github.com/uwdata/mosaic/issues/1296",
         )
     )

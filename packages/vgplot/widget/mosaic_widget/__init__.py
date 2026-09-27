@@ -42,28 +42,6 @@ def _has_to_dict(obj: Any) -> TypeIs[SupportsToDict]:
     return inspect.getattr_static(obj, "to_dict", _sentinel) is not _sentinel
 
 
-def _register_frame_data(spec: dict[str, Any], data: dict[str, Any]) -> dict[str, Any]:
-    """Move in-memory DataFrames out of the spec's data section into `data`.
-
-    The spec is synced to the frontend as JSON and cannot carry live frames, so
-    hand them to DuckDB registration instead.
-    """
-    spec_data = spec.get("data")
-    if not isinstance(spec_data, dict):
-        return spec
-    kept = {}
-    for name, value in spec_data.items():
-        if is_registrable_frame(value):
-            data.setdefault(name, value)
-        else:
-            kept[name] = value
-    return (
-        {**spec, "data": kept}
-        if kept
-        else {k: v for k, v in spec.items() if k != "data"}
-    )
-
-
 class MosaicWidget(anywidget.AnyWidget):
     _esm = pathlib.Path(__file__).parent / "static" / "index.js"
     _css = pathlib.Path(__file__).parent / "static" / "index.css"
@@ -100,14 +78,17 @@ class MosaicWidget(anywidget.AnyWidget):
                 Defaults to {}. Keys are table names, values are objects to register as
                 virtual tables (similar to SQL VIEWs). Supports pandas/polars DataFrames
                 and other Arrow objects.
+
+        Important:
+            Table names in `spec["data"]` have a lower precedence than those in `data`.
         """
-        if data is None:
-            data = {}
-        frame = inspect.currentframe()
-        caller_locals = frame.f_back.f_locals if frame and frame.f_back else {}
+
+        data = data if data is not None else {}
         if spec is None:
             spec_: dict[str, Any] = {}
         elif _has_to_dict(spec):
+            frame = inspect.currentframe()
+            caller_locals = frame.f_back.f_locals if frame and frame.f_back else {}
             try:
                 spec_ = spec.to_dict(_context=caller_locals)
             except TypeError:
@@ -117,17 +98,27 @@ class MosaicWidget(anywidget.AnyWidget):
         else:
             msg = f"spec must be a dict or have a to_dict() method, got {type(spec)}"
             raise TypeError(msg)
-        spec_ = _register_frame_data(spec_, data)
-        if con is None:
-            con = duckdb.connect()
+
+        merged_data = _data | data if (_data := spec_.pop("data", None)) else data
 
         super().__init__(*args, **kwargs)
-        self.spec = spec_
-        self.con = con
         self._registered_tables: set[str] = set()
-        for name, df in data.items():
-            self.con.register(name, frame_to_duckdb_registrable(df))
-            self._registered_tables.add(name)
+        non_dataframe: dict[str, Any] = {}
+        for name, value in merged_data.items():
+            if is_registrable_frame(value):
+                if isinstance(value, duckdb.DuckDBPyRelation) and con is None:
+                    msg = "TODO: Decide how to deal with this case"
+                    raise NotImplementedError(msg)
+                if con is None:
+                    con = duckdb.connect()
+                con.register(name, frame_to_duckdb_registrable(value))
+                self._registered_tables.add(name)
+            else:
+                non_dataframe[name] = value
+        if non_dataframe:
+            spec_["data"] = non_dataframe
+        self.spec = spec_
+        self.con = con if con is not None else duckdb.connect()
         self.on_msg(self._handle_custom_msg)
 
     def _handle_custom_msg(
