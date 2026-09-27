@@ -61,8 +61,17 @@
 }
 
 .mosaic-widget .error {
-    color: #b00020;
-    background: #fdecea;
+    background: color-mix(in srgb, #e5484d 12%, transparent);
+    border-left: 3px solid #e5484d;
     padding: 0.5em;
+    white-space: pre;
+    overflow-wrap: normal;
+    word-break: normal;
     overflow-x: auto;
+}
+
+/* VS Code forces a white widget background but keeps the dark theme's light text color.
+   https://github.com/microsoft/vscode-jupyter/blob/main/src/webviews/webview-side/ipywidgets/renderer/styles.css */
+.cell-output-ipywidget-background .mosaic-widget .error {
+    color: #1f1f1f;
 }
