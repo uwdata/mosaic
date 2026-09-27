@@ -37,7 +37,6 @@ dev = [
 test = [
   "dask",
   "ibis-framework",
-  "modin",
   "polars",
   "pyarrow-hotfix",
   "pytest-cov",
