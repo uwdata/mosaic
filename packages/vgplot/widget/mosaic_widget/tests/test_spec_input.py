@@ -2,12 +2,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import duckdb
 import pytest
 
 from mosaic_widget import MosaicWidget
 
 if TYPE_CHECKING:
-    from .conftest import Data, DataFrameConstructor, NwDataFrame
+    from .conftest import (
+        Data,
+        DataFrameConstructor,
+        LazyFrameConstructor,
+        NwDataFrame,
+        NwLazyFrame,
+    )
 
 
 class SpecWithContext:
@@ -82,6 +89,11 @@ def frame(nw_dataframe: DataFrameConstructor, frame_data: Data) -> NwDataFrame:
     return nw_dataframe(frame_data)
 
 
+@pytest.fixture
+def lazyframe(nw_lazyframe: LazyFrameConstructor, frame_data: Data) -> NwLazyFrame:
+    return nw_lazyframe(frame_data)
+
+
 def test_frame_in_data_section_is_registered(frame: NwDataFrame) -> None:
     widget = MosaicWidget(FrameDataSpec({"weather": frame.to_native()}))
 
@@ -115,3 +127,21 @@ def test_explicit_data_takes_precedence(frame: NwDataFrame) -> None:
 
     pytest.importorskip("pandas")
     assert len(widget.con.query("select * from weather").df()) == 1
+
+
+@pytest.mark.filterwarnings("ignore::mosaic_widget._exceptions.PerformanceWarning")
+def test_lazyframe_registered(
+    request: pytest.FixtureRequest, lazyframe: NwLazyFrame
+) -> None:
+    request.applymarker(
+        pytest.mark.xfail(
+            lazyframe.implementation.is_duckdb(),
+            raises=duckdb.InvalidInputException,
+            reason="https://github.com/uwdata/mosaic/issues/1296",
+        )
+    )
+    native = lazyframe.to_native()
+    widget = MosaicWidget(FrameDataSpec({"weather": native}))
+    assert widget.spec == {"plot": [{"mark": "dot", "data": {"from": "weather"}}]}
+    assert "weather" in widget._registered_tables
+    assert len(widget.con.query("select * from weather").to_arrow_table()) == 3
