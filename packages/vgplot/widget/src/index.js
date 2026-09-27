@@ -111,6 +111,7 @@ export default {
     function showError(error) {
       logger.error(error);
       const pre = document.createElement('pre');
+      pre.className = 'error';
       pre.textContent = String(error);
       view.el.replaceChildren(pre);
     }

@@ -59,3 +59,10 @@
     color: #444;
     vertical-align: top;
 }
+
+.mosaic-widget .error {
+    color: #b00020;
+    background: #fdecea;
+    padding: 0.5em;
+    white-space: pre-wrap;
+}
