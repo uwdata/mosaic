@@ -125,17 +125,17 @@ class TestDataFrames:
         vg.bar_x(df_polars)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.line(df_polars)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.circle(df_polars)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
-        vg.mark("rectX", df_polars)
+        vg.mark("rectX", df_polars)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
 
         vg.bar_x(df_pandas)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.line(df_pandas)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.circle(df_pandas)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
-        vg.mark("rectX", df_pandas)
+        vg.mark("rectX", df_pandas)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
 
         vg.bar_x(df_duckdb)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.line(df_duckdb)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.circle(df_duckdb)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
-        vg.mark("rectX", df_duckdb)
+        vg.mark("rectX", df_duckdb)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
 
         vg.bar_x(df_pyarrow)
         vg.line(df_pyarrow)

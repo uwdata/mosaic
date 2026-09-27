@@ -9,6 +9,7 @@ from .params import _ParamBase
 from .util import camelize, omit_none
 
 if TYPE_CHECKING:
+    from vgplot._types import MarkData
     from vgplot.spec import View
 
 
@@ -123,7 +124,7 @@ def directive(key: str, value: Any) -> Directive:
     return Directive(key, value)
 
 
-def mark(name: str, data: Any = None, **enc: Any) -> Mark:
+def mark(name: str, data: MarkData = None, **enc: Any) -> Mark:
     return Mark(name, data=data, enc=enc)
 
 
