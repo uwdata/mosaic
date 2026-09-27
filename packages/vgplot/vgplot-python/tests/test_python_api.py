@@ -122,25 +122,34 @@ class TestDataFrames:
         df_duckdb = duckdb.from_arrow(df_polars)
         df_pyarrow = pa.table(data)
 
-        vg.bar_x(df_polars)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
+        mark_polars = vg.bar_x(df_polars)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.line(df_polars)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.circle(df_polars)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.mark("rectX", df_polars)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
 
-        vg.bar_x(df_pandas)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
+        mark_pandas = vg.bar_x(df_pandas)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.line(df_pandas)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.circle(df_pandas)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.mark("rectX", df_pandas)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
 
-        vg.bar_x(df_duckdb)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
+        mark_duckdb = vg.bar_x(df_duckdb)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.line(df_duckdb)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.circle(df_duckdb)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         vg.mark("rectX", df_duckdb)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
 
-        vg.bar_x(df_pyarrow)
+        mark_pyarrow = vg.bar_x(df_pyarrow)
         vg.line(df_pyarrow)
         vg.circle(df_pyarrow)
         vg.mark("rectX", df_pyarrow)
+
+        if TYPE_CHECKING:
+            from typing_extensions import assert_type
+            from vgplot._types import MarkData
+
+            assert_type(mark_polars.data, MarkData)  # ty: ignore[type-assertion-failure] # pyright: ignore[reportAssertTypeFailure]
+            assert_type(mark_pandas.data, MarkData)  # ty: ignore[type-assertion-failure] # pyright: ignore[reportAssertTypeFailure]
+            assert_type(mark_duckdb.data, MarkData)  # ty: ignore[type-assertion-failure] # pyright: ignore[reportAssertTypeFailure]
+            assert_type(mark_pyarrow.data, MarkData)  # ty: ignore[type-assertion-failure] # pyright: ignore[reportAssertTypeFailure]
 
 
 if TYPE_CHECKING:
