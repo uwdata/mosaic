@@ -1,4 +1,4 @@
-import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, MaybeArray, Query } from '@uwdata/mosaic-sql';
+import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, MaybeArray, Query, TableRefNode } from '@uwdata/mosaic-sql';
 import type { QueryResult } from './util/query-result.js';
 
 /** Arrow IPC bytes as returned by a connector. */
@@ -50,7 +50,7 @@ export type FieldRef = string | ExprNode;
  * A request for metadata information about a database column.
  */
 export interface FieldInfoRequest {
-  table: string | string[];
+  table: string | TableRefNode;
   column: FieldRef;
   stats?: Stat[];
 }
@@ -59,7 +59,7 @@ export interface FieldInfoRequest {
  * A response with metadata information about a database column.
  */
 export interface FieldInfo extends Partial<Record<Stat, number>> {
-  table: string | string[],
+  table: string | TableRefNode,
   column: string,
   sqlType: string,
   type: JSType,

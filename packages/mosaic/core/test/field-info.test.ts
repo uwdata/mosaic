@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { tableRef } from '@uwdata/mosaic-sql';
 import type { Coordinator, FieldInfoRequest } from '../src/index.js';
 import { queryFieldInfo } from '../src/index.js';
 
@@ -33,10 +34,11 @@ describe('queryFieldInfo', () => {
     expect(await queryFieldInfo(mc, [request])).toEqual([fallbackInfo]);
   });
 
-  it('queries a table name path as one relation', async () => {
+  it('queries a schema-qualified table', async () => {
     const queries: string[] = [];
     const mc = { query: (q: unknown) => (queries.push(`${q}`), Promise.resolve([])) } as unknown as Coordinator;
-    await queryFieldInfo(mc, [{ table: ['schema_name', 'table_name'], column: 'my_column', stats: ['min'] }]);
+    const table = tableRef('schema_name', 'table_name')!;
+    await queryFieldInfo(mc, [{ table, column: 'my_column', stats: ['min'] }]);
     expect(queries[1]).toContain('FROM "schema_name"."table_name"');
   });
 });

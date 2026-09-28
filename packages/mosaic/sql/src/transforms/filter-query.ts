@@ -20,7 +20,7 @@ import { WithClauseNode } from '../ast/with.js';
  */
 export function filterPushdown(
   query: Query,
-  table: string | string[] | TableRefNode,
+  table: string | TableRefNode,
   filter: FilterExpr
 ) {
   const clone = deepClone(query);
@@ -84,7 +84,7 @@ export function filterPushdown(
  * @param table The base table as a table name or table reference node.
  * @returns The generator function.
  */
-export function filterQuery(query: Query, table: string | string[] | TableRefNode) {
+export function filterQuery(query: Query, table: string | TableRefNode) {
   return (filter: FilterExpr) => filterPushdown(query, table, filter);
 }
 

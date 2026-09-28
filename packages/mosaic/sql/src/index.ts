@@ -21,6 +21,7 @@ export { asc, desc } from './functions/order-by.js';
 export { geojson, x, y, centroid, centroidX, centroidY } from './functions/spatial.js';
 export { sql } from './functions/sql-template-tag.js';
 export { regexp_matches, contains, prefix, suffix, lower, upper, length } from './functions/string.js';
+export { tableRef } from './functions/table-ref.js';
 export { unnest } from './functions/unnest.js';
 export { coalesce } from './functions/util.js';
 export { tuple, values } from './functions/values.js';

@@ -1,4 +1,4 @@
-import { Query, and, asTableRef, lineDensity } from '@uwdata/mosaic-sql';
+import { Query, and, lineDensity } from '@uwdata/mosaic-sql';
 import { binExpr } from './util/bin-expr.js';
 import { extentX, extentY } from './util/extent.js';
 import { handleParam } from './util/handle-param.js';
@@ -22,7 +22,7 @@ export class DenseLineMark extends RasterMark {
     const [y] = binExpr(this, 'y', ny, extentY(this, filter), pad);
 
     const q = Query
-      .from(asTableRef(this.sourceTable()))
+      .from(this.sourceTable())
       .where(stripXY(this, filter));
 
     this.aggr = ['density'];

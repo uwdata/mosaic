@@ -44,6 +44,7 @@ export const VSPACE = "vspace";
 // vgplot
 export const MARK = "mark";
 export const FROM = "from";
+export const TABLE_REF = "tableRef";
 export const PLOT = "plot";
 export const LEGEND = "legend";
 export const ATTRIBUTE = "attribute";
