@@ -22,19 +22,6 @@ pipx run duckdb-server
 
 Alternatively, you can install the server with `pip install duckdb-server`. Then you can start the server with `duckdb-server`.
 
-## Go Server with Local HTTPS
-
-The [Go server](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go) can configure localhost HTTPS automatically:
-
-```sh
-go install -tags=duckdb_arrow github.com/uwdata/mosaic/packages/server/duckdb-server-go@latest
-duckdb-server-go --https
-```
-
-On first use, it generates a local CA and a certificate for `localhost`, `127.0.0.1`, and `::1`, then installs the CA into the system trust store. Run from an interactive terminal; macOS and Linux may request administrator permission. Connect to `https://localhost:3000` to use HTTP/2 with supporting clients, or `wss://localhost:3000` for WebSockets.
-
-Certificates are reused and renewed automatically. See the [Go server README](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go#local-https) for certificate precedence, storage, browser trust setup, and removal instructions.
-
 ## Developer Setup
 
 To run the server from the Mosaic repository and to run the server in development mode, follow the [instructions for the duckdb-server package](https://github.com/uwdata/mosaic/blob/main/packages/server/duckdb-server/README.md).
