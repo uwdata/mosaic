@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import logging
 import sys
 import time
@@ -10,6 +11,7 @@ from msgspec.json import decode as json_decode_slow
 from msgspec.json import encode as json_encode
 from socketify import App, CompressOptions, OpCode
 
+from pkg.encoding import response_encoding
 from pkg.query import get_arrow_bytes
 
 if TYPE_CHECKING:
@@ -25,6 +27,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 SLOW_QUERY_THRESHOLD = 5000
+COMPRESSION_THRESHOLD = 1024
 
 
 class QueryParams(msgspec.Struct):
@@ -50,15 +53,17 @@ class SocketHandler(Handler):
             logger.warning(f"WebSocket backpressure: {self.ws.get_buffered_amount()}")
 
     def done(self) -> None:
-        ok = self.ws.send({}, OpCode.TEXT)
+        ok = self.ws.send(b"{}", OpCode.TEXT)
         self.check(ok)
 
     def arrow(self, buffer: bytes) -> None:
-        ok = self.ws.send(buffer, OpCode.BINARY)
+        ok = self.ws.send(
+            buffer, OpCode.BINARY, compress=len(buffer) >= COMPRESSION_THRESHOLD
+        )
         self.check(ok)
 
     def error(self, error: object, status: int = 500) -> None:
-        ok = self.ws.send({"error": str(error)}, OpCode.TEXT)
+        ok = self.ws.send(json_encode({"error": str(error)}), OpCode.TEXT)
         self.check(ok)
 
 
@@ -72,8 +77,9 @@ CORS_HEADERS = {
 
 
 class HTTPHandler(Handler):
-    def __init__(self, res: Res) -> None:
+    def __init__(self, res: Res, accept_encoding: str = "") -> None:
         self.res = res
+        self.gzip, self.identity = response_encoding(accept_encoding)
 
     # uWebSockets streams the response, so a status written after a header is ignored
     def begin(self, status: int) -> Res:
@@ -86,8 +92,21 @@ class HTTPHandler(Handler):
         self.begin(200).end("")
 
     def arrow(self, buffer: bytes) -> None:
+        if not self.gzip and not self.identity:
+            res = self.begin(406)
+            res.write_header("Vary", "Accept-Encoding")
+            res.end("")
+            return
+        compressed = self.gzip and (
+            len(buffer) >= COMPRESSION_THRESHOLD or not self.identity
+        )
+        if compressed:
+            buffer = gzip.compress(buffer, compresslevel=6, mtime=0)
         res = self.begin(200)
+        res.write_header("Vary", "Accept-Encoding")
         res.write_header("Content-Type", "application/octet-stream")
+        if compressed:
+            res.write_header("Content-Encoding", "gzip")
         res.end(buffer)
 
     def error(self, error: object, status: int = 500) -> None:
@@ -162,7 +181,7 @@ def server(con: Con) -> None:
         handle_message(SocketHandler(ws), con, message)
 
     async def http_handler(res: Res, req: Req) -> None:
-        handler = HTTPHandler(res)
+        handler = HTTPHandler(res, req.get_header("accept-encoding") or "")
         match req.get_method():
             case "OPTIONS":
                 handler.done()
