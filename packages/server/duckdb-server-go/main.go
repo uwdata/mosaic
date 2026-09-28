@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -27,6 +28,7 @@ func run() int {
 	address := flag.String("address", "localhost", "HTTP Address")
 	port := flag.String("port", "3000", "HTTP Port")
 	poolSize := flag.Int("connection-pool-size", 10, "Max connection pool size")
+	https := flag.Bool("https", false, "Enable HTTPS with automatically managed localhost certificates")
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
 	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET arrow responses; enables ETag validation for those queries")
@@ -49,16 +51,10 @@ func run() int {
 		return 1
 	}
 
-	// If no certificate files are specified, check for default localhost certificates
-	if *certFile == "" && *keyFile == "" {
-		// Check if localhost.pem and localhost-key.pem exist in the current directory
-		if _, err := os.Stat("localhost.pem"); err == nil {
-			if _, err = os.Stat("localhost-key.pem"); err == nil {
-				*certFile = "localhost.pem"
-				*keyFile = "localhost-key.pem"
-				logger.Info("main: found default certificates in current directory", "cert", *certFile, "key", *keyFile)
-			}
-		}
+	tlsConfig, err := configureHTTPS(*https, *address, *certFile, *keyFile, logger)
+	if err != nil {
+		logger.Error("main: HTTPS setup failed", "error", err)
+		return 1
 	}
 
 	validation := gatekeeper.document != nil
@@ -120,6 +116,7 @@ func run() int {
 		"connection_pool_size": *poolSize,
 		"cert_file":            *certFile,
 		"key_file":             *keyFile,
+		"https":                tlsConfig != nil,
 		"cache_control":        *cacheControl,
 		"vary":                 varyHeaders.String(),
 		"load_extensions":      *extensionsStr,
@@ -143,18 +140,15 @@ func run() int {
 	}
 	fmt.Println("-------------------- | -------- | -------------------- | --------------------")
 
-	addr := *address + ":" + *port
+	addr := net.JoinHostPort(*address, *port)
+	httpServer := &http.Server{Addr: addr, Handler: s, TLSConfig: tlsConfig}
 
-	// Check if both certificate files are provided for HTTPS
-	if *certFile != "" && *keyFile != "" {
+	if tlsConfig != nil {
 		logger.Info(fmt.Sprintf("DuckDB Server listening on https://%s and wss://%s", addr, addr))
-		err = http.ListenAndServeTLS(addr, *certFile, *keyFile, s)
+		err = httpServer.ListenAndServeTLS("", "")
 	} else {
-		if *certFile != "" || *keyFile != "" {
-			logger.Warn("main: both cert and key files must be provided for HTTPS. Falling back to HTTP")
-		}
 		logger.Info(fmt.Sprintf("DuckDB Server listening on http://%s and ws://%s", addr, addr))
-		err = http.ListenAndServe(addr, s)
+		err = httpServer.ListenAndServe()
 	}
 	if err != nil {
 		logger.Error("main: error running HTTP server", "error", err)

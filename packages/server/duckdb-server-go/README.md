@@ -26,6 +26,7 @@ You can customize the server behavior with the following command-line flags:
 -   `--address <address>`: The HTTP address to listen on. Defaults to "localhost".
 -   `--port <port>`: The HTTP port to listen on. Defaults to "3000".
 -   `--connection-pool-size <size>`: The maximum size of the connection pool. Defaults to 10.
+-   `--https`: Enable HTTPS with automatically managed localhost certificates and local CA trust setup.
 -   `--cert <path>`: Path to a TLS certificate file to enable HTTPS.
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
 -   `--cache-control <value>`: Cache-Control value for successful GET `arrow` responses, enabling ETags and conditional responses for those queries. Omitted or empty values preserve existing behavior.
@@ -40,12 +41,23 @@ commands, including side-effecting `exec` commands over GET, to a running server
 browsers or cookie credentials without an outer proxy that enforces an origin or CSRF policy. Programs embedding
 `pkg/server` instead receive safe zero-value origin defaults and can configure exact allowed origins.
 
-Create certificates for localhost with [mkcert](https://github.com/FiloSottile/mkcert)
+### Local HTTPS
+
+Enable HTTPS (including HTTP/2) without installing mkcert or managing certificate files:
 
 ```sh
-mkcert -install # Install mkcert CA
-mkcert localhost # create localhost.pem and localhost-key.pem
+duckdb-server-go --https
 ```
+
+On first use, the server generates a local CA and a certificate for `localhost`, `127.0.0.1`, and `::1`, then installs the CA into the system trust store. Run from an interactive terminal: macOS and Linux may prompt for administrator permission. Subsequent starts reuse the CA and certificates. The server renews its 90-day certificate when fewer than 30 days remain, both at startup and on new TLS handshakes. The CA lasts ten years; near its expiration, the server reports instructions to replace and trust a new CA.
+
+Connect to `https://localhost:3000` or `wss://localhost:3000`. Managed HTTPS accepts only `--address localhost`, `127.0.0.1`, or `::1`. For other addresses, supply your own certificate and key. Explicit `--cert`/`--key` files take precedence, followed by the existing `localhost.pem`/`localhost-key.pem` pair in the current directory; these user-provided files are not managed or installed into trust stores. Providing only one of `--cert` and `--key` is an error. Without `--https` or certificate files, the server uses plain HTTP.
+
+Files are stored under `mosaic/duckdb-server-go/https` in the OS user configuration directory (`~/Library/Application Support` on macOS, `$XDG_CONFIG_HOME` or `~/.config` on Linux, `%AppData%` on Windows). The startup log prints the directory. `ca.pem` contains only the public CA certificate for manual import; **do not share `ca-key.pem` or `localhost.pem`**, which contain private keys. Unix directory/file permissions are `0700`/`0600`; Windows uses the user configuration directory's inherited access controls.
+
+System trust setup uses built-in macOS/Windows facilities and Linux distribution CA-update tools. Existing NSS browser profiles on macOS/Linux are also configured when NSS `certutil` is available. If the server reports missing NSS support, install it (`brew install nss`, `apt install libnss3-tools`, or your distribution's equivalent), rerun `--https`, and restart the browser. Browsers with separate or sandboxed trust stores may require importing `ca.pem` manually. Windows browsers must use the Windows trust store or a manual CA import. Installing system trust does not guarantee every browser or container trusts it.
+
+Failed system trust installation stops startup; retry from an interactive terminal with permission to update trust, or provide an already-trusted certificate using `--cert` and `--key`. To remove managed HTTPS permanently, remove the "Mosaic localhost development CA" from system and configured browser trust stores, then delete its configuration directory.
 
 ### Programmatic Extension Initialization
 
