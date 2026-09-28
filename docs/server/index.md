@@ -22,31 +22,8 @@ pipx run duckdb-server
 
 Alternatively, you can install the server with `pip install duckdb-server`. Then you can start the server with `duckdb-server`.
 
-## Response compression
-
-Arrow HTTP responses negotiate gzip through `Accept-Encoding`, honoring quality
-weights and explicit exclusions. Gzip level 1 is used when gzip is at least as
-preferred as identity and the response is at least 1 KiB. Smaller responses stay
-uncompressed unless identity is explicitly unacceptable. Omitting the header
-selects identity. Arrow responses include `Vary: Accept-Encoding` and return
-status 406 when neither gzip nor identity is acceptable. Empty `exec` responses
-and HTTP errors are not compressed.
-
-WebSocket Arrow messages of at least 1 KiB request compression when the client
-negotiates permessage-deflate. Clients without the extension still receive
-uncompressed messages. `exec` acknowledgements (`{}`) and error objects are sent
-as JSON text messages.
-
-For latency-sensitive local workloads, disable both HTTP and WebSocket
-compression with `duckdb-server --no-compression`, or call
-`server(con, compression=False)` when embedding. Compression runs synchronously
-on the Python server loop; level 1 reduces HTTP CPU cost but does not eliminate
-it, and socketify does not expose a WebSocket compression-level setting.
-When compression is disabled, HTTP clients excluding identity receive 406.
-
-Use `duckdb-server --port 3001` or `server(con, port=3001)` to choose another
-listening port. The default remains 3000. A positional database path is still
-supported, for example `duckdb-server data.duckdb --port 3001 --no-compression`.
+- `--no-compression`: Disable HTTP and WebSocket compression (enabled by default). When embedding, use `server(con, compression=False)`.
+- `--port`: Set the listening port (default `3000`). When embedding, use `server(con, port=3001)`.
 
 ## Developer Setup
 
