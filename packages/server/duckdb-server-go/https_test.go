@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"io"
 	"log/slog"
 	"net"
@@ -14,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/smallstep/truststore"
 	"github.com/stretchr/testify/require"
 )
 
@@ -164,9 +168,85 @@ func TestConfigureHTTPS(t *testing.T) {
 	require.NoError(t, os.WriteFile("localhost.pem", data, 0600))
 	require.NoError(t, os.WriteFile("localhost-key.pem", data, 0600))
 	for _, enabled := range []bool{false, true} {
+		var logs bytes.Buffer
+		logger := slog.New(slog.NewTextHandler(&logs, nil))
 		config, err = configureHTTPS(enabled, "localhost", "", "", logger)
 		require.NoError(t, err)
 		require.Equal(t, local.cert.Certificate, config.Certificates[0].Certificate)
+		require.Equal(t, enabled, bytes.Contains(logs.Bytes(), []byte("override --https")))
+	}
+}
+
+func TestLocalHTTPSNameConstraints(t *testing.T) {
+	local, err := newLocalHTTPS(t.TempDir(), time.Now)
+	require.NoError(t, err)
+	roots := x509.NewCertPool()
+	roots.AddCert(local.ca)
+	for _, host := range []string{"localhost", "example.com", "sub.localhost", "127.0.0.1", "127.0.0.2", "::1", "::2"} {
+		t.Run(host, func(t *testing.T) {
+			leaf := *local.cert.Leaf
+			leaf.DNSNames, leaf.IPAddresses = nil, nil
+			if ip := net.ParseIP(host); ip != nil {
+				leaf.IPAddresses = []net.IP{ip}
+			} else {
+				leaf.DNSNames = []string{host}
+			}
+			der, err := x509.CreateCertificate(rand.Reader, &leaf, local.ca, leaf.PublicKey, local.key)
+			require.NoError(t, err)
+			cert, err := x509.ParseCertificate(der)
+			require.NoError(t, err)
+			_, err = cert.Verify(x509.VerifyOptions{Roots: roots, DNSName: host})
+			if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+				require.NoError(t, err)
+			} else {
+				var invalid x509.CertificateInvalidError
+				require.ErrorAs(t, err, &invalid)
+				require.Equal(t, x509.CANotAuthorizedForThisName, invalid.Reason)
+			}
+		})
+	}
+}
+
+type unavailableNSSTrust struct{ truststore.Trust }
+
+func (unavailableNSSTrust) PreCheck() error               { return nil }
+func (unavailableNSSTrust) Exists(*x509.Certificate) bool { return false }
+func (unavailableNSSTrust) Install(string, *x509.Certificate) error {
+	return errors.New("profile is locked")
+}
+
+func TestOptionalNSSFailure(t *testing.T) {
+	var logs bytes.Buffer
+	installNSSTrust(unavailableNSSTrust{}, nil, t.TempDir(), slog.New(slog.NewTextHandler(&logs, nil)))
+	require.Contains(t, logs.String(), "level=WARN")
+	require.Contains(t, logs.String(), "profile is locked")
+	require.Contains(t, logs.String(), "retry --https")
+}
+
+func TestHasNSSProfiles(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	original := truststore.NSSProfile
+	truststore.NSSProfile = filepath.Join(dir, "profiles", "*")
+	t.Cleanup(func() { truststore.NSSProfile = original })
+	require.False(t, hasNSSProfiles())
+	profile := filepath.Join(dir, "profiles", "default")
+	require.NoError(t, os.MkdirAll(profile, 0700))
+	require.False(t, hasNSSProfiles())
+	require.NoError(t, os.WriteFile(filepath.Join(profile, "cert9.db"), nil, 0600))
+	require.True(t, hasNSSProfiles())
+	require.NoError(t, os.Remove(filepath.Join(profile, "cert9.db")))
+	nss := filepath.Join(dir, ".pki", "nssdb")
+	require.NoError(t, os.MkdirAll(nss, 0700))
+	require.NoError(t, os.WriteFile(filepath.Join(nss, "cert8.db"), nil, 0600))
+	require.True(t, hasNSSProfiles())
+}
+
+func TestNormalizeAddress(t *testing.T) {
+	for input, expected := range map[string]string{
+		"localhost": "localhost", "127.0.0.1": "127.0.0.1", "::1": "::1", "[::1]": "::1", "[bad]": "[bad]",
+	} {
+		require.Equal(t, expected, normalizeAddress(input))
 	}
 }
 

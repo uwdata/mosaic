@@ -38,6 +38,7 @@ func run() int {
 	var gatekeeper gatekeeperFlag
 	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":1,"options":{}} enables validation with defaults`)
 	flag.Parse()
+	*address = normalizeAddress(*address)
 
 	ctx := context.Background()
 
@@ -141,7 +142,7 @@ func run() int {
 	fmt.Println("-------------------- | -------- | -------------------- | --------------------")
 
 	addr := net.JoinHostPort(*address, *port)
-	httpServer := &http.Server{Addr: addr, Handler: s, TLSConfig: tlsConfig}
+	httpServer := &http.Server{Addr: addr, Handler: s, TLSConfig: tlsConfig, ReadHeaderTimeout: 10 * time.Second}
 
 	if tlsConfig != nil {
 		logger.Info(fmt.Sprintf("DuckDB Server listening on https://%s and wss://%s", addr, addr))

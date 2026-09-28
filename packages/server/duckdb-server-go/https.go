@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,6 +34,9 @@ func configureHTTPS(enabled bool, address, certFile, keyFile string, logger *slo
 		_, keyErr := os.Stat("localhost-key.pem")
 		if certErr == nil && keyErr == nil {
 			certFile, keyFile = "localhost.pem", "localhost-key.pem"
+			if enabled {
+				logger.Warn("existing localhost certificate files override --https automatic certificate management; move them aside to use managed certificates", "cert", certFile, "key", keyFile)
+			}
 		}
 	}
 	if certFile != "" {
@@ -77,20 +81,42 @@ func installLocalTrust(ca *x509.Certificate, dir string, logger *slog.Logger) er
 	}
 	nss, err := truststore.NewNSSTrust()
 	if err != nil {
-		logger.Warn("NSS trust setup unavailable; browsers using a separate NSS store may require importing ca.pem or installing NSS certutil (brew install nss / apt install libnss3-tools) and restarting with --https", "error", err)
+		if hasNSSProfiles() {
+			logger.Warn("NSS trust setup unavailable; browsers using a separate NSS store may require importing ca.pem or installing NSS certutil (brew install nss / apt install libnss3-tools) and restarting with --https", "error", err)
+		} else {
+			logger.Debug("NSS trust setup unavailable; no NSS profiles to configure", "error", err)
+		}
 		return nil
 	}
+	installNSSTrust(nss, ca, dir, logger)
+	return nil
+}
+
+func hasNSSProfiles() bool {
+	profiles, _ := filepath.Glob(truststore.NSSProfile)
+	profiles = append(profiles, filepath.Join(os.Getenv("HOME"), ".pki", "nssdb"))
+	for _, profile := range profiles {
+		for _, name := range []string{"cert9.db", "cert8.db"} {
+			if info, err := os.Stat(filepath.Join(profile, name)); err == nil && !info.IsDir() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func installNSSTrust(nss truststore.Trust, ca *x509.Certificate, dir string, logger *slog.Logger) {
 	if err := nss.PreCheck(); err != nil {
 		logger.Debug("no NSS profiles to configure", "error", err)
-		return nil
+		return
 	}
 	if !nss.Exists(ca) {
-		if err := truststore.Install(ca, truststore.WithNoSystem(), truststore.WithTrust(nss)); err != nil {
-			return fmt.Errorf("install localhost CA in NSS: %w; close the browser and retry --https, or import %s manually", err, filepath.Join(dir, "ca.pem"))
+		if err := nss.Install(filepath.Join(dir, "ca.pem"), ca); err != nil {
+			logger.Warn("could not install localhost CA in NSS; close the browser and retry --https, or import the CA manually", "certificate", filepath.Join(dir, "ca.pem"), "error", err)
+			return
 		}
 		logger.Info("installed localhost CA in NSS; restart the browser")
 	}
-	return nil
 }
 
 type localHTTPS struct {
@@ -112,6 +138,7 @@ func newLocalHTTPS(dir string, now func() time.Time) (*localHTTPS, error) {
 	ca, err := loadLocalPair(filepath.Join(dir, "ca-key.pem"))
 	if errors.Is(err, os.ErrNotExist) {
 		if _, certErr := os.Stat(filepath.Join(dir, "ca.pem")); !errors.Is(certErr, os.ErrNotExist) {
+			// Another process may have published both CA files since our first read.
 			ca, err = loadLocalPair(filepath.Join(dir, "ca-key.pem"))
 			if err != nil {
 				return nil, fmt.Errorf("localhost CA key is missing or unreadable; restore ca-key.pem in %s or remove the old CA from your trust stores and move the directory aside before rerunning --https: %w", dir, err)
@@ -136,7 +163,7 @@ func newLocalHTTPS(dir string, now func() time.Time) (*localHTTPS, error) {
 	local := &localHTTPS{dir: dir, ca: ca.Leaf, key: key, now: now}
 	local.cert, err = loadLocalPair(filepath.Join(dir, "localhost.pem"))
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, fmt.Errorf("load managed localhost certificate: %w", err)
+		return nil, fmt.Errorf("load managed localhost certificate: %w; if the file is corrupt, remove %s and rerun --https to regenerate it with the existing CA", err, filepath.Join(dir, "localhost.pem"))
 	}
 	if _, err := local.getCertificate(nil); err != nil {
 		return nil, err
@@ -205,6 +232,13 @@ func createLocalPair(path string, ca *x509.Certificate, caKey *ecdsa.PrivateKey,
 		template.IsCA = true
 		template.MaxPathLenZero = true
 		template.KeyUsage |= x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+		template.PermittedDNSDomainsCritical = true
+		template.PermittedDNSDomains = []string{"localhost"}
+		template.ExcludedDNSDomains = []string{".localhost"}
+		template.PermittedIPRanges = []*net.IPNet{
+			{IP: net.ParseIP("127.0.0.1"), Mask: net.CIDRMask(32, 32)},
+			{IP: net.ParseIP("::1"), Mask: net.CIDRMask(128, 128)},
+		}
 		ca, caKey = template, key
 	} else {
 		template.DNSNames = []string{"localhost"}
@@ -248,4 +282,13 @@ func saveLocalPair(path string, data []byte, exclusive bool) error {
 		return nil
 	}
 	return os.Rename(f.Name(), path)
+}
+
+func normalizeAddress(address string) string {
+	if strings.HasPrefix(address, "[") && strings.HasSuffix(address, "]") {
+		if host := address[1 : len(address)-1]; net.ParseIP(host) != nil {
+			return host
+		}
+	}
+	return address
 }
