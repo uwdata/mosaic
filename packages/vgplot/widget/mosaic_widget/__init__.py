@@ -104,7 +104,6 @@ class MosaicWidget(anywidget.AnyWidget):
 
         super().__init__(*args, **kwargs)
         self._registered_tables: set[str] = set()
-        non_dataframe: dict[str, Any] = {}
         for name, value in merged_data.items():
             if is_registrable_frame(value):
                 if isinstance(value, duckdb.DuckDBPyRelation):
@@ -114,9 +113,7 @@ class MosaicWidget(anywidget.AnyWidget):
                 con.register(name, frame_to_duckdb_registrable(value))
                 self._registered_tables.add(name)
             else:
-                non_dataframe[name] = value
-        if non_dataframe:
-            spec_["data"] = non_dataframe
+                spec_.setdefault("data", {})[name] = value
         self.spec = spec_
         self.con = _db.connect(con)
         self.on_msg(self._handle_custom_msg)
