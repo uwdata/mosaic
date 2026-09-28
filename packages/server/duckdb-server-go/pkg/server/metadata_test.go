@@ -533,35 +533,81 @@ func TestCommandMessageLimits(t *testing.T) {
 	}
 }
 
-func TestHTTPMessageLimitFollowsRequestAuthorization(t *testing.T) {
+func TestHTTPMessageLimitPrecedesRequestAuthorization(t *testing.T) {
 	const payload = `{"type":"arrow","sql":"SELECT 1","application":[null,42]}`
 	for _, tt := range []struct {
 		name   string
-		denied bool
-	}{{"restore body", false}, {"reject request", true}} {
+		limit  int64
+		read   bool
+		status int
+	}{
+		{"reads oversized body", 1, true, http.StatusRequestEntityTooLarge},
+		{"rejects without reading", 1, false, http.StatusUnauthorized},
+		{"reads body within limit", int64(len(payload)), true, http.StatusForbidden},
+	} {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(1), WithAuthorizer(AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				if tt.denied {
+			var logs bytes.Buffer
+			logger := slog.New(slog.NewJSONHandler(&logs, nil))
+			handler := mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(tt.limit), WithLogger(logger), WithAuthorizer(AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
+				if !tt.read {
 					return nil, ErrUnauthenticated
 				}
 				body, err := io.ReadAll(r.Body)
-				require.NoError(t, err)
+				if err != nil {
+					return nil, err
+				}
 				require.Equal(t, payload, string(body))
 				r.Body = io.NopCloser(strings.NewReader(string(body)))
-				return func(context.Context, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-					t.Error("unexpected command authorization")
+				return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+					require.Equal(t, "SELECT 1", command.SQL())
 					return nil, ErrPermissionDenied
 				}, nil
 			})))
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(payload)))
-			if tt.denied {
-				require.Equal(t, http.StatusUnauthorized, res.Code)
-			} else {
-				require.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
+			require.Equal(t, tt.status, res.Code)
+			if tt.status == http.StatusRequestEntityTooLarge {
+				var record map[string]any
+				require.NoError(t, json.Unmarshal(logs.Bytes(), &record))
+				require.Equal(t, "WARN", record["level"])
+				require.Equal(t, float64(tt.limit), record["limit"])
+				require.NotContains(t, logs.String(), "application")
 			}
 		})
 	}
+}
+
+func TestHTTPMessageLimitCoversWebSocketHandshake(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logs, nil))
+	var seen int
+	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(16), WithLogger(logger), WithAuthorizer(AuthorizerFunc[struct{}](func(r *http.Request) (CommandAuthorizer[struct{}], error) {
+		body, err := io.ReadAll(r.Body)
+		seen = len(body)
+		if err != nil {
+			return nil, err
+		}
+		t.Error("unexpected complete body read")
+		return nil, ErrPermissionDenied
+	})))
+	req := httptest.NewRequest(http.MethodGet, "/", bytes.NewReader(make([]byte, 4096)))
+	req.Header.Set("Connection", "Upgrade")
+	req.Header.Set("Upgrade", "websocket")
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	require.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
+	require.Equal(t, 16, seen)
+	require.Contains(t, logs.String(), `"limit":16`)
+}
+
+func TestHTTPMessageLimitClosesConnection(t *testing.T) {
+	server := httptest.NewServer(mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(1)))
+	t.Cleanup(server.Close)
+	res, err := server.Client().Post(server.URL, "application/json", strings.NewReader(`{"type":"arrow","sql":"SELECT 1"}`))
+	require.NoError(t, err)
+	require.NoError(t, res.Body.Close())
+	require.Equal(t, http.StatusRequestEntityTooLarge, res.StatusCode)
+	require.True(t, res.Close)
 }
 
 func TestHTTPMessageLimitLogsLimit(t *testing.T) {

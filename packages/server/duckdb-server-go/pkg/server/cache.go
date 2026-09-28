@@ -47,12 +47,16 @@ func WithVary(headers ...string) Option {
 	})
 }
 
-func responseETag(response commandResponse) string {
+func responseETag(response commandResponse, encoding string) string {
 	hash := sha256.New()
 	_, _ = hash.Write([]byte(response.contentType))
 	_, _ = hash.Write([]byte{0})
 	_, _ = hash.Write(response.data)
-	return `"` + hex.EncodeToString(hash.Sum(nil)) + `"`
+	tag := `"` + hex.EncodeToString(hash.Sum(nil))
+	if encoding != "" {
+		tag += "-" + encoding
+	}
+	return tag + `"`
 }
 
 // Entity tags can contain commas: https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3

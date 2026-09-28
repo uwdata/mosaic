@@ -104,7 +104,7 @@ handler, err := server.New(db,
 
 `WithCacheControl(value)` sets the complete header value on successful GET `arrow` responses. The application chooses storage, sharing, and freshness directives, such as `no-store`, `private, max-age=60`, or `public, max-age=60, s-maxage=300`. An omitted or empty value preserves existing behavior, including any headers set by outer middleware. Configured values replace an existing Cache-Control header; other responses, including errors, `exec`, POST, OPTIONS, and WebSocket handshakes, receive `no-store`. HEAD is unsupported and returns `405`; only GET query responses are cacheable.
 
-For GET `arrow` responses, enabling Cache-Control also generates a strong ETag from the response format and serialized bytes. A matching `If-None-Match` returns `304` with no body and the applicable Cache-Control, ETag, and Vary headers. Tag lists, weak comparisons, and `*` are supported. `If-Match` uses strong comparison and takes precedence, returning `412` without an ETag on a mismatch. Other command types and methods, including `exec` and POST, ignore conditional request headers; `If-Match` cannot guard an `exec` command. Authorization, query validation, execution, serialization, and hashing of the complete response still run before evaluating validators: revalidation saves transfer bandwidth. Changes to data do not invalidate already-fresh HTTP cache entries before their configured lifetime expires. Middleware or proxies that compress or transform the response must update or weaken its strong ETag.
+For GET `arrow` responses, enabling Cache-Control also generates a strong ETag from the response format and serialized bytes. A matching `If-None-Match` returns `304` with no body and the applicable Cache-Control, ETag, and Vary headers. Tag lists, weak comparisons, and `*` are supported. `If-Match` uses strong comparison and takes precedence, returning `412` without an ETag on a mismatch. Other command types and methods, including `exec` and POST, ignore conditional request headers; `If-Match` cannot guard an `exec` command. Authorization, query validation, execution, serialization, and hashing of the complete response still run before evaluating validators: revalidation saves transfer bandwidth. Changes to data do not invalidate already-fresh HTTP cache entries before their configured lifetime expires. Compressed responses carry an encoding-specific ETag; see [HTTP Response Compression](#http-response-compression).
 
 `WithVary(headers ...string)` accepts individual names or a slice with `headers...`. Names are copied, trimmed, canonicalized, and deduplicated; `*` is accepted. They append to existing Vary values, including CORS fields, on every response. `WithVary()` configures no additional names. Each option replaces earlier configuration of the same option. Invalid header characters are rejected during server construction; Cache-Control directives are otherwise passed through.
 
@@ -117,6 +117,12 @@ The equivalent command-line settings are:
 ```sh
 duckdb-server-go --cache-control='private, max-age=60' --vary=X-Tenant-Id
 ```
+
+### HTTP Response Compression
+
+HTTP responses of at least 1 KiB are compressed with gzip or zstd according to the request's `Accept-Encoding` header, preferring zstd when the client accepts both, and every command response carries `Vary: Accept-Encoding`. Compression is always enabled and cannot be configured; outer middleware and proxies should not compress again. Compressed request bodies are not accepted. WebSocket messages use the per-message compression negotiated during the handshake.
+
+A compressed GET `arrow` response keeps a strong ETag with `-gzip` or `-zstd` inserted before the closing quote, so the tag identifies the encoded representation as [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3.1) requires. The server determines the representation it will send, including the size threshold, before evaluating `If-None-Match` and `If-Match`, so a tag from a differently encoded response does not match and a `304` carries the selected representation's tag. Responses below the size threshold and clients that do not accept compression receive the plain tag.
 
 ### Application Command Fields
 
@@ -157,7 +163,7 @@ GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers);
 
 Application fields are untrusted: combine them with authenticated identity, as shown in the compiled [`ExampleNew`](pkg/server/example_test.go). Client caching can bypass the connector, and consolidation can discard query options. If fields affect results or access, isolate coordinator/cache/consolidation state per scope or disable that reuse.
 
-`WithMaxMessageBytes(n)` requires a positive byte limit for entire POST bodies and decompressed WebSocket messages, applied after request authorization and before decoding. Defaults are unbounded POST bodies and 32 KiB WebSocket messages. Exceeding the limit returns HTTP 413 or closes the WebSocket with code 1009. Request authorizers reading the body must enforce their own limits and restore it.
+`WithMaxMessageBytes(n)` requires a positive byte limit for entire HTTP request bodies and decompressed WebSocket messages. The body limit wraps every request, including WebSocket handshakes, before request authorization, so an authorizer may read the body within the limit and must restore it; reading past the limit fails the request. Defaults are unbounded request bodies and 32 KiB WebSocket messages. Exceeding the limit returns HTTP 413 with `Connection: close` or closes the WebSocket with code 1009.
 
 POST and WebSocket messages require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400 or close the WebSocket with code 1007. Validation and authorization errors leave a healthy WebSocket session open.
 

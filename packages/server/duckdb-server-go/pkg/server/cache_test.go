@@ -82,6 +82,8 @@ func TestMatchesETag(t *testing.T) {
 		{"\"bad\x7f\", \"tag\"", false, false},
 		{`*, "tag"`, false, false},
 		{`w/"tag"`, false, false},
+		{`"tag-gzip"`, false, false},
+		{`W/"tag-zstd"`, false, false},
 	}
 	for _, tt := range tests {
 		require.Equal(t, tt.strong, matchesETag(tt.value, `"tag"`, false), "strong: %q", tt.value)
@@ -89,11 +91,13 @@ func TestMatchesETag(t *testing.T) {
 	}
 }
 
-func TestResponseETagIncludesFormat(t *testing.T) {
+func TestResponseETagIncludesFormatAndEncoding(t *testing.T) {
 	response := commandResponse{contentType: commandResponses[CommandArrow].contentType, data: []byte("result")}
-	etag := responseETag(response)
+	etag := responseETag(response, "")
+	require.Regexp(t, `^"[0-9a-f]{64}"$`, etag)
+	require.Equal(t, strings.TrimSuffix(etag, `"`)+`-zstd"`, responseETag(response, "zstd"))
 	response.contentType = "application/octet-stream"
-	require.NotEqual(t, etag, responseETag(response))
+	require.NotEqual(t, etag, responseETag(response, ""))
 }
 
 func TestHTTPCachePreconditions(t *testing.T) {
