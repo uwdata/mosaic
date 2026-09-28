@@ -577,6 +577,29 @@ func TestHTTPMessageLimitPrecedesRequestAuthorization(t *testing.T) {
 	}
 }
 
+func TestHTTPMessageLimitCoversWebSocketHandshake(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logs, nil))
+	var seen int
+	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(16), WithLogger(logger), WithAuthorizer(AuthorizerFunc[struct{}](func(r *http.Request) (CommandAuthorizer[struct{}], error) {
+		body, err := io.ReadAll(r.Body)
+		seen = len(body)
+		if err != nil {
+			return nil, err
+		}
+		t.Error("unexpected complete body read")
+		return nil, ErrPermissionDenied
+	})))
+	req := httptest.NewRequest(http.MethodGet, "/", bytes.NewReader(make([]byte, 4096)))
+	req.Header.Set("Connection", "Upgrade")
+	req.Header.Set("Upgrade", "websocket")
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	require.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
+	require.Equal(t, 16, seen)
+	require.Contains(t, logs.String(), `"limit":16`)
+}
+
 func TestHTTPMessageLimitClosesConnection(t *testing.T) {
 	server := httptest.NewServer(mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(1)))
 	t.Cleanup(server.Close)

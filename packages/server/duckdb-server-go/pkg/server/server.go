@@ -85,16 +85,15 @@ func newHandler(db commandExecutor, cfg config) *handler {
 		varyHeaders:      cfg.varyHeaders,
 	}
 
-	httpHandler := newCORSHandler(cfg.cors, cfg.corsProtection, gzhttp.GzipHandler(http.HandlerFunc(s.handleHTTP)))
-	if cfg.maxMessageBytes > 0 {
-		httpHandler = http.MaxBytesHandler(httpHandler, cfg.maxMessageBytes)
-	}
-	s.httpHandler = httpHandler
+	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, gzhttp.GzipHandler(http.HandlerFunc(s.handleHTTP)))
 
 	return s
 }
 
 func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if s.maxMessageBytes > 0 {
+		r.Body = http.MaxBytesReader(w, r.Body, s.maxMessageBytes)
+	}
 	if s.cacheControl != "" {
 		w.Header().Set("Cache-Control", "no-store")
 	}
