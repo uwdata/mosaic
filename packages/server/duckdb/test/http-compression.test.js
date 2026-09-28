@@ -37,7 +37,28 @@ function request(encoding, query = { type: 'arrow', sql: 'large' }) {
 }
 
 describe('HTTP Arrow compression', () => {
-  it.each(['gzip', 'GZip; q=1', 'br, gzip', '*', 'identity;q=0, gzip;q=0.5', '*;q=0, gzip'])('compresses when acceptable: %s', async header => {
+  it('allows compression to be disabled without ignoring identity exclusions', async () => {
+    const plain = dataServer({ exec: async () => {}, arrowBuffer: async () => chunks }, { port: 0, socket: false, compression: false });
+    await once(plain, 'listening');
+    const address = plain.address();
+    if (typeof address === 'string') throw new Error('Expected TCP listener');
+    try {
+      for (const [header, status] of [['gzip', 200], ['gzip,identity;q=0', 406]]) {
+        const response = await fetch(`http://127.0.0.1:${address.port}`, {
+          method: 'POST', headers: { 'Accept-Encoding': String(header) },
+          body: JSON.stringify({ type: 'arrow', sql: 'large' })
+        });
+        expect(response.status).toBe(status);
+        expect(response.headers.get('content-encoding')).toBeNull();
+        const data = Buffer.from(await response.arrayBuffer());
+        if (status === 200) expect(data).toEqual(Buffer.concat(chunks));
+      }
+    } finally {
+      plain.closeAllConnections();
+      await new Promise(resolve => plain.close(resolve));
+    }
+  });
+  it.each(['gzip', 'GZip; q=1', 'gzip ; q=1', 'gzip\t; q=1', 'br, gzip', '*', 'identity;q=0, gzip;q=0.5', '*;q=0, gzip'])('compresses when acceptable: %s', async header => {
     const response = await request(header);
     expect(response.status).toBe(200);
     expect(response.headers['content-encoding']).toBe('gzip');

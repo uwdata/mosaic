@@ -5,13 +5,16 @@ import { createGzip } from 'node:zlib';
 import { WebSocketServer } from 'ws';
 import { responseEncoding } from './response-encoding.js';
 
+const COMPRESSION_THRESHOLD = 1024;
+
 export function dataServer(db, {
   rest = true,
   socket = true,
+  compression = true,
   port = 3000
 } = {}) {
   const handleQuery = queryHandler(db);
-  const app = createHTTPServer(handleQuery, rest);
+  const app = createHTTPServer(handleQuery, rest, compression);
   if (socket) createSocketServer(app, handleQuery);
 
   const server = app.listen(port);
@@ -21,9 +24,9 @@ export function dataServer(db, {
   return server;
 }
 
-function createHTTPServer(handleQuery, rest) {
+function createHTTPServer(handleQuery, rest, compression) {
   return http.createServer((req, resp) => {
-    const res = httpResponse(resp, req.headers['accept-encoding']);
+    const res = httpResponse(resp, req.headers['accept-encoding'], compression);
     if (!rest) {
       res.done();
       return;
@@ -112,10 +115,11 @@ export function queryHandler(db) {
   };
 }
 
-function httpResponse(res, acceptEncoding) {
+function httpResponse(res, acceptEncoding, compression) {
   return {
     arrow(data) {
       const encoding = responseEncoding(acceptEncoding);
+      encoding.gzip &&= compression;
       res.setHeader('Vary', 'Accept-Encoding');
       if (!encoding.gzip && !encoding.identity) {
         res.writeHead(406);
@@ -126,9 +130,9 @@ function httpResponse(res, acceptEncoding) {
       const bytes = data.reduce((sum, chunk) => sum + chunk.byteLength, 0);
       const source = Readable.from(data);
       const streams = [source];
-      if (encoding.gzip && (bytes >= 1024 || !encoding.identity)) {
+      if (encoding.gzip && (bytes >= COMPRESSION_THRESHOLD || !encoding.identity)) {
         res.setHeader('Content-Encoding', 'gzip');
-        streams.push(createGzip({ level: 6 }));
+        streams.push(createGzip({ level: 1 }));
       }
       pipeline([...streams, res], err => {
         if (err && err.code !== 'ERR_STREAM_PREMATURE_CLOSE') console.error(err);

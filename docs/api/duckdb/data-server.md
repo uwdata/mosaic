@@ -19,6 +19,7 @@ The following _options_ are supported:
 - _port_: The port number (default `3000`) on which to listen for query requests.
 - _rest_: Boolean flag (default `true`) indicating if HTTP REST connections should be enabled.
 - _socket_: Boolean flag (default `true`) indicating if WebSocket connections should be enabled.
+- _compression_: Boolean flag (default `true`) enabling negotiated HTTP gzip. Set to `false` for latency-sensitive local deployments that prefer uncompressed responses. This option does not enable WebSocket compression.
 
 Once launched, the data server will accept HTTP POST requests containing JSON content that consists of a single object with the following properties:
 
@@ -33,7 +34,9 @@ as identity and the uncompressed response is at least 1 KiB; smaller responses
 stay uncompressed unless identity is explicitly unacceptable. With no
 `Accept-Encoding` header, responses are uncompressed. Arrow responses include
 `Vary: Accept-Encoding`, and return status 406 if neither gzip nor identity is
-acceptable. Compression is streamed with backpressure and uses gzip level 6.
+acceptable. Compression is streamed with backpressure and uses gzip level 1 to
+reduce CPU and latency overhead. With `compression: false`, only identity is
+available; a request excluding identity receives status 406.
 Empty `exec` responses and errors are not compressed.
 
 ### Examples

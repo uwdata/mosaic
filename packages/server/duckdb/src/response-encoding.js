@@ -1,7 +1,8 @@
 export function responseEncoding(header) {
   const qualities = new Map();
   for (const entry of (header || '').split(',')) {
-    const [name, ...parameters] = entry.trim().toLowerCase().split(';');
+    const [token, ...parameters] = entry.trim().toLowerCase().split(';');
+    const name = token.trim();
     if (!name) continue;
     let quality = 1;
     for (const parameter of parameters) {
