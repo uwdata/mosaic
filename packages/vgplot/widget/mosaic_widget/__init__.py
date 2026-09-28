@@ -12,7 +12,7 @@ import pyarrow as pa
 import traitlets
 
 from mosaic_widget import _db
-from mosaic_widget._exceptions import warn
+from mosaic_widget._exceptions import PerformanceWarning, warn
 from mosaic_widget.frame_interop import (
     frame_to_duckdb_registrable,
     is_registrable_frame,
@@ -108,9 +108,18 @@ class MosaicWidget(anywidget.AnyWidget):
             if is_registrable_frame(value):
                 if isinstance(value, duckdb.DuckDBPyRelation):
                     con = _db.connect(con, value)
+                    try:
+                        con.register(name, value)
+                    except duckdb.InvalidInputException:
+                        msg = (
+                            "Materializing 'duckdb.DuckDBPyRelation' to Arrow table for DuckDB registration.\n"
+                            "The object was created by an unreachable Connection."
+                        )
+                        warn(msg, PerformanceWarning, 3)
+                        con.register(name, value.to_arrow_table())
                 else:
                     con = _db.connect(con)
-                con.register(name, frame_to_duckdb_registrable(value))
+                    con.register(name, frame_to_duckdb_registrable(value))
                 self._registered_tables.add(name)
             else:
                 spec_.setdefault("data", {})[name] = value

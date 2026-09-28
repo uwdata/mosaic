@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 _NON_FRAME_TYPES = (str, bytes, int, float, bool, dict, list, tuple, type(None))
 
-_DUCKDB_NATIVE: Final = frozenset((Impl.DUCKDB, Impl.PANDAS, Impl.POLARS, Impl.PYARROW))
+_DUCKDB_NATIVE: Final = frozenset((Impl.PANDAS, Impl.POLARS, Impl.PYARROW))
 
 
 def is_registrable_frame(obj: Any) -> TypeIs[IntoFrame]:

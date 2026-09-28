@@ -152,7 +152,9 @@ def _generate_relations_and_connections(data: dict[str, int]) -> Iterator[Parame
     named_1 = duckdb.connect(memory_db_name)
     named_2 = duckdb.connect(memory_db_name)
 
-    xfail = pytest.mark.xfail
+    requires_roundtrip = pytest.mark.filterwarnings(
+        "ignore::mosaic_widget._exceptions.PerformanceWarning"
+    )
 
     yield pytest.param(duckdb.sql(query), None, id="global-no-connection")
     yield pytest.param(
@@ -161,7 +163,7 @@ def _generate_relations_and_connections(data: dict[str, int]) -> Iterator[Parame
     yield pytest.param(
         memory_unique.sql(query),
         None,
-        marks=xfail(reason="Relation from an inaccessible connection"),
+        marks=requires_roundtrip,
         id="memory-no-connection",
     )
     yield pytest.param(
@@ -170,22 +172,20 @@ def _generate_relations_and_connections(data: dict[str, int]) -> Iterator[Parame
     yield pytest.param(
         memory_unique.sql(query),
         duckdb.connect(),
-        marks=xfail(reason="`connect()` creates a unique database"),
+        marks=requires_roundtrip,
         id="memory-wrong-database",
     )
     yield pytest.param(
         named_1.sql(query),
         named_2,
-        marks=xfail(reason="Multiple connections to the same database"),
+        marks=requires_roundtrip,
         id="named-memory-wrong-connection",
     )
     yield pytest.param(named_1.sql(query), named_1, id="named-memory-same-connection")
     yield pytest.param(
         named_1.sql(query),
         named_1.cursor(),
-        marks=xfail(
-            reason="A cursor from a connection counts as a distinct connection"
-        ),
+        marks=requires_roundtrip,
         id="named-memory-cursor",
     )
     cursor = named_1
