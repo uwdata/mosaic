@@ -77,9 +77,12 @@ CORS_HEADERS = {
 
 
 class HTTPHandler(Handler):
-    def __init__(self, res: Res, accept_encoding: str = "") -> None:
+    def __init__(
+        self, res: Res, accept_encoding: str = "", *, compression: bool = True
+    ) -> None:
         self.res = res
         self.gzip, self.identity = response_encoding(accept_encoding)
+        self.gzip = self.gzip and compression
 
     # uWebSockets streams the response, so a status written after a header is ignored
     def begin(self, status: int) -> Res:
@@ -101,7 +104,7 @@ class HTTPHandler(Handler):
             len(buffer) >= COMPRESSION_THRESHOLD or not self.identity
         )
         if compressed:
-            buffer = gzip.compress(buffer, compresslevel=6, mtime=0)
+            buffer = gzip.compress(buffer, compresslevel=1, mtime=0)
         res = self.begin(200)
         res.write_header("Vary", "Accept-Encoding")
         res.write_header("Content-Type", "application/octet-stream")
@@ -169,11 +172,11 @@ class Serde:
         serialize: Callable[[Any], bytes],
         deserialize: Callable[[Buffer | str], Any],
     ) -> None:
-        self.dumps = serialize
+        self.dumps = lambda value: serialize(value).decode("utf-8")
         self.loads = deserialize
 
 
-def server(con: Con) -> None:
+def server(con: Con, *, port: int = 3000, compression: bool = True) -> None:
     app = App()
     app.json_serializer(Serde(serialize=json_encode, deserialize=json_decode_slow))
 
@@ -181,7 +184,9 @@ def server(con: Con) -> None:
         handle_message(SocketHandler(ws), con, message)
 
     async def http_handler(res: Res, req: Req) -> None:
-        handler = HTTPHandler(res, req.get_header("accept-encoding") or "")
+        handler = HTTPHandler(
+            res, req.get_header("accept-encoding") or "", compression=compression
+        )
         match req.get_method():
             case "OPTIONS":
                 handler.done()
@@ -200,7 +205,9 @@ def server(con: Con) -> None:
     app.ws(
         "/*",
         {
-            "compression": CompressOptions.SHARED_COMPRESSOR,
+            "compression": CompressOptions.SHARED_COMPRESSOR
+            if compression
+            else CompressOptions.DISABLED,
             "message": ws_message,
             "drain": lambda ws: logger.warning(
                 f"WebSocket backpressure: {ws.get_buffered_amount()}"
@@ -213,7 +220,7 @@ def server(con: Con) -> None:
     app.set_error_handler(on_error)
 
     app.listen(
-        3000,
+        port,
         lambda config: sys.stdout.write(
             f"DuckDB Server listening at ws://localhost:{config.port} and http://localhost:{config.port}\n"
         ),

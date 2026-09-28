@@ -7,6 +7,7 @@ def response_encoding(header: str) -> tuple[bool, bool]:
     qualities: dict[str, float] = {}
     for entry in header.lower().split(","):
         name, *parameters = entry.strip().split(";")
+        name = name.strip()
         if not name:
             continue
         quality = 1.0

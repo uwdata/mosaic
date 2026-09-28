@@ -13,14 +13,15 @@ import time
 import zlib
 from typing import TYPE_CHECKING
 
+import pyarrow.ipc
 import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-@pytest.fixture(scope="module")
-def port() -> Iterator[int]:
+@pytest.fixture(scope="module", params=[True, False])
+def endpoint(request: pytest.FixtureRequest) -> Iterator[tuple[int, bool]]:
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
@@ -28,15 +29,13 @@ def port() -> Iterator[int]:
 import logging
 import sys
 import duckdb
-from socketify import App
 from pkg.server import server
 logging.basicConfig(level=logging.CRITICAL)
-listen = App.listen
-App.listen = lambda self, port, callback: listen(self, int(sys.argv[1]), callback)
-server(duckdb.connect())
+server(duckdb.connect(), port=int(sys.argv[1]), compression=sys.argv[2] == "True")
 """
     process = subprocess.Popen(
-        [sys.executable, "-c", code, str(port)], stdout=subprocess.DEVNULL
+        [sys.executable, "-c", code, str(port), str(request.param)],
+        stdout=subprocess.DEVNULL,
     )
     try:
         for _ in range(100):
@@ -48,7 +47,7 @@ server(duckdb.connect())
                 time.sleep(0.05)
         else:
             pytest.fail("server did not listen")
-        yield port
+        yield port, request.param
     finally:
         process.terminate()
         try:
@@ -58,7 +57,10 @@ server(duckdb.connect())
             process.wait()
 
 
-def test_http_arrow_negotiation_on_keepalive_connection(port: int) -> None:
+def test_http_arrow_negotiation_on_keepalive_connection(
+    endpoint: tuple[int, bool],
+) -> None:
+    port, enabled = endpoint
     connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
     try:
         payload = json.dumps({"type": "arrow", "sql": "SELECT i FROM range(1000) t(i)"})
@@ -75,7 +77,7 @@ def test_http_arrow_negotiation_on_keepalive_connection(port: int) -> None:
             assert response.status == 200
             assert not response.will_close
             assert response.getheader("Vary") == "Accept-Encoding"
-            if encoding == "gzip":
+            if encoding == "gzip" and enabled:
                 assert response.getheader("Content-Encoding") == "gzip"
                 data = gzip.decompress(data)
             else:
@@ -121,7 +123,10 @@ def exchange(stream: socket.socket, request: dict[str, str]) -> tuple[int, bool,
 
 
 @pytest.mark.parametrize("compression", [False, True])
-def test_socket_exec_error_and_arrow(port: int, compression: bool) -> None:
+def test_socket_exec_error_and_arrow(
+    endpoint: tuple[int, bool], compression: bool
+) -> None:
+    port, enabled = endpoint
     with socket.create_connection(("127.0.0.1", port), timeout=5) as stream:
         key = base64.b64encode(os.urandom(16)).decode()
         headers = [
@@ -139,7 +144,7 @@ def test_socket_exec_error_and_arrow(port: int, compression: bool) -> None:
         while not response.endswith(b"\r\n\r\n"):
             response.extend(read_exact(stream, 1))
         assert response.startswith(b"HTTP/1.1 101")
-        assert (b"permessage-deflate" in response) == compression
+        assert (b"permessage-deflate" in response) == (compression and enabled)
         assert exchange(stream, {"type": "exec", "sql": "SELECT 1"}) == (
             1,
             False,
@@ -155,10 +160,8 @@ def test_socket_exec_error_and_arrow(port: int, compression: bool) -> None:
             stream, {"type": "arrow", "sql": "SELECT i FROM range(1000) t(i)"}
         )
         assert opcode == 2
-        assert compressed == compression
+        assert compressed == (compression and enabled)
         if compressed:
             data = zlib.decompressobj(-15).decompress(data + b"\x00\x00\xff\xff")
-        import pyarrow.ipc
-
         table = pyarrow.ipc.open_stream(data).read_all()
         assert table.column("i").to_pylist() == list(range(1000))

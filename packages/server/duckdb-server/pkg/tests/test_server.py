@@ -6,9 +6,10 @@ from typing import Any
 
 import duckdb
 import pytest
+from msgspec.json import decode, encode
 from socketify import OpCode
 
-from pkg.server import HTTPHandler, SocketHandler, handle_message
+from pkg.server import HTTPHandler, Serde, SocketHandler, handle_message
 
 
 class RecordingHandler:
@@ -74,7 +75,16 @@ def test_http_error_writes_status_before_headers() -> None:
 
 @pytest.mark.parametrize(
     "header",
-    ["gzip", "GZip; q=1", "br, gzip", "*", "identity;q=0,gzip;q=0.5", "*;q=0,gzip"],
+    [
+        "gzip",
+        "GZip; q=1",
+        "gzip ; q=1",
+        "gzip\t; q=1",
+        "br, gzip",
+        "*",
+        "identity;q=0,gzip;q=0.5",
+        "*;q=0,gzip",
+    ],
 )
 def test_gzip_arrow(header: str) -> None:
     res = RecordingResponse()
@@ -130,6 +140,21 @@ def test_exec_remains_empty_and_uncompressed() -> None:
     HTTPHandler(res, "gzip").done()  # ty: ignore[invalid-argument-type]
     assert res.calls[-1] == ("end", "")
     assert "Content-Encoding" not in res.headers
+
+
+def test_compression_opt_out() -> None:
+    for header, status in [("gzip", 200), ("gzip,identity;q=0", 406)]:
+        res = RecordingResponse()
+        HTTPHandler(res, header, compression=False).arrow(b"x" * 2048)  # ty: ignore[invalid-argument-type]
+        assert res.calls[0] == ("status", status)
+        assert "Content-Encoding" not in res.headers
+
+
+def test_serde_matches_socketify_string_contract() -> None:
+    serde = Serde(encode, decode)
+    text = serde.dumps({"error": "雪"})
+    assert isinstance(text, str)
+    assert serde.loads(text.encode("utf-8")) == {"error": "雪"}
 
 
 class RecordingSocket:
