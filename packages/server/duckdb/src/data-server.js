@@ -1,6 +1,9 @@
 import http from 'node:http';
 import url from 'node:url';
+import { Readable, pipeline } from 'node:stream';
+import { createGzip } from 'node:zlib';
 import { WebSocketServer } from 'ws';
+import { responseEncoding } from './response-encoding.js';
 
 export function dataServer(db, {
   rest = true,
@@ -20,7 +23,7 @@ export function dataServer(db, {
 
 function createHTTPServer(handleQuery, rest) {
   return http.createServer((req, resp) => {
-    const res = httpResponse(resp);
+    const res = httpResponse(resp, req.headers['accept-encoding']);
     if (!rest) {
       res.done();
       return;
@@ -109,12 +112,27 @@ export function queryHandler(db) {
   };
 }
 
-function httpResponse(res) {
+function httpResponse(res, acceptEncoding) {
   return {
     arrow(data) {
+      const encoding = responseEncoding(acceptEncoding);
+      res.setHeader('Vary', 'Accept-Encoding');
+      if (!encoding.gzip && !encoding.identity) {
+        res.writeHead(406);
+        res.end();
+        return;
+      }
       res.setHeader('Content-Type', 'application/vnd.apache.arrow.stream');
-      for (const chunk of data) res.write(chunk);
-      res.end();
+      const bytes = data.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+      const source = Readable.from(data);
+      const streams = [source];
+      if (encoding.gzip && (bytes >= 1024 || !encoding.identity)) {
+        res.setHeader('Content-Encoding', 'gzip');
+        streams.push(createGzip({ level: 6 }));
+      }
+      pipeline([...streams, res], err => {
+        if (err && err.code !== 'ERR_STREAM_PREMATURE_CLOSE') console.error(err);
+      });
     },
     done() {
       res.writeHead(200);

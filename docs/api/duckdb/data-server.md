@@ -27,6 +27,15 @@ Once launched, the data server will accept HTTP POST requests containing JSON co
 
 A request without a _type_ is rejected with HTTP status 400.
 
+Arrow HTTP responses negotiate gzip using `Accept-Encoding`, including quality
+weights and explicit exclusions. Gzip is used when it is at least as preferred
+as identity and the uncompressed response is at least 1 KiB; smaller responses
+stay uncompressed unless identity is explicitly unacceptable. With no
+`Accept-Encoding` header, responses are uncompressed. Arrow responses include
+`Vary: Accept-Encoding`, and return status 406 if neither gzip nor identity is
+acceptable. Compression is streamed with backpressure and uses gzip level 6.
+Empty `exec` responses and errors are not compressed.
+
 ### Examples
 
 Launch a data server in Node.js:
