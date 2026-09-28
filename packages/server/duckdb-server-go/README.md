@@ -55,7 +55,7 @@ Managed HTTPS supports `localhost`, `127.0.0.1`, and `::1` (or `[::1]`). Explici
 
 The startup log prints the certificate directory, under `mosaic/duckdb-server-go/https` in your OS user configuration directory. `ca.pem` is public; **do not share `ca-key.pem` or `localhost.pem`**, which contain private keys.
 
-For browsers using separate NSS trust stores, install NSS if prompted (`brew install nss` or `apt install libnss3-tools`), rerun `--https`, and restart the browser—or import `ca.pem` manually. System trust installation failures stop startup; optional NSS failures only warn.
+For browsers using separate [NSS trust stores](https://nss-crypto.org), install NSS if prompted (`brew install nss` or `apt install libnss3-tools`), rerun `--https`, and restart the browser—or import `ca.pem` manually. System trust installation failures stop startup; optional NSS failures only warn.
 
 To regenerate a corrupt server certificate, delete only the managed `localhost.pem` and restart. To uninstall, remove "Mosaic localhost development CA" from system/browser trust stores, then delete its configuration directory.
 
