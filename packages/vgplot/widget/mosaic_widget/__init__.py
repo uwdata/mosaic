@@ -11,6 +11,7 @@ import duckdb
 import pyarrow as pa
 import traitlets
 
+from mosaic_widget import _db
 from mosaic_widget._exceptions import warn
 from mosaic_widget.frame_interop import (
     frame_to_duckdb_registrable,
@@ -106,11 +107,10 @@ class MosaicWidget(anywidget.AnyWidget):
         non_dataframe: dict[str, Any] = {}
         for name, value in merged_data.items():
             if is_registrable_frame(value):
-                if isinstance(value, duckdb.DuckDBPyRelation) and con is None:
-                    msg = "TODO: Decide how to deal with this case"
-                    raise NotImplementedError(msg)
-                if con is None:
-                    con = duckdb.connect()
+                if isinstance(value, duckdb.DuckDBPyRelation):
+                    con = _db.connect(con, value)
+                else:
+                    con = _db.connect(con)
                 con.register(name, frame_to_duckdb_registrable(value))
                 self._registered_tables.add(name)
             else:
@@ -118,7 +118,7 @@ class MosaicWidget(anywidget.AnyWidget):
         if non_dataframe:
             spec_["data"] = non_dataframe
         self.spec = spec_
-        self.con = con if con is not None else duckdb.connect()
+        self.con = _db.connect(con)
         self.on_msg(self._handle_custom_msg)
 
     def _handle_custom_msg(

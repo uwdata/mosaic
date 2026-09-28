@@ -128,17 +128,9 @@ def test_explicit_data_takes_precedence(frame: NwDataFrame) -> None:
     assert len(widget.con.query("select * from weather").df()) == 1
 
 
+# TODO @dangotbanned: Add more DuckDB connection edge cases
 @pytest.mark.filterwarnings("ignore::mosaic_widget._exceptions.PerformanceWarning")
-def test_lazyframe_registered(
-    request: pytest.FixtureRequest, lazyframe: NwLazyFrame
-) -> None:
-    request.applymarker(
-        pytest.mark.xfail(
-            lazyframe.implementation.is_duckdb(),
-            raises=NotImplementedError,
-            reason="https://github.com/uwdata/mosaic/issues/1296",
-        )
-    )
+def test_lazyframe_registered(lazyframe: NwLazyFrame) -> None:
     native = lazyframe.to_native()
     widget = MosaicWidget(FrameDataSpec({"weather": native}))
     assert widget.spec == {"plot": [{"mark": "dot", "data": {"from": "weather"}}]}
