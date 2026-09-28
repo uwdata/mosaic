@@ -33,11 +33,18 @@ describe('astToPython literals', () => {
 });
 
 describe('astToPython data sources', () => {
-  it('wraps a table name path in vg.source', () => {
+  it('wraps a schema-qualified table name in vg.source', () => {
     const code = astToPython(
       ast({ plot: [{ mark: 'dot', data: { from: ['schema_name', 'table_name'] } }] })
     );
     expect(code).toContain('vg.dot(data=vg.source(["schema_name", "table_name"]))');
+  });
+
+  it('passes a schema-qualified table name to an input source', () => {
+    const code = astToPython(
+      ast({ input: 'menu', from: ['schema_name', 'table_name'], column: 'foo' })
+    );
+    expect(code).toContain('source=["schema_name", "table_name"]');
   });
 });
 

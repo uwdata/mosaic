@@ -30,7 +30,7 @@ const isObject = v => {
  *  function is not applied when an explicit label is provided in an option
  *  object.
  * @param {*} [options.value] The initial selected menu value.
- * @param {string | TableRefNode} [options.from] The name of a database table to use as a data
+ * @param {string | TableRefNode} [options.from] The backing table name or `tableRef()` node to use as a data
  *  source for this widget. Used in conjunction with the *column* option.
  * @param {string} [options.column] The name of a database column from which
  *  to pull menu options. The unique column values are used as menu options.
@@ -66,7 +66,7 @@ export class Menu extends Input {
    *  function is not applied when an explicit label is provided in an option
    *  object.
    * @param {*} [options.value] The initial selected menu value.
-   * @param {string | TableRefNode} [options.from] The name of a database table to use as a data
+   * @param {string | TableRefNode} [options.from] The backing table name or `tableRef()` node to use as a data
    *  source for this widget. Used in conjunction with the *column* option.
    * @param {string} [options.column] The name of a database column from which
    *  to pull menu options. The unique column values are used as menu options.

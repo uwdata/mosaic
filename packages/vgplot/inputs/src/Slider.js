@@ -29,7 +29,7 @@ let _id = 0;
  * @param {number} [options.step] The slider step, the amount to increment
  *  between consecutive values.
  * @param {number} [options.value] The initial slider value.
- * @param {string | TableRefNode} [options.from] The name of a database table to use as a data
+ * @param {string | TableRefNode} [options.from] The backing table name or `tableRef()` node to use as a data
  *  source for this widget. Used in conjunction with the *column* option.
  *  The minimum and maximum values of the column determine the slider range.
  * @param {string} [options.column] The name of a database column whose values
@@ -67,7 +67,7 @@ export class Slider extends Input {
    * @param {number} [options.step] The slider step, the amount to increment
    *  between consecutive values.
    * @param {number} [options.value] The initial slider value.
-   * @param {string | TableRefNode} [options.from] The name of a database table to use as a data
+   * @param {string | TableRefNode} [options.from] The backing table name or `tableRef()` node to use as a data
    *  source for this widget. Used in conjunction with the *column* option.
    *  The minimum and maximum values of the column determine the slider range.
    * @param {string} [options.column] The name of a database column whose values

@@ -18,7 +18,8 @@ export interface Menu {
   field?: string;
   /**
    * The name of a database table to use as a data source for this widget,
-   * or a name path such as `["schema", "table"]`.
+   * or a schema-qualified table name given as an array of identifiers,
+   * such as `["schema", "table"]`.
    * Used in conjunction with the `column` property.
    */
   from?: string | string[];
@@ -79,7 +80,8 @@ export interface Search {
   type?: 'contains' | 'prefix' | 'suffix' | 'regexp';
   /**
    * The name of a database table to use as an autocomplete data source
-   * for this widget, or a name path such as `["schema", "table"]`.
+   * for this widget, or a schema-qualified table name given as an array
+   * of identifiers, such as `["schema", "table"]`.
    * Used in conjunction with the `column` property.
    */
   from?: string | string[];
@@ -124,7 +126,8 @@ export interface Slider {
   select?: 'point' | 'interval';
   /**
    * The name of a database table to use as a data source for this widget,
-   * or a name path such as `["schema", "table"]`.
+   * or a schema-qualified table name given as an array of identifiers,
+   * such as `["schema", "table"]`.
    * Used in conjunction with the `column` property.
    * The minimum and maximum values of the column determine the slider range.
    */
@@ -178,7 +181,8 @@ export interface Table {
   as?: ParamRef;
   /**
    * The name of a database table to use as a data source for this widget,
-   * or a name path such as `["schema", "table"]`.
+   * or a schema-qualified table name given as an array of identifiers,
+   * such as `["schema", "table"]`.
    */
   from: string | string[] | ParamRef;
   /**

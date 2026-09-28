@@ -79,7 +79,7 @@ To instead create a query for metadata (column names and types), pass a query to
 `Query.pivot(source)`
 
 Create a DuckDB [`PIVOT`](https://duckdb.org/docs/sql/statements/pivot.html#simplified-pivot-syntax) query using simplified syntax over _source_ and return a `PivotQuery`.
-The _source_ may be a table name string, a table name path such as `["schema", "table"]`, or a SQL node such as a query or [`sql`](./expressions#sql) expression.
+The _source_ may be a table name string, a schema-qualified table name given as an array of identifiers such as `["schema", "table"]`, or a SQL node such as a query or [`sql`](./expressions#sql) expression.
 Use `PivotQuery` methods to add `ON`, `IN`, `USING`, and `GROUP BY` clauses.
 
 ``` js
