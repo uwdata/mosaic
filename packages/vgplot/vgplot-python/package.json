@@ -1,6 +1,6 @@
 {
   "name": "vgplot-python",
-  "version": "0.32.0-beta.0",
+  "version": "0.32.0",
   "private": true,
   "scripts": {
     "prerelease": "uv run ruff check && uv run ruff format --check",
