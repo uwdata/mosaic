@@ -13,7 +13,7 @@ import traitlets
 
 from mosaic_widget import _db
 from mosaic_widget._exceptions import PerformanceWarning, warn
-from mosaic_widget.frame_interop import (
+from mosaic_widget._frame_interop import (
     frame_to_duckdb_registrable,
     is_registrable_frame,
 )
