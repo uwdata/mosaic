@@ -68,6 +68,8 @@ ignore = [
 
 [tool.pytest]
 strict_xfail = true
+# convert unhandled warnings into errors
+filterwarnings = ["error"]
 
 [tool.pyright]
 include = [
