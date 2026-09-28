@@ -44,13 +44,3 @@ func acceptEncodingQValue(header, coding string) float64 {
 	}
 	return 0
 }
-
-func unwrapResponseWriter(w http.ResponseWriter) http.ResponseWriter {
-	for {
-		u, ok := w.(interface{ Unwrap() http.ResponseWriter })
-		if !ok {
-			return w
-		}
-		w = u.Unwrap()
-	}
-}

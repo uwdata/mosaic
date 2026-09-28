@@ -106,8 +106,9 @@ func WithLogger(logger *slog.Logger) Option {
 	})
 }
 
-// WithMaxMessageBytes limits POST bodies and decompressed WebSocket messages to
-// n bytes, which must be positive. Omitting it leaves POST bodies unbounded and
+// WithMaxMessageBytes limits HTTP request bodies and decompressed WebSocket
+// messages to n bytes, which must be positive. The body limit is applied before
+// request authorization. Omitting it leaves request bodies unbounded and
 // retains the WebSocket library's 32 KiB limit.
 func WithMaxMessageBytes(n int64) Option {
 	return optionFunc(func(cfg *config) error {

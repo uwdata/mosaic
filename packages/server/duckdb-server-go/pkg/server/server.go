@@ -85,7 +85,11 @@ func newHandler(db commandExecutor, cfg config) *handler {
 		varyHeaders:      cfg.varyHeaders,
 	}
 
-	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, gzhttp.GzipHandler(http.HandlerFunc(s.handleHTTP)))
+	httpHandler := newCORSHandler(cfg.cors, cfg.corsProtection, gzhttp.GzipHandler(http.HandlerFunc(s.handleHTTP)))
+	if cfg.maxMessageBytes > 0 {
+		httpHandler = http.MaxBytesHandler(httpHandler, cfg.maxMessageBytes)
+	}
+	s.httpHandler = httpHandler
 
 	return s
 }
@@ -226,9 +230,6 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodPost:
-		if s.maxMessageBytes > 0 {
-			r.Body = http.MaxBytesReader(unwrapResponseWriter(w), r.Body, s.maxMessageBytes)
-		}
 		raw, err := io.ReadAll(r.Body)
 		if err == nil {
 			err = json.Unmarshal(raw, &params)
@@ -236,8 +237,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			var sizeErr *http.MaxBytesError
 			if errors.As(err, &sizeErr) {
-				s.logger.Warn("server: request body exceeds message limit", "limit", sizeErr.Limit)
-				http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+				s.writeHTTPError(w, err)
 				return
 			}
 			s.logger.Error("server: failed to decode request body", "error", err)

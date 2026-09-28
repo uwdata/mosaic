@@ -151,7 +151,7 @@ GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers);
 
 Application fields are untrusted: combine them with authenticated identity, as shown in the compiled [`ExampleNew`](pkg/server/example_test.go). Client caching can bypass the connector, and consolidation can discard query options. If fields affect results or access, isolate coordinator/cache/consolidation state per scope or disable that reuse.
 
-`WithMaxMessageBytes(n)` requires a positive byte limit for entire POST bodies and decompressed WebSocket messages, applied after request authorization and before decoding. Defaults are unbounded POST bodies and 32 KiB WebSocket messages. Exceeding the limit returns HTTP 413 or closes the WebSocket with code 1009. Request authorizers reading the body must enforce their own limits and restore it.
+`WithMaxMessageBytes(n)` requires a positive byte limit for entire HTTP request bodies and decompressed WebSocket messages. The body limit wraps the request before request authorization, so an authorizer may read the body within the limit and must restore it; reading past the limit fails the request. Defaults are unbounded request bodies and 32 KiB WebSocket messages. Exceeding the limit returns HTTP 413 with `Connection: close` or closes the WebSocket with code 1009.
 
 POST and WebSocket messages require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400 or close the WebSocket with code 1007. Validation and authorization errors leave a healthy WebSocket session open.
 
