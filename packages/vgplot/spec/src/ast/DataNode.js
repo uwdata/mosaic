@@ -33,7 +33,7 @@ export function parseData(name, spec, ctx) {
     const parse = dataFormats.get(def.type);
     return parse(name, def, ctx);
   } else {
-    ctx.error(`Unrecognized data format type.`, spec);
+    ctx.error('Unrecognized data format type.', spec);
   }
 }
 
@@ -55,25 +55,25 @@ function fileExtension(file) {
 }
 
 function parseTableData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
+   
   const { query, type, ...options } = spec;
   return new TableDataNode(name, query, parseOptions(options, ctx));
 }
 
 function parseParquetData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
+   
   const { file, type, ...options } = spec;
   return new ParquetDataNode(name, file, parseOptions(options, ctx));
 }
 
 function parseCSVData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
+   
   const { file, type, ...options } = spec;
   return new CSVDataNode(name, file, parseOptions(options, ctx));
 }
 
 function parseJSONData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
+   
   const { data, file, type, ...options } = spec;
   const opt = parseOptions(options, ctx);
   return data
@@ -82,7 +82,7 @@ function parseJSONData(name, spec, ctx) {
 }
 
 function parseSpatialData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
+   
   const { file, type, ...options } = spec;
   return new SpatialDataNode(name, file, parseOptions(options, ctx));
 }

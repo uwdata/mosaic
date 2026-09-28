@@ -3,47 +3,47 @@ import { column, asNode, ColumnRefNode, TableRefNode, deepClone, ColumnNameRefNo
 
 describe('Column references', () => {
   it('serialize to SQL', async () => {
-    await expect(new ColumnNameRefNode('num1')).toBeValidExpr(`"num1"`);
-    await expect(new ColumnNameRefNode('num1', new TableRefNode('t1'))).toBeValidExpr(`"t1"."num1"`);
-    await expect(new ColumnNameRefNode('num1', new TableRefNode(['main', 't1']))).toBeValidExpr(`"main"."t1"."num1"`);
-    expect(String(new ColumnNameRefNode('avg("col")'))).toBe(`"avg(""col"")"`);
+    await expect(new ColumnNameRefNode('num1')).toBeValidExpr('"num1"');
+    await expect(new ColumnNameRefNode('num1', new TableRefNode('t1'))).toBeValidExpr('"t1"."num1"');
+    await expect(new ColumnNameRefNode('num1', new TableRefNode(['main', 't1']))).toBeValidExpr('"main"."t1"."num1"');
+    expect(String(new ColumnNameRefNode('avg("col")'))).toBe('"avg(""col"")"');
     // Serialization only: tests identifier-escaping for a column named avg("col").
   });
 
   it('are created from column', async () => {
     const foo = column('num1');
     expect(foo).toBeInstanceOf(ColumnRefNode);
-    expect(foo.column).toBe(`num1`);
+    expect(foo.column).toBe('num1');
     expect(foo.table).toBe(undefined);
-    await expect(foo).toBeValidExpr(`"num1"`);
+    await expect(foo).toBeValidExpr('"num1"');
 
     const barfoo = column('num1', 't1');
     expect(barfoo).toBeInstanceOf(ColumnRefNode);
-    expect(barfoo.column).toBe(`num1`);
+    expect(barfoo.column).toBe('num1');
     expect(barfoo.table).toBeInstanceOf(TableRefNode);
-    expect(barfoo.table?.table).toStrictEqual([`t1`]);
-    await expect(barfoo).toBeValidExpr(`"t1"."num1"`);
+    expect(barfoo.table?.table).toStrictEqual(['t1']);
+    await expect(barfoo).toBeValidExpr('"t1"."num1"');
   });
 
   it('are created from strings by asNode', async () => {
     const node = asNode('num1');
     expect(node).toBeInstanceOf(ColumnRefNode);
-    await expect(node).toBeValidExpr(`"num1"`);
+    await expect(node).toBeValidExpr('"num1"');
 
     const node2 = asNode('tab.num1');
     expect(node2).toBeInstanceOf(ColumnRefNode);
-    expect(String(node2)).toBe(`"tab.num1"`);
+    expect(String(node2)).toBe('"tab.num1"');
     // Serialization only: tests column name "tab.num1"
   });
 
   it('are created from strings by parseColumnRef', async () => {
     const node = parseColumnRef('num1');
     expect(node).toBeInstanceOf(ColumnRefNode);
-    await expect(node).toBeValidExpr(`"num1"`);
+    await expect(node).toBeValidExpr('"num1"');
 
     const node2 = parseColumnRef('t1.num1');
     expect(node2).toBeInstanceOf(ColumnRefNode);
-    await expect(node2).toBeValidExpr(`"t1"."num1"`);
+    await expect(node2).toBeValidExpr('"t1"."num1"');
   });
 
   it('clone successfully', () => {

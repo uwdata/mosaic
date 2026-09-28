@@ -10,20 +10,20 @@ describe('clauseList', () => {
     // previously unquoted, which triggered a DuckDB Parser Error at the space
     const clause = clauseList('tags', ['Drafting Lines'], { source });
     expect(String(clause.predicate)).toBe(
-      `list_has_any("tags", ['Drafting Lines'])`
+      'list_has_any("tags", [\'Drafting Lines\'])'
     );
   });
 
   it('quotes single-word list values as literals, not identifiers', () => {
     // previously produced a bare word, which DuckDB read as a Binder Error
     const clause = clauseList('tags', ['Markers'], { source });
-    expect(String(clause.predicate)).toBe(`list_has_any("tags", ['Markers'])`);
+    expect(String(clause.predicate)).toBe('list_has_any("tags", [\'Markers\'])');
   });
 
   it('supports multiple values', () => {
     const clause = clauseList('tags', ['Roads', 'Lakes'], { source });
     expect(String(clause.predicate)).toBe(
-      `list_has_any("tags", ['Roads', 'Lakes'])`
+      'list_has_any("tags", [\'Roads\', \'Lakes\'])'
     );
   });
 
@@ -33,7 +33,7 @@ describe('clauseList', () => {
       listMatch: 'all'
     });
     expect(String(clause.predicate)).toBe(
-      `list_has_all("tags", ['Roads', 'Lakes'])`
+      'list_has_all("tags", [\'Roads\', \'Lakes\'])'
     );
   });
 

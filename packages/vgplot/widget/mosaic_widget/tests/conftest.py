@@ -20,12 +20,11 @@ if TYPE_CHECKING:
     import dask.dataframe as dd
     import duckdb
     import ibis
-    import modin.pandas as mpd
     import pandas as pd
     import polars as pl
     import pyarrow as pa
 
-    NativeDataFrame: TypeAlias = pa.Table | pd.DataFrame | pl.DataFrame | mpd.DataFrame
+    NativeDataFrame: TypeAlias = pa.Table | pd.DataFrame | pl.DataFrame
     NativeLazyFrame: TypeAlias = (
         dd.DataFrame | duckdb.DuckDBPyRelation | ibis.Table | pl.LazyFrame
     )
@@ -91,7 +90,6 @@ _BACKENDS: Final = (
     Backend("polars"),
     Backend("pyarrow"),
     Backend("pandas"),
-    Backend("modin", "modin.pandas", Warn.CONVERT),
     Backend("ibis", warn=Warn.MATERIALIZE),
     Backend("duckdb"),
     Backend("dask", "dask.dataframe", Warn.MATERIALIZE),
@@ -118,9 +116,6 @@ def lazy(request: Request) -> Backend[LazyAllowed]:
     return backend
 
 
-# TODO @dangotbanned: Fix `modin` warnings
-# - `from_dict`
-# - `attrs` False positive caused by `if hasattr(df, "attrs")` in https://github.com/apache/arrow/pull/47147
 @pytest.fixture(scope="session")
 def nw_dataframe(eager: Backend[EagerAllowed]) -> DataFrameConstructor:
     return partial(nw.DataFrame.from_dict, backend=eager.value)

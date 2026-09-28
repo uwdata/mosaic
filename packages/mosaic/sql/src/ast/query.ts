@@ -193,7 +193,7 @@ export class Query extends ExprNode {
   }
 
   /**
-   * Create a shallow clone of this query. 
+   * Create a shallow clone of this query.
    */
   clone(): this {
     return this;

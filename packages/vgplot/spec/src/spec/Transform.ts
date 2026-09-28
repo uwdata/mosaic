@@ -39,11 +39,6 @@ type Arg1 = Arg | [Arg];
 type Arg2 = [Arg, Arg];
 
 /**
- * A two argument transform signature; the second argument is optional.
- */
-type Arg2Opt = Arg | [Arg, Arg?];
-
-/**
  * A three argument transform signature; the
  * second and third arguments are optional.
  */
@@ -102,7 +97,7 @@ export interface Bin {
    * step sizes when performing numerical binning. When **step** is specified,
    * this option affects the binning end points (e.g., origin) only.
    */
-  nice?: true;
+  nice?: boolean;
   /**
    * Offset for computed bins (default `0`). For example, a value of `1` will
    * result in using the next consecutive bin boundary.
@@ -441,7 +436,7 @@ export interface NthValue extends WindowOptions {
    * Get the nth value of the given column in the current window frame,
    * counting from one. The second argument is the offset for the nth row.
    */
-  nth_value: Arg2Opt;
+  nth_value: Arg2;
 }
 
 /** A data transform that maps one column value to another. */

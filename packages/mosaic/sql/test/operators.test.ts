@@ -109,22 +109,22 @@ describe('Binary operators', () => {
 describe('Set inclusion operators', () => {
   it('include IN operator', async () => {
     const set = [literal('a'), literal('b'), literal('c')];
-    await expect(isIn(column('txt1'), set)).toBeValidExpr(`("txt1" IN ('a', 'b', 'c'))`);
-    await expect(isIn('txt1', set)).toBeValidExpr(`("txt1" IN ('a', 'b', 'c'))`);
+    await expect(isIn(column('txt1'), set)).toBeValidExpr('("txt1" IN (\'a\', \'b\', \'c\'))');
+    await expect(isIn('txt1', set)).toBeValidExpr('("txt1" IN (\'a\', \'b\', \'c\'))');
   });
   it('include IN with list values', async () => {
     const values = new ListNode([literal('a'), literal('b'), literal('c')]);
-    const test = new InOpNode(column("txt1"), values);
-    await expect(test).toBeValidExpr(`("txt1" IN ['a', 'b', 'c'])`);
+    const test = new InOpNode(column('txt1'), values);
+    await expect(test).toBeValidExpr('("txt1" IN [\'a\', \'b\', \'c\'])');
   });
   it('include null-safe IN test', async () => {
     const set = [literal('a'), literal('b'), literal('c')];
-    await expect(isInDistinct(column('txt1'), set)).toBeValidExpr(`("txt1" IN ('a', 'b', 'c'))`);
-    await expect(isInDistinct('txt1', set)).toBeValidExpr(`("txt1" IN ('a', 'b', 'c'))`);
-    await expect(isInDistinct(column('txt1'), [...set, literal(null)])).toBeValidExpr(`(("txt1" IN ('a', 'b', 'c')) OR ("txt1" IS NULL))`);
-    await expect(isInDistinct('txt1', [...set, null])).toBeValidExpr(`(("txt1" IN ('a', 'b', 'c')) OR ("txt1" IS NULL))`);
-    await expect(isInDistinct(column('txt1'), [literal(null)])).toBeValidExpr(`("txt1" IS NULL)`);
-    await expect(isInDistinct('txt1', [null])).toBeValidExpr(`("txt1" IS NULL)`);
+    await expect(isInDistinct(column('txt1'), set)).toBeValidExpr('("txt1" IN (\'a\', \'b\', \'c\'))');
+    await expect(isInDistinct('txt1', set)).toBeValidExpr('("txt1" IN (\'a\', \'b\', \'c\'))');
+    await expect(isInDistinct(column('txt1'), [...set, literal(null)])).toBeValidExpr('(("txt1" IN (\'a\', \'b\', \'c\')) OR ("txt1" IS NULL))');
+    await expect(isInDistinct('txt1', [...set, null])).toBeValidExpr('(("txt1" IN (\'a\', \'b\', \'c\')) OR ("txt1" IS NULL))');
+    await expect(isInDistinct(column('txt1'), [literal(null)])).toBeValidExpr('("txt1" IS NULL)');
+    await expect(isInDistinct('txt1', [null])).toBeValidExpr('("txt1" IS NULL)');
   });
 });
 

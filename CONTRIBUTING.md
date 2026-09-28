@@ -41,7 +41,7 @@ Some files are generated, so don't edit them by hand. Change the source and rege
 
 ## Before opening a pull request
 
-Run `pnpm lint` and `pnpm test`, and regenerate any generated files your change affects. CI runs the full matrix of checks — JavaScript/TypeScript, Python, Rust, and Go — defined in [`.github/workflows/test.yml`](.github/workflows/test.yml); consult it for the exact commands if you want to reproduce a CI job locally.
+Run `pnpm lint` (or `pnpm lint:fix` to fix style errors automatically) and `pnpm test`, and regenerate any generated files your change affects. CI runs the full matrix of checks — JavaScript/TypeScript, Python, Rust, and Go — defined in [`.github/workflows/test.yml`](.github/workflows/test.yml); consult it for the exact commands if you want to reproduce a CI job locally.
 
 ## License
 

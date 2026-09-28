@@ -1,7 +1,7 @@
-import type { ExprValue } from "../types.js";
-import { asLiteral, asNode } from "../util/ast.js";
-import { argsList, fn } from "../util/function.js";
-import { ListNode } from "../ast/list.js";
+import type { ExprValue } from '../types.js';
+import { asLiteral, asNode } from '../util/ast.js';
+import { argsList, fn } from '../util/function.js';
+import { ListNode } from '../ast/list.js';
 
 /**
  * Create a List containing the argument values.
@@ -33,7 +33,7 @@ export function listContains(
   list1: ExprValue | ExprValue[],
   element: ExprValue,
 ) {
-  return fn("list_contains", asList(list1), asLiteral(element));
+  return fn('list_contains', asList(list1), asLiteral(element));
 }
 
 /**
@@ -46,7 +46,7 @@ export function listHasAll(
   list1: ExprValue | ExprValue[],
   list2: ExprValue | ExprValue[],
 ) {
-  return fn("list_has_all", asList(list1), asList(list2));
+  return fn('list_has_all', asList(list1), asList(list2));
 }
 
 /**
@@ -59,5 +59,5 @@ export function listHasAny(
   list1: ExprValue | ExprValue[],
   list2: ExprValue | ExprValue[],
 ) {
-  return fn("list_has_any", asList(list1), asList(list2));
+  return fn('list_has_any', asList(list1), asList(list2));
 }

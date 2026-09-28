@@ -28,6 +28,8 @@ extend-select = [
     "magic-value-comparison",
     "collapsible-else-if",
     "missing-required-import",
+    "exec-builtin",
+    "call-datetime-without-tzinfo",
 ]
 extend-safe-fixes = [
     "FA", 
@@ -66,9 +68,6 @@ ignore = [
 
 [tool.pytest]
 strict_xfail = true
-
-[tool.pytest_env]
-MODIN_ENGINE = "python"
 
 [tool.pyright]
 include = [

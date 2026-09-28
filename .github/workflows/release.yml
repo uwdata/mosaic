@@ -13,8 +13,12 @@ on:
           - patch
           - minor
           - major
+      prerelease:
+        description: "Pre-release (starts X.Y.Z-beta.0 from the bump, or increments the current beta)"
+        type: boolean
+        default: false
       exact_version:
-        description: "Exact version, e.g. 1.2.3 (overrides bump; leave blank to use bump)"
+        description: "Exact version, e.g. 1.2.3 or 1.2.3-beta.0 (overrides bump and prerelease; leave blank to use bump)"
         required: false
         default: ""
 
@@ -62,22 +66,25 @@ jobs:
         id: resolve
         env:
           BUMP: ${{ inputs.bump }}
+          PRERELEASE: ${{ inputs.prerelease }}
           EXACT: ${{ inputs.exact_version }}
         run: |
-          next=$(node -e '
-            const cur = require("./lerna.json").version;
-            const { EXACT, BUMP } = process.env;
-            let next = EXACT;
-            if (!next) {
-              const p = cur.split("-")[0].split(".").map(Number);
-              next = BUMP === "major" ? (p[0]+1)+".0.0"
-                   : BUMP === "minor" ? p[0]+"."+(p[1]+1)+".0"
-                   : p[0]+"."+p[1]+"."+(p[2]+1);
-            }
-            process.stdout.write(next);
-          ')
+          cur=$(node -p "require('./lerna.json').version")
+          if [ -n "$EXACT" ]; then
+            next="$EXACT"
+          elif [ "$PRERELEASE" = "true" ] && [[ "$cur" == *-* ]]; then
+            next=$(npx --yes semver@7 --increment prerelease "$cur")
+          elif [ "$PRERELEASE" = "true" ]; then
+            next=$(npx --yes semver@7 --increment "pre$BUMP" --preid beta "$cur")
+          else
+            next=$(npx --yes semver@7 --increment "$BUMP" "$cur")
+          fi
+          if ! [[ "$next" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]]; then
+            echo "::error::Invalid version $next. Use X.Y.Z or X.Y.Z-beta.N." >&2
+            exit 1
+          fi
           echo "version=$next" >> "$GITHUB_OUTPUT"
-          echo "## Planned release: \`v$next\` (current: \`v$(node -p "require('./lerna.json').version")\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Planned release: \`v$next\` (current: \`v$cur\`)" >> "$GITHUB_STEP_SUMMARY"
           echo "Planned release: v$next"
 
   release:
@@ -145,10 +152,12 @@ jobs:
           VERSION="$(node -p "require('./lerna.json').version")"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          [[ "$VERSION" == *-* ]] && prerelease=true || prerelease=false
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
           echo "## Released v$VERSION" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish to npm
-        run: pnpm publish -r --access public --no-git-checks
+        run: pnpm publish -r --access public --no-git-checks --tag ${{ steps.version.outputs.prerelease == 'true' && 'next' || 'latest' }}
 
       - name: Build Python packages
         run: |
@@ -166,4 +175,4 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${{ steps.version.outputs.tag }}" --generate-notes --title "${{ steps.version.outputs.tag }}"
+        run: gh release create "${{ steps.version.outputs.tag }}" --generate-notes --title "${{ steps.version.outputs.tag }}" --prerelease=${{ steps.version.outputs.prerelease }}

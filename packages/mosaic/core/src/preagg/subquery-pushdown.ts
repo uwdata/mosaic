@@ -1,5 +1,5 @@
-import { ColumnNameRefNode, JoinNode, isAggregateExpression, isPivotQuery, isSelectQuery, isSetOperation, literal, type TableRefNode, type LiteralNode, type PivotQuery, type Query, type SelectQuery, type SQLNode, type SetOperation, isTableRef } from "@uwdata/mosaic-sql";
-import { isStar, queryScope, resolveRelation, tableEquals, type Scope } from "./lineage.js";
+import { ColumnNameRefNode, JoinNode, isAggregateExpression, isPivotQuery, isSelectQuery, isSetOperation, literal, type TableRefNode, type LiteralNode, type PivotQuery, type Query, type SelectQuery, type SQLNode, type SetOperation, isTableRef } from '@uwdata/mosaic-sql';
+import { isStar, queryScope, resolveRelation, tableEquals, type Scope } from './lineage.js';
 
 /**
  * Push selected columns down to subqueries, ensuring they are included as

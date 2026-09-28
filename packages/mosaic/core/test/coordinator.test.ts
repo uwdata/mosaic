@@ -100,7 +100,7 @@ describe('coordinator', () => {
     // Mock the connector
     const connector = {
       async query(req: ArrowQueryRequest) {
-        const index = req.sql.includes("WHERE") ? 1 : 0;
+        const index = req.sql.includes('WHERE') ? 1 : 0;
         events.push(`CONNECT ${index}`);
         return tableToIPC(tableFromArrays({ index: [index] }), {})!;
       },
@@ -122,16 +122,16 @@ describe('coordinator', () => {
       async prepare() {
         await wait(); // force wait
         prepared = true;
-        events.push("PREPARE");
+        events.push('PREPARE');
       },
       query(filter = []) {
         events.push(`QUERY ${prepared}`);
-        return Query.select("*").from("foo").where(filter);
+        return Query.select('*').from('foo').where(filter);
       }
     });
 
     // fire selection update
-    filterBy.update(clausePoint("foo", 1, { source: {} }));
+    filterBy.update(clausePoint('foo', 1, { source: {} }));
 
     // await initial query, then selection update
     await client.pending;
@@ -141,11 +141,11 @@ describe('coordinator', () => {
     // query calls should come post-initialization
     // all queries should include filter clause
     expect(events).toStrictEqual([
-      "PREPARE",
-      "QUERY true",
-      "CONNECT 1",
-      "QUERY true",
-      "CONNECT 1",
+      'PREPARE',
+      'QUERY true',
+      'CONNECT 1',
+      'QUERY true',
+      'CONNECT 1',
     ]);
   });
 

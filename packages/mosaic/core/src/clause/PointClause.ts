@@ -1,7 +1,7 @@
-import type { ExprNode, ExprValue } from "@uwdata/mosaic-sql";
-import { asNode, isInDistinct, literal, and, or, isNotDistinct } from "@uwdata/mosaic-sql";
-import { isMosaicClient, type MosaicClient } from "../MosaicClient.js";
-import type { ClauseMetadata, ClauseSource, SelectionClause } from "./SelectionClause.js";
+import type { ExprNode, ExprValue } from '@uwdata/mosaic-sql';
+import { asNode, isInDistinct, literal, and, or, isNotDistinct } from '@uwdata/mosaic-sql';
+import { isMosaicClient, type MosaicClient } from '../MosaicClient.js';
+import type { ClauseMetadata, ClauseSource, SelectionClause } from './SelectionClause.js';
 
 /**
  * Selection clause metadata indicating selection of one or more discrete

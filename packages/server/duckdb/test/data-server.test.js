@@ -7,6 +7,6 @@ describe('queryHandler', () => {
     const errors = [];
     const res = { error: (err, code) => errors.push([String(err), code]) };
     await queryHandler(db)(res, JSON.stringify({ sql: 'SELECT 1' }));
-    expect(errors).toEqual([[`missing required 'type' parameter`, 400]]);
+    expect(errors).toEqual([['missing required \'type\' parameter', 400]]);
   });
 });
