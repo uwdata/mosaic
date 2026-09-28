@@ -24,24 +24,24 @@ describe('JSON schema', () => {
 // validate specs, parsing, and generation
 for (const [name, spec] of specs) {
   describe(`Test specification: ${name}`, () => {
-    it(`produces esm output`, async () => {
+    it('produces esm output', async () => {
       const ast = parseSpec(spec);
       const esm = astToESM(ast);
       expect(esm).toBe(await loadESM(name));
     });
-    it(`produces json output`, async () => {
+    it('produces json output', async () => {
       const ast = parseSpec(spec);
       const json = JSON.stringify(ast.toJSON(), null, 2);
       expect(json).toBe(await loadJSON(name));
     });
-    it(`round trips json parsing`, () => {
+    it('round trips json parsing', () => {
       const ast = parseSpec(spec);
       const json = ast.toJSON();
       expect(JSON.stringify(json), `${name} did not round trip unchanged`).toBe(
         JSON.stringify(parseSpec(json).toJSON())
       );
     });
-    it(`passes JSON schema validation`, () => {
+    it('passes JSON schema validation', () => {
       const valid = validate(spec);
       if (!valid) {
         console.error(validate.errors);

@@ -304,7 +304,7 @@ export class Table extends Input {
     } else {
       if (currentHeader) currentHeader.firstChild.textContent = '';
       this.sortHeader = th;
-      th.firstChild.textContent = this.sortDesc ? "▾"  : "▴";
+      th.firstChild.textContent = this.sortDesc ? '▾'  : '▴';
     }
 
     // issue query for sorted data

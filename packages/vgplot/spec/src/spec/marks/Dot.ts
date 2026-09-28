@@ -69,7 +69,7 @@ export interface DotOptions extends MarkOptions {
 }
 
 /** Options for the dotX mark. */
-export interface DotXOptions extends Omit<DotOptions, "y"> {
+export interface DotXOptions extends Omit<DotOptions, 'y'> {
   /**
    * The vertical position of the dot’s center, typically bound to the *y*
    * scale.
@@ -84,7 +84,7 @@ export interface DotXOptions extends Omit<DotOptions, "y"> {
 }
 
 /** Options for the dotY mark. */
-export interface DotYOptions extends Omit<DotOptions, "x"> {
+export interface DotYOptions extends Omit<DotOptions, 'x'> {
   /**
    * The horizontal position of the dot’s center, typically bound to the *x*
    * scale.

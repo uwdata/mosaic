@@ -1,7 +1,7 @@
-import type { ExprNode, ExprValue, ScaleDomain, ScaleOptions } from "@uwdata/mosaic-sql";
-import { and, asNode, isBetween } from "@uwdata/mosaic-sql";
-import { isMosaicClient, type MosaicClient } from "../MosaicClient.js";
-import type { ClauseMetadata, ClauseSource, SelectionClause } from "./SelectionClause.js";
+import type { ExprNode, ExprValue, ScaleDomain, ScaleOptions } from '@uwdata/mosaic-sql';
+import { and, asNode, isBetween } from '@uwdata/mosaic-sql';
+import { isMosaicClient, type MosaicClient } from '../MosaicClient.js';
+import type { ClauseMetadata, ClauseSource, SelectionClause } from './SelectionClause.js';
 
 /** A binning method name. */
 export type BinMethod = 'floor' | 'ceil' | 'round';

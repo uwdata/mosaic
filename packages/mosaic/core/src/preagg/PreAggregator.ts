@@ -225,7 +225,7 @@ export class PreAggregator {
       _info.result = mc.exec(createQuery);
       // if create query fails, log and mark as failed
       _info.result.catch((e: Error) => {
-        mc.logger().error(new QueryError(e, createQuery.join(";\n")));
+        mc.logger().error(new QueryError(e, createQuery.join(';\n')));
         _info.result = null; // indicate lack of preagg view
       });
       info = _info;
@@ -394,7 +394,7 @@ function preaggregateInfo(
  */
 function replaceIndices(exprs: ExprNode[], select: SelectClauseNode[]) {
   return exprs.flatMap(expr => {
-    if (expr.type === "ORDER_BY") {
+    if (expr.type === 'ORDER_BY') {
       const e = (expr as OrderByNode).expr;
       const ref = resolvePositional(e, select);
       if (ref) {

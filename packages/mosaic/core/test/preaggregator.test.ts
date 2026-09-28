@@ -376,7 +376,7 @@ describe('PreAggregator', () => {
             .select({ value: add('v', 1), type: 'u' })
         )
         .select({
-          measure: avg("value"), type: "type"
+          measure: avg('value'), type: 'type'
         })
         .groupby('type');
     };
@@ -386,17 +386,17 @@ describe('PreAggregator', () => {
       return Query.from(
           Query
             .with(
-              cte("level2", Query.unionAll([
+              cte('level2', Query.unionAll([
                 Query.from('testData').select({ v: 'x', u: 'cat' }).where(eq('cat', literal('c')), predicate),
                 Query.from('testData').select({ v: 'x', u: 'cat' }).where(eq('cat', literal('d')), predicate)
               ])),
-              cte("level1", Query.from('level2').select('u', 'v'))
+              cte('level1', Query.from('level2').select('u', 'v'))
             )
             .from('level1')
             .select({ value: add('v', 1), type: 'u' })
         )
         .select({
-          measure: avg("value"), type: "type"
+          measure: avg('value'), type: 'type'
         })
         .groupby('type');
     };

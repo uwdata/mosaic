@@ -1,4 +1,4 @@
-import { QueryType } from "../types.js";
+import { QueryType } from '../types.js';
 
 function asError(value: unknown) {
   return value instanceof Error
