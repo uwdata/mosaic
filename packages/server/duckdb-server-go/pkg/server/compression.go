@@ -2,30 +2,47 @@ package server
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/klauspost/compress/gzhttp"
 )
 
-// gzhttp inserts the negotiated encoding before the closing quote of a
-// compressed response's ETag, and clients revalidate with that suffixed tag.
-var etagEncodingSuffixes = []string{`-gzip"`, `-zstd"`}
-
-var compressResponses = func() func(http.Handler) http.HandlerFunc {
-	wrapper, err := gzhttp.NewWrapper(gzhttp.SuffixETag("-gzip"))
-	if err != nil {
-		panic(err)
+// gzhttp's encoding selection is unexported, so this mirrors it for the
+// default options; TestResponseEncodingMatchesGzhttp pins the two together.
+func responseEncoding(r *http.Request, response commandResponse) string {
+	if len(response.data) < gzhttp.DefaultMinSize || !gzhttp.DefaultContentTypeFilter(response.contentType) {
+		return ""
 	}
-	return wrapper
-}()
+	accept := r.Header.Get("Accept-Encoding")
+	gzipQ := acceptEncodingQValue(accept, "gzip")
+	zstdQ := acceptEncodingQValue(accept, "zstd")
+	switch {
+	case zstdQ > 0 && zstdQ >= gzipQ:
+		return "zstd"
+	case gzipQ > 0:
+		return "gzip"
+	default:
+		return ""
+	}
+}
 
-func stripETagEncodingSuffix(tag string) string {
-	for _, suffix := range etagEncodingSuffixes {
-		if strings.HasSuffix(tag, suffix) {
-			return tag[:len(tag)-len(suffix)] + `"`
+func acceptEncodingQValue(header, coding string) float64 {
+	for _, part := range strings.Split(header, ",") {
+		name, params, _ := strings.Cut(part, ";")
+		if strings.ToLower(strings.TrimSpace(name)) != coding {
+			continue
 		}
+		q := 1.0
+		for _, param := range strings.Split(params, ";") {
+			param = strings.TrimSpace(param)
+			if len(param) >= 2 && strings.EqualFold(param[:2], "q=") {
+				q, _ = strconv.ParseFloat(param[2:], 64)
+			}
+		}
+		return min(max(q, 0), 1)
 	}
-	return tag
+	return 0
 }
 
 func unwrapResponseWriter(w http.ResponseWriter) http.ResponseWriter {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/klauspost/compress/gzhttp"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
@@ -84,7 +85,7 @@ func newHandler(db commandExecutor, cfg config) *handler {
 		varyHeaders:      cfg.varyHeaders,
 	}
 
-	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, compressResponses(http.HandlerFunc(s.handleHTTP)))
+	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, gzhttp.GzipHandler(http.HandlerFunc(s.handleHTTP)))
 
 	return s
 }
@@ -277,20 +278,17 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodGet && s.cacheControl != "" {
-		etag := responseETag(response)
-		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" {
-			if _, ok := matchETag(value, etag, false); !ok {
-				http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)
-				return
-			}
-		}
-		w.Header().Set("Cache-Control", s.cacheControl)
-		if matched, ok := matchETag(strings.Join(r.Header.Values("If-None-Match"), ","), etag, true); ok {
-			w.Header().Set("ETag", matched)
-			w.WriteHeader(http.StatusNotModified)
+		etag := responseETag(response, responseEncoding(r, response))
+		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" && !matchesETag(value, etag, false) {
+			http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)
 			return
 		}
 		w.Header().Set("ETag", etag)
+		w.Header().Set("Cache-Control", s.cacheControl)
+		if matchesETag(strings.Join(r.Header.Values("If-None-Match"), ","), etag, true) {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", response.contentType)

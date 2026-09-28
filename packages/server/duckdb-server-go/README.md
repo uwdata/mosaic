@@ -110,7 +110,7 @@ duckdb-server-go --cache-control='private, max-age=60' --vary=X-Tenant-Id
 
 HTTP responses of at least 1 KiB are compressed with gzip or zstd according to the request's `Accept-Encoding` header, preferring zstd when the client accepts both, and every command response carries `Vary: Accept-Encoding`. Compression is always enabled and cannot be configured; outer middleware and proxies should not compress again. Compressed request bodies are not accepted. WebSocket messages use the per-message compression negotiated during the handshake.
 
-A compressed GET `arrow` response keeps a strong ETag with `-gzip` or `-zstd` inserted before the closing quote, so the tag identifies the encoded representation as [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3.1) requires. `If-None-Match` and `If-Match` accept the plain tag or either suffixed form, and a `304` response echoes the tag it matched. Responses below the size threshold and clients that do not accept compression receive the plain tag.
+A compressed GET `arrow` response keeps a strong ETag with `-gzip` or `-zstd` inserted before the closing quote, so the tag identifies the encoded representation as [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3.1) requires. The server determines the representation it will send, including the size threshold, before evaluating `If-None-Match` and `If-Match`, so a tag from a differently encoded response does not match and a `304` carries the selected representation's tag. Responses below the size threshold and clients that do not accept compression receive the plain tag.
 
 ### Application Command Fields
 

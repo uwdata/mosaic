@@ -82,30 +82,22 @@ func TestMatchesETag(t *testing.T) {
 		{"\"bad\x7f\", \"tag\"", false, false},
 		{`*, "tag"`, false, false},
 		{`w/"tag"`, false, false},
-		{`"tag-gzip"`, true, true},
-		{`W/"tag-zstd"`, false, true},
-		{`"tag-br"`, false, false},
-		{`"tag-gzip-zstd"`, false, false},
+		{`"tag-gzip"`, false, false},
+		{`W/"tag-zstd"`, false, false},
 	}
 	for _, tt := range tests {
-		_, strong := matchETag(tt.value, `"tag"`, false)
-		require.Equal(t, tt.strong, strong, "strong: %q", tt.value)
-		_, weak := matchETag(tt.value, `"tag"`, true)
-		require.Equal(t, tt.weak, weak, "weak: %q", tt.value)
+		require.Equal(t, tt.strong, matchesETag(tt.value, `"tag"`, false), "strong: %q", tt.value)
+		require.Equal(t, tt.weak, matchesETag(tt.value, `"tag"`, true), "weak: %q", tt.value)
 	}
-	matched, ok := matchETag(`"other", W/"tag-zstd", "tag"`, `"tag"`, true)
-	require.True(t, ok)
-	require.Equal(t, `"tag-zstd"`, matched)
-	matched, ok = matchETag("*", `"tag"`, false)
-	require.True(t, ok)
-	require.Equal(t, `"tag"`, matched)
 }
 
-func TestResponseETagIncludesFormat(t *testing.T) {
+func TestResponseETagIncludesFormatAndEncoding(t *testing.T) {
 	response := commandResponse{contentType: commandResponses[CommandArrow].contentType, data: []byte("result")}
-	etag := responseETag(response)
+	etag := responseETag(response, "")
+	require.Regexp(t, `^"[0-9a-f]{64}"$`, etag)
+	require.Equal(t, strings.TrimSuffix(etag, `"`)+`-zstd"`, responseETag(response, "zstd"))
 	response.contentType = "application/octet-stream"
-	require.NotEqual(t, etag, responseETag(response))
+	require.NotEqual(t, etag, responseETag(response, ""))
 }
 
 func TestHTTPCachePreconditions(t *testing.T) {

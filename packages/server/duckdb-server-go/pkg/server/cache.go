@@ -47,23 +47,25 @@ func WithVary(headers ...string) Option {
 	})
 }
 
-func responseETag(response commandResponse) string {
+func responseETag(response commandResponse, encoding string) string {
 	hash := sha256.New()
 	_, _ = hash.Write([]byte(response.contentType))
 	_, _ = hash.Write([]byte{0})
 	_, _ = hash.Write(response.data)
-	return `"` + hex.EncodeToString(hash.Sum(nil)) + `"`
+	tag := `"` + hex.EncodeToString(hash.Sum(nil))
+	if encoding != "" {
+		tag += "-" + encoding
+	}
+	return tag + `"`
 }
 
-// matchETag reports whether the If-Match or If-None-Match value matches etag
-// and returns the matching client tag in strong form, or etag for "*".
 // Entity tags can contain commas: https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3
-func matchETag(value, etag string, weak bool) (string, bool) {
+func matchesETag(value, etag string, weak bool) bool {
 	value = strings.Trim(value, " \t")
 	if value == "*" {
-		return etag, true
+		return true
 	}
-	matched := ""
+	matched := false
 	for value != "" {
 		value = strings.TrimLeft(value, " \t,")
 		if value == "" {
@@ -71,25 +73,23 @@ func matchETag(value, etag string, weak bool) (string, bool) {
 		}
 		tag, isWeak := strings.CutPrefix(value, "W/")
 		if len(tag) == 0 || tag[0] != '"' {
-			return "", false
+			return false
 		}
 		end := 1
 		for end < len(tag) && tag[end] != '"' {
 			if tag[end] < 0x21 || tag[end] == 0x7f {
-				return "", false
+				return false
 			}
 			end++
 		}
 		if end == len(tag) {
-			return "", false
+			return false
 		}
-		if matched == "" && (weak || !isWeak) && stripETagEncodingSuffix(tag[:end+1]) == etag {
-			matched = tag[:end+1]
-		}
+		matched = matched || (weak || !isWeak) && tag[:end+1] == etag
 		value = strings.TrimLeft(tag[end+1:], " \t")
 		if value != "" && value[0] != ',' {
-			return "", false
+			return false
 		}
 	}
-	return matched, matched != ""
+	return matched
 }
