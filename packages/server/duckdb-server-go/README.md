@@ -92,7 +92,7 @@ handler, err := server.New(db,
 
 `WithCacheControl(value)` sets the complete header value on successful GET `arrow` responses. The application chooses storage, sharing, and freshness directives, such as `no-store`, `private, max-age=60`, or `public, max-age=60, s-maxage=300`. An omitted or empty value preserves existing behavior, including any headers set by outer middleware. Configured values replace an existing Cache-Control header; other responses, including errors, `exec`, POST, OPTIONS, and WebSocket handshakes, receive `no-store`. HEAD is unsupported and returns `405`; only GET query responses are cacheable.
 
-For GET `arrow` responses, enabling Cache-Control also generates a strong ETag from the response format and serialized bytes. A matching `If-None-Match` returns `304` with no body and the applicable Cache-Control, ETag, and Vary headers. Tag lists, weak comparisons, and `*` are supported. `If-Match` uses strong comparison and takes precedence, returning `412` without an ETag on a mismatch. Other command types and methods, including `exec` and POST, ignore conditional request headers; `If-Match` cannot guard an `exec` command. Authorization, query validation, execution, serialization, and hashing of the complete response still run before evaluating validators: revalidation saves transfer bandwidth. Changes to data do not invalidate already-fresh HTTP cache entries before their configured lifetime expires. Middleware or proxies that compress or transform the response must update or weaken its strong ETag.
+For GET `arrow` responses, enabling Cache-Control also generates a strong ETag from the response format and serialized bytes. A matching `If-None-Match` returns `304` with no body and the applicable Cache-Control, ETag, and Vary headers. Tag lists, weak comparisons, and `*` are supported. `If-Match` uses strong comparison and takes precedence, returning `412` without an ETag on a mismatch. Other command types and methods, including `exec` and POST, ignore conditional request headers; `If-Match` cannot guard an `exec` command. Authorization, query validation, execution, serialization, and hashing of the complete response still run before evaluating validators: revalidation saves transfer bandwidth. Changes to data do not invalidate already-fresh HTTP cache entries before their configured lifetime expires. Compressed responses carry an encoding-specific ETag; see [HTTP Response Compression](#http-response-compression).
 
 `WithVary(headers ...string)` accepts individual names or a slice with `headers...`. Names are copied, trimmed, canonicalized, and deduplicated; `*` is accepted. They append to existing Vary values, including CORS fields, on every response. `WithVary()` configures no additional names. Each option replaces earlier configuration of the same option. Invalid header characters are rejected during server construction; Cache-Control directives are otherwise passed through.
 
@@ -105,6 +105,12 @@ The equivalent command-line settings are:
 ```sh
 duckdb-server-go --cache-control='private, max-age=60' --vary=X-Tenant-Id
 ```
+
+### HTTP Response Compression
+
+HTTP responses of at least 1 KiB are compressed with gzip or zstd according to the request's `Accept-Encoding` header, preferring zstd when the client accepts both, and every command response carries `Vary: Accept-Encoding`. Compression is always enabled and cannot be configured; outer middleware and proxies should not compress again. Compressed request bodies are not accepted. WebSocket messages use the per-message compression negotiated during the handshake.
+
+A compressed GET `arrow` response keeps a strong ETag with `-gzip` or `-zstd` inserted before the closing quote, so the tag identifies the encoded representation as [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3.1) requires. `If-None-Match` and `If-Match` accept the plain tag or either suffixed form, and a `304` response echoes the tag it matched. Responses below the size threshold and clients that do not accept compression receive the plain tag.
 
 ### Application Command Fields
 

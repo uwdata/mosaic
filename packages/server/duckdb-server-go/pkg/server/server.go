@@ -84,7 +84,7 @@ func newHandler(db commandExecutor, cfg config) *handler {
 		varyHeaders:      cfg.varyHeaders,
 	}
 
-	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, http.HandlerFunc(s.handleHTTP))
+	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, compressResponses(http.HandlerFunc(s.handleHTTP)))
 
 	return s
 }
@@ -226,7 +226,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		if s.maxMessageBytes > 0 {
-			r.Body = http.MaxBytesReader(w, r.Body, s.maxMessageBytes)
+			r.Body = http.MaxBytesReader(unwrapResponseWriter(w), r.Body, s.maxMessageBytes)
 		}
 		raw, err := io.ReadAll(r.Body)
 		if err == nil {
@@ -278,16 +278,19 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet && s.cacheControl != "" {
 		etag := responseETag(response)
-		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" && !matchesETag(value, etag, false) {
-			http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)
-			return
+		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" {
+			if _, ok := matchETag(value, etag, false); !ok {
+				http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)
+				return
+			}
 		}
-		w.Header().Set("ETag", etag)
 		w.Header().Set("Cache-Control", s.cacheControl)
-		if matchesETag(strings.Join(r.Header.Values("If-None-Match"), ","), etag, true) {
+		if matched, ok := matchETag(strings.Join(r.Header.Values("If-None-Match"), ","), etag, true); ok {
+			w.Header().Set("ETag", matched)
 			w.WriteHeader(http.StatusNotModified)
 			return
 		}
+		w.Header().Set("ETag", etag)
 	}
 
 	w.Header().Set("Content-Type", response.contentType)

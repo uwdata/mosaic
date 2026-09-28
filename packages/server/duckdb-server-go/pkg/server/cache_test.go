@@ -82,11 +82,23 @@ func TestMatchesETag(t *testing.T) {
 		{"\"bad\x7f\", \"tag\"", false, false},
 		{`*, "tag"`, false, false},
 		{`w/"tag"`, false, false},
+		{`"tag-gzip"`, true, true},
+		{`W/"tag-zstd"`, false, true},
+		{`"tag-br"`, false, false},
+		{`"tag-gzip-zstd"`, false, false},
 	}
 	for _, tt := range tests {
-		require.Equal(t, tt.strong, matchesETag(tt.value, `"tag"`, false), "strong: %q", tt.value)
-		require.Equal(t, tt.weak, matchesETag(tt.value, `"tag"`, true), "weak: %q", tt.value)
+		_, strong := matchETag(tt.value, `"tag"`, false)
+		require.Equal(t, tt.strong, strong, "strong: %q", tt.value)
+		_, weak := matchETag(tt.value, `"tag"`, true)
+		require.Equal(t, tt.weak, weak, "weak: %q", tt.value)
 	}
+	matched, ok := matchETag(`"other", W/"tag-zstd", "tag"`, `"tag"`, true)
+	require.True(t, ok)
+	require.Equal(t, `"tag-zstd"`, matched)
+	matched, ok = matchETag("*", `"tag"`, false)
+	require.True(t, ok)
+	require.Equal(t, `"tag"`, matched)
 }
 
 func TestResponseETagIncludesFormat(t *testing.T) {
