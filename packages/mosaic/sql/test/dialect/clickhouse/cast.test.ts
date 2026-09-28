@@ -5,12 +5,12 @@ const gen = clickHouseCodeGenerator;
 
 describe('ClickHouse cast toString', () => {
   it('emits CAST(expr AS type)', () => {
-    expect(cast('foo', 'DOUBLE').toString(gen)).toBe(`CAST("foo" AS DOUBLE)`);
-    expect(cast(column('foo'), 'DOUBLE').toString(gen)).toBe(`CAST("foo" AS DOUBLE)`);
+    expect(cast('foo', 'DOUBLE').toString(gen)).toBe('CAST("foo" AS DOUBLE)');
+    expect(cast(column('foo'), 'DOUBLE').toString(gen)).toBe('CAST("foo" AS DOUBLE)');
   });
 
   it('preserves compound expressions inside the CAST argument', () => {
     expect(cast(add('bar', 'baz'), 'INTEGER').toString(gen))
-      .toBe(`CAST(("bar" + "baz") AS INTEGER)`);
+      .toBe('CAST(("bar" + "baz") AS INTEGER)');
   });
 });

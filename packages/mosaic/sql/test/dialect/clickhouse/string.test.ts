@@ -8,22 +8,22 @@ const gen = clickHouseCodeGenerator;
 describe('ClickHouse string overrides', () => {
   it('rewrites contains', () => {
     expect(contains(column('s'), 'foo').toString(gen))
-      .toBe(`(position("s", 'foo') > 0)`);
+      .toBe('(position("s", \'foo\') > 0)');
   });
 
   it('rewrites prefix (starts_with)', () => {
     expect(prefix(column('s'), 'foo').toString(gen))
-      .toBe(`startsWith("s", 'foo')`);
+      .toBe('startsWith("s", \'foo\')');
   });
 
   it('rewrites suffix (ends_with)', () => {
     expect(suffix(column('s'), 'foo').toString(gen))
-      .toBe(`endsWith("s", 'foo')`);
+      .toBe('endsWith("s", \'foo\')');
   });
 
   it('rewrites regexp_matches', () => {
     expect(regexp_matches(column('s'), 'foo').toString(gen))
-      .toBe(`match("s", 'foo')`);
+      .toBe('match("s", \'foo\')');
   });
 
   it('rejects regexp_matches options', () => {

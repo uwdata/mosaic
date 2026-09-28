@@ -8,7 +8,7 @@ const gen = clickHouseCodeGenerator;
 describe('ClickHouse list overrides', () => {
   it('rewrites listContains', () => {
     expect(listContains(column('xs'), 'x').toString(gen))
-      .toBe(`has("xs", 'x')`);
+      .toBe('has("xs", \'x\')');
   });
 
   it('rewrites listHasAny', () => {

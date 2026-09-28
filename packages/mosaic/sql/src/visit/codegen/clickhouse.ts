@@ -233,11 +233,11 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
       // that survives parallel scans. We can throw with the specific replacement.
       case 'first':
         throw new Error(
-          `first(x) is not supported in ClickHouse. Use argmin(x, ordering_col).`
+          'first(x) is not supported in ClickHouse. Use argmin(x, ordering_col).'
         );
       case 'last':
         throw new Error(
-          `last(x) is not supported in ClickHouse. Use argmax(x, ordering_col).`
+          'last(x) is not supported in ClickHouse. Use argmax(x, ordering_col).'
         );
 
       default:

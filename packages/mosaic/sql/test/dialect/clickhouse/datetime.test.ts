@@ -25,7 +25,7 @@ describe('ClickHouse datetime overrides', () => {
 
   it('rewrites timezone', () => {
     expect(timezone('UTC', column('ts')).toString(gen))
-      .toBe(`toTimeZone("ts", 'UTC')`);
+      .toBe('toTimeZone("ts", \'UTC\')');
   });
 
   it('rewrites make_date', () => {
@@ -40,6 +40,6 @@ describe('ClickHouse datetime overrides', () => {
 
   it('delegates whole-day Date literals to the base visitor', () => {
     const d = new Date(Date.UTC(2024, 0, 2));
-    expect(literal(d).toString(gen)).toBe(`DATE '2024-01-02'`);
+    expect(literal(d).toString(gen)).toBe('DATE \'2024-01-02\'');
   });
 });

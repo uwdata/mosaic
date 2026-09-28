@@ -79,64 +79,64 @@ describe('ClickHouse aggregate overrides', () => {
 
   it('rewrites mad', () => {
     expect(mad('foo').toString(gen)).toBe(
-      `arrayReduce('median', arrayMap(_v -> abs(_v - arrayReduce('median', groupArray("foo"))), groupArray("foo")))`
+      'arrayReduce(\'median\', arrayMap(_v -> abs(_v - arrayReduce(\'median\', groupArray("foo"))), groupArray("foo")))'
     );
   });
 
   it('composes mad with a user FILTER clause', () => {
     expect(mad('foo').where(column('t')).toString(gen)).toBe(
-      `arrayReduce('median', arrayMap(_v -> abs(_v - arrayReduce('median', groupArrayIf("foo", "t"))), groupArrayIf("foo", "t")))`
+      'arrayReduce(\'median\', arrayMap(_v -> abs(_v - arrayReduce(\'median\', groupArrayIf("foo", "t"))), groupArrayIf("foo", "t")))'
     );
   });
 
   it('rewrites regr_count', () => {
     expect(regrCount('y', 'x').toString(gen))
-      .toBe(`countIf(("y") IS NOT NULL AND ("x") IS NOT NULL)`);
+      .toBe('countIf(("y") IS NOT NULL AND ("x") IS NOT NULL)');
   });
 
   it('rewrites regr_avgx', () => {
     expect(regrAvgX('y', 'x').toString(gen))
-      .toBe(`avgIf("x", ("y") IS NOT NULL AND ("x") IS NOT NULL)`);
+      .toBe('avgIf("x", ("y") IS NOT NULL AND ("x") IS NOT NULL)');
   });
 
   it('rewrites regr_avgy', () => {
     expect(regrAvgY('y', 'x').toString(gen))
-      .toBe(`avgIf("y", ("y") IS NOT NULL AND ("x") IS NOT NULL)`);
+      .toBe('avgIf("y", ("y") IS NOT NULL AND ("x") IS NOT NULL)');
   });
 
   it('rewrites regr_sxx', () => {
     expect(regrSXX('y', 'x').toString(gen))
-      .toBe(`(varSampIf("x", ("y") IS NOT NULL AND ("x") IS NOT NULL) * (countIf(("y") IS NOT NULL AND ("x") IS NOT NULL) - 1))`);
+      .toBe('(varSampIf("x", ("y") IS NOT NULL AND ("x") IS NOT NULL) * (countIf(("y") IS NOT NULL AND ("x") IS NOT NULL) - 1))');
   });
 
   it('rewrites regr_syy', () => {
     expect(regrSYY('y', 'x').toString(gen))
-      .toBe(`(varSampIf("y", ("y") IS NOT NULL AND ("x") IS NOT NULL) * (countIf(("y") IS NOT NULL AND ("x") IS NOT NULL) - 1))`);
+      .toBe('(varSampIf("y", ("y") IS NOT NULL AND ("x") IS NOT NULL) * (countIf(("y") IS NOT NULL AND ("x") IS NOT NULL) - 1))');
   });
 
   it('rewrites regr_sxy', () => {
     expect(regrSXY('y', 'x').toString(gen))
-      .toBe(`(covarSampIf("y", "x", ("y") IS NOT NULL AND ("x") IS NOT NULL) * (countIf(("y") IS NOT NULL AND ("x") IS NOT NULL) - 1))`);
+      .toBe('(covarSampIf("y", "x", ("y") IS NOT NULL AND ("x") IS NOT NULL) * (countIf(("y") IS NOT NULL AND ("x") IS NOT NULL) - 1))');
   });
 
   it('rewrites regr_slope', () => {
     expect(regrSlope('y', 'x').toString(gen))
-      .toBe(`(covarSampIf("y", "x", ("y") IS NOT NULL AND ("x") IS NOT NULL) / varSampIf("x", ("y") IS NOT NULL AND ("x") IS NOT NULL))`);
+      .toBe('(covarSampIf("y", "x", ("y") IS NOT NULL AND ("x") IS NOT NULL) / varSampIf("x", ("y") IS NOT NULL AND ("x") IS NOT NULL))');
   });
 
   it('rewrites regr_intercept', () => {
     expect(regrIntercept('y', 'x').toString(gen))
-      .toBe(`(avgIf("y", ("y") IS NOT NULL AND ("x") IS NOT NULL) - (covarSampIf("y", "x", ("y") IS NOT NULL AND ("x") IS NOT NULL) / varSampIf("x", ("y") IS NOT NULL AND ("x") IS NOT NULL)) * avgIf("x", ("y") IS NOT NULL AND ("x") IS NOT NULL))`);
+      .toBe('(avgIf("y", ("y") IS NOT NULL AND ("x") IS NOT NULL) - (covarSampIf("y", "x", ("y") IS NOT NULL AND ("x") IS NOT NULL) / varSampIf("x", ("y") IS NOT NULL AND ("x") IS NOT NULL)) * avgIf("x", ("y") IS NOT NULL AND ("x") IS NOT NULL))');
   });
 
   it('rewrites regr_r2', () => {
     expect(regrR2('y', 'x').toString(gen))
-      .toBe(`(pow(corrIf("y", "x", ("y") IS NOT NULL AND ("x") IS NOT NULL), 2))`);
+      .toBe('(pow(corrIf("y", "x", ("y") IS NOT NULL AND ("x") IS NOT NULL), 2))');
   });
 
   it('composes regr_* with a user FILTER clause', () => {
     expect(regrSlope('y', 'x').where(column('t')).toString(gen))
-      .toBe(`(covarSampIf("y", "x", (("y") IS NOT NULL AND ("x") IS NOT NULL) AND ("t")) / varSampIf("x", (("y") IS NOT NULL AND ("x") IS NOT NULL) AND ("t")))`);
+      .toBe('(covarSampIf("y", "x", (("y") IS NOT NULL AND ("x") IS NOT NULL) AND ("t")) / varSampIf("x", (("y") IS NOT NULL AND ("x") IS NOT NULL) AND ("t")))');
   });
 
   it('rejects DISTINCT regression aggregates', () => {
