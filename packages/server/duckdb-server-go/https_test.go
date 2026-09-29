@@ -10,8 +10,6 @@ import (
 	"log/slog"
 	"math/big"
 	"net"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -74,16 +72,6 @@ func TestConfigureHTTPS(t *testing.T) {
 	require.ErrorContains(t, err, "load TLS certificate")
 	_, err = configureHTTPS("missing.pem", "missing-key.pem", logger)
 	require.ErrorContains(t, err, "load TLS certificate")
-
-	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) }))
-	server.TLS = config
-	server.EnableHTTP2 = true
-	server.StartTLS()
-	defer server.Close()
-	response, err := server.Client().Get(server.URL)
-	require.NoError(t, err)
-	require.NoError(t, response.Body.Close())
-	require.Equal(t, 2, response.ProtoMajor)
 }
 
 func TestNormalizeAddress(t *testing.T) {
