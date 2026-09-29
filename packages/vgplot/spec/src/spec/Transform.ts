@@ -24,25 +24,16 @@ export interface AggregateOptions {
   distinct?: boolean;
 }
 
-/** A transform argument. */
-type Arg = TransformField | number | boolean;
-
 /** A zero argument transform signature. */
-type Arg0 = null | [];
+type Nullary = null | [];
 
 /** A single argument transform signature. */
-type Arg1 = Arg | [Arg];
+type Unary<T> = T | [T];
 
-/**
- * A two argument transform signature; both arguments are required.
- */
-type Arg2 = [Arg, Arg];
+/** A two argument transform signature; both arguments are required. */
+type Binary<T> = [T, T]
 
-/**
- * A three argument transform signature; the
- * second and third arguments are optional.
- */
-type Arg3Opt = Arg | [Arg, Arg?, Arg?];
+type ArgLagLead = TransformField | [expr: TransformField, offset?: TransformField | number, defaultValue?: TransformField | number | boolean | Date | null]
 
 /** Binning interval names. */
 export type BinInterval =
@@ -63,7 +54,7 @@ export interface Bin {
    * specifies a data column or expression to bin. Both numerical and
    * temporal (date/time) values are supported.
    */
-  bin: Arg | [Arg];
+  bin: Unary<TransformField>;
   /**
    * The interval bin unit to use, typically used to indicate a date/time
    * unit for binning temporal values, such as `hour`, `day`, or `month`.
@@ -110,7 +101,7 @@ export interface Column {
   /**
    * Interpret a string or param-value as a column reference.
    */
-  column: Arg1;
+  column: Unary<string | ParamRef>;
 }
 
 /** A dateMonth transform. */
@@ -119,7 +110,7 @@ export interface DateMonth {
    * Transform a Date value to a month boundary for cyclic comparison.
    * Year values are collapsed to enable comparison over months only.
    */
-  dateMonth: Arg1;
+  dateMonth: Unary<TransformField | Date>;
 }
 
 /** A dateMonthDay transform. */
@@ -128,7 +119,7 @@ export interface DateMonthDay {
    * Transform a Date value to a month and day boundary for cyclic comparison.
    * Year values are collapsed to enable comparison over months and days only.
    */
-  dateMonthDay: Arg1;
+  dateMonthDay: Unary<TransformField | Date>;
 }
 
 /** A dateDay transform. */
@@ -137,7 +128,7 @@ export interface DateDay {
    * Transform a Date value to a day of the month for cyclic comparison.
    * Year and month values are collapsed to enable comparison over days only.
    */
-  dateDay: Arg1;
+  dateDay: Unary<TransformField | Date>;
 }
 
 /** A centroid transform. */
@@ -146,7 +137,7 @@ export interface Centroid {
    * Compute the 2D centroid of geometry-typed data.
    * This transform requires the DuckDB `spatial` extension.
    */
-  centroid: Arg1;
+  centroid: Unary<TransformField>;
 }
 
 /** A centroidX transform. */
@@ -155,7 +146,7 @@ export interface CentroidX {
    * Compute the centroid x-coordinate of geometry-typed data.
    * This transform requires the DuckDB `spatial` extension.
    */
-  centroidX: Arg1;
+  centroidX: Unary<TransformField>;
 }
 
 /** A centroidY transform. */
@@ -164,7 +155,7 @@ export interface CentroidY {
    * Compute the centroid y-coordinate of geometry-typed data.
    * This transform requires the DuckDB `spatial` extension.
    */
-  centroidY: Arg1;
+  centroidY: Unary<TransformField>;
 }
 
 /** A geojson transform. */
@@ -173,7 +164,7 @@ export interface GeoJSON {
    * Compute a GeoJSON-formatted string from geometry-typed data.
    * This transform requires the DuckDB `spatial` extension.
    */
-  geojson: Arg1;
+  geojson: Unary<TransformField>;
 }
 
 /** An argmax aggregate transform. */
@@ -181,7 +172,7 @@ export interface Argmax extends AggregateOptions, WindowOptions {
   /**
    * Find a value of the first column that maximizes the second column.
    */
-  argmax: Arg2;
+  argmax: Binary<TransformField>;
 }
 
 /** An argmin aggregate transform. */
@@ -189,7 +180,7 @@ export interface Argmin extends AggregateOptions, WindowOptions {
   /**
    * Find a value of the first column that minimizes the second column.
    */
-  argmin: Arg2;
+  argmin: Binary<TransformField>;
 }
 
 /** An avg (average, or mean) aggregate transform. */
@@ -197,7 +188,7 @@ export interface Avg extends AggregateOptions, WindowOptions {
   /**
    * Compute the average (mean) value of the given column.
    */
-  avg: Arg1;
+  avg: Unary<TransformField>;
 }
 
 /** A count aggregate transform. */
@@ -205,7 +196,7 @@ export interface Count extends AggregateOptions, WindowOptions {
   /**
    * Compute the count of records in an aggregation group.
    */
-  count: Arg0 | Arg1;
+  count: Nullary | Unary<TransformField>;
 }
 
 /** A sample covariance aggregate transform. */
@@ -213,7 +204,7 @@ export interface Covariance extends AggregateOptions, WindowOptions {
   /**
    * Compute the sample covariance of between the given columns.
    */
-  covariance: Arg2;
+  covariance: Binary<TransformField>;
 }
 
 /** A population covariance aggregate transform. */
@@ -221,7 +212,7 @@ export interface CovarPop extends AggregateOptions, WindowOptions {
   /**
    * Compute the population covariance of between the given columns.
    */
-  covarPop: Arg2;
+  covarPop: Binary<TransformField>;
 }
 
 /** A first aggregate transform. */
@@ -229,7 +220,7 @@ export interface First extends AggregateOptions, WindowOptions {
   /**
    * Return the first column value found in an aggregation group.
    */
-  first: Arg1;
+  first: Unary<TransformField>;
 }
 
 /** A geometric mean aggregate transform. */
@@ -237,7 +228,7 @@ export interface Geomean extends AggregateOptions, WindowOptions {
   /**
    * Compute the geometric mean value of the given column.
    */
-  geomean: Arg1;
+  geomean: Unary<TransformField>;
 }
 
 /** A last aggregate transform. */
@@ -245,7 +236,7 @@ export interface Last extends AggregateOptions, WindowOptions {
   /**
    * Return the last column value found in an aggregation group.
    */
-  last: Arg1;
+  last: Unary<TransformField>;
 }
 
 /** A max aggregate transform. */
@@ -253,7 +244,7 @@ export interface Max extends AggregateOptions, WindowOptions {
   /**
    * Compute the maximum value of the given column.
    */
-  max: Arg1;
+  max: Unary<TransformField>;
 }
 
 /** A min aggregate transform. */
@@ -261,7 +252,7 @@ export interface Min extends AggregateOptions, WindowOptions {
   /**
    * Compute the minimum value of the given column.
    */
-  min: Arg1;
+  min: Unary<TransformField>;
 }
 
 /** A median aggregate transform. */
@@ -269,7 +260,7 @@ export interface Median extends AggregateOptions, WindowOptions {
   /**
    * Compute the median value of the given column.
    */
-  median: Arg1;
+  median: Unary<TransformField>;
 }
 
 /** A mode aggregate transform. */
@@ -277,7 +268,7 @@ export interface Mode extends AggregateOptions, WindowOptions {
   /**
    * Compute the mode value of the given column.
    */
-  mode: Arg1;
+  mode: Unary<TransformField>;
 }
 
 /** A product aggregate transform. */
@@ -285,7 +276,7 @@ export interface Product extends AggregateOptions, WindowOptions {
   /**
    * Compute the product of the given column.
    */
-  product: Arg1;
+  product: Unary<TransformField>;
 }
 
 /** A quantile aggregate transform. */
@@ -294,7 +285,7 @@ export interface Quantile extends AggregateOptions, WindowOptions {
    * Compute the quantile value of the given column at the provided
    * probability threshold. For example, 0.5 is the median.
    */
-  quantile: Arg2;
+  quantile: [expr: TransformField, p: TransformField | number];
 }
 
 /** A sample standard deviation aggregate transform. */
@@ -302,7 +293,7 @@ export interface Stddev extends AggregateOptions, WindowOptions {
   /**
    * Compute the sum of the given column.
    */
-  stddev: Arg1;
+  stddev: Unary<TransformField>;
 }
 
 /** A population standard deviation aggregate transform. */
@@ -310,7 +301,7 @@ export interface StddevPop extends AggregateOptions, WindowOptions {
   /**
    * Compute the sum of the given column.
    */
-  stddevPop: Arg1;
+  stddevPop: Unary<TransformField>;
 }
 
 /** A sum aggregate transform. */
@@ -318,7 +309,7 @@ export interface Sum extends AggregateOptions, WindowOptions {
   /**
    * Compute the sum of the given column.
    */
-  sum: Arg1;
+  sum: Unary<TransformField>;
 }
 
 /** A sample variance aggregate transform. */
@@ -326,7 +317,7 @@ export interface Variance extends AggregateOptions, WindowOptions {
   /**
    * Compute the sample variance of the given column.
    */
-  variance: Arg1;
+  variance: Unary<TransformField>;
 }
 
 /** A population variance aggregate transform. */
@@ -334,7 +325,7 @@ export interface VarPop extends AggregateOptions, WindowOptions {
   /**
    * Compute the population variance of the given column.
    */
-  varPop: Arg1;
+  varPop: Unary<TransformField>;
 }
 
 /** A row_number window transform. */
@@ -342,7 +333,7 @@ export interface RowNumber extends WindowOptions {
   /**
    * Compute the 1-based row number over an ordered window partition.
    */
-  row_number: Arg0;
+  row_number: Nullary;
 }
 
 /** A rank window transform. */
@@ -351,7 +342,7 @@ export interface Rank extends WindowOptions {
    * Compute the row rank over an ordered window partition.
    * Sorting ties result in gaps in the rank numbers ([1, 1, 3, ...]).
    */
-  rank: Arg0;
+  rank: Nullary;
 }
 
 /** A dense_rank window transform. */
@@ -360,7 +351,7 @@ export interface DenseRank extends WindowOptions {
    * Compute the dense row rank (no gaps) over an ordered window partition.
    * Sorting ties do not result in gaps in the rank numbers ([1, 1, 2, ...]).
    */
-  dense_rank: Arg0;
+  dense_rank: Nullary;
 }
 
 /** A percent_rank window transform. */
@@ -368,7 +359,7 @@ export interface PercentRank extends WindowOptions {
   /**
    * Compute the percentage rank over an ordered window partition.
    */
-  percent_rank: Arg0;
+  percent_rank: Nullary;
 }
 
 /** A cume_dist window transform. */
@@ -378,7 +369,7 @@ export interface CumeDist extends WindowOptions {
    * partition. Equals the number of partition rows preceding or peer with
    * the current row, divided by the total number of partition rows.
    */
-  cume_dist: Arg0;
+  cume_dist: Nullary;
 }
 
 /** An ntile window transform. */
@@ -387,7 +378,7 @@ export interface NTile extends WindowOptions {
    * Compute an n-tile integer ranging from 1 to the provided argument
    * (num_buckets), dividing the partition as equally as possible.
    */
-  ntile: Arg1;
+  ntile: Unary<TransformField>;
 }
 
 /** A lag window transform. */
@@ -399,7 +390,7 @@ export interface Lag extends WindowOptions {
    * argument, default `null`). Both offset and default are evaluated with
    * respect to the current row.
    */
-  lag: Arg3Opt;
+  lag: ArgLagLead;
 }
 
 /** A lead window transform. */
@@ -411,7 +402,7 @@ export interface Lead extends WindowOptions {
    * argument, default `null`). Both offset and default are evaluated with
    * respect to the current row.
    */
-  lead: Arg3Opt;
+  lead: ArgLagLead
 }
 
 /** A first_value window transform. */
@@ -419,7 +410,7 @@ export interface FirstValue extends WindowOptions {
   /**
    * Get the first value of the given column in the current window frame.
    */
-  first_value: Arg1;
+  first_value: Unary<TransformField>;
 }
 
 /** A last_value window transform. */
@@ -427,7 +418,7 @@ export interface LastValue extends WindowOptions {
   /**
    * Get the last value of the given column in the current window frame.
    */
-  last_value: Arg1;
+  last_value: Unary<TransformField>;
 }
 
 /** An nth_value window transform. */
@@ -436,7 +427,7 @@ export interface NthValue extends WindowOptions {
    * Get the nth value of the given column in the current window frame,
    * counting from one. The second argument is the offset for the nth row.
    */
-  nth_value: Arg2;
+  nth_value: [expr: TransformField, nth: TransformField | number];
 }
 
 /** A data transform that maps one column value to another. */
