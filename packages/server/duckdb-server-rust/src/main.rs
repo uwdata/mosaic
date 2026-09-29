@@ -1,9 +1,8 @@
 use anyhow::Result;
-use axum_server_dual_protocol::axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
 use listenfd::ListenFd;
 use std::net::TcpListener;
-use std::{net::IpAddr, net::Ipv4Addr, net::SocketAddr, path::PathBuf};
+use std::{net::IpAddr, net::Ipv4Addr, net::SocketAddr};
 use tokio::net;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -12,6 +11,7 @@ use crate::app::DEFAULT_DB_PATH;
 
 mod app;
 mod db;
+mod https;
 mod interfaces;
 mod query;
 mod websocket;
@@ -55,17 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // App setup
     let app = app::app(Some(&args.database), Some(args.connection_pool_size))?;
 
-    // TLS configuration
-    let mut config = RustlsConfig::from_pem_file(
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("localhost.pem"),
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("localhost-key.pem"),
-    )
-    .await;
-
-    if config.is_err() {
-        // try current directory for HTTPS keys if env didn't work
-        config = RustlsConfig::from_pem_file("./localhost.pem", "./localhost-key.pem").await;
-    }
+    let config = https::configure().await?;
 
     // Listenfd setup
     let addr = SocketAddr::new(args.address, args.port);
@@ -82,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Run the server
     match config {
-        Err(_) => {
+        None => {
             tracing::warn!("No keys for HTTPS found.");
             tracing::info!(
                 "DuckDB Server listening on http://{0} and ws://{0}.",
@@ -92,9 +82,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let listener = net::TcpListener::from_std(listener)?;
             axum::serve(listener, app).await?;
         }
-        Ok(config) => {
+        Some(config) => {
             tracing::info!(
-                "DuckDB Server listening on http(s)://{0} and ws://{0}",
+                "DuckDB Server listening on http(s)://{0} and ws(s)://{0}",
                 listener.local_addr()?
             );
 

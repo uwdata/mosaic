@@ -1,0 +1,39 @@
+import { afterEach, describe, expect, it } from 'vitest';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { findCertificates, userDirectories } from '../src/https.js';
+
+const directories = [];
+afterEach(() => directories.splice(0).forEach(dir => rmSync(dir, { recursive: true, force: true })));
+
+describe('certificate discovery', () => {
+  it('uses matching OS configuration and cache conventions', () => {
+    expect(userDirectories('darwin', {}, '/home/test')).toEqual({
+      certificates: '/home/test/Library/Application Support/mosaic/https',
+      binaries: '/home/test/Library/Caches/mosaic/mkcert'
+    });
+    expect(userDirectories('linux', {}, '/home/test').certificates).toBe('/home/test/.config/mosaic/https');
+    expect(userDirectories('linux', { XDG_CONFIG_HOME: '/config', XDG_CACHE_HOME: '/cache' }, '/home/test')).toEqual({
+      certificates: '/config/mosaic/https', binaries: '/cache/mosaic/mkcert'
+    });
+    expect(userDirectories('win32', { APPDATA: 'C:\\Roaming', LOCALAPPDATA: 'C:\\Local' }, '').certificates).toBe('C:\\Roaming\\mosaic\\https');
+    expect(userDirectories('win32', {}, '').certificates).toBeUndefined();
+  });
+
+  it('prefers local complete pairs without mixing directories', () => {
+    const root = mkdtempSync(join(tmpdir(), 'mosaic-https-'));
+    directories.push(root);
+    const local = join(root, 'local'), shared = join(root, 'shared');
+    mkdirSync(local);
+    mkdirSync(shared);
+    expect(findCertificates(local, shared)).toBeUndefined();
+    writeFileSync(join(local, 'localhost.pem'), 'local');
+    writeFileSync(join(shared, 'localhost-key.pem'), 'shared');
+    expect(findCertificates(local, shared)).toBeUndefined();
+    writeFileSync(join(shared, 'localhost.pem'), 'shared');
+    expect(findCertificates(local, shared)?.cert).toBe(join(shared, 'localhost.pem'));
+    writeFileSync(join(local, 'localhost-key.pem'), 'local');
+    expect(findCertificates(local, shared)?.cert).toBe(join(local, 'localhost.pem'));
+  });
+});

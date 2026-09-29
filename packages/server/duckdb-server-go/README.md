@@ -26,7 +26,7 @@ You can customize the server behavior with the following command-line flags:
 -   `--address <address>`: The HTTP address to listen on. Defaults to "localhost".
 -   `--port <port>`: The HTTP port to listen on. Defaults to "3000".
 -   `--connection-pool-size <size>`: The maximum size of the connection pool. Defaults to 10.
--   `--https`: Enable HTTPS with automatically managed localhost certificates and local CA trust setup.
+-   `--https`: Enable HTTPS and set up or renew shared localhost certificates using native mkcert.
 -   `--cert <path>`: Path to a TLS certificate file to enable HTTPS.
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
 -   `--cache-control <value>`: Cache-Control value for successful GET `arrow` responses, enabling ETags and conditional responses for those queries. Omitted or empty values preserve existing behavior.
@@ -34,7 +34,7 @@ You can customize the server behavior with the following command-line flags:
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
 -   `--gatekeeper <json>`: Complete Gatekeeper JSON policy document, passed verbatim to `gatekeeper_configure(json := ...)`. `{"version":1,"options":{}}` enables validation with defaults. May be specified once.
 
-By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
+By default, the server looks for `localhost.pem` and `localhost-key.pem` in the current directory, then in the shared OS user configuration directory under `mosaic/https`, if the `--cert` and `--key` flags are not provided.
 
 For compatibility, the installed binary permits all HTTP and WebSocket origins. A cross-site page can therefore submit
 commands, including side-effecting `exec` commands over GET, to a running server. Do not expose the binary to untrusted
@@ -43,21 +43,18 @@ browsers or cookie credentials without an outer proxy that enforces an origin or
 
 ### Local HTTPS
 
-Enable HTTPS (including HTTP/2) without installing mkcert or managing certificate files:
+From the repository root, set up certificates shared by Node, Rust, and Go:
 
 ```sh
-duckdb-server-go --https
+pnpm mkcert
+pnpm server:go
 ```
 
-Run from an interactive terminal; first use installs a local CA and may request administrator permission. Connect to `https://localhost:3000` or `wss://localhost:3000`. Certificates are reused and renewed automatically; the ten-year CA reports replacement instructions near expiry.
+Standalone users can install [native mkcert](https://github.com/FiloSottile/mkcert) and run `duckdb-server-go --https`. This runs mkcert trust setup and creates or renews the shared pair for `localhost`, `127.0.0.1`, and `::1`. It uses mkcert on `PATH` or the verified binary cached by `pnpm mkcert`. Trust setup may request administrator permission; errors stop startup.
 
-Managed HTTPS supports `localhost`, `127.0.0.1`, and `::1` (or `[::1]`). Explicit `--cert` and `--key` must be supplied together and override managed certificates, as does the current-directory certificate pair described above. Supplied certificates are not managed or automatically trusted. Without certificates or `--https`, the server uses HTTP.
+Explicit `--cert` and `--key` and current-directory pairs override `--https` setup. Shared certificates are reused with more than 30 days remaining. Restart after renewal; there is no handshake-time renewal. Without certificates or `--https`, the server uses HTTP.
 
-The startup log prints the certificate directory, under `mosaic/duckdb-server-go/https` in your OS user configuration directory. `ca.pem` is public; **do not share `ca-key.pem` or `localhost.pem`**, which contain private keys.
-
-For browsers using separate [NSS trust stores](https://nss-crypto.org), install NSS if prompted (`brew install nss` or `apt install libnss3-tools`), rerun `--https`, and restart the browser—or import `ca.pem` manually. System trust installation failures stop startup; optional NSS failures only warn.
-
-To regenerate a corrupt server certificate, delete only the managed `localhost.pem` and restart. To uninstall, remove "Mosaic localhost development CA" from system/browser trust stores, then delete its configuration directory.
+See the [server guide](../README.md) for platform paths, browser trust, and migration from the previous Go-managed CA. The old `mosaic/duckdb-server-go/https` directory is left untouched and is no longer automatically loaded.
 
 ### Programmatic Extension Initialization
 

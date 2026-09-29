@@ -24,4 +24,6 @@ Alternatively, you can install the server with `pip install duckdb-server`. Then
 
 ## Developer Setup
 
+For shared localhost HTTPS/HTTP/2 setup for Node, Rust, and Go, run `pnpm mkcert` from the repository root. See the [server guide](https://github.com/uwdata/mosaic/blob/main/packages/server/README.md) for prerequisites, certificate discovery, and renewal.
+
 To run the server from the Mosaic repository and to run the server in development mode, follow the [instructions for the duckdb-server package](https://github.com/uwdata/mosaic/blob/main/packages/server/duckdb-server/README.md).

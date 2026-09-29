@@ -1,8 +1,9 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import http from 'node:http';
 import http2 from 'node:http2';
 import url from 'node:url';
 import { WebSocketServer } from 'ws';
+import { findCertificates } from './https.js';
 
 export function dataServer(db, {
   rest = true,
@@ -10,22 +11,24 @@ export function dataServer(db, {
   port = 3000
 } = {}) {
   const handleQuery = queryHandler(db);
-  const secure = existsSync('localhost.pem') && existsSync('localhost-key.pem');
-  const app = createHTTPServer(handleQuery, rest, secure);
+  const certificates = findCertificates();
+  const secure = !!certificates;
+  const app = createHTTPServer(handleQuery, rest, certificates);
   if (socket) createSocketServer(app, handleQuery);
 
   const server = app.listen(port);
   console.log(`Data server running on port ${port}`);
+  if (secure) console.log(`  TLS certificate: ${certificates.cert}`);
   if (rest) console.log(`  http${secure ? 's' : ''}://localhost:${port}/`);
   if (socket) console.log(`  ws${secure ? 's' : ''}://localhost:${port}/`);
   return server;
 }
 
-function createHTTPServer(handleQuery, rest, secure) {
-  const app = secure
+function createHTTPServer(handleQuery, rest, certificates) {
+  const app = certificates
     ? http2.createSecureServer({
-        cert: readFileSync('localhost.pem'),
-        key: readFileSync('localhost-key.pem'),
+        cert: readFileSync(certificates.cert),
+        key: readFileSync(certificates.key),
         allowHTTP1: true
       })
     : http.createServer();

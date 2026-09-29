@@ -1,5 +1,7 @@
 # mosaic-duckdb
 
+For shared localhost HTTPS/HTTP/2 setup, run `pnpm mkcert` from the repository root. See the [server guide](../README.md) for certificate locations, overrides, and renewal.
+
 [![npm version](https://img.shields.io/npm/v/@uwdata/mosaic-duckdb.svg)](https://www.npmjs.com/package/@uwdata/mosaic-duckdb)
 
 A Promise-based Node.js API to DuckDB, along with a data server that supports transfer of [Apache Arrow](https://arrow.apache.org/) data over either Web Sockets or HTTP.

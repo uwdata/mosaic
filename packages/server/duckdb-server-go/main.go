@@ -28,7 +28,7 @@ func run() int {
 	address := flag.String("address", "localhost", "HTTP Address")
 	port := flag.String("port", "3000", "HTTP Port")
 	poolSize := flag.Int("connection-pool-size", 10, "Max connection pool size")
-	https := flag.Bool("https", false, "Enable HTTPS with automatically managed localhost certificates")
+	https := flag.Bool("https", false, "Enable HTTPS and set up shared localhost certificates with mkcert")
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
 	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET arrow responses; enables ETag validation for those queries")

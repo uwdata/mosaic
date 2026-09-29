@@ -20,6 +20,8 @@ The following _options_ are supported:
 - _rest_: Boolean flag (default `true`) indicating if HTTP REST connections should be enabled.
 - _socket_: Boolean flag (default `true`) indicating if WebSocket connections should be enabled.
 
+For HTTPS/HTTP/2, run `pnpm mkcert` from the repository root. The server checks for a complete `localhost.pem` / `localhost-key.pem` pair in its working directory, then the shared OS user configuration directory under `mosaic/https`. A selected invalid pair fails startup; without a pair, the server uses plaintext HTTP. HTTPS supports HTTP/1.1 clients and secure WebSockets (`wss://`). See the [server guide](https://github.com/uwdata/mosaic/blob/main/packages/server/README.md) for platform paths, mounts, and renewal.
+
 Once launched, the data server will accept HTTP POST requests containing JSON content that consists of a single object with the following properties:
 
 - _type_: The type of query (required). The type `"exec"` indicates that the provided query should be run with no return value. The `"arrow"` type indicates that the result table should be returned as Arrow IPC bytes.

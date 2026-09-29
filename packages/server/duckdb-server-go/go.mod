@@ -8,7 +8,6 @@ require (
 	github.com/duckdb/duckdb-go/v2 v2.10505.0
 	github.com/klauspost/compress v1.19.0
 	github.com/rs/cors v1.11.1
-	github.com/smallstep/truststore v0.13.0
 	github.com/stretchr/testify v1.12.1
 )
 
@@ -29,5 +28,4 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	howett.net/plist v1.0.0 // indirect
 )
