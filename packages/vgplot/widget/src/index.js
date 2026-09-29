@@ -24,7 +24,6 @@ export default {
     view.el.classList.add('mosaic-widget');
     const getSpec = () => view.model.get('spec');
     const getPreaggSchema = () => view.model.get('preagg_schema');
-    const logger = coordinator().logger();
 
     /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
     const openQueries = new Map();
@@ -77,7 +76,7 @@ export default {
       if (specJSON === appliedSpecJSON) return;
       appliedSpecJSON = specJSON;
       reset();
-      logger.log('Setting spec:', spec);
+      console.log('Setting spec:', spec);
       const dom = await instantiateSpec(spec);
       view.el.replaceChildren(dom.element);
 
@@ -117,21 +116,21 @@ export default {
     view.model.on('change:preagg_schema', () => configureCoordinator());
 
     view.model.on('msg:custom', (msg, buffers) => {
-      logger.group(`query ${msg.uuid}`);
-      logger.log('received message', msg, buffers);
+      console.group(`query ${msg.uuid}`);
+      console.log('received message', msg, buffers);
 
       const query = openQueries.get(msg.uuid);
       openQueries.delete(msg.uuid);
 
-      logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
+      console.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
 
       if (msg.error) {
         query.reject(msg.error);
-        logger.error(msg.error);
+        console.error(msg.error);
       } else {
         switch (msg.type) {
           case 'arrow': {
-            logger.log('arrow bytes', buffers[0].buffer.byteLength);
+            console.log('arrow bytes', buffers[0].buffer.byteLength);
             query.resolve(buffers[0].buffer);
             break;
           }
@@ -141,7 +140,7 @@ export default {
           }
         }
       }
-      logger.groupEnd();
+      console.groupEnd();
     });
 
     coordinator().databaseConnector(connector);

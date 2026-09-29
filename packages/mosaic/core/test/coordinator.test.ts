@@ -1,11 +1,25 @@
 import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { Query } from '@uwdata/mosaic-sql';
-import { describe, it, expect } from 'vitest';
-import { type ArrowQueryRequest, clausePoint, type Connector, Coordinator, coordinator, makeClient, Selection } from '../src/index.js';
+import { describe, it, expect, vi } from 'vitest';
+import { clausePoint, type Connector, Coordinator, coordinator, EventType, type Logger, makeClient, MosaicErrorEvent, MosaicQueryEndEvent, MosaicQueryStartEvent, observeLogger, type ArrowQueryRequest, Selection } from '../src/index.js';
+import { QueryError } from '../src/util/query-error.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 async function wait() {
   return new Promise<void>(resolve => setTimeout(resolve, 0));
+}
+
+function createLogger(): Logger {
+  return {
+    debug: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    group: vi.fn(),
+    groupCollapsed: vi.fn(),
+    groupEnd: vi.fn(),
+  };
 }
 
 describe('coordinator', () => {
@@ -39,7 +53,7 @@ describe('coordinator', () => {
       },
     } as unknown as Connector;
 
-    const coord = new Coordinator(connector, { logger: null });
+    const coord = new Coordinator(connector);
 
     const r0 = coord.query('SELECT 0');
     const r1 = coord.query('SELECT 1');
@@ -56,7 +70,6 @@ describe('coordinator', () => {
     expect(coord.manager.pendingResults).toHaveLength(4);
 
     // resolve promises in reverse order
-
     promises.at(3)!.fulfill(ipc);
     await wait();
 
@@ -108,7 +121,6 @@ describe('coordinator', () => {
 
     // disable cache to ensure routing through connector
     const coord = new Coordinator(connector, {
-      logger: null,
       cache: false,
       preagg: { enabled: false }
     });
@@ -149,6 +161,107 @@ describe('coordinator', () => {
     ]);
   });
 
+  it('observeLogger logs queries as groups and stops on unsubscribe', async () => {
+    const connector = {
+      async query() {
+        return tableToIPC(tableFromArrays({ value: [1] }), {});
+      }
+    } as unknown as Connector;
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false }
+    });
+    const logger = createLogger();
+    const unobserve = observeLogger(coord, logger);
+
+    await coord.query('SELECT 1');
+
+    expect(logger.groupCollapsed).toHaveBeenCalledWith('query SELECT 1');
+    expect(logger.log).toHaveBeenCalledWith('SELECT 1', expect.any(String));
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+
+    unobserve();
+    await coord.query('SELECT 2');
+
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('observeLogger closes the group and logs the error for failed queries', async () => {
+    const error = new Error('boom');
+    const connector = {
+      async query() {
+        throw error;
+      }
+    } as unknown as Connector;
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false }
+    });
+    const logger = createLogger();
+    observeLogger(coord, logger);
+
+    await expect(coord.query('SELECT fail')).rejects.toThrow('boom');
+
+    expect(logger.groupCollapsed).toHaveBeenCalledWith('query SELECT fail');
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it('observeLogger derives elapsed time from event timestamps', () => {
+    const coord = new Coordinator({} as Connector, { preagg: { enabled: false } });
+    const logger = createLogger();
+    observeLogger(coord, logger);
+    const lifecycle = { queryId: 1, query: 'SELECT timed', cached: false };
+
+    coord.eventBus.emit(EventType.QueryStart, new MosaicQueryStartEvent({ ...lifecycle, timestamp: 100 }));
+    coord.eventBus.emit(EventType.QueryEnd, new MosaicQueryEndEvent({ ...lifecycle, status: 'success', timestamp: 123.45 }));
+
+    expect(logger.log).toHaveBeenCalledWith('SELECT timed', '23.5');
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('observeLogger ignores query end events it did not see start', () => {
+    const coord = new Coordinator({} as Connector, { preagg: { enabled: false } });
+    const logger = createLogger();
+    observeLogger(coord, logger);
+
+    coord.eventBus.emit(EventType.QueryEnd, new MosaicQueryEndEvent({
+      queryId: 1, query: 'SELECT unmatched', cached: false, status: 'success'
+    }));
+
+    expect(logger.log).not.toHaveBeenCalled();
+    expect(logger.groupEnd).not.toHaveBeenCalled();
+  });
+
+  it('emits a single error event per failed client update', async () => {
+    const connector = {
+      async query() {
+        throw new Error('boom');
+      }
+    } as unknown as Connector;
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false }
+    });
+    const errors: MosaicErrorEvent[] = [];
+    coord.eventBus.addEventListener(EventType.Error, event => { errors.push(event); });
+
+    const client = makeClient({
+      coordinator: coord,
+      query: () => Query.select('*').from('foo')
+    });
+    await client.pending;
+
+    expect(errors).toHaveLength(1);
+    expect(errors[0].error).toBeInstanceOf(QueryError);
+    expect(errors[0].message).toContain('boom');
+  });
+
   it('applies the ipc extraction options to arrow results', async () => {
     const ipc = tableToIPC(tableFromArrays({ t: [new Date(0)] }), {})!;
     const connector = {
@@ -158,7 +271,6 @@ describe('coordinator', () => {
     } as unknown as Connector;
 
     const coord = new Coordinator(connector, {
-      logger: null,
       ipc: { useDate: false },
       preagg: { enabled: false }
     });

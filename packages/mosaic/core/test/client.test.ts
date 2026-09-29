@@ -11,7 +11,6 @@ describe('MosaicClient', () => {
     // disable logging and preaggregation
     const connector = await NodeConnector.make();
     const coord = new Coordinator(connector, {
-      logger: null,
       preagg: { enabled: false }
     });
 
@@ -129,7 +128,6 @@ describe('MosaicClient', () => {
     // instantiate coordinator to use node.js DuckDB
     // disable logging and preaggregation
     const coord = new Coordinator(await NodeConnector.make(), {
-      logger: null,
       preagg: { enabled: false }
     });
 
