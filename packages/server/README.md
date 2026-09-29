@@ -42,8 +42,15 @@ To override shared certificates, place or mount a pair in the working directory.
 
 Rerun `pnpm mkcert` to install trust and validate the shared pair. It reuses certificates with more than 30 days remaining and regenerates missing, invalid, mismatched, or near-expiry pairs. Restart running servers after renewal. Ordinary server startup only reads certificates.
 
-The Go server additionally supports `--https`: it runs mkcert setup/renewal for the shared directory unless explicit or current-directory certificates override it. It uses mkcert on `PATH` or the verified cached binary from `pnpm mkcert`. Standalone Go users can install native mkcert without Node. Setup errors stop startup, and certificates are not renewed during TLS handshakes.
+Standalone users can install native mkcert without Node and generate a local pair in the server's working directory:
+
+```sh
+mkcert -install
+mkcert -cert-file localhost.pem -key-file localhost-key.pem localhost 127.0.0.1 ::1
+```
+
+Rerun the generation command to renew that local pair, then restart the server. All three servers only load certificates; setup and trust installation are separate from startup.
 
 ### Migrating Go's previous managed HTTPS
 
-Go previously generated its own CA under `<user-config>/mosaic/duckdb-server-go/https`. Run `pnpm mkcert` or install native mkcert and run `duckdb-server-go --https` to switch. The old directory is left untouched and is no longer automatically loaded. After switching, you may remove "Mosaic localhost development CA" from system/browser trust stores and delete that old directory. Its `localhost.pem` contains a private key as well as a certificate.
+Go's `--https` flag has been removed. It previously generated its own CA under `<user-config>/mosaic/duckdb-server-go/https`. Run `pnpm mkcert` or generate a local pair with native mkcert as above, then start `duckdb-server-go` without the flag. The old directory is left untouched and is no longer automatically loaded. After switching, you may remove "Mosaic localhost development CA" from system/browser trust stores and delete that old directory. Its `localhost.pem` contains a private key as well as a certificate.

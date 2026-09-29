@@ -26,7 +26,6 @@ You can customize the server behavior with the following command-line flags:
 -   `--address <address>`: The HTTP address to listen on. Defaults to "localhost".
 -   `--port <port>`: The HTTP port to listen on. Defaults to "3000".
 -   `--connection-pool-size <size>`: The maximum size of the connection pool. Defaults to 10.
--   `--https`: Enable HTTPS and set up or renew shared localhost certificates using native mkcert.
 -   `--cert <path>`: Path to a TLS certificate file to enable HTTPS.
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
 -   `--cache-control <value>`: Cache-Control value for successful GET `arrow` responses, enabling ETags and conditional responses for those queries. Omitted or empty values preserve existing behavior.
@@ -50,9 +49,15 @@ pnpm mkcert
 pnpm server:go
 ```
 
-Standalone users can install [native mkcert](https://github.com/FiloSottile/mkcert) and run `duckdb-server-go --https`. This runs mkcert trust setup and creates or renews the shared pair for `localhost`, `127.0.0.1`, and `::1`. It uses mkcert on `PATH` or the verified binary cached by `pnpm mkcert`. Trust setup may request administrator permission; errors stop startup.
+Standalone users can install [native mkcert](https://github.com/FiloSottile/mkcert) and generate a pair in the server's working directory:
 
-Explicit `--cert` and `--key` and current-directory pairs override `--https` setup. Shared certificates are reused with more than 30 days remaining. Restart after renewal; there is no handshake-time renewal. Without certificates or `--https`, the server uses HTTP.
+```sh
+mkcert -install
+mkcert -cert-file localhost.pem -key-file localhost-key.pem localhost 127.0.0.1 ::1
+duckdb-server-go
+```
+
+Explicit `--cert` and `--key` override current-directory and shared pairs. The server only loads certificates; generate or renew them separately, then restart. Without certificates, the server uses HTTP. The former `--https` flag has been removed.
 
 See the [server guide](../README.md) for platform paths, browser trust, and migration from the previous Go-managed CA. The old `mosaic/duckdb-server-go/https` directory is left untouched and is no longer automatically loaded.
 
