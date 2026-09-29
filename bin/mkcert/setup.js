@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash, createPrivateKey, X509Certificate } from 'node:crypto';
 import { chmod, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 import { userDirectories } from '../../packages/server/duckdb/src/https.js';
 
 const version = 'v1.4.4';
@@ -57,11 +58,16 @@ export async function resolveMkcert(cache = userDirectories().binaries) {
   return executable;
 }
 
-export async function reusablePair(directory, now = Date.now()) {
+export async function reusablePair(directory, ca, now = Date.now()) {
   try {
     const cert = new X509Certificate(await readFile(join(directory, 'localhost.pem')));
     const key = createPrivateKey(await readFile(join(directory, 'localhost-key.pem')));
     return cert.checkPrivateKey(key)
+      && ca.ca
+      && cert.checkIssued(ca)
+      && cert.verify(ca.publicKey)
+      && Date.parse(ca.validFrom) <= now
+      && Date.parse(ca.validTo) > now + 30 * 24 * 60 * 60 * 1000
       && Date.parse(cert.validFrom) <= now
       && Date.parse(cert.validTo) > now + 30 * 24 * 60 * 60 * 1000
       && !!cert.checkHost('localhost')
@@ -72,10 +78,31 @@ export async function reusablePair(directory, now = Date.now()) {
   }
 }
 
-function run(executable, args) {
-  const result = spawnSync(executable, args, { stdio: 'inherit' });
+function run(executable, args, capture = false) {
+  const result = spawnSync(executable, args, {
+    stdio: capture ? ['inherit', 'pipe', 'inherit'] : 'inherit',
+    encoding: 'utf8'
+  });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`mkcert ${args[0]} failed; check the output above and system/NSS trust permissions.`);
+  return result.stdout;
+}
+
+async function acquireLock(directory) {
+  const lock = join(directory, '.setup-lock');
+  const deadline = Date.now() + 120_000;
+  for (;;) {
+    try {
+      await mkdir(lock, { mode: 0o700 });
+      return () => rm(lock, { recursive: true });
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      if (Date.now() >= deadline) {
+        throw new Error(`Certificate setup is locked at ${lock}. Wait for the other setup process, or remove this directory only after confirming it is no longer running.`, { cause: error });
+      }
+      await setTimeout(100);
+    }
+  }
 }
 
 export async function setupCertificates({
@@ -84,27 +111,35 @@ export async function setupCertificates({
   execute = run
 } = {}) {
   if (!directory) throw new Error('Unable to determine the user configuration directory.');
-  const executable = await resolve();
-  execute(executable, ['-install']);
   await mkdir(directory, { recursive: true, mode: 0o700 });
   await chmod(directory, 0o700);
-  if (!await reusablePair(directory)) {
-    const temporary = await mkdtemp(join(directory, '.certificate-'));
-    try {
-      execute(executable, [
-        '-cert-file', join(temporary, 'localhost.pem'),
-        '-key-file', join(temporary, 'localhost-key.pem'),
-        'localhost', '127.0.0.1', '::1'
-      ]);
-      if (!await reusablePair(temporary)) throw new Error('mkcert generated an invalid localhost certificate pair');
-      for (const name of ['localhost.pem', 'localhost-key.pem']) {
-        await chmod(join(temporary, name), 0o600);
-        await rename(join(temporary, name), join(directory, name));
+  const release = await acquireLock(directory);
+  try {
+    const executable = await resolve();
+    execute(executable, ['-install']);
+    const caDirectory = execute(executable, ['-CAROOT'], true).trim();
+    if (!caDirectory) throw new Error('mkcert did not report its CA directory');
+    const ca = new X509Certificate(await readFile(join(caDirectory, 'rootCA.pem')));
+    if (!await reusablePair(directory, ca)) {
+      const temporary = await mkdtemp(join(directory, '.certificate-'));
+      try {
+        execute(executable, [
+          '-cert-file', join(temporary, 'localhost.pem'),
+          '-key-file', join(temporary, 'localhost-key.pem'),
+          'localhost', '127.0.0.1', '::1'
+        ]);
+        if (!await reusablePair(temporary, ca)) throw new Error('mkcert generated an invalid localhost certificate pair for its active CA');
+        for (const name of ['localhost.pem', 'localhost-key.pem']) {
+          await chmod(join(temporary, name), 0o600);
+          await rename(join(temporary, name), join(directory, name));
+        }
+      } finally {
+        await rm(temporary, { recursive: true, force: true });
       }
-    } finally {
-      await rm(temporary, { recursive: true, force: true });
     }
+    await chmod(join(directory, 'localhost-key.pem'), 0o600);
+    return directory;
+  } finally {
+    await release();
   }
-  await chmod(join(directory, 'localhost-key.pem'), 0o600);
-  return directory;
 }

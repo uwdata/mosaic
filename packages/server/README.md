@@ -40,7 +40,9 @@ To override shared certificates, place or mount a pair in the working directory.
 
 ### Renewal
 
-Rerun `pnpm mkcert` to install trust and validate the shared pair. It reuses certificates with more than 30 days remaining and regenerates missing, invalid, mismatched, or near-expiry pairs. Restart running servers after renewal. Ordinary server startup only reads certificates.
+Rerun `pnpm mkcert` to install trust and validate the shared pair against the active mkcert CA. It reuses certificates with more than 30 days remaining and regenerates missing, invalid, mismatched, near-expiry, or differently signed pairs. Restart running servers after renewal. Ordinary server startup only reads certificates.
+
+Concurrent setup commands are serialized. If setup is interrupted and leaves a `.setup-lock` directory in the certificate directory, remove that lock only after confirming no setup process is still running, then retry.
 
 Standalone users can install native mkcert without Node and generate a local pair in the server's working directory:
 
