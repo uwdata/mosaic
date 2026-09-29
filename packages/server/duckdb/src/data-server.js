@@ -1,4 +1,6 @@
+import { existsSync, readFileSync } from 'node:fs';
 import http from 'node:http';
+import http2 from 'node:http2';
 import url from 'node:url';
 import { WebSocketServer } from 'ws';
 
@@ -8,18 +10,26 @@ export function dataServer(db, {
   port = 3000
 } = {}) {
   const handleQuery = queryHandler(db);
-  const app = createHTTPServer(handleQuery, rest);
+  const secure = existsSync('localhost.pem') && existsSync('localhost-key.pem');
+  const app = createHTTPServer(handleQuery, rest, secure);
   if (socket) createSocketServer(app, handleQuery);
 
   const server = app.listen(port);
   console.log(`Data server running on port ${port}`);
-  if (rest) console.log(`  http://localhost:${port}/`);
-  if (socket) console.log(`  ws://localhost:${port}/`);
+  if (rest) console.log(`  http${secure ? 's' : ''}://localhost:${port}/`);
+  if (socket) console.log(`  ws${secure ? 's' : ''}://localhost:${port}/`);
   return server;
 }
 
-function createHTTPServer(handleQuery, rest) {
-  return http.createServer((req, resp) => {
+function createHTTPServer(handleQuery, rest, secure) {
+  const app = secure
+    ? http2.createSecureServer({
+        cert: readFileSync('localhost.pem'),
+        key: readFileSync('localhost-key.pem'),
+        allowHTTP1: true
+      })
+    : http.createServer();
+  return app.on('request', (req, resp) => {
     const res = httpResponse(resp);
     if (!rest) {
       res.done();
