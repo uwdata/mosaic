@@ -16,13 +16,15 @@ explicit-preview-rules = true
 pydocstyle.convention = "numpy"
 isort.required-imports = ["from __future__ import annotations"]
 extend-select = [
-    "FA",   # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
-    "TC",   # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
-    "UP",   # https://docs.astral.sh/ruff/rules/#pyupgrade-up
-    "ANN",  # https://docs.astral.sh/ruff/rules/#flake8-annotations-ann
-    "PYI",  # https://docs.astral.sh/ruff/rules/#flake8-pyi-pyi
-    "N",    # https://docs.astral.sh/ruff/rules/#pep8-naming-n
-    "EM",   # https://docs.astral.sh/ruff/rules/#flake8-errmsg-em
+    "FA",       # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
+    "TC",       # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
+    "UP",       # https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "ANN",      # https://docs.astral.sh/ruff/rules/#flake8-annotations-ann
+    "PYI",      # https://docs.astral.sh/ruff/rules/#flake8-pyi-pyi
+    "N",        # https://docs.astral.sh/ruff/rules/#pep8-naming-n
+    "EM",       # https://docs.astral.sh/ruff/rules/#flake8-errmsg-em
+    "S",        # https://docs.astral.sh/ruff/rules/#flake8-bandit-s
+    "security", # https://docs.astral.sh/ruff/rules/?category=security
     "undefined-local-with-import-star",
     "suspicious-pickle-usage",
     "magic-value-comparison",
@@ -52,6 +54,8 @@ ignore = [
     "missing-copyright-notice",
     "any-type",
     "non-lowercase-variable-in-function",
+    "ambiguous-unicode-character-string",    # (from Mosaic Spec)
+    "ambiguous-unicode-character-docstring", # (from Mosaic Spec)
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -59,7 +63,8 @@ ignore = [
 "dev/notebooks/*" = ["ANN", "N", "useless-return", "unsorted-imports", "missing-required-import", "useless-expression"]
 "**/*sentinel*.py" = ["suspicious-pickle-usage"]
 "packages/vgplot/vgplot-python/vgplot/_compat.py" = ["N"]
-"**tests/**/*.py" = ["magic-value-comparison"]
+"**tests/**/*.py" = ["magic-value-comparison", "assert"]
+"packages/server/bench/*" = ["start-process-with-partial-path", "subprocess-without-shell-equals-true"]
 
 "**/specs/python/*.py" = [
     "mixed-case-variable-in-global-scope", # TODO @dangotbanned: Fix in codegen
