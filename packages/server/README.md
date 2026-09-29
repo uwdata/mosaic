@@ -50,7 +50,3 @@ mkcert -cert-file localhost.pem -key-file localhost-key.pem localhost 127.0.0.1 
 ```
 
 Rerun the generation command to renew that local pair, then restart the server. All three servers only load certificates; setup and trust installation are separate from startup.
-
-### Migrating Go's previous managed HTTPS
-
-Go's `--https` flag has been removed. It previously generated its own CA under `<user-config>/mosaic/duckdb-server-go/https`. Run `pnpm mkcert` or generate a local pair with native mkcert as above, then start `duckdb-server-go` without the flag. The old directory is left untouched and is no longer automatically loaded. After switching, you may remove "Mosaic localhost development CA" from system/browser trust stores and delete that old directory. Its `localhost.pem` contains a private key as well as a certificate.

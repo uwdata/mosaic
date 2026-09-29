@@ -57,9 +57,9 @@ mkcert -cert-file localhost.pem -key-file localhost-key.pem localhost 127.0.0.1 
 duckdb-server-go
 ```
 
-Explicit `--cert` and `--key` override current-directory and shared pairs. The server only loads certificates; generate or renew them separately, then restart. Without certificates, the server uses HTTP. The former `--https` flag has been removed.
+Explicit `--cert` and `--key` override current-directory and shared pairs. The server only loads certificates; generate or renew them separately, then restart. Without certificates, the server uses HTTP.
 
-See the [server guide](../README.md) for platform paths, browser trust, and migration from the previous Go-managed CA. The old `mosaic/duckdb-server-go/https` directory is left untouched and is no longer automatically loaded.
+See the [server guide](../README.md) for platform paths, browser trust, and renewal.
 
 ### Programmatic Extension Initialization
 
