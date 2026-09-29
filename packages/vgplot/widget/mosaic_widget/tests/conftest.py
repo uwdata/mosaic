@@ -36,8 +36,14 @@ Data: TypeAlias = Mapping[str, Sequence[Any]]
 NwDataFrame: TypeAlias = nw.DataFrame["NativeDataFrame"]
 """A constructed [`narwhals.DataFrame`][], with a known backend."""
 
+NwLazyFrame: TypeAlias = nw.LazyFrame["NativeLazyFrame"]
+"""A constructed [`narwhals.LazyFrame`][], with a known backend."""
+
 DataFrameConstructor: TypeAlias = Callable[[Data], NwDataFrame]
 """A constructor for a [`narwhals.DataFrame`][]."""
+
+LazyFrameConstructor: TypeAlias = Callable[[Data], NwLazyFrame]
+"""A constructor for a [`narwhals.LazyFrame`][]."""
 
 
 class Warn(enum.Enum):
@@ -119,3 +125,14 @@ def lazy(request: Request) -> Backend[LazyAllowed]:
 @pytest.fixture(scope="session")
 def nw_dataframe(eager: Backend[EagerAllowed]) -> DataFrameConstructor:
     return partial(nw.DataFrame.from_dict, backend=eager.value)
+
+
+@pytest.fixture(scope="session")
+def nw_lazyframe(lazy: Backend[LazyAllowed]) -> LazyFrameConstructor:
+    from_dict = nw.DataFrame.from_dict
+    PYARROW = Impl.PYARROW
+
+    def constructor(data: Data, /) -> NwLazyFrame:
+        return from_dict(data, backend=PYARROW).lazy(lazy.value)
+
+    return constructor

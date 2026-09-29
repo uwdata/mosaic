@@ -2,12 +2,25 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import duckdb
 import pytest
+from duckdb import DuckDBPyConnection as Con
+from duckdb import DuckDBPyRelation as Rel
 
 from mosaic_widget import MosaicWidget
 
 if TYPE_CHECKING:
-    from .conftest import Data, DataFrameConstructor, NwDataFrame
+    from collections.abc import Iterator
+
+    from _pytest.mark import ParameterSet
+
+    from .conftest import (
+        Data,
+        DataFrameConstructor,
+        LazyFrameConstructor,
+        NwDataFrame,
+        NwLazyFrame,
+    )
 
 
 class SpecWithContext:
@@ -82,6 +95,11 @@ def frame(nw_dataframe: DataFrameConstructor, frame_data: Data) -> NwDataFrame:
     return nw_dataframe(frame_data)
 
 
+@pytest.fixture
+def lazyframe(nw_lazyframe: LazyFrameConstructor, frame_data: Data) -> NwLazyFrame:
+    return nw_lazyframe(frame_data)
+
+
 def test_frame_in_data_section_is_registered(frame: NwDataFrame) -> None:
     widget = MosaicWidget(FrameDataSpec({"weather": frame.to_native()}))
 
@@ -115,3 +133,72 @@ def test_explicit_data_takes_precedence(frame: NwDataFrame) -> None:
 
     pytest.importorskip("pandas")
     assert len(widget.con.query("select * from weather").df()) == 1
+
+
+@pytest.mark.filterwarnings("ignore::mosaic_widget._exceptions.PerformanceWarning")
+def test_lazyframe_registered(lazyframe: NwLazyFrame) -> None:
+    native = lazyframe.to_native()
+    widget = MosaicWidget(FrameDataSpec({"weather": native}))
+    assert widget.spec == {"plot": [{"mark": "dot", "data": {"from": "weather"}}]}
+    assert "weather" in widget._registered_tables
+    assert len(widget.con.query("select * from weather").to_arrow_table()) == 3
+
+
+def _generate_relations_and_connections(data: dict[str, int]) -> Iterator[ParameterSet]:
+    query = f"SELECT unnest({data!r})"
+
+    memory_unique = duckdb.connect()
+    memory_db_name = ":memory:mosaic1"
+    named_1 = duckdb.connect(memory_db_name)
+    named_2 = duckdb.connect(memory_db_name)
+
+    requires_roundtrip = pytest.mark.filterwarnings(
+        "ignore::mosaic_widget._exceptions.PerformanceWarning"
+    )
+
+    yield pytest.param(duckdb.sql(query), None, id="global-no-connection")
+    yield pytest.param(
+        duckdb.sql(query), duckdb.default_connection(), id="global-default-connection"
+    )
+    yield pytest.param(
+        memory_unique.sql(query),
+        None,
+        marks=requires_roundtrip,
+        id="memory-no-connection",
+    )
+    yield pytest.param(
+        memory_unique.sql(query), memory_unique, id="memory-same-connection"
+    )
+    yield pytest.param(
+        memory_unique.sql(query),
+        duckdb.connect(),
+        marks=requires_roundtrip,
+        id="memory-wrong-database",
+    )
+    yield pytest.param(
+        named_1.sql(query),
+        named_2,
+        marks=requires_roundtrip,
+        id="named-memory-wrong-connection",
+    )
+    yield pytest.param(named_1.sql(query), named_1, id="named-memory-same-connection")
+    yield pytest.param(
+        named_1.sql(query),
+        named_1.cursor(),
+        marks=requires_roundtrip,
+        id="named-memory-cursor",
+    )
+    cursor = named_1
+    yield pytest.param(cursor.sql(query), cursor, id="named-memory-cursor-only")
+
+
+@pytest.mark.parametrize(
+    ("rel", "con"), list(_generate_relations_and_connections({"a": 42, "b": 84}))
+)
+def test_duckdb_relation_origin_1296(rel: Rel, con: Con | None) -> None:
+    # https://github.com/uwdata/mosaic/issues/1296
+    spec = FrameDataSpec({"tbl": rel})
+    widget = MosaicWidget(spec, con)
+    result = widget.con.sql("from tbl").to_arrow_table().to_pydict()
+    expected = {"a": [42], "b": [84]}
+    assert result == expected
