@@ -144,7 +144,7 @@ jobs:
       - name: Bump version, tag, and push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm exec lerna version "${{ needs.prepare.outputs.version }}" --yes
+        run: pnpm exec lerna version "${{ needs.prepare.outputs.version }}" --yes --force-publish
 
       - name: Capture released version
         id: version
