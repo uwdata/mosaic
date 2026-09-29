@@ -37,12 +37,10 @@ dev = [
 test = [
   "dask",
   "ibis-framework",
-  "modin",
   "polars",
   "pyarrow-hotfix",
   "pytest-cov",
   "pytest",
-  "pytest-env",
 ]
 
 [tool.hatch.version]

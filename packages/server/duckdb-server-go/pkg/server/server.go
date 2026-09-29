@@ -12,6 +12,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/klauspost/compress/gzhttp"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
@@ -84,12 +85,15 @@ func newHandler(db commandExecutor, cfg config) *handler {
 		varyHeaders:      cfg.varyHeaders,
 	}
 
-	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, http.HandlerFunc(s.handleHTTP))
+	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, gzhttp.GzipHandler(http.HandlerFunc(s.handleHTTP)))
 
 	return s
 }
 
 func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if s.maxMessageBytes > 0 {
+		r.Body = http.MaxBytesReader(w, r.Body, s.maxMessageBytes)
+	}
 	if s.cacheControl != "" {
 		w.Header().Set("Cache-Control", "no-store")
 	}
@@ -225,9 +229,6 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodPost:
-		if s.maxMessageBytes > 0 {
-			r.Body = http.MaxBytesReader(w, r.Body, s.maxMessageBytes)
-		}
 		raw, err := io.ReadAll(r.Body)
 		if err == nil {
 			err = json.Unmarshal(raw, &params)
@@ -235,8 +236,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			var sizeErr *http.MaxBytesError
 			if errors.As(err, &sizeErr) {
-				s.logger.Warn("server: request body exceeds message limit", "limit", sizeErr.Limit)
-				http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+				s.writeHTTPError(w, err)
 				return
 			}
 			s.logger.Error("server: failed to decode request body", "error", err)
@@ -277,7 +277,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodGet && s.cacheControl != "" {
-		etag := responseETag(response)
+		etag := responseETag(response, responseEncoding(r, response))
 		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" && !matchesETag(value, etag, false) {
 			http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)
 			return

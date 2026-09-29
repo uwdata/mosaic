@@ -29,6 +29,11 @@ type errorResponse struct {
 }
 
 func classifyError(err error) errorResponse {
+	var sizeErr *http.MaxBytesError
+	if errors.As(err, &sizeErr) {
+		return errorResponse{http.StatusRequestEntityTooLarge, "request_too_large", http.StatusText(http.StatusRequestEntityTooLarge)}
+	}
+
 	var authErr *authorizationError
 	if errors.As(err, &authErr) {
 		switch {
@@ -75,6 +80,11 @@ func classifyError(err error) errorResponse {
 
 func (s *handler) classifyAndLogError(err error) errorResponse {
 	response := classifyError(err)
+	var sizeErr *http.MaxBytesError
+	if errors.As(err, &sizeErr) {
+		s.logger.Warn("server: request body exceeds message limit", "limit", sizeErr.Limit)
+		return response
+	}
 	if errors.Is(err, query.ErrValidation) {
 		if response.status == http.StatusInternalServerError {
 			s.logger.Error("server: query validator failed", "error", err)
