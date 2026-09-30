@@ -18,7 +18,7 @@ The following _options_ are supported:
 - _port_: The port number (default `3000`) on which to listen for query requests.
 - _rest_: Boolean flag (default `true`) indicating if HTTP REST connections should be enabled.
 
-For HTTPS/HTTP/2, run `pnpm mkcert` from the repository root. The server checks for a complete `localhost.pem` / `localhost-key.pem` pair in its working directory, then the shared OS user configuration directory under `mosaic/https`. A selected invalid pair fails startup; without a pair, the server uses plaintext HTTP. HTTPS also supports HTTP/1.1 clients. See the [server guide](https://github.com/uwdata/mosaic/blob/main/packages/server/README.md) for platform paths, mounts, and renewal.
+For HTTPS/HTTP/2, install native mkcert on `PATH`, then run `pnpm mkcert` from the repository root. The server checks for a complete `localhost.pem` / `localhost-key.pem` pair in its working directory, then the shared OS user configuration directory under `mosaic/https`. A selected invalid pair fails startup; without a pair, the server uses plaintext HTTP. HTTPS also supports HTTP/1.1 clients. See the [server guide](https://github.com/uwdata/mosaic/blob/main/packages/server/README.md) for platform paths, mounts, and renewal.
 
 Once launched, the data server will accept HTTP POST requests containing JSON content that consists of a single object with the following properties:
 

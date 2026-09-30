@@ -24,10 +24,7 @@ fn find_certificates(directories: impl IntoIterator<Item = PathBuf>) -> Option<(
 }
 
 pub async fn configure() -> Result<Option<RustlsConfig>> {
-    let mut directories = vec![
-        env::current_dir()?,
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")),
-    ];
+    let mut directories = vec![env::current_dir()?];
     if let Some(config) = config_directory(env::consts::OS, |name| env::var_os(name)) {
         directories.push(config.join("mosaic/https"));
     }

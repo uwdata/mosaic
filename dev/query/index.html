@@ -11,6 +11,7 @@
         Connector:
         <select id="connector">
           <option value="rest">REST</option>
+          <option value="rest_https">REST (HTTPS)</option>
           <option value="wasm" selected>WASM</option>
         </select>
       </span>
@@ -28,7 +29,7 @@
     <br/>
     <div id="output"></div>
 <script type="module">
-  import { setDatabaseConnector, vg } from '../setup.js';
+  import { setDatabaseConnector, vg } from '../setup.ts';
   const tableName = 'query_result';
 
   const input = document.querySelector('#input');

@@ -42,7 +42,7 @@ browsers or cookie credentials without an outer proxy that enforces an origin or
 
 ### Local HTTPS
 
-From the repository root, set up certificates shared by Node, Rust, and Go:
+Install [native mkcert](https://github.com/FiloSottile/mkcert) on `PATH`, then from the repository root, set up certificates shared by Node, Rust, and Go:
 
 ```sh
 pnpm mkcert

@@ -40,7 +40,9 @@ To set up shared HTTPS/HTTP/2 certificates, run from the repository root:
 pnpm mkcert
 ```
 
-The server checks the working directory, its compile-time `CARGO_MANIFEST_DIR`, then the shared user directory for `localhost.pem` and `localhost-key.pem`. See the [server guide](../README.md) for paths, local overrides, and renewal.
+Install native mkcert on `PATH` first. The server checks the working directory, then the shared user directory for `localhost.pem` and `localhost-key.pem`. See the [server guide](../README.md) for paths, local overrides, and renewal.
+
+With certificates present, the server accepts both HTTP and HTTPS on the same port.
 
 ## API
 

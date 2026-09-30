@@ -1,54 +1,35 @@
 # Mosaic servers
 
-Mosaic includes [Node](duckdb/), [Rust](duckdb-server-rust/), [Go](duckdb-server-go/), and [Python](duckdb-server/) DuckDB servers. From the repository root, run `pnpm server:node`, `pnpm server:rust`, `pnpm server:go`, or `pnpm server` (Python). See each package for its runtime prerequisites.
+Mosaic includes [Node](duckdb/), [Rust](duckdb-server-rust/), [Go](duckdb-server-go/), and [Python](duckdb-server/) DuckDB servers. From the repository root, run `pnpm server:node`, `pnpm server:rust`, `pnpm server:go`, or `pnpm server` (Python). See each package for its runtime prerequisites and options.
 
 ## Local HTTPS and HTTP/2
 
-Node, Rust, and Go share localhost certificates. Set them up once:
+Install [native mkcert](https://github.com/FiloSottile/mkcert#installation) on `PATH`, then run:
 
 ```sh
 pnpm mkcert
 pnpm server:node # or server:rust / server:go
 ```
 
-Connect to `https://localhost:3000`. The certificate also covers `127.0.0.1` and `::1`. HTTPS supports HTTP/2 and HTTP/1.1. Python's current server does not participate in this setup.
+`pnpm mkcert` runs `mkcert -install` and generates shared certificates for `localhost`, `127.0.0.1`, and `::1`. Trust installation may request administrator permission; see mkcert's instructions for system and browser prerequisites.
 
-The helper uses [FiloSottile/mkcert](https://github.com/FiloSottile/mkcert) from `PATH`, or downloads a pinned, checksum-verified native binary into the OS user cache under `mosaic/mkcert`. This is not the npm package named `mkcert`; no Go installation is needed. Downloads and trust installation happen only when you run the helper.
+Connect to `https://localhost:3000`, or select **REST (HTTPS)** in the development gallery or query console. Node, Rust, and Go support HTTP/2 and HTTP/1.1 over HTTPS. Python's current server does not participate in this setup.
 
-Run setup in an interactive terminal: `mkcert -install` may request administrator permission. Linux needs its system trust-store utilities; Firefox and other NSS-based browser stores may need `certutil` (`brew install nss` or `apt install libnss3-tools`). See mkcert's installation instructions for platform details. Restart browsers if needed after installing trust.
+### Certificate locations
 
-### Shared files
+Servers look for a complete `localhost.pem` / `localhost-key.pem` pair in the working directory first, then the shared directory:
 
-| Platform | Directory |
+| Platform | Shared directory |
 | --- | --- |
 | macOS | `~/Library/Application Support/mosaic/https` |
 | Linux | `${XDG_CONFIG_HOME:-~/.config}/mosaic/https` |
 | Windows | `%AppData%\mosaic\https` |
 
-Each directory contains `localhost.pem` and `localhost-key.pem`. mkcert keeps its CA separately in the location reported by `mkcert -CAROOT`. Keep private keys private; only mount the server certificate/key pair into containers, not the CA key. Node clients may need `NODE_EXTRA_CA_CERTS` pointing to mkcert's `rootCA.pem` if their runtime does not use system trust.
-
-### Lookup order
-
-1. Go's explicit `--cert` and `--key`, supplied together.
-2. A complete `localhost.pem` / `localhost-key.pem` pair in the current working directory.
-3. For Rust, a complete pair at its compile-time `CARGO_MANIFEST_DIR`.
-4. A complete pair in the shared directory above.
-
-Incomplete pairs are skipped; files from different directories are never combined. An invalid selected pair fails startup. Without a pair, servers use plaintext HTTP. Rust retains its existing dual HTTP/HTTPS listener when certificates are present.
-
-To override shared certificates, place or mount a pair in the working directory. `pnpm server:node` runs from the repository root; `server:rust` and `server:go` run from their package directories. PEM files are ignored throughout the repository.
-
-### Renewal
-
-Rerun `pnpm mkcert` to install trust and validate the shared pair against the active mkcert CA. It reuses certificates with more than 30 days remaining and regenerates missing, invalid, mismatched, near-expiry, or differently signed pairs. Restart running servers after renewal. Ordinary server startup only reads certificates.
-
-Concurrent setup commands are serialized. If setup is interrupted and leaves a `.setup-lock` directory in the certificate directory, remove that lock only after confirming no setup process is still running, then retry.
-
-Standalone users can install native mkcert without Node and generate a local pair in the server's working directory:
+To override the shared pair, place or mount both files in the server's working directory. To generate a local pair directly:
 
 ```sh
 mkcert -install
 mkcert -cert-file localhost.pem -key-file localhost-key.pem localhost 127.0.0.1 ::1
 ```
 
-Rerun the generation command to renew that local pair, then restart the server. All three servers only load certificates; setup and trust installation are separate from startup.
+To renew shared certificates, rerun `pnpm mkcert`, then restart the server. Each invocation generates a new pair; servers only load certificates at startup.
