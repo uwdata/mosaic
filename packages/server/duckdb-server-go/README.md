@@ -31,7 +31,7 @@ You can customize the server behavior with the following command-line flags:
 -   `--cache-control <value>`: Cache-Control value for successful GET `arrow` responses, enabling ETags and conditional responses for those queries. Omitted or empty values preserve existing behavior.
 -   `--vary <headers>`: Comma-separated request header names to append to Vary independently of Cache-Control. Repeated flags accumulate names.
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
--   `--gatekeeper <json>`: Complete Gatekeeper JSON policy document, passed verbatim to `gatekeeper_configure(json := ...)`. `{"version":1,"options":{}}` enables validation with defaults. May be specified once.
+-   `--gatekeeper <json>`: Complete Gatekeeper JSON policy document, passed verbatim to `gatekeeper_configure(json := ...)`. `{"version":2,"options":{}}` enables validation with defaults. May be specified once.
 
 By default, the server looks for `localhost.pem` and `localhost-key.pem` in the current directory, then in the shared OS user configuration directory under `mosaic/https`, if the `--cert` and `--key` flags are not provided.
 
@@ -168,21 +168,21 @@ POST bodies require one complete command object with optional surrounding whites
 
 ### Gatekeeper Configuration
 
-Gatekeeper is optional. Enable validation with a [Gatekeeper JSON policy](https://github.com/nozzle/duckdb-gatekeeper#json-policy-documents) (requires 0.3.0+):
+Gatekeeper is optional. Enable validation with a [Gatekeeper JSON policy](https://github.com/nozzle/duckdb-gatekeeper#json-policy-documents) (version 2, which requires 0.4.0+):
 
 ```sh
-duckdb-server-go --gatekeeper='{"version":1,"options":{}}'
+duckdb-server-go --gatekeeper='{"version":2,"options":{}}'
 ```
 
 The CLI loads Gatekeeper (installing from community if needed), passes the document unchanged to `gatekeeper_configure`, disables extension autoload/autoinstall, and locks configuration. `--load-extensions` can provide a local artifact first. Upgrade cached installations with `FORCE INSTALL gatekeeper FROM community`, then restart.
 
 For Go applications, load Gatekeeper during trusted setup and call `query.ConfigureGatekeeper(ctx, execer, document)` before locking configuration. Global policy, autoload/autoinstall settings, and configuration locking must run once per database, not per pooled connection; guard the setup with `sync.Once` and retain its error as [main.go](main.go) does. `query.New` does not load extensions; `query.WithValidation()` requires Gatekeeper and enables validation for every Arrow query. `db.Close()` also closes the connector.
 
-`db.Query(ctx, sql, policy)` returns the complete Arrow IPC result as `[]byte`, or nil on error. Pass `*query.ValidationPolicy` directly or from `WithAuthorizer` to narrow the global policy. Use `JSON: &document` or typed `AllowedTables`, `BlockedTables`, `AllowedFunctions`, `BlockedFunctions`, and `UseDefaultFunctions` fields; the two forms cannot be mixed. Nil slices omit options; empty slices remain explicit arrays. `TableRule.Catalog` and `UseDefaultFunctions` are pointers. Names are passed unchanged, including whitespace.
+`db.Query(ctx, sql, policy)` returns the complete Arrow IPC result as `[]byte`, or nil on error. Pass `*query.ValidationPolicy` directly or from `WithAuthorizer` to narrow the global policy. Use `JSON: &document` or typed `AllowedTables`, `BlockedTables`, `AllowedFunctions`, `BlockedFunctions`, and `UseDefaultFunctions` fields; the two forms cannot be mixed. Nil slices omit options; empty slices remain explicit arrays. `TableRule` and `FunctionRule` take a nonempty `SchemaPath`, outermost schema first; `Catalog` fields and `UseDefaultFunctions` are pointers, and an empty `FunctionRule.Type` matches any function kind. Names are passed unchanged, including whitespace.
 
-`ValidateSQL(ctx, sql, policy)` returns `(ValidationResult, error)` without executing. `Details` contains diagnostics and violations; successful results include `CallerObjects`, transitive `Objects`, and `Functions`. Use `errors.As` with `query.ErrorDetails`, or `errors.Is` with `ErrValidation`, `ErrAccessDenied`, `ErrUnsupportedStatement`, and `ErrInvalidPolicy`. HTTP validation errors are sanitized: policy denials return 403, SQL errors 400, and invalid application policies or validator failures 500.
+`ValidateSQL(ctx, sql, policy)` returns `(ValidationResult, error)` without executing. `Details` contains diagnostics and violations; successful results include `CallerObjects`, `CallerFunctions`, transitive `Objects`, and `Functions`. Use `errors.As` with `query.ErrorDetails`, or `errors.Is` with `ErrValidation`, `ErrAccessDenied`, `ErrUnsupportedStatement`, and `ErrInvalidPolicy`. HTTP validation errors are sanitized: policy denials return 403, SQL errors 400, and invalid application policies or validator failures 500.
 
-Validated execution uses the same connection for validation and execution and rejects `exec`; disable Mosaic pre-aggregation with `preagg: { enabled: false }`. Trusted views/macros can expose their dependencies. See Gatekeeper's [policy schema](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.3.0/docs/policy-v1.schema.json) and [security model](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.3.0/docs/security.md) for policy semantics and resource boundaries.
+Validated execution uses the same connection for validation and execution and rejects `exec`; disable Mosaic pre-aggregation with `preagg: { enabled: false }`. Trusted views/macros can expose their dependencies. See Gatekeeper's [policy schema](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.4.1/docs/policy-v2.schema.json), [version 1 migration guide](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.4.1/docs/policy-migration.md), and [security model](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.4.1/docs/security.md) for policy semantics and resource boundaries.
 
 ## API
 

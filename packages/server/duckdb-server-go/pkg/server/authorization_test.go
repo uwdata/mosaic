@@ -383,7 +383,7 @@ func TestGenericAuthorizationDoesNotBypassRestrictedExec(t *testing.T) {
 }
 
 func TestNilAuthorizerPolicyPreservesGlobalValidation(t *testing.T) {
-	db := setupConfiguredDB(t, "CALL gatekeeper_configure(blocked_functions := ['md5'])", query.WithValidation())
+	db := setupConfiguredDB(t, "CALL gatekeeper_configure(blocked_functions := [{catalog: 'system', schema_path: ['main'], name: 'md5'}])", query.WithValidation())
 	handler := mustHandler(t, db, WithAuthorizer(func(*http.Request, Command[struct{}]) (*query.ValidationPolicy, error) { return nil, nil }))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT md5('x')"}`)))
@@ -402,7 +402,7 @@ func TestAuthorizerScopesValidationPerCommand(t *testing.T) {
 		if command.Payload().Tenant == "" {
 			return nil, ErrPermissionDenied
 		}
-		return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: command.Payload().Tenant, Table: "*"}}}, nil
+		return &query.ValidationPolicy{AllowedTables: []query.TableRule{{SchemaPath: []string{command.Payload().Tenant}, Table: "*"}}}, nil
 	}))
 	post := func(body string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))

@@ -22,28 +22,38 @@ type ValidationPolicy struct {
 	// JSON passes a complete Gatekeeper document verbatim and cannot be combined with typed options.
 	JSON *string `json:"-"`
 	// omitzero preserves the distinction between nil (inherit) and an explicit empty allowlist.
-	AllowedTables       []TableRule `json:"allowed_tables,omitzero"`
-	BlockedTables       []TableRule `json:"blocked_tables,omitzero"`
-	AllowedFunctions    []string    `json:"allowed_functions,omitzero"`
-	BlockedFunctions    []string    `json:"blocked_functions,omitzero"`
-	UseDefaultFunctions *bool       `json:"use_default_functions,omitempty"`
+	AllowedTables       []TableRule    `json:"allowed_tables,omitzero"`
+	BlockedTables       []TableRule    `json:"blocked_tables,omitzero"`
+	AllowedFunctions    []FunctionRule `json:"allowed_functions,omitzero"`
+	BlockedFunctions    []FunctionRule `json:"blocked_functions,omitzero"`
+	UseDefaultFunctions *bool          `json:"use_default_functions,omitempty"`
 }
 
 type TableRule struct {
-	// Nil matches any catalog; a whole-component "*" is a wildcard in each field.
-	Catalog *string `json:"catalog,omitempty"`
-	Schema  string  `json:"schema"`
-	Table   string  `json:"table"`
+	// Nil matches any catalog; "*" matches one whole component at exactly its position, never recursively.
+	Catalog    *string  `json:"catalog,omitempty"`
+	SchemaPath []string `json:"schema_path"`
+	Table      string   `json:"table"`
+}
+
+type FunctionRule struct {
+	// Nil matches any catalog and an empty Type any function kind; Name is exact, so "*" is multiplication.
+	Catalog    *string  `json:"catalog,omitempty"`
+	SchemaPath []string `json:"schema_path"`
+	Name       string   `json:"name"`
+	Type       string   `json:"type,omitempty"`
 }
 
 type Violation struct {
-	Rule         string `json:"rule"`
-	Message      string `json:"message"`
-	Catalog      string `json:"catalog"`
-	Schema       string `json:"schema"`
-	Table        string `json:"table"`
-	FunctionName string `json:"function_name" mapstructure:"function_name"`
-	Position     *int64 `json:"position"`
+	Rule         string   `json:"rule"`
+	Message      string   `json:"message"`
+	Catalog      string   `json:"catalog"`
+	SchemaPath   []string `json:"schema_path" mapstructure:"schema_path"`
+	Table        string   `json:"table"`
+	FunctionName string   `json:"function_name" mapstructure:"function_name"`
+	Position     *int64   `json:"position"`
+	FunctionType string   `json:"function_type" mapstructure:"function_type"`
+	ObjectType   string   `json:"object_type" mapstructure:"object_type"`
 }
 
 type ErrorDetails struct {
@@ -78,25 +88,26 @@ func (e ErrorDetails) Is(target error) bool {
 }
 
 type ResolvedObject struct {
-	Catalog string `json:"catalog"`
-	Schema  string `json:"schema"`
-	Table   string `json:"table"`
-	Type    string `json:"type"`
+	Catalog    string   `json:"catalog"`
+	SchemaPath []string `json:"schema_path" mapstructure:"schema_path"`
+	Table      string   `json:"table"`
+	Type       string   `json:"type"`
 }
 
 type ResolvedFunction struct {
-	Catalog string `json:"catalog"`
-	Schema  string `json:"schema"`
-	Name    string `json:"name"`
-	Type    string `json:"type"`
+	Catalog    string   `json:"catalog"`
+	SchemaPath []string `json:"schema_path" mapstructure:"schema_path"`
+	Name       string   `json:"name"`
+	Type       string   `json:"type"`
 }
 
 type ValidationResult struct {
-	Allowed       bool               `json:"allowed"`
-	Details       ErrorDetails       `json:"details"`
-	Objects       []ResolvedObject   `json:"objects"`
-	Functions     []ResolvedFunction `json:"functions"`
-	CallerObjects []ResolvedObject   `json:"caller_objects"`
+	Allowed         bool               `json:"allowed"`
+	Details         ErrorDetails       `json:"details"`
+	Objects         []ResolvedObject   `json:"objects"`
+	Functions       []ResolvedFunction `json:"functions"`
+	CallerObjects   []ResolvedObject   `json:"caller_objects"`
+	CallerFunctions []ResolvedFunction `json:"caller_functions"`
 }
 
 // ValidateSQL returns binding evidence on success and diagnostics on denial without executing or reserving a connection.
@@ -119,19 +130,20 @@ func (db *DB) validateSQL(ctx context.Context, conn rowQuerier, query string, po
 	if err != nil {
 		return result, err
 	}
-	const stmt = `SELECT allowed, code, error_type, error_message, position, violations, objects, functions, caller_objects
+	const stmt = `SELECT allowed, code, error_type, error_message, position, violations, objects, functions, caller_objects, caller_functions
 		FROM system.main.gatekeeper_validate($sql, json := $policy)`
 	var violations duckdb.Composite[[]Violation]
-	var objects, callers duckdb.Composite[[]ResolvedObject]
-	var functions duckdb.Composite[[]ResolvedFunction]
+	var objects, callerObjects duckdb.Composite[[]ResolvedObject]
+	var functions, callerFunctions duckdb.Composite[[]ResolvedFunction]
 	if err := conn.QueryRowContext(ctx, stmt, sql.Named("sql", query), sql.Named("policy", document)).Scan(
 		&result.Allowed, &result.Details.Code, &result.Details.Type, &result.Details.Message, &result.Details.Position,
-		&violations, &objects, &functions, &callers,
+		&violations, &objects, &functions, &callerObjects, &callerFunctions,
 	); err != nil {
 		return result, fmt.Errorf("query: Gatekeeper validation failed: %w", err)
 	}
 	result.Details.Violations = violations.Get()
-	result.Objects, result.Functions, result.CallerObjects = objects.Get(), functions.Get(), callers.Get()
+	result.Objects, result.Functions = objects.Get(), functions.Get()
+	result.CallerObjects, result.CallerFunctions = callerObjects.Get(), callerFunctions.Get()
 	if result.Allowed && result.Details.Code == "ok" && len(result.Details.Violations) == 0 {
 		return result, nil
 	}
@@ -169,6 +181,6 @@ func (policy ValidationPolicy) document() (string, error) {
 	document, err := json.Marshal(struct {
 		Version int              `json:"version"`
 		Options ValidationPolicy `json:"options"`
-	}{Version: 1, Options: policy})
+	}{Version: 2, Options: policy})
 	return string(document), err
 }

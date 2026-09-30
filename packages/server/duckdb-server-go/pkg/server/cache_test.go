@@ -240,7 +240,7 @@ func TestHTTPCachePolicyVariation(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
 		queryFn: func(_ context.Context, _ string, policy *query.ValidationPolicy) ([]byte, error) {
-			return []byte(policy.AllowedTables[0].Schema), nil
+			return []byte(policy.AllowedTables[0].SchemaPath[0]), nil
 		},
 	}
 	authorizer := WithAuthorizer(func(r *http.Request, _ Command[struct{}]) (*query.ValidationPolicy, error) {
@@ -248,7 +248,7 @@ func TestHTTPCachePolicyVariation(t *testing.T) {
 		if tenant == "" {
 			return nil, ErrUnauthenticated
 		}
-		return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: tenant, Table: "*"}}}, nil
+		return &query.ValidationPolicy{AllowedTables: []query.TableRule{{SchemaPath: []string{tenant}, Table: "*"}}}, nil
 	})
 	handler := mustHandler(t, spy, authorizer, WithVary("X-Region", "X-Tenant-Id"), WithCacheControl("public, max-age=60"))
 	get := func(tenant, etag string) *httptest.ResponseRecorder {

@@ -20,7 +20,7 @@ func TestInitializeDatabase(t *testing.T) {
 		document *string
 	}{
 		{"unrestricted", nil},
-		{"configured", policyDocument(`{"version":1,"options":{"blocked_functions":["md5"]}}`)},
+		{"configured", policyDocument(`{"version":2,"options":{"blocked_functions":[{"catalog":"system","schema_path":["main"],"name":"md5"}]}}`)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dsn := ":memory:"
@@ -70,7 +70,7 @@ func TestInitializeDatabaseLocalArtifact(t *testing.T) {
 
 func TestInitializeDatabaseFailsClosed(t *testing.T) {
 	for _, tc := range []struct{ name, extension, document, want string }{
-		{"missing artifact", filepath.Join(t.TempDir(), "gatekeeper.duckdb_extension"), `{"version":1,"options":{}}`, "gatekeeper.duckdb_extension"},
+		{"missing artifact", filepath.Join(t.TempDir(), "gatekeeper.duckdb_extension"), `{"version":2,"options":{}}`, "gatekeeper.duckdb_extension"},
 		{"invalid document", "", `{}`, "configure Gatekeeper"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -125,7 +125,7 @@ func newConnector(t *testing.T, dsn, extensionList string, policy *string) *duck
 }
 
 func policyDocument(value string) *string { return &value }
-func defaultPolicy() *string              { return policyDocument(`{"version":1,"options":{}}`) }
+func defaultPolicy() *string              { return policyDocument(`{"version":2,"options":{}}`) }
 func freshDSN(t *testing.T) string {
 	t.Helper()
 	return ":memory:?extension_directory=" + url.QueryEscape(t.TempDir())

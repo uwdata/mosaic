@@ -16,17 +16,18 @@ func TestPolicyDocument(t *testing.T) {
 		policy ValidationPolicy
 		want   string
 	}{
-		{ValidationPolicy{}, `{"version":1,"options":{}}`},
-		{ValidationPolicy{AllowedTables: []TableRule{}}, `{"version":1,"options":{"allowed_tables":[]}}`},
-		{ValidationPolicy{AllowedFunctions: []string{}, BlockedFunctions: []string{}, UseDefaultFunctions: boolPtr(false)}, `{"version":1,"options":{"allowed_functions":[],"blocked_functions":[],"use_default_functions":false}}`},
-		{ValidationPolicy{AllowedTables: []TableRule{{Schema: "a", Table: "*"}}}, `{"version":1,"options":{"allowed_tables":[{"schema":"a","table":"*"}]}}`},
-		{ValidationPolicy{BlockedTables: []TableRule{{Catalog: stringPtr(""), Schema: "a", Table: "*"}}, UseDefaultFunctions: boolPtr(true)}, `{"version":1,"options":{"blocked_tables":[{"catalog":"","schema":"a","table":"*"}],"use_default_functions":true}}`},
+		{ValidationPolicy{}, `{"version":2,"options":{}}`},
+		{ValidationPolicy{AllowedTables: []TableRule{}}, `{"version":2,"options":{"allowed_tables":[]}}`},
+		{ValidationPolicy{AllowedFunctions: []FunctionRule{}, BlockedFunctions: []FunctionRule{}, UseDefaultFunctions: boolPtr(false)}, `{"version":2,"options":{"allowed_functions":[],"blocked_functions":[],"use_default_functions":false}}`},
+		{ValidationPolicy{AllowedTables: []TableRule{{SchemaPath: []string{"a"}, Table: "*"}}}, `{"version":2,"options":{"allowed_tables":[{"schema_path":["a"],"table":"*"}]}}`},
+		{ValidationPolicy{BlockedTables: []TableRule{{Catalog: stringPtr(""), SchemaPath: []string{"a", "b"}, Table: "*"}}, UseDefaultFunctions: boolPtr(true)}, `{"version":2,"options":{"blocked_tables":[{"catalog":"","schema_path":["a","b"],"table":"*"}],"use_default_functions":true}}`},
+		{ValidationPolicy{BlockedFunctions: []FunctionRule{{Catalog: stringPtr("system"), SchemaPath: []string{"main"}, Name: "md5", Type: "scalar"}, {SchemaPath: []string{"main"}, Name: "sum"}}}, `{"version":2,"options":{"blocked_functions":[{"catalog":"system","schema_path":["main"],"name":"md5","type":"scalar"},{"schema_path":["main"],"name":"sum"}]}}`},
 	} {
 		got, err := tc.policy.document()
 		require.NoError(t, err)
 		require.JSONEq(t, tc.want, got)
 	}
-	const raw = "  {\"version\":1,\"options\":{\"allowed_tables\":null}}  "
+	const raw = "  {\"version\":2,\"options\":{\"allowed_tables\":null}}  "
 	got, err := (ValidationPolicy{JSON: stringPtr(raw)}).document()
 	require.NoError(t, err)
 	require.Equal(t, raw, got)
@@ -36,7 +37,7 @@ func TestPolicyDocument(t *testing.T) {
 
 func TestValidationRequiresGatekeeper(t *testing.T) {
 	db, err := New(t.Context(), testConnector(t, false), WithValidation())
-	require.ErrorContains(t, err, "JSON policy API (0.3.0+)")
+	require.ErrorContains(t, err, "JSON policy v2 (0.4.0+)")
 	require.ErrorContains(t, err, "FORCE INSTALL gatekeeper FROM community")
 	require.Nil(t, db)
 	db = setupTestDB(t, false)
@@ -55,13 +56,13 @@ func TestGatekeeperCallsIgnoreShadowingMacros(t *testing.T) {
 	require.NoError(t, db.Exec(t.Context(), `
 		CREATE MACRO gatekeeper_validate(sql_text, json := '') AS TABLE
 		SELECT true AS allowed, 'ok' AS code, '' AS error_type, '' AS error_message,
-		       NULL::BIGINT AS position, [] AS violations, [] AS objects, [] AS functions, [] AS caller_objects;
+		       NULL::BIGINT AS position, [] AS violations, [] AS objects, [] AS functions, [] AS caller_objects, [] AS caller_functions;
 		CREATE MACRO gatekeeper_configure(json := '') AS TABLE SELECT true AS Success;
 	`))
 	conn, err := connector.Connect(t.Context())
 	require.NoError(t, err)
 	defer func() { require.NoError(t, conn.Close()) }()
-	require.NoError(t, ConfigureGatekeeper(t.Context(), conn.(driver.ExecerContext), `{"version":1,"options":{"blocked_functions":["md5"]}}`))
+	require.NoError(t, ConfigureGatekeeper(t.Context(), conn.(driver.ExecerContext), `{"version":2,"options":{"blocked_functions":[{"catalog":"system","schema_path":["main"],"name":"md5"}]}}`))
 	_, err = db.ValidateSQL(t.Context(), "SELECT md5('x')", ValidationPolicy{})
 	require.ErrorIs(t, err, ErrAccessDenied)
 }
@@ -70,26 +71,28 @@ func TestValidationPolicyAndResult(t *testing.T) {
 	db := setupTestDB(t, true)
 	require.NoError(t, db.Exec(t.Context(), `CREATE TABLE items AS SELECT 42 AS value;
 		CREATE VIEW shared AS SELECT * FROM items;
-		CALL gatekeeper_configure(blocked_functions := ['md5'])`))
-	policy := ValidationPolicy{AllowedTables: []TableRule{{Schema: "main", Table: "shared"}}}
+		CALL gatekeeper_configure(blocked_functions := [{catalog: 'system', schema_path: ['main'], name: 'md5'}])`))
+	policy := ValidationPolicy{AllowedTables: []TableRule{{SchemaPath: []string{"main"}, Table: "shared"}}}
 	result, err := db.ValidateSQL(t.Context(), "SELECT sum(value) FROM shared", policy)
 	require.NoError(t, err)
 	require.True(t, result.Allowed)
 	require.NotImplements(t, (*error)(nil), result)
 	require.Equal(t, "ok", result.Details.Code)
-	view := ResolvedObject{Catalog: "memory", Schema: "main", Table: "shared", Type: "view"}
-	table := ResolvedObject{Catalog: "memory", Schema: "main", Table: "items", Type: "table"}
+	view := ResolvedObject{Catalog: "memory", SchemaPath: []string{"main"}, Table: "shared", Type: "view"}
+	table := ResolvedObject{Catalog: "memory", SchemaPath: []string{"main"}, Table: "items", Type: "table"}
 	require.Equal(t, []ResolvedObject{view}, result.CallerObjects)
 	require.ElementsMatch(t, []ResolvedObject{view, table}, result.Objects)
-	require.Contains(t, result.Functions, ResolvedFunction{Catalog: "system", Schema: "main", Name: "sum", Type: "aggregate"})
-	policy.AllowedFunctions = []string{"sum"}
+	sum := ResolvedFunction{Catalog: "system", SchemaPath: []string{"main"}, Name: "sum", Type: "aggregate"}
+	require.Contains(t, result.Functions, sum)
+	require.Contains(t, result.CallerFunctions, sum)
+	policy.AllowedFunctions = []FunctionRule{{Catalog: stringPtr("system"), SchemaPath: []string{"main"}, Name: "sum"}}
 	policy.UseDefaultFunctions = boolPtr(false)
 	_, err = db.Query(t.Context(), "SELECT sum(value) FROM shared", &policy)
 	require.NoError(t, err)
 	_, err = db.Query(t.Context(), "SELECT lower('x') FROM shared", &policy)
 	require.ErrorIs(t, err, ErrAccessDenied)
 
-	data, err := db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{JSON: stringPtr(`{"version":1,"options":{"allowed_tables":[{"schema":"main","table":"shared"}]}}`)})
+	data, err := db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{JSON: stringPtr(`{"version":2,"options":{"allowed_tables":[{"schema_path":["main"],"table":"shared"}]}}`)})
 	require.NoError(t, err)
 	require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
 	result, err = db.ValidateSQL(t.Context(), "SELECT * FROM items", policy)
@@ -104,15 +107,16 @@ func TestValidationPolicyAndResult(t *testing.T) {
 	require.Len(t, details.Violations, 1)
 	require.Equal(t, "table", details.Violations[0].Rule)
 	require.Equal(t, table.Catalog, details.Violations[0].Catalog)
-	require.Equal(t, table.Schema, details.Violations[0].Schema)
+	require.Equal(t, table.SchemaPath, details.Violations[0].SchemaPath)
 	require.Equal(t, table.Table, details.Violations[0].Table)
-	_, err = db.Query(t.Context(), "SELECT md5('x')", &ValidationPolicy{AllowedFunctions: []string{"md5"}})
+	require.Equal(t, table.Type, details.Violations[0].ObjectType)
+	_, err = db.Query(t.Context(), "SELECT md5('x')", &ValidationPolicy{AllowedFunctions: []FunctionRule{{Catalog: stringPtr("system"), SchemaPath: []string{"main"}, Name: "md5"}}})
 	require.ErrorIs(t, err, ErrAccessDenied)
 	require.ErrorAs(t, err, &details)
 	require.Equal(t, "md5", details.Violations[0].FunctionName)
-	_, err = db.Query(t.Context(), "SELECT sum(value) FROM shared", &ValidationPolicy{BlockedFunctions: []string{"sum"}})
+	_, err = db.Query(t.Context(), "SELECT sum(value) FROM shared", &ValidationPolicy{BlockedFunctions: []FunctionRule{{SchemaPath: []string{"main"}, Name: "sum"}}})
 	require.ErrorIs(t, err, ErrAccessDenied)
-	_, err = db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{BlockedTables: []TableRule{{Schema: "main", Table: "shared"}}})
+	_, err = db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{BlockedTables: []TableRule{{SchemaPath: []string{"main"}, Table: "shared"}}})
 	require.ErrorIs(t, err, ErrAccessDenied)
 	result, err = db.ValidateSQL(t.Context(), "SELECT (", ValidationPolicy{})
 	require.ErrorAs(t, err, &details)
@@ -125,7 +129,7 @@ func TestValidatedConnectionLifecycle(t *testing.T) {
 	db := setupTestDB(t, true, WithMaxConnections(1))
 	require.NoError(t, db.Exec(t.Context(), `CREATE SCHEMA tenant;
 		CREATE TABLE tenant.items AS SELECT 42 AS value; SET search_path = 'tenant'`))
-	allowed := &ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant", Table: "items"}}}
+	allowed := &ValidationPolicy{AllowedTables: []TableRule{{SchemaPath: []string{"tenant"}, Table: "items"}}}
 	denied := &ValidationPolicy{AllowedTables: []TableRule{}}
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -164,7 +168,7 @@ func TestInvalidPolicyAndInvalidSQL(t *testing.T) {
 		_, err := db.ValidateSQL(t.Context(), stmt, ValidationPolicy{JSON: stringPtr(`{}`)})
 		require.ErrorIs(t, err, ErrInvalidPolicy)
 	}
-	_, err := db.ValidateSQL(t.Context(), "SELECT 2", ValidationPolicy{AllowedFunctions: []string{""}})
+	_, err := db.ValidateSQL(t.Context(), "SELECT 2", ValidationPolicy{AllowedFunctions: []FunctionRule{{SchemaPath: []string{"main"}}}})
 	require.ErrorIs(t, err, ErrInvalidPolicy)
 	_, err = db.ValidateSQL(t.Context(), "-- comment only", ValidationPolicy{})
 	var details ErrorDetails

@@ -35,7 +35,7 @@ func run() int {
 	flag.Var(&varyHeaders, "vary", "Comma-separated request header names to append to Vary; may be repeated")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	var gatekeeper gatekeeperFlag
-	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":1,"options":{}} enables validation with defaults`)
+	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":2,"options":{}} enables validation with defaults`)
 	flag.Parse()
 	*address = normalizeAddress(*address)
 
