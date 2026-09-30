@@ -28,7 +28,6 @@ func run() int {
 	address := flag.String("address", "localhost", "HTTP Address")
 	port := flag.String("port", "3000", "HTTP Port")
 	poolSize := flag.Int("connection-pool-size", 10, "Max connection pool size")
-	https := flag.Bool("https", false, "Enable HTTPS with automatically managed localhost certificates")
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
 	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET arrow responses; enables ETag validation for those queries")
@@ -52,7 +51,7 @@ func run() int {
 		return 1
 	}
 
-	tlsConfig, err := configureHTTPS(*https, *address, *certFile, *keyFile, logger)
+	tlsConfig, err := configureHTTPS(*certFile, *keyFile, logger)
 	if err != nil {
 		logger.Error("main: HTTPS setup failed", "error", err)
 		return 1
@@ -102,13 +101,12 @@ func run() int {
 			AllowAllHeaders: true,
 			MaxAge:          30 * 24 * time.Hour,
 		}),
-		server.WithWebSocket(server.WebSocketOptions{AllowAllOrigins: true}),
 	)
 	if err != nil {
 		logger.Error("main: error creating server", "error", err)
 		return 1
 	}
-	logger.Warn("DuckDB Server permits all HTTP and WebSocket origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
+	logger.Warn("DuckDB Server permits all HTTP origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
 	config := map[string]interface{}{
 		"database":             *dbPath,
@@ -145,10 +143,10 @@ func run() int {
 	httpServer := &http.Server{Addr: addr, Handler: s, TLSConfig: tlsConfig, ReadHeaderTimeout: 10 * time.Second}
 
 	if tlsConfig != nil {
-		logger.Info(fmt.Sprintf("DuckDB Server listening on https://%s and wss://%s", addr, addr))
+		logger.Info(fmt.Sprintf("DuckDB Server listening on https://%s", addr))
 		err = httpServer.ListenAndServeTLS("", "")
 	} else {
-		logger.Info(fmt.Sprintf("DuckDB Server listening on http://%s and ws://%s", addr, addr))
+		logger.Info(fmt.Sprintf("DuckDB Server listening on http://%s", addr))
 		err = httpServer.ListenAndServe()
 	}
 	if err != nil {

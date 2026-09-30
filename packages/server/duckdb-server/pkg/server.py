@@ -6,20 +6,14 @@ import time
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 import msgspec
-from msgspec.json import decode as json_decode_slow
-from msgspec.json import encode as json_encode
-from socketify import App, CompressOptions, OpCode
+from socketify import App
 
 from pkg.query import get_arrow_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from duckdb import DuckDBPyConnection as Con
     from socketify import Request as Req
     from socketify import Response as Res
-    from socketify import SendStatus as Status
-    from socketify import WebSocket as Ws
     from typing_extensions import Buffer
 
 logger = logging.getLogger(__name__)
@@ -39,27 +33,6 @@ class Handler(Protocol):
     def done(self) -> None: ...
     def arrow(self, buffer: bytes) -> None: ...
     def error(self, error: Any, status: int = 500) -> None: ...
-
-
-class SocketHandler(Handler):
-    def __init__(self, ws: Ws) -> None:
-        self.ws: Ws = ws
-
-    def check(self, ok: Ws | Status | None) -> None:
-        if not ok:
-            logger.warning(f"WebSocket backpressure: {self.ws.get_buffered_amount()}")
-
-    def done(self) -> None:
-        ok = self.ws.send({}, OpCode.TEXT)
-        self.check(ok)
-
-    def arrow(self, buffer: bytes) -> None:
-        ok = self.ws.send(buffer, OpCode.BINARY)
-        self.check(ok)
-
-    def error(self, error: object, status: int = 500) -> None:
-        ok = self.ws.send({"error": str(error)}, OpCode.TEXT)
-        self.check(ok)
 
 
 CORS_HEADERS = {
@@ -137,29 +110,8 @@ def on_error(error: object, res: Res, req: Req) -> None:
         res.end(f"Error {error}")
 
 
-class Serde:
-    """Wraps `msgspec` to be [compatible] with `socketify`.
-
-    [compatible]: https://docs.socketify.dev/basics.html#using-ujson-orjson-or-any-custom-json-serializer
-    """
-
-    __slots__ = ("dumps", "loads")
-
-    def __init__(
-        self,
-        serialize: Callable[[Any], bytes],
-        deserialize: Callable[[Buffer | str], Any],
-    ) -> None:
-        self.dumps = serialize
-        self.loads = deserialize
-
-
 def server(con: Con) -> None:
     app = App()
-    app.json_serializer(Serde(serialize=json_encode, deserialize=json_decode_slow))
-
-    def ws_message(ws: Ws, message: str | Buffer, opcode: OpCode) -> None:
-        handle_message(SocketHandler(ws), con, message)
 
     async def http_handler(res: Res, req: Req) -> None:
         handler = HTTPHandler(res)
@@ -178,17 +130,6 @@ def server(con: Con) -> None:
             case method:
                 handler.error(f"Unsupported HTTP method: {method}", 400)
 
-    app.ws(
-        "/*",
-        {
-            "compression": CompressOptions.SHARED_COMPRESSOR,
-            "message": ws_message,
-            "drain": lambda ws: logger.warning(
-                f"WebSocket backpressure: {ws.get_buffered_amount()}"
-            ),
-        },
-    )
-
     app.any("/", http_handler)
 
     app.set_error_handler(on_error)
@@ -196,7 +137,7 @@ def server(con: Con) -> None:
     app.listen(
         3000,
         lambda config: sys.stdout.write(
-            f"DuckDB Server listening at ws://localhost:{config.port} and http://localhost:{config.port}\n"
+            f"DuckDB Server listening at http://localhost:{config.port}\n"
         ),
     )
     app.run()

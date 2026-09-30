@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
 	"github.com/stretchr/testify/require"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
@@ -201,26 +199,6 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 			require.Empty(t, res.Header().Get("ETag"))
 		})
 	}
-}
-
-func TestHTTPCacheWebSocket(t *testing.T) {
-	spy := &spyCommandExecutor{
-		failOnCallExecutor: failOnCallExecutor{t},
-		queryFn:            func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
-	}
-	server := newWebSocketTestServer(t, mustHandler(t, spy, WithCacheControl("public, max-age=60"), WithVary("X-Dataset")))
-	conn, res, err := server.dial(&websocket.DialOptions{HTTPHeader: http.Header{"If-None-Match": {"*"}}})
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
-	require.Equal(t, http.StatusSwitchingProtocols, res.StatusCode)
-	require.Equal(t, "no-store", res.Header.Get("Cache-Control"))
-	require.Empty(t, res.Header.Get("ETag"))
-	require.Contains(t, strings.Join(res.Header.Values("Vary"), ","), "X-Dataset")
-	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]string{"type": "arrow", "sql": "SELECT 1"}))
-	messageType, result, err := conn.Read(server.ctx)
-	require.NoError(t, err)
-	require.Equal(t, websocket.MessageBinary, messageType)
-	require.Equal(t, []byte("result"), result)
 }
 
 func TestVaryIndependentOfCacheControl(t *testing.T) {

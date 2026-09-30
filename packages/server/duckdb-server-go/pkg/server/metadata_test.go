@@ -7,15 +7,12 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
 
-	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
 	"github.com/stretchr/testify/require"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
@@ -64,70 +61,49 @@ func TestCommandTypedPayload(t *testing.T) {
 		`{"type":"arrow","sql":"SELECT 1","projectId":9007199254740993,"tags":["one"],"attributes":{"name":"first"},"unrelated":[false,null,1e400]}`,
 		`{"type":"arrow","sql":"SELECT 2","projectId":9007199254740995}`,
 	}
-	for _, transport := range []string{"HTTP", "WebSocket"} {
-		t.Run(transport, func(t *testing.T) {
-			commands := make(chan Command[*applicationPayload], len(payloads))
-			sqls := make(chan string, len(payloads))
-			executor := &spyCommandExecutor{
-				failOnCallExecutor: failOnCallExecutor{t},
-				queryFn: func(_ context.Context, sql string, _ *query.ValidationPolicy) ([]byte, error) {
-					sqls <- sql
-					return []byte("result"), nil
-				},
-			}
-			handler := mustHandler(t, executor, WithAuthorizer(AuthorizerFunc[*applicationPayload](func(*http.Request) (CommandAuthorizer[*applicationPayload], error) {
-				return func(_ context.Context, command Command[*applicationPayload]) (*query.ValidationPolicy, error) {
-					fields := command.Payload()
-					require.NotNil(t, fields)
-					fields.Type = "exec"
-					fields.SQL = "DROP TABLE important"
-					commands <- command
-					return nil, nil
-				}, nil
-			})))
-			var conn *websocket.Conn
-			ctx := t.Context()
-			if transport == "WebSocket" {
-				server := newWebSocketTestServer(t, handler)
-				ctx = server.ctx
-				var err error
-				conn, _, err = server.dial(nil)
-				require.NoError(t, err)
-				t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
-			}
-			for _, payload := range payloads {
-				if conn == nil {
-					res := httptest.NewRecorder()
-					handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(payload)))
-					require.Equal(t, http.StatusOK, res.Code, res.Body.String())
-				} else {
-					require.NoError(t, conn.Write(ctx, websocket.MessageText, []byte(payload)))
-					_, response, err := conn.Read(ctx)
-					require.NoError(t, err)
-					require.Equal(t, []byte("result"), response)
-				}
-			}
-			require.Len(t, commands, len(payloads))
-			require.Len(t, sqls, len(payloads))
-			first, second := <-commands, <-commands
-			require.Equal(t, CommandArrow, first.Type())
-			require.Equal(t, CommandArrow, second.Type())
-			require.Equal(t, "SELECT 1", first.SQL())
-			require.Equal(t, "SELECT 2", second.SQL())
-			require.Equal(t, first.SQL(), <-sqls)
-			require.Equal(t, second.SQL(), <-sqls)
-			require.Equal(t, uint64(9007199254740993), first.Payload().ProjectID)
-			require.Equal(t, uint64(9007199254740995), second.Payload().ProjectID)
-			require.Equal(t, []string{"one"}, first.Payload().Tags)
-			require.Equal(t, map[string]string{"name": "first"}, first.Payload().Attributes)
-			first.Payload().ProjectID = 0
-			first.Payload().Tags[0] = "changed"
-			first.Payload().Attributes["name"] = "changed"
-			require.Equal(t, uint64(9007199254740995), second.Payload().ProjectID)
-			require.Nil(t, second.Payload().Tags)
-			require.Nil(t, second.Payload().Attributes)
-		})
+	commands := make(chan Command[*applicationPayload], len(payloads))
+	sqls := make(chan string, len(payloads))
+	executor := &spyCommandExecutor{
+		failOnCallExecutor: failOnCallExecutor{t},
+		queryFn: func(_ context.Context, sql string, _ *query.ValidationPolicy) ([]byte, error) {
+			sqls <- sql
+			return []byte("result"), nil
+		},
 	}
+	handler := mustHandler(t, executor, WithAuthorizer(AuthorizerFunc[*applicationPayload](func(*http.Request) (CommandAuthorizer[*applicationPayload], error) {
+		return func(_ context.Context, command Command[*applicationPayload]) (*query.ValidationPolicy, error) {
+			fields := command.Payload()
+			require.NotNil(t, fields)
+			fields.Type = "exec"
+			fields.SQL = "DROP TABLE important"
+			commands <- command
+			return nil, nil
+		}, nil
+	})))
+	for _, payload := range payloads {
+		res := httptest.NewRecorder()
+		handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(payload)))
+		require.Equal(t, http.StatusOK, res.Code, res.Body.String())
+	}
+	require.Len(t, commands, len(payloads))
+	require.Len(t, sqls, len(payloads))
+	first, second := <-commands, <-commands
+	require.Equal(t, CommandArrow, first.Type())
+	require.Equal(t, CommandArrow, second.Type())
+	require.Equal(t, "SELECT 1", first.SQL())
+	require.Equal(t, "SELECT 2", second.SQL())
+	require.Equal(t, first.SQL(), <-sqls)
+	require.Equal(t, second.SQL(), <-sqls)
+	require.Equal(t, uint64(9007199254740993), first.Payload().ProjectID)
+	require.Equal(t, uint64(9007199254740995), second.Payload().ProjectID)
+	require.Equal(t, []string{"one"}, first.Payload().Tags)
+	require.Equal(t, map[string]string{"name": "first"}, first.Payload().Attributes)
+	first.Payload().ProjectID = 0
+	first.Payload().Tags[0] = "changed"
+	first.Payload().Attributes["name"] = "changed"
+	require.Equal(t, uint64(9007199254740995), second.Payload().ProjectID)
+	require.Nil(t, second.Payload().Tags)
+	require.Nil(t, second.Payload().Attributes)
 }
 
 type customPayload string
@@ -157,25 +133,6 @@ func TestCommandDecoderRunsOncePerMessage(t *testing.T) {
 	const payload = `{"type":"arrow","sql":"SELECT 1"}`
 	testCommandPayload(t, http.MethodPost, payload, countedPayload(1))
 	testCommandPayload(t, http.MethodGet, "", countedPayload(0))
-	var calls atomic.Int32
-	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[countedPayload](func(*http.Request) (CommandAuthorizer[countedPayload], error) {
-		return func(_ context.Context, command Command[countedPayload]) (*query.ValidationPolicy, error) {
-			calls.Add(1)
-			require.Equal(t, countedPayload(1), command.Payload())
-			return nil, ErrPermissionDenied
-		}, nil
-	})))
-	server := newWebSocketTestServer(t, handler)
-	conn, _, err := server.dial(nil)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
-	for range 2 {
-		require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(payload)))
-		var response map[string]string
-		require.NoError(t, wsjson.Read(server.ctx, conn, &response))
-		require.Equal(t, "forbidden", response["code"])
-	}
-	require.Equal(t, int32(2), calls.Load())
 }
 
 func TestCommandPayloadTypes(t *testing.T) {
@@ -203,39 +160,20 @@ func TestCommandPayloadTypes(t *testing.T) {
 
 func testCommandPayload[T any](t *testing.T, method, payload string, want T) {
 	t.Helper()
-	transports := []string{"HTTP"}
-	if method == http.MethodPost {
-		transports = append(transports, "WebSocket")
-	}
-	for _, transport := range transports {
-		t.Run(transport, func(t *testing.T) {
-			var calls atomic.Int32
-			handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[T](func(*http.Request) (CommandAuthorizer[T], error) {
-				return func(_ context.Context, command Command[T]) (*query.ValidationPolicy, error) {
-					calls.Add(1)
-					require.Equal(t, CommandArrow, command.Type())
-					require.Equal(t, "SELECT 1", command.SQL())
-					require.Equal(t, want, command.Payload())
-					return nil, ErrPermissionDenied
-				}, nil
-			})))
-			if transport == "HTTP" {
-				res := httptest.NewRecorder()
-				handler.ServeHTTP(res, httptest.NewRequest(method, "/?type=arrow&sql=SELECT+1", strings.NewReader(payload)))
-				require.Equal(t, http.StatusForbidden, res.Code, res.Body.String())
-			} else {
-				server := newWebSocketTestServer(t, handler)
-				conn, _, err := server.dial(nil)
-				require.NoError(t, err)
-				t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
-				require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(payload)))
-				var response map[string]string
-				require.NoError(t, wsjson.Read(server.ctx, conn, &response))
-				require.Equal(t, "forbidden", response["code"])
-			}
-			require.Equal(t, int32(1), calls.Load())
-		})
-	}
+	var calls atomic.Int32
+	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[T](func(*http.Request) (CommandAuthorizer[T], error) {
+		return func(_ context.Context, command Command[T]) (*query.ValidationPolicy, error) {
+			calls.Add(1)
+			require.Equal(t, CommandArrow, command.Type())
+			require.Equal(t, "SELECT 1", command.SQL())
+			require.Equal(t, want, command.Payload())
+			return nil, ErrPermissionDenied
+		}, nil
+	})))
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, httptest.NewRequest(method, "/?type=arrow&sql=SELECT+1", strings.NewReader(payload)))
+	require.Equal(t, http.StatusForbidden, res.Code, res.Body.String())
+	require.Equal(t, int32(1), calls.Load())
 }
 
 func TestCommandPayloadDecodeErrors(t *testing.T) {
@@ -245,15 +183,15 @@ func TestCommandPayloadDecodeErrors(t *testing.T) {
 		`{"type":"arrow","sql":"SELECT 1","tags":{}}`,
 	} {
 		t.Run(payload, func(t *testing.T) {
-			testCommandPayloadDecodeError[*applicationPayload](t, payload, `{"type":"arrow","sql":"SELECT 1"}`)
+			testCommandPayloadDecodeError[*applicationPayload](t, payload)
 		})
 	}
 	t.Run("custom decoder", func(t *testing.T) {
-		testCommandPayloadDecodeError[customPayload](t, `{"type":"arrow","sql":"SELECT 1"}`, `{"type":"arrow","sql":"SELECT 1","application":"valid"}`)
+		testCommandPayloadDecodeError[customPayload](t, `{"type":"arrow","sql":"SELECT 1"}`)
 	})
 }
 
-func testCommandPayloadDecodeError[T any](t *testing.T, invalid, valid string) {
+func testCommandPayloadDecodeError[T any](t *testing.T, invalid string) {
 	t.Helper()
 	var calls atomic.Int32
 	var logs synchronizedBuffer
@@ -279,20 +217,6 @@ func testCommandPayloadDecodeError[T any](t *testing.T, invalid, valid string) {
 		require.NotEmpty(t, diagnostic["target_type"])
 		require.Greater(t, diagnostic["offset"], float64(0))
 	}
-
-	server := newWebSocketTestServer(t, handler)
-	conn, _, err := server.dial(nil)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
-	require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(invalid)))
-	var response map[string]string
-	require.NoError(t, wsjson.Read(server.ctx, conn, &response))
-	require.Equal(t, map[string]string{"code": "bad_request", "error": "Bad Request"}, response)
-	require.Zero(t, calls.Load())
-	require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(valid)))
-	require.NoError(t, wsjson.Read(server.ctx, conn, &response))
-	require.Equal(t, "forbidden", response["code"])
-	require.Equal(t, int32(1), calls.Load())
 }
 
 func TestCommandRawMessagePayload(t *testing.T) {
@@ -303,60 +227,39 @@ func TestCommandRawMessagePayload(t *testing.T) {
 		`{"type":"exec","TYPE":"arrow","sql":"SELECT 0","SQL":"SELECT 1","name":"custom"}`,
 	}
 
-	for _, transport := range []string{"HTTP", "WebSocket"} {
-		t.Run(transport, func(t *testing.T) {
-			commands := make(chan Command[json.RawMessage], len(payloads))
-			sqls := make(chan string, len(payloads))
-			executor := &spyCommandExecutor{
-				failOnCallExecutor: failOnCallExecutor{t},
-				queryFn: func(_ context.Context, sql string, _ *query.ValidationPolicy) ([]byte, error) {
-					sqls <- sql
-					return []byte("result"), nil
-				},
-			}
-			handler := mustHandler(t, executor, WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-					commands <- command
-					return nil, nil
-				}, nil
-			})))
+	commands := make(chan Command[json.RawMessage], len(payloads))
+	sqls := make(chan string, len(payloads))
+	executor := &spyCommandExecutor{
+		failOnCallExecutor: failOnCallExecutor{t},
+		queryFn: func(_ context.Context, sql string, _ *query.ValidationPolicy) ([]byte, error) {
+			sqls <- sql
+			return []byte("result"), nil
+		},
+	}
+	handler := mustHandler(t, executor, WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
+		return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+			commands <- command
+			return nil, nil
+		}, nil
+	})))
 
-			var conn *websocket.Conn
-			ctx := t.Context()
-			if transport == "WebSocket" {
-				server := newWebSocketTestServer(t, handler)
-				ctx = server.ctx
-				var err error
-				conn, _, err = server.dial(nil)
-				require.NoError(t, err)
-				t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
-			}
-			for _, payload := range payloads {
-				if conn == nil {
-					res := httptest.NewRecorder()
-					handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(payload)))
-					require.Equal(t, http.StatusOK, res.Code, res.Body.String())
-				} else {
-					require.NoError(t, conn.Write(ctx, websocket.MessageText, []byte(payload)))
-					_, response, err := conn.Read(ctx)
-					require.NoError(t, err)
-					require.Equal(t, []byte("result"), response)
-				}
-			}
+	for _, payload := range payloads {
+		res := httptest.NewRecorder()
+		handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(payload)))
+		require.Equal(t, http.StatusOK, res.Code, res.Body.String())
+	}
 
-			require.Len(t, commands, len(payloads))
-			require.Len(t, sqls, len(payloads))
-			for _, payload := range payloads {
-				command := <-commands
-				require.Equal(t, CommandArrow, command.Type())
-				require.Equal(t, "SELECT 1", command.SQL())
-				require.Equal(t, command.SQL(), <-sqls)
-				require.Equal(t, strings.TrimSpace(payload), string(command.Payload()))
-				clear(command.Payload())
-				require.Equal(t, CommandArrow, command.Type())
-				require.Equal(t, "SELECT 1", command.SQL())
-			}
-		})
+	require.Len(t, commands, len(payloads))
+	require.Len(t, sqls, len(payloads))
+	for _, payload := range payloads {
+		command := <-commands
+		require.Equal(t, CommandArrow, command.Type())
+		require.Equal(t, "SELECT 1", command.SQL())
+		require.Equal(t, command.SQL(), <-sqls)
+		require.Equal(t, strings.TrimSpace(payload), string(command.Payload()))
+		clear(command.Payload())
+		require.Equal(t, CommandArrow, command.Type())
+		require.Equal(t, "SELECT 1", command.SQL())
 	}
 }
 
@@ -383,20 +286,19 @@ func TestCommandPayloadErrors(t *testing.T) {
 	tests := []struct {
 		name    string
 		payload string
-		close   bool
 	}{
-		{"empty", "", true},
-		{"malformed", `{`, true},
-		{"trailing data", `{"type":"arrow","sql":"SELECT 1"} trailing`, true},
-		{"second value", `{"type":"arrow","sql":"SELECT 1"} {}`, true},
-		{"array", `[]`, true},
-		{"wrong sql type", `{"type":"arrow","sql":42}`, true},
-		{"wrong name type", `{"type":"arrow","sql":"SELECT 1","name":{}}`, true},
-		{"missing sql", `{"type":"arrow"}`, false},
-		{"null sql", `{"type":"arrow","sql":"SELECT 1","sql":null}`, false},
-		{"removed json type", `{"type":"json","sql":"SELECT 1"}`, false},
-		{"unknown type", `{"type":"other","sql":"SELECT 1"}`, false},
-		{"null", `null`, false},
+		{"empty", ""},
+		{"malformed", `{`},
+		{"trailing data", `{"type":"arrow","sql":"SELECT 1"} trailing`},
+		{"second value", `{"type":"arrow","sql":"SELECT 1"} {}`},
+		{"array", `[]`},
+		{"wrong sql type", `{"type":"arrow","sql":42}`},
+		{"wrong name type", `{"type":"arrow","sql":"SELECT 1","name":{}}`},
+		{"missing sql", `{"type":"arrow"}`},
+		{"null sql", `{"type":"arrow","sql":"SELECT 1","sql":null}`},
+		{"removed json type", `{"type":"json","sql":"SELECT 1"}`},
+		{"unknown type", `{"type":"other","sql":"SELECT 1"}`},
+		{"null", `null`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -411,57 +313,25 @@ func TestCommandPayloadErrors(t *testing.T) {
 			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.payload)))
 			require.Equal(t, http.StatusBadRequest, res.Code, res.Body.String())
 			require.Zero(t, commandCalls.Load())
-
-			server := newWebSocketTestServer(t, handler)
-			conn, _, err := server.dial(nil)
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				if err := conn.CloseNow(); !errors.Is(err, net.ErrClosed) {
-					require.NoError(t, err)
-				}
-			})
-			require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(tt.payload)))
-			_, response, err := conn.Read(server.ctx)
-			if tt.close {
-				require.Equal(t, websocket.StatusInvalidFramePayloadData, websocket.CloseStatus(err), "%v", err)
-			} else {
-				require.NoError(t, err)
-				var rejection map[string]string
-				require.NoError(t, json.Unmarshal(response, &rejection))
-				require.Equal(t, "bad_request", rejection["code"])
-			}
-			require.Zero(t, commandCalls.Load())
-			if !tt.close {
-				require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(`{"type":"arrow","sql":"SELECT 1"}`)))
-				var rejection map[string]string
-				require.NoError(t, wsjson.Read(server.ctx, conn, &rejection))
-				require.Equal(t, "forbidden", rejection["code"])
-				require.Equal(t, int32(1), commandCalls.Load())
-			}
 		})
 	}
 }
 
 func TestCommandMessageLimits(t *testing.T) {
 	tests := []struct {
-		name       string
-		limit      int64
-		size       int
-		compressed bool
+		name  string
+		limit int64
+		size  int
 	}{
-		{"default exact", 0, 32768, false},
-		{"default over", 0, 32769, false},
-		{"configured exact", 128, 128, false},
-		{"configured over", 128, 129, false},
-		{"larger than default", 65536, 65536, false},
-		{"compressed exact", 128, 128, true},
-		{"compressed over", 128, 129, true},
+		{"unbounded", 0, 32769},
+		{"configured exact", 128, 128},
+		{"configured over", 128, 129},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			payload := `{"type":"arrow","sql":"SELECT 1","payload":""}`
 			payload = strings.Replace(payload, `"payload":""`, `"payload":"`+strings.Repeat("x", tt.size-len(payload))+`"`, 1)
-			commands := make(chan Command[json.RawMessage], 2)
+			commands := make(chan Command[json.RawMessage], 1)
 			var executorCalls atomic.Int32
 			var expectedCalls int32
 			executor := &spyCommandExecutor{
@@ -495,39 +365,7 @@ func TestCommandMessageLimits(t *testing.T) {
 				expectedCalls++
 			}
 
-			server := newWebSocketTestServer(t, handler)
-			dialOptions := &websocket.DialOptions{}
-			if tt.compressed {
-				dialOptions.CompressionMode = websocket.CompressionContextTakeover
-				dialOptions.CompressionThreshold = 1
-			}
-			conn, upgrade, err := server.dial(dialOptions)
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				if err := conn.CloseNow(); !errors.Is(err, net.ErrClosed) {
-					require.NoError(t, err)
-				}
-			})
-			if tt.compressed {
-				require.Contains(t, upgrade.Header.Get("Sec-WebSocket-Extensions"), "permessage-deflate")
-			}
-			require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(payload)))
-			_, response, err := conn.Read(server.ctx)
-			wsLimit := tt.limit
-			if wsLimit == 0 {
-				wsLimit = 32768
-			}
-			if int64(tt.size) > wsLimit {
-				require.Equal(t, websocket.StatusMessageTooBig, websocket.CloseStatus(err), "%v", err)
-				require.Empty(t, commands)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, []byte("result"), response)
-				require.Len(t, commands, 1)
-				require.Equal(t, payload, string((<-commands).Payload()))
-				expectedCalls++
-			}
-			require.Equal(t, int32(2), requestCalls.Load())
+			require.Equal(t, int32(1), requestCalls.Load())
 			require.Equal(t, expectedCalls, executorCalls.Load())
 		})
 	}
@@ -577,7 +415,7 @@ func TestHTTPMessageLimitPrecedesRequestAuthorization(t *testing.T) {
 	}
 }
 
-func TestHTTPMessageLimitCoversWebSocketHandshake(t *testing.T) {
+func TestHTTPMessageLimitCoversGetBeforeAuthorization(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
 	var seen int
@@ -591,8 +429,6 @@ func TestHTTPMessageLimitCoversWebSocketHandshake(t *testing.T) {
 		return nil, ErrPermissionDenied
 	})))
 	req := httptest.NewRequest(http.MethodGet, "/", bytes.NewReader(make([]byte, 4096)))
-	req.Header.Set("Connection", "Upgrade")
-	req.Header.Set("Upgrade", "websocket")
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 	require.Equal(t, http.StatusRequestEntityTooLarge, res.Code)

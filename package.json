@@ -11,6 +11,7 @@
   },
   "packageManager": "pnpm@12.6.0",
   "scripts": {
+    "mkcert": "node bin/mkcert.js",
     "preinstall": "npx only-allow pnpm",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",

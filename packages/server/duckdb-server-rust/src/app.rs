@@ -1,6 +1,6 @@
 use anyhow::Result;
 use axum::{
-    extract::{ws::rejection::WebSocketUpgradeRejection, Query, State, WebSocketUpgrade},
+    extract::{Query, State},
     http::Method,
     response::Json,
     routing::get,
@@ -14,23 +14,13 @@ use tower_http::{compression::CompressionLayer, trace::TraceLayer};
 use crate::db::ConnectionPool;
 use crate::interfaces::{AppError, AppState, QueryParams, QueryResponse};
 use crate::query;
-use crate::websocket;
 
 #[axum::debug_handler]
 async fn handle_get(
     State(state): State<Arc<AppState>>,
-    ws: Result<WebSocketUpgrade, WebSocketUpgradeRejection>,
     Query(params): Query<QueryParams>,
 ) -> Result<QueryResponse, AppError> {
-    if let Ok(ws) = ws {
-        // WebSocket upgrade
-        Ok(QueryResponse::Response(
-            ws.on_upgrade(|socket| websocket::handle(socket, state)),
-        ))
-    } else {
-        // HTTP request
-        query::handle(&state, params).await
-    }
+    query::handle(&state, params).await
 }
 
 pub const DEFAULT_DB_PATH: &str = ":memory:";

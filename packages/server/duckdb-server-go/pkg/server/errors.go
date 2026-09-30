@@ -24,33 +24,31 @@ func (e *authorizationError) Unwrap() error {
 
 type errorResponse struct {
 	status  int
-	code    string
 	message string
 }
 
 func classifyError(err error) errorResponse {
 	var sizeErr *http.MaxBytesError
 	if errors.As(err, &sizeErr) {
-		return errorResponse{http.StatusRequestEntityTooLarge, "request_too_large", http.StatusText(http.StatusRequestEntityTooLarge)}
+		return errorResponse{http.StatusRequestEntityTooLarge, http.StatusText(http.StatusRequestEntityTooLarge)}
 	}
 
 	var authErr *authorizationError
 	if errors.As(err, &authErr) {
 		switch {
 		case errors.Is(authErr, ErrInvalidCommand):
-			return errorResponse{http.StatusBadRequest, "bad_request", http.StatusText(http.StatusBadRequest)}
+			return errorResponse{http.StatusBadRequest, http.StatusText(http.StatusBadRequest)}
 		case errors.Is(authErr, ErrUnauthenticated):
-			return errorResponse{http.StatusUnauthorized, "unauthenticated", http.StatusText(http.StatusUnauthorized)}
+			return errorResponse{http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)}
 		case errors.Is(authErr, ErrPermissionDenied):
-			return errorResponse{http.StatusForbidden, "forbidden", http.StatusText(http.StatusForbidden)}
+			return errorResponse{http.StatusForbidden, http.StatusText(http.StatusForbidden)}
 		default:
-			return errorResponse{http.StatusInternalServerError, "internal_error", "authorization failed"}
+			return errorResponse{http.StatusInternalServerError, "authorization failed"}
 		}
 	}
 
 	response := errorResponse{
 		status:  http.StatusInternalServerError,
-		code:    "internal_error",
 		message: err.Error(),
 	}
 
@@ -63,13 +61,11 @@ func classifyError(err error) errorResponse {
 		response.message = http.StatusText(http.StatusInternalServerError)
 	case errors.Is(err, query.ErrAccessDenied):
 		response.status = http.StatusForbidden
-		response.code = "forbidden"
 	case errors.Is(err, query.ErrExecWithValidation),
 		errors.Is(err, query.ErrUnsupportedStatement),
 		errors.As(err, &errorDetails),
 		errors.As(err, &paramsError):
 		response.status = http.StatusBadRequest
-		response.code = "bad_request"
 	}
 
 	if errors.Is(err, query.ErrValidation) {

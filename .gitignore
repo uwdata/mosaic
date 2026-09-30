@@ -3,6 +3,7 @@
 .duckdb
 .ipynb_checkpoints
 .idea
+*.pem
 dev/specs
 docs/.vitepress/cache
 docs/.vitepress/dist
