@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
@@ -64,20 +65,20 @@ func WithAuthorizer[T any](authorize Authorizer[T]) Option {
 			return errNilAuthorizer
 		}
 
+		wantsFields := reflect.TypeFor[T]() != reflect.TypeFor[struct{}]()
 		cfg.authorizer = func(r *http.Request, params queryParams) (*query.ValidationPolicy, error) {
 			var payload T
-			if _, empty := any(&payload).(*struct{}); !empty && params.raw != nil {
+			if wantsFields && params.raw != nil {
 				if err := json.Unmarshal(params.raw, &payload); err != nil {
-					attrs := []any{"error_type", fmt.Sprintf("%T", err)}
-					var typeErr *json.UnmarshalTypeError
-					if errors.As(err, &typeErr) {
-						attrs = append(attrs, "field", typeErr.Field, "offset", typeErr.Offset, "target_type", typeErr.Type.String())
-					}
-					cfg.logger.Warn("server: failed to decode command payload", attrs...)
+					cfg.logger.Warn("server: failed to decode command payload", "error", err)
 					return nil, fmt.Errorf("%w: decode command payload: %w", ErrInvalidCommand, err)
 				}
 			}
-			return authorize(r, Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload})
+			policy, err := authorize(r, Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload})
+			if err != nil {
+				return nil, &authorizationError{err: err}
+			}
+			return policy, nil
 		}
 		return nil
 	})

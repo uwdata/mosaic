@@ -53,6 +53,7 @@ func classifyError(err error) (int, string) {
 		status = http.StatusForbidden
 	case errors.Is(err, query.ErrExecWithValidation),
 		errors.Is(err, query.ErrUnsupportedStatement),
+		errors.Is(err, ErrInvalidCommand),
 		errors.As(err, &errorDetails),
 		errors.As(err, &paramsError):
 		status = http.StatusBadRequest

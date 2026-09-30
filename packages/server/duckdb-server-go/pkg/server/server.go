@@ -177,7 +177,7 @@ func (s *handler) execCommand(r *http.Request, params queryParams) (commandRespo
 
 	if s.authorizer != nil {
 		if policy, err = s.authorizer(r, params); err != nil {
-			return commandResponse{}, &authorizationError{err: err}
+			return commandResponse{}, err
 		}
 	}
 

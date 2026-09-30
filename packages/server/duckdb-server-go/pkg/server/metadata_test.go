@@ -173,21 +173,21 @@ func testCommandPayload[T any](t *testing.T, method, payload string, want T) {
 }
 
 func TestCommandPayloadDecodeErrors(t *testing.T) {
-	for _, payload := range []string{
-		`{"type":"arrow","sql":"SELECT 1","projectId":"private-value"}`,
-		`{"type":"arrow","sql":"SELECT 1","projectId":18446744073709551616}`,
-		`{"type":"arrow","sql":"SELECT 1","tags":{}}`,
+	for _, tc := range []struct{ payload, want string }{
+		{`{"type":"arrow","sql":"SELECT 1","projectId":"private-value"}`, "projectId"},
+		{`{"type":"arrow","sql":"SELECT 1","projectId":18446744073709551616}`, "18446744073709551616"},
+		{`{"type":"arrow","sql":"SELECT 1","tags":{}}`, "tags"},
 	} {
-		t.Run(payload, func(t *testing.T) {
-			testCommandPayloadDecodeError[*applicationPayload](t, payload)
+		t.Run(tc.payload, func(t *testing.T) {
+			testCommandPayloadDecodeError[*applicationPayload](t, tc.payload, tc.want)
 		})
 	}
 	t.Run("custom decoder", func(t *testing.T) {
-		testCommandPayloadDecodeError[customPayload](t, `{"type":"arrow","sql":"SELECT 1"}`)
+		testCommandPayloadDecodeError[customPayload](t, `{"type":"arrow","sql":"SELECT 1"}`, "missing private-application-field")
 	})
 }
 
-func testCommandPayloadDecodeError[T any](t *testing.T, invalid string) {
+func testCommandPayloadDecodeError[T any](t *testing.T, invalid, want string) {
 	t.Helper()
 	var calls atomic.Int32
 	var logs bytes.Buffer
@@ -198,19 +198,13 @@ func testCommandPayloadDecodeError[T any](t *testing.T, invalid string) {
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(invalid)))
 	require.Equal(t, http.StatusBadRequest, res.Code)
-	require.Equal(t, "Bad Request\n", res.Body.String())
+	require.Contains(t, res.Body.String(), "server: invalid command: decode command payload: ")
+	require.Contains(t, res.Body.String(), want)
 	require.Zero(t, calls.Load())
 	var diagnostic map[string]any
 	require.NoError(t, json.Unmarshal(logs.Bytes(), &diagnostic))
 	require.Equal(t, "WARN", diagnostic["level"])
-	require.Contains(t, diagnostic, "error_type")
-	require.NotContains(t, logs.String(), "private-")
-	require.NotContains(t, logs.String(), "18446744073709551616")
-	if diagnostic["error_type"] == "*json.UnmarshalTypeError" {
-		require.NotEmpty(t, diagnostic["field"])
-		require.NotEmpty(t, diagnostic["target_type"])
-		require.Greater(t, diagnostic["offset"], float64(0))
-	}
+	require.Contains(t, diagnostic["error"], want)
 }
 
 func TestCommandRawMessagePayload(t *testing.T) {

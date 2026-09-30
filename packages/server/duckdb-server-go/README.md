@@ -158,7 +158,7 @@ Each POST command decodes into a fresh `T` using `encoding/json`. `Payload()` re
 
 Use structs, maps, or custom `UnmarshalJSON` implementations as needed. `json.RawMessage` preserves JSON value bytes, not surrounding whitespace. If no application fields are needed, `struct{}` skips application decoding.
 
-GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); read query parameters from `r.URL.Query()` inside the authorizer. Payload decoding failures reject the command with HTTP 400 before the authorizer runs, and log a warning without payload values.
+GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); read query parameters from `r.URL.Query()` inside the authorizer. Payload decoding failures reject the command with HTTP 400 before the authorizer runs; the response and a warning log include the decode error. Errors returned by the authorizer stay sanitized.
 
 Application fields are untrusted: combine them with authenticated identity, as shown in the compiled [`ExampleNew`](pkg/server/example_test.go). Client caching can bypass the connector, and consolidation can discard query options. If fields affect results or access, isolate coordinator/cache/consolidation state per scope or disable that reuse.
 
