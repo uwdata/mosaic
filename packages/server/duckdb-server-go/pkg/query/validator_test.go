@@ -114,6 +114,18 @@ func TestValidationPolicyAndResult(t *testing.T) {
 	require.ErrorIs(t, err, ErrAccessDenied)
 	require.ErrorAs(t, err, &details)
 	require.Equal(t, "md5", details.Violations[0].FunctionName)
+	// The md5 block covers every identity, so Gatekeeper refuses before catalog resolution and reports none. Blocking
+	// only the scalar range leaves its table form eligible, so that refusal happens after resolution and names it.
+	require.Empty(t, details.Violations[0].Catalog)
+	require.Empty(t, details.Violations[0].SchemaPath)
+	require.Empty(t, details.Violations[0].FunctionType)
+	_, err = db.ValidateSQL(t.Context(), "SELECT range(3)", ValidationPolicy{BlockedFunctions: []FunctionRule{{Catalog: stringPtr("system"), SchemaPath: []string{"main"}, Name: "range", Type: "scalar"}}})
+	require.ErrorIs(t, err, ErrAccessDenied)
+	require.ErrorAs(t, err, &details)
+	require.Equal(t, "range", details.Violations[0].FunctionName)
+	require.Equal(t, "system", details.Violations[0].Catalog)
+	require.Equal(t, []string{"main"}, details.Violations[0].SchemaPath)
+	require.Equal(t, "scalar", details.Violations[0].FunctionType)
 	_, err = db.Query(t.Context(), "SELECT sum(value) FROM shared", &ValidationPolicy{BlockedFunctions: []FunctionRule{{SchemaPath: []string{"main"}, Name: "sum"}}})
 	require.ErrorIs(t, err, ErrAccessDenied)
 	_, err = db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{BlockedTables: []TableRule{{SchemaPath: []string{"main"}, Table: "shared"}}})
