@@ -20,48 +20,43 @@ func (e *authorizationError) Unwrap() error {
 	return e.err
 }
 
-func classifyError(err error) (int, string) {
+func errorStatus(err error) int {
 	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
-		return http.StatusRequestEntityTooLarge, http.StatusText(http.StatusRequestEntityTooLarge)
+		return http.StatusRequestEntityTooLarge
 	}
 
 	if authErr, ok := errors.AsType[*authorizationError](err); ok {
-		status := http.StatusInternalServerError
 		switch {
 		case errors.Is(authErr, ErrInvalidCommand):
-			status = http.StatusBadRequest
+			return http.StatusBadRequest
 		case errors.Is(authErr, ErrUnauthenticated):
-			status = http.StatusUnauthorized
+			return http.StatusUnauthorized
 		case errors.Is(authErr, ErrPermissionDenied):
-			status = http.StatusForbidden
+			return http.StatusForbidden
+		default:
+			return http.StatusInternalServerError
 		}
-		return status, authErr.Error()
 	}
-
-	status, message := http.StatusInternalServerError, err.Error()
 
 	_, isDetails := errors.AsType[query.ErrorDetails](err)
 	_, isParams := errors.AsType[queryParamsError](err)
 	switch {
 	case errors.Is(err, query.ErrInvalidPolicy):
-		message = http.StatusText(http.StatusInternalServerError)
+		return http.StatusInternalServerError
 	case errors.Is(err, query.ErrAccessDenied):
-		status = http.StatusForbidden
+		return http.StatusForbidden
 	case errors.Is(err, query.ErrExecWithValidation),
 		errors.Is(err, query.ErrUnsupportedStatement),
 		errors.Is(err, ErrInvalidCommand),
 		isDetails, isParams:
-		status = http.StatusBadRequest
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
 	}
-
-	if errors.Is(err, query.ErrValidation) {
-		message = http.StatusText(status)
-	}
-	return status, message
 }
 
 func (s *handler) writeError(w http.ResponseWriter, err error) {
-	status, message := classifyError(err)
+	status := errorStatus(err)
 	if sizeErr, ok := errors.AsType[*http.MaxBytesError](err); ok {
 		s.logger.Warn("server: request body exceeds limit", "limit", sizeErr.Limit)
 	} else if errors.Is(err, query.ErrValidation) {
@@ -77,5 +72,5 @@ func (s *handler) writeError(w http.ResponseWriter, err error) {
 		s.logger.Error("server: authorization failed", "error", authErr.err)
 	}
 
-	http.Error(w, message, status)
+	http.Error(w, err.Error(), status)
 }

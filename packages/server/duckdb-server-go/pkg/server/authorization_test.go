@@ -276,6 +276,12 @@ func TestHTTPCommandAuthorizationStatusMapping(t *testing.T) {
 			logged:     true,
 		},
 		{
+			name:       "validation diagnostics pass through",
+			authErr:    fmt.Errorf("%w: %w", ErrPermissionDenied, errors.Join(query.ErrValidation, query.ErrorDetails{Code: "forbidden", Message: "private-diagnostic"})),
+			wantStatus: http.StatusForbidden,
+			logged:     true,
+		},
+		{
 			name:       "canceled request is not logged",
 			authErr:    context.Canceled,
 			wantStatus: http.StatusInternalServerError,

@@ -119,9 +119,10 @@ func TestValidationErrorResponses(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var logs bytes.Buffer
+			err := errors.Join(query.ErrValidation, tc.err)
 			executor := &spyCommandExecutor{failOnCallExecutor: failOnCallExecutor{t},
 				queryFn: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
-					return nil, errors.Join(query.ErrValidation, tc.err)
+					return nil, err
 				},
 			}
 			handler := mustHandler(t, executor, WithLogger(slog.New(slog.NewJSONHandler(&logs, nil))))
@@ -129,7 +130,7 @@ func TestValidationErrorResponses(t *testing.T) {
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)))
 			require.Equal(t, tc.status, res.Code)
-			require.Equal(t, http.StatusText(tc.status)+"\n", res.Body.String())
+			require.Equal(t, err.Error()+"\n", res.Body.String())
 			var record map[string]any
 			require.NoError(t, json.NewDecoder(bytes.NewReader(logs.Bytes())).Decode(&record))
 			require.Equal(t, tc.level, record["level"])

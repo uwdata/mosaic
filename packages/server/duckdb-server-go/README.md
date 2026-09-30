@@ -87,8 +87,9 @@ requests may reach the server.
 
 Omitting `WithAuthorizer` adds no application authorization, and a nil authorizer makes `New` fail.
 `ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400, and other errors
-to 500. The response body is the error's message verbatim, so keep secrets out of authorizer errors; unexpected errors
-are also logged. Authorization can allow or deny the normalized command type
+to 500. Every error response carries the error's message verbatim, including authorizer errors and Gatekeeper
+diagnostics; the server does not sanitize them, so redact what callers shouldn't see in the authorizer or in middleware.
+Unexpected authorizer errors are also logged. Authorization can allow or deny the normalized command type
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
@@ -181,7 +182,7 @@ For Go applications, load Gatekeeper during trusted setup and call `query.Config
 
 `db.Query(ctx, sql, policy)` returns the complete Arrow IPC result as `[]byte`, or nil on error. Pass `*query.ValidationPolicy` directly or from `WithAuthorizer` to narrow the global policy. Use `JSON: &document` or typed `AllowedTables`, `BlockedTables`, `AllowedFunctions`, `BlockedFunctions`, and `UseDefaultFunctions` fields; the two forms cannot be mixed. Nil slices omit options; empty slices remain explicit arrays. `TableRule` and `FunctionRule` take a nonempty `SchemaPath`, outermost schema first; `Catalog` fields and `UseDefaultFunctions` are pointers, and an empty `FunctionRule.Type` matches any function kind. Names are passed unchanged, including whitespace.
 
-`ValidateSQL(ctx, sql, policy)` returns `(ValidationResult, error)` without executing. `Details` contains diagnostics and violations; successful results include `CallerObjects`, `CallerFunctions`, transitive `Objects`, and `Functions`. Use `errors.As` with `query.ErrorDetails`, or `errors.Is` with `ErrValidation`, `ErrAccessDenied`, `ErrUnsupportedStatement`, and `ErrInvalidPolicy`. HTTP validation errors are sanitized: policy denials return 403, SQL errors 400, and invalid application policies or validator failures 500.
+`ValidateSQL(ctx, sql, policy)` returns `(ValidationResult, error)` without executing. `Details` contains diagnostics and violations; successful results include `CallerObjects`, `CallerFunctions`, transitive `Objects`, and `Functions`. Use `errors.AsType[query.ErrorDetails]`, or `errors.Is` with `ErrValidation`, `ErrAccessDenied`, `ErrUnsupportedStatement`, and `ErrInvalidPolicy`. HTTP validation errors return 403 for policy denials, 400 for SQL errors, and 500 for invalid application policies or validator failures, with the complete diagnostic in the body. Gatekeeper documents its diagnostics as host-only, so redact them before exposing the server to untrusted callers.
 
 Validated execution uses the same connection for validation and execution and rejects `exec`; disable Mosaic pre-aggregation with `preagg: { enabled: false }`. Trusted views/macros can expose their dependencies. See Gatekeeper's [policy schema](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.4.1/docs/policy-v2.schema.json), [version 1 migration guide](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.4.1/docs/policy-migration.md), and [security model](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.4.1/docs/security.md) for policy semantics and resource boundaries.
 
