@@ -15,9 +15,9 @@ func TestNewRejectsInvalidConfiguration(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestWithMaxMessageBytesRejectsNonpositiveLimits(t *testing.T) {
+func TestWithMaxBytesRejectsNonpositiveLimits(t *testing.T) {
 	for _, limit := range []int64{-1, 0} {
-		_, err := applyOptions([]Option{WithMaxMessageBytes(limit)})
+		_, err := applyOptions([]Option{WithMaxBytes(limit)})
 		require.ErrorContains(t, err, "must be positive")
 	}
 }

@@ -71,7 +71,7 @@ func (s *handler) writeError(w http.ResponseWriter, err error) {
 	var sizeErr *http.MaxBytesError
 	switch {
 	case errors.As(err, &sizeErr):
-		s.logger.Warn("server: request body exceeds message limit", "limit", sizeErr.Limit)
+		s.logger.Warn("server: request body exceeds limit", "limit", sizeErr.Limit)
 	case errors.Is(err, query.ErrValidation):
 		if status == http.StatusInternalServerError {
 			s.logger.Error("server: query validator failed", "error", err)

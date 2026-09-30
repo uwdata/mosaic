@@ -38,13 +38,13 @@ type CORSOptions struct {
 }
 
 type config struct {
-	logger          *slog.Logger
-	authorizer      requestAuthorizer
-	cors            CORSOptions
-	corsProtection  *http.CrossOriginProtection
-	maxMessageBytes int64
-	cacheControl    string
-	varyHeaders     []string
+	logger         *slog.Logger
+	authorizer     requestAuthorizer
+	cors           CORSOptions
+	corsProtection *http.CrossOriginProtection
+	maxBytes       int64
+	cacheControl   string
+	varyHeaders    []string
 }
 
 func defaultConfig() config {
@@ -91,15 +91,15 @@ func WithLogger(logger *slog.Logger) Option {
 	})
 }
 
-// WithMaxMessageBytes limits HTTP request bodies to n bytes, which must be
-// positive. The limit applies to every request before request authorization.
-// Omitting it leaves request bodies unbounded.
-func WithMaxMessageBytes(n int64) Option {
+// WithMaxBytes limits HTTP request bodies to n bytes, which must be
+// positive, using http.MaxBytesHandler. The limit applies to every request
+// before request authorization. Omitting it leaves request bodies unbounded.
+func WithMaxBytes(n int64) Option {
 	return optionFunc(func(cfg *config) error {
 		if n <= 0 {
-			return errors.New("server: maximum message bytes must be positive")
+			return errors.New("server: maximum bytes must be positive")
 		}
-		cfg.maxMessageBytes = n
+		cfg.maxBytes = n
 		return nil
 	})
 }

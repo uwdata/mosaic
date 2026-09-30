@@ -152,7 +152,7 @@ authorizer := server.AuthorizerFunc[*Fields](func(r *http.Request) (server.Comma
 
 handler, err := server.New(db,
 	server.WithAuthorizer(authorizer),
-	server.WithMaxMessageBytes(1<<20),
+	server.WithMaxBytes(1<<20),
 )
 ```
 
@@ -164,7 +164,7 @@ GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers);
 
 Application fields are untrusted: combine them with authenticated identity, as shown in the compiled [`ExampleNew`](pkg/server/example_test.go). Client caching can bypass the connector, and consolidation can discard query options. If fields affect results or access, isolate coordinator/cache/consolidation state per scope or disable that reuse.
 
-`WithMaxMessageBytes(n)` requires a positive byte limit for entire HTTP request bodies. The limit wraps every request before request authorization, so an authorizer may read the body within the limit and must restore it; reading past the limit fails the request. Request bodies are unbounded by default. Exceeding the limit returns HTTP 413 with `Connection: close`.
+`WithMaxBytes(n)` requires a positive byte limit for entire HTTP request bodies and applies it with the standard library's `http.MaxBytesHandler`. The limit wraps every request before request authorization, so an authorizer may read the body within the limit and must restore it; reading past the limit fails the request. Request bodies are unbounded by default. Exceeding the limit returns HTTP 413 with `Connection: close`.
 
 POST bodies require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400.
 

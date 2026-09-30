@@ -43,13 +43,12 @@ type commandExecutor interface {
 }
 
 type handler struct {
-	db              commandExecutor
-	logger          *slog.Logger
-	authorizer      requestAuthorizer
-	httpHandler     http.Handler
-	maxMessageBytes int64
-	cacheControl    string
-	varyHeaders     []string
+	db           commandExecutor
+	logger       *slog.Logger
+	authorizer   requestAuthorizer
+	httpHandler  http.Handler
+	cacheControl string
+	varyHeaders  []string
 }
 
 // New constructs a Mosaic HTTP handler backed by db. Omitting
@@ -69,23 +68,22 @@ func New(db *query.DB, opts ...Option) (http.Handler, error) {
 
 func newHandler(db commandExecutor, cfg config) *handler {
 	s := &handler{
-		db:              db,
-		logger:          cfg.logger,
-		authorizer:      cfg.authorizer,
-		maxMessageBytes: cfg.maxMessageBytes,
-		cacheControl:    cfg.cacheControl,
-		varyHeaders:     cfg.varyHeaders,
+		db:           db,
+		logger:       cfg.logger,
+		authorizer:   cfg.authorizer,
+		cacheControl: cfg.cacheControl,
+		varyHeaders:  cfg.varyHeaders,
 	}
 
 	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, gzhttp.GzipHandler(http.HandlerFunc(s.handleHTTP)))
+	if cfg.maxBytes > 0 {
+		s.httpHandler = http.MaxBytesHandler(s.httpHandler, cfg.maxBytes)
+	}
 
 	return s
 }
 
 func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if s.maxMessageBytes > 0 {
-		r.Body = http.MaxBytesReader(w, r.Body, s.maxMessageBytes)
-	}
 	if s.cacheControl != "" {
 		w.Header().Set("Cache-Control", "no-store")
 	}

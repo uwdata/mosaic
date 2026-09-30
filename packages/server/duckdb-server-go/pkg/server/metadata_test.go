@@ -129,7 +129,7 @@ func (p *countedPayload) UnmarshalJSON([]byte) error {
 	return nil
 }
 
-func TestCommandDecoderRunsOncePerMessage(t *testing.T) {
+func TestCommandDecoderRunsOncePerCommand(t *testing.T) {
 	const payload = `{"type":"arrow","sql":"SELECT 1"}`
 	testCommandPayload(t, http.MethodPost, payload, countedPayload(1))
 	testCommandPayload(t, http.MethodGet, "", countedPayload(0))
@@ -265,7 +265,7 @@ func TestCommandRawMessagePayload(t *testing.T) {
 
 func TestCommandRawMessageGET(t *testing.T) {
 	var seen Command[json.RawMessage]
-	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(1), WithAuthorizer(AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
+	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(1), WithAuthorizer(AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
 		require.Equal(t, []string{"one", "two"}, r.URL.Query()["label"])
 		return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
 			seen = command
@@ -317,7 +317,7 @@ func TestCommandPayloadErrors(t *testing.T) {
 	}
 }
 
-func TestCommandMessageLimits(t *testing.T) {
+func TestCommandBodyLimits(t *testing.T) {
 	tests := []struct {
 		name  string
 		limit int64
@@ -350,7 +350,7 @@ func TestCommandMessageLimits(t *testing.T) {
 				}, nil
 			}))}
 			if tt.limit > 0 {
-				opts = append(opts, WithMaxMessageBytes(tt.limit))
+				opts = append(opts, WithMaxBytes(tt.limit))
 			}
 			handler := mustHandler(t, executor, opts...)
 			res := httptest.NewRecorder()
@@ -371,7 +371,7 @@ func TestCommandMessageLimits(t *testing.T) {
 	}
 }
 
-func TestHTTPMessageLimitPrecedesRequestAuthorization(t *testing.T) {
+func TestHTTPBodyLimitPrecedesRequestAuthorization(t *testing.T) {
 	const payload = `{"type":"arrow","sql":"SELECT 1","application":[null,42]}`
 	for _, tt := range []struct {
 		name   string
@@ -386,7 +386,7 @@ func TestHTTPMessageLimitPrecedesRequestAuthorization(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var logs bytes.Buffer
 			logger := slog.New(slog.NewJSONHandler(&logs, nil))
-			handler := mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(tt.limit), WithLogger(logger), WithAuthorizer(AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
+			handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(tt.limit), WithLogger(logger), WithAuthorizer(AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
 				if !tt.read {
 					return nil, ErrUnauthenticated
 				}
@@ -415,11 +415,11 @@ func TestHTTPMessageLimitPrecedesRequestAuthorization(t *testing.T) {
 	}
 }
 
-func TestHTTPMessageLimitCoversGetBeforeAuthorization(t *testing.T) {
+func TestHTTPBodyLimitCoversGetBeforeAuthorization(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
 	var seen int
-	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(16), WithLogger(logger), WithAuthorizer(AuthorizerFunc[struct{}](func(r *http.Request) (CommandAuthorizer[struct{}], error) {
+	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(16), WithLogger(logger), WithAuthorizer(AuthorizerFunc[struct{}](func(r *http.Request) (CommandAuthorizer[struct{}], error) {
 		body, err := io.ReadAll(r.Body)
 		seen = len(body)
 		if err != nil {
@@ -436,8 +436,8 @@ func TestHTTPMessageLimitCoversGetBeforeAuthorization(t *testing.T) {
 	require.Contains(t, logs.String(), `"limit":16`)
 }
 
-func TestHTTPMessageLimitClosesConnection(t *testing.T) {
-	server := httptest.NewServer(mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(1)))
+func TestHTTPBodyLimitClosesConnection(t *testing.T) {
+	server := httptest.NewServer(mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(1)))
 	t.Cleanup(server.Close)
 	res, err := server.Client().Post(server.URL, "application/json", strings.NewReader(`{"type":"arrow","sql":"SELECT 1"}`))
 	require.NoError(t, err)
@@ -446,10 +446,10 @@ func TestHTTPMessageLimitClosesConnection(t *testing.T) {
 	require.True(t, res.Close)
 }
 
-func TestHTTPMessageLimitLogsLimit(t *testing.T) {
+func TestHTTPBodyLimitLogsLimit(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
-	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(1), WithLogger(logger))
+	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(1), WithLogger(logger))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"secret":"private-payload"}`)))
 	require.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
