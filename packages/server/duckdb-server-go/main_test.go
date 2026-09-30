@@ -72,6 +72,7 @@ func TestInitializeDatabaseFailsClosed(t *testing.T) {
 	for _, tc := range []struct{ name, extension, document, want string }{
 		{"missing artifact", filepath.Join(t.TempDir(), "gatekeeper.duckdb_extension"), `{"version":2,"options":{}}`, "gatekeeper.duckdb_extension"},
 		{"invalid document", "", `{}`, "configure Gatekeeper"},
+		{"version 1 document", "", `{"version":1,"options":{}}`, "configure Gatekeeper"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var flag gatekeeperFlag
@@ -79,6 +80,7 @@ func TestInitializeDatabaseFailsClosed(t *testing.T) {
 			connector := newConnector(t, ":memory:", tc.extension, flag.document)
 			db, err := query.New(t.Context(), connector, query.WithValidation())
 			require.ErrorContains(t, err, tc.want)
+			require.NotContains(t, err.Error(), "JSON policy v2 (0.4.0+)")
 			require.Nil(t, db)
 		})
 	}

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,6 +47,17 @@ func TestValidationRequiresGatekeeper(t *testing.T) {
 	data, err := db.Query(t.Context(), "SELECT 1", &ValidationPolicy{})
 	require.ErrorIs(t, err, ErrValidation)
 	require.Empty(t, data)
+}
+
+func TestValidationReportsInitializationFailures(t *testing.T) {
+	failure := errors.New("initialization failed")
+	connector, err := duckdb.NewConnector(":memory:", func(driver.ExecerContext) error { return failure })
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, connector.Close()) })
+	db, err := New(t.Context(), connector, WithValidation())
+	require.ErrorIs(t, err, failure)
+	require.NotContains(t, err.Error(), "JSON policy v2 (0.4.0+)")
+	require.Nil(t, db)
 }
 
 func TestGatekeeperCallsIgnoreShadowingMacros(t *testing.T) {
