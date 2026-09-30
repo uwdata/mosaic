@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -143,20 +142,20 @@ func TestCORSPreflight(t *testing.T) {
 }
 
 func TestCORSPreflightBypassesAuthorization(t *testing.T) {
-	var requestCalls atomic.Int32
+	var calls atomic.Int32
 	handler := mustHandler(t, failOnCallExecutor{t},
 		WithCORS(CORSOptions{AllowedOrigins: []string{"https://app.example"}}),
-		WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-			requestCalls.Add(1)
-			return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return nil, nil }, nil
-		})),
+		WithAuthorizer(func(*http.Request, Command[struct{}]) (*query.ValidationPolicy, error) {
+			calls.Add(1)
+			return nil, nil
+		}),
 	)
 	res := httptest.NewRecorder()
 
 	handler.ServeHTTP(res, newPreflight("https://app.example", http.MethodPost, "content-type"))
 
 	require.Equal(t, http.StatusOK, res.Code)
-	require.Zero(t, requestCalls.Load())
+	require.Zero(t, calls.Load())
 }
 
 func TestCORSPreservesExistingVaryValues(t *testing.T) {
@@ -298,11 +297,11 @@ func TestCrossOriginProtection(t *testing.T) {
 }
 
 func TestCrossOriginGETExecRejectedBeforeAuthorizationAndExecution(t *testing.T) {
-	var requestCalls atomic.Int32
-	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-		requestCalls.Add(1)
-		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return nil, nil }, nil
-	})))
+	var calls atomic.Int32
+	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(func(*http.Request, Command[struct{}]) (*query.ValidationPolicy, error) {
+		calls.Add(1)
+		return nil, nil
+	}))
 	values := make(url.Values)
 	values.Set("type", string(CommandExec))
 	values.Set("sql", "CREATE TABLE must_not_exist(value INTEGER)")
@@ -314,7 +313,7 @@ func TestCrossOriginGETExecRejectedBeforeAuthorizationAndExecution(t *testing.T)
 	handler.ServeHTTP(res, req)
 
 	require.Equal(t, http.StatusForbidden, res.Code)
-	require.Zero(t, requestCalls.Load())
+	require.Zero(t, calls.Load())
 }
 
 func newProtectedCORSHandler(t *testing.T, options CORSOptions, next http.Handler) http.Handler {

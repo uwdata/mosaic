@@ -108,14 +108,12 @@ func TestHTTPCachePreconditions(t *testing.T) {
 			return []byte("result"), nil
 		},
 	}
-	handler := mustHandler(t, spy, WithCacheControl("private, no-cache"), WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
-			if !allowed {
-				return nil, ErrPermissionDenied
-			}
-			return nil, nil
-		}, nil
-	})))
+	handler := mustHandler(t, spy, WithCacheControl("private, no-cache"), WithAuthorizer(func(*http.Request, Command[struct{}]) (*query.ValidationPolicy, error) {
+		if !allowed {
+			return nil, ErrPermissionDenied
+		}
+		return nil, nil
+	}))
 	first := httptest.NewRecorder()
 	handler.ServeHTTP(first, httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", nil))
 	require.Equal(t, http.StatusOK, first.Code)
@@ -245,15 +243,13 @@ func TestHTTPCachePolicyVariation(t *testing.T) {
 			return []byte(policy.AllowedTables[0].Schema), nil
 		},
 	}
-	authorizer := WithAuthorizer(AuthorizerFunc[struct{}](func(r *http.Request) (CommandAuthorizer[struct{}], error) {
+	authorizer := WithAuthorizer(func(r *http.Request, _ Command[struct{}]) (*query.ValidationPolicy, error) {
 		tenant := r.Header.Get("X-Tenant-Id")
 		if tenant == "" {
 			return nil, ErrUnauthenticated
 		}
-		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
-			return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: tenant, Table: "*"}}}, nil
-		}, nil
-	}))
+		return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: tenant, Table: "*"}}}, nil
+	})
 	handler := mustHandler(t, spy, authorizer, WithVary("X-Region", "X-Tenant-Id"), WithCacheControl("public, max-age=60"))
 	get := func(tenant, etag string) *httptest.ResponseRecorder {
 		t.Helper()

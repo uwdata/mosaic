@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -39,7 +38,7 @@ type CORSOptions struct {
 
 type config struct {
 	logger         *slog.Logger
-	authorizer     requestAuthorizer
+	authorizer     commandAuthorizer
 	cors           CORSOptions
 	corsProtection *http.CrossOriginProtection
 	maxBytes       int64
@@ -92,8 +91,8 @@ func WithLogger(logger *slog.Logger) Option {
 }
 
 // WithMaxBytes limits HTTP request bodies to n bytes, which must be
-// positive, using http.MaxBytesHandler. The limit applies to every request
-// before request authorization. Omitting it leaves request bodies unbounded.
+// positive, using http.MaxBytesHandler. The limit applies to every request.
+// Omitting it leaves request bodies unbounded.
 func WithMaxBytes(n int64) Option {
 	return optionFunc(func(cfg *config) error {
 		if n <= 0 {
@@ -102,16 +101,6 @@ func WithMaxBytes(n int64) Option {
 		cfg.maxBytes = n
 		return nil
 	})
-}
-
-func isNilValue(value any) bool {
-	v := reflect.ValueOf(value)
-	switch v.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
-		return v.IsNil()
-	default:
-		return false
-	}
 }
 
 func WithCORS(options CORSOptions) Option {

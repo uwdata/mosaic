@@ -79,18 +79,19 @@ aborts the connection. Extensions are trusted native code, so load only trusted 
 ### Programmatic Authorization
 
 Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
-`server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once per request,
-before POST decoding, and returns a `CommandAuthorizer[T]` called for the decoded command before policy validation or
-execution. If it reads `r.Body`, it must restore it; both authorizers must be concurrency-safe. Outer middleware must
-decide whether CORS preflight `OPTIONS` requests may reach the server.
+`server.New`, then use `server.WithAuthorizer` only for command-aware policy. Middleware is the only place to reject a
+request before the handler reads its body. The authorizer runs once per command, after the handler decodes it and
+checks its type and SQL, and before policy validation or execution. POST bodies are already consumed by then, so use
+`Payload()`. The authorizer must be concurrency-safe. Outer middleware must decide whether CORS preflight `OPTIONS`
+requests may reach the server.
 
-Omitting `WithAuthorizer` adds no application authorization. A request authorizer that fails or returns a nil command callback fails
-closed. `ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400; unexpected
+Omitting `WithAuthorizer` adds no application authorization, and a nil authorizer makes `New` fail.
+`ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400; unexpected
 errors are logged and returned as sanitized 500 responses. Authorization can allow or deny the normalized command type
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
-`CommandAuthorizer[T]` returns `(*query.ValidationPolicy, error)`: an error denies the command, `nil, nil` adds no request restrictions, and `policy, nil` validates on the execution connection and rejects `exec`. DB-level `query.WithValidation()` applies even when the returned policy is nil.
+The authorizer returns `(*query.ValidationPolicy, error)`: an error denies the command, `nil, nil` adds no restrictions, and `policy, nil` validates on the execution connection and rejects `exec`. DB-level `query.WithValidation()` applies even when the returned policy is nil.
 
 ### HTTP Response Caching
 
@@ -127,7 +128,7 @@ A compressed GET `arrow` response keeps a strong ETag with `-gzip` or `-zstd` in
 
 ### Application Command Fields
 
-Application fields can be siblings of `type` and `sql` or nested, for example under `meta`. Mosaic defines no metadata schema. Choose the complete envelope's Go type with `Authorizer[T]` or `AuthorizerFunc[T]`; `command.Payload()` returns it. `WithAuthorizer` infers `T`, while `New` stays non-generic.
+Application fields can be siblings of `type` and `sql` or nested, for example under `meta`. Mosaic defines no metadata schema. Choose the complete envelope's Go type with `Authorizer[T]`; `command.Payload()` returns it. `WithAuthorizer` infers `T`, while `New` stays non-generic.
 
 For example, an application can limit commands to its `dashboard` project, with GET parameters as a fallback:
 
@@ -136,19 +137,16 @@ type Fields struct {
 	Project string `json:"project"`
 }
 
-authorizer := server.AuthorizerFunc[*Fields](func(r *http.Request) (server.CommandAuthorizer[*Fields], error) {
-	getProject := r.URL.Query().Get("project")
-	return func(ctx context.Context, command server.Command[*Fields]) (*query.ValidationPolicy, error) {
-		project := getProject
-		if fields := command.Payload(); fields != nil {
-			project = fields.Project
-		}
-		if project != "dashboard" || command.Type() == server.CommandExec {
-			return nil, server.ErrPermissionDenied
-		}
-		return nil, nil
-	}, nil
-})
+authorizer := func(r *http.Request, command server.Command[*Fields]) (*query.ValidationPolicy, error) {
+	project := r.URL.Query().Get("project")
+	if fields := command.Payload(); fields != nil {
+		project = fields.Project
+	}
+	if project != "dashboard" || command.Type() == server.CommandExec {
+		return nil, server.ErrPermissionDenied
+	}
+	return nil, nil
+}
 
 handler, err := server.New(db,
 	server.WithAuthorizer(authorizer),
@@ -158,15 +156,15 @@ handler, err := server.New(db,
 
 Each POST command decodes into a fresh `T` using `encoding/json`. `Payload()` returns that value without copying; mutations cannot change the authoritative `Type()` or `SQL()`. Custom decoders are responsible for their own sharing and must account for protocol keys (`type`, `sql`, `name`) when rejecting unknown fields.
 
-Use structs, maps, or custom `UnmarshalJSON` implementations as needed. `json.RawMessage` preserves JSON value bytes, not surrounding whitespace. If no application fields are needed, `struct{}` skips application decoding; existing authorizers can migrate to `AuthorizerFunc[struct{}]`, `CommandAuthorizer[struct{}]`, and `Command[struct{}]`.
+Use structs, maps, or custom `UnmarshalJSON` implementations as needed. `json.RawMessage` preserves JSON value bytes, not surrounding whitespace. If no application fields are needed, `struct{}` skips application decoding.
 
-GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); capture query parameters in `AuthorizeRequest`. Payload decoding failures reject the command before command authorization with HTTP 400 and log a warning without payload values.
+GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); read query parameters from `r.URL.Query()` inside the authorizer. Payload decoding failures reject the command with HTTP 400 before the authorizer runs, and log a warning without payload values.
 
 Application fields are untrusted: combine them with authenticated identity, as shown in the compiled [`ExampleNew`](pkg/server/example_test.go). Client caching can bypass the connector, and consolidation can discard query options. If fields affect results or access, isolate coordinator/cache/consolidation state per scope or disable that reuse.
 
-`WithMaxBytes(n)` requires a positive byte limit for entire HTTP request bodies and applies it with the standard library's `http.MaxBytesHandler`. The limit wraps every request before request authorization, so an authorizer may read the body within the limit and must restore it; reading past the limit fails the request. Request bodies are unbounded by default. Exceeding the limit returns HTTP 413 with `Connection: close`.
+`WithMaxBytes(n)` requires a positive byte limit for entire HTTP request bodies and applies it with the standard library's `http.MaxBytesHandler`. The limit wraps every request once it reaches the handler; reading past the limit fails the request. Request bodies are unbounded by default. Exceeding the limit returns HTTP 413 with `Connection: close`. Middleware that reads the body first, for example to verify a request signature, needs its own bound, such as `http.MaxBytesHandler(verify(handler), n)`; it must answer `*http.MaxBytesError` with 413 and restore `r.Body` before calling the handler.
 
-POST bodies require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400.
+POST bodies require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400. Method (405), size (413), and decoding or parameter (400) failures all occur before the authorizer runs.
 
 ### Gatekeeper Configuration
 

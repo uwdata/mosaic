@@ -70,16 +70,14 @@ func TestCommandTypedPayload(t *testing.T) {
 			return []byte("result"), nil
 		},
 	}
-	handler := mustHandler(t, executor, WithAuthorizer(AuthorizerFunc[*applicationPayload](func(*http.Request) (CommandAuthorizer[*applicationPayload], error) {
-		return func(_ context.Context, command Command[*applicationPayload]) (*query.ValidationPolicy, error) {
-			fields := command.Payload()
-			require.NotNil(t, fields)
-			fields.Type = "exec"
-			fields.SQL = "DROP TABLE important"
-			commands <- command
-			return nil, nil
-		}, nil
-	})))
+	handler := mustHandler(t, executor, WithAuthorizer(func(_ *http.Request, command Command[*applicationPayload]) (*query.ValidationPolicy, error) {
+		fields := command.Payload()
+		require.NotNil(t, fields)
+		fields.Type = "exec"
+		fields.SQL = "DROP TABLE important"
+		commands <- command
+		return nil, nil
+	}))
 	for _, payload := range payloads {
 		res := httptest.NewRecorder()
 		handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(payload)))
@@ -161,15 +159,13 @@ func TestCommandPayloadTypes(t *testing.T) {
 func testCommandPayload[T any](t *testing.T, method, payload string, want T) {
 	t.Helper()
 	var calls atomic.Int32
-	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[T](func(*http.Request) (CommandAuthorizer[T], error) {
-		return func(_ context.Context, command Command[T]) (*query.ValidationPolicy, error) {
-			calls.Add(1)
-			require.Equal(t, CommandArrow, command.Type())
-			require.Equal(t, "SELECT 1", command.SQL())
-			require.Equal(t, want, command.Payload())
-			return nil, ErrPermissionDenied
-		}, nil
-	})))
+	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(func(_ *http.Request, command Command[T]) (*query.ValidationPolicy, error) {
+		calls.Add(1)
+		require.Equal(t, CommandArrow, command.Type())
+		require.Equal(t, "SELECT 1", command.SQL())
+		require.Equal(t, want, command.Payload())
+		return nil, ErrPermissionDenied
+	}))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, httptest.NewRequest(method, "/?type=arrow&sql=SELECT+1", strings.NewReader(payload)))
 	require.Equal(t, http.StatusForbidden, res.Code, res.Body.String())
@@ -195,12 +191,10 @@ func testCommandPayloadDecodeError[T any](t *testing.T, invalid string) {
 	t.Helper()
 	var calls atomic.Int32
 	var logs bytes.Buffer
-	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[T](func(*http.Request) (CommandAuthorizer[T], error) {
-		return func(context.Context, Command[T]) (*query.ValidationPolicy, error) {
-			calls.Add(1)
-			return nil, ErrPermissionDenied
-		}, nil
-	})), WithLogger(slog.New(slog.NewJSONHandler(&logs, nil))))
+	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(func(*http.Request, Command[T]) (*query.ValidationPolicy, error) {
+		calls.Add(1)
+		return nil, ErrPermissionDenied
+	}), WithLogger(slog.New(slog.NewJSONHandler(&logs, nil))))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(invalid)))
 	require.Equal(t, http.StatusBadRequest, res.Code)
@@ -236,12 +230,10 @@ func TestCommandRawMessagePayload(t *testing.T) {
 			return []byte("result"), nil
 		},
 	}
-	handler := mustHandler(t, executor, WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-		return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-			commands <- command
-			return nil, nil
-		}, nil
-	})))
+	handler := mustHandler(t, executor, WithAuthorizer(func(_ *http.Request, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+		commands <- command
+		return nil, nil
+	}))
 
 	for _, payload := range payloads {
 		res := httptest.NewRecorder()
@@ -265,13 +257,11 @@ func TestCommandRawMessagePayload(t *testing.T) {
 
 func TestCommandRawMessageGET(t *testing.T) {
 	var seen Command[json.RawMessage]
-	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(1), WithAuthorizer(AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
+	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(1), WithAuthorizer(func(r *http.Request, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
 		require.Equal(t, []string{"one", "two"}, r.URL.Query()["label"])
-		return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-			seen = command
-			return nil, ErrPermissionDenied
-		}, nil
-	})))
+		seen = command
+		return nil, ErrPermissionDenied
+	}))
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1&label=one&label=two", nil)
 	handler.ServeHTTP(res, req)
@@ -303,12 +293,10 @@ func TestCommandPayloadErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var commandCalls atomic.Int32
-			handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				return func(context.Context, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-					commandCalls.Add(1)
-					return nil, ErrPermissionDenied
-				}, nil
-			})))
+			handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(func(*http.Request, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+				commandCalls.Add(1)
+				return nil, ErrPermissionDenied
+			}))
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.payload)))
 			require.Equal(t, http.StatusBadRequest, res.Code, res.Body.String())
@@ -341,14 +329,10 @@ func TestCommandBodyLimits(t *testing.T) {
 					return []byte("result"), nil
 				},
 			}
-			var requestCalls atomic.Int32
-			opts := []Option{WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				requestCalls.Add(1)
-				return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-					commands <- command
-					return nil, nil
-				}, nil
-			}))}
+			opts := []Option{WithAuthorizer(func(_ *http.Request, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+				commands <- command
+				return nil, nil
+			})}
 			if tt.limit > 0 {
 				opts = append(opts, WithMaxBytes(tt.limit))
 			}
@@ -365,61 +349,16 @@ func TestCommandBodyLimits(t *testing.T) {
 				expectedCalls++
 			}
 
-			require.Equal(t, int32(1), requestCalls.Load())
 			require.Equal(t, expectedCalls, executorCalls.Load())
 		})
 	}
 }
 
-func TestHTTPBodyLimitPrecedesRequestAuthorization(t *testing.T) {
-	const payload = `{"type":"arrow","sql":"SELECT 1","application":[null,42]}`
-	for _, tt := range []struct {
-		name   string
-		limit  int64
-		read   bool
-		status int
-	}{
-		{"reads oversized body", 1, true, http.StatusRequestEntityTooLarge},
-		{"rejects without reading", 1, false, http.StatusUnauthorized},
-		{"reads body within limit", int64(len(payload)), true, http.StatusForbidden},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			var logs bytes.Buffer
-			logger := slog.New(slog.NewJSONHandler(&logs, nil))
-			handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(tt.limit), WithLogger(logger), WithAuthorizer(AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				if !tt.read {
-					return nil, ErrUnauthenticated
-				}
-				body, err := io.ReadAll(r.Body)
-				if err != nil {
-					return nil, err
-				}
-				require.Equal(t, payload, string(body))
-				r.Body = io.NopCloser(strings.NewReader(string(body)))
-				return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-					require.Equal(t, "SELECT 1", command.SQL())
-					return nil, ErrPermissionDenied
-				}, nil
-			})))
-			res := httptest.NewRecorder()
-			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(payload)))
-			require.Equal(t, tt.status, res.Code)
-			if tt.status == http.StatusRequestEntityTooLarge {
-				var record map[string]any
-				require.NoError(t, json.Unmarshal(logs.Bytes(), &record))
-				require.Equal(t, "WARN", record["level"])
-				require.Equal(t, float64(tt.limit), record["limit"])
-				require.NotContains(t, logs.String(), "application")
-			}
-		})
-	}
-}
-
-func TestHTTPBodyLimitCoversGetBeforeAuthorization(t *testing.T) {
+func TestHTTPBodyLimitCoversGet(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
 	var seen int
-	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(16), WithLogger(logger), WithAuthorizer(AuthorizerFunc[struct{}](func(r *http.Request) (CommandAuthorizer[struct{}], error) {
+	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(16), WithLogger(logger), WithAuthorizer(func(r *http.Request, _ Command[struct{}]) (*query.ValidationPolicy, error) {
 		body, err := io.ReadAll(r.Body)
 		seen = len(body)
 		if err != nil {
@@ -427,8 +366,8 @@ func TestHTTPBodyLimitCoversGetBeforeAuthorization(t *testing.T) {
 		}
 		t.Error("unexpected complete body read")
 		return nil, ErrPermissionDenied
-	})))
-	req := httptest.NewRequest(http.MethodGet, "/", bytes.NewReader(make([]byte, 4096)))
+	}))
+	req := httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", bytes.NewReader(make([]byte, 4096)))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 	require.Equal(t, http.StatusRequestEntityTooLarge, res.Code)

@@ -45,7 +45,7 @@ type commandExecutor interface {
 type handler struct {
 	db           commandExecutor
 	logger       *slog.Logger
-	authorizer   requestAuthorizer
+	authorizer   commandAuthorizer
 	httpHandler  http.Handler
 	cacheControl string
 	varyHeaders  []string
@@ -94,29 +94,7 @@ func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.httpHandler.ServeHTTP(w, r)
 }
 
-func (s *handler) commandAuthorizer(r *http.Request) (commandAuthorizer, error) {
-	if s.authorizer == nil {
-		return nil, nil
-	}
-
-	authorize, err := s.authorizer(r)
-	if err != nil {
-		return nil, &authorizationError{err: err}
-	}
-	if authorize == nil {
-		return nil, &authorizationError{err: errNoCommandAuthorizer}
-	}
-
-	return authorize, nil
-}
-
 func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
-	authorize, err := s.commandAuthorizer(r)
-	if err != nil {
-		s.writeError(w, err)
-		return
-	}
-
 	var params queryParams
 
 	switch r.Method {
@@ -157,7 +135,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := s.execCommand(r.Context(), params, authorize)
+	response, err := s.execCommand(r, params)
 	if err != nil {
 		s.writeError(w, err)
 		return
@@ -188,16 +166,17 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *handler) execCommand(ctx context.Context, params queryParams, authorize commandAuthorizer) (commandResponse, error) {
+func (s *handler) execCommand(r *http.Request, params queryParams) (commandResponse, error) {
 	if err := params.Validate(s.logger); err != nil {
 		return commandResponse{}, err
 	}
+	ctx := r.Context()
 	var response commandResponse
 	var err error
 	var policy *query.ValidationPolicy
 
-	if authorize != nil {
-		if policy, err = authorize(ctx, params); err != nil {
+	if s.authorizer != nil {
+		if policy, err = s.authorizer(r, params); err != nil {
 			return commandResponse{}, &authorizationError{err: err}
 		}
 	}

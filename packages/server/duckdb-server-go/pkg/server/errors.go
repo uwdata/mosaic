@@ -8,8 +8,6 @@ import (
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
-var errNoCommandAuthorizer = errors.New("server: authorizer returned no command authorizer")
-
 type authorizationError struct {
 	err error
 }

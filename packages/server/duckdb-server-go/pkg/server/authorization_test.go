@@ -54,11 +54,9 @@ func TestCommandDenialPrecedesExecutor(t *testing.T) {
 		},
 	}
 
-	handler := mustHandler(t, spy, WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-		return func(context.Context, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-			return &query.ValidationPolicy{}, ErrPermissionDenied
-		}, nil
-	})))
+	handler := mustHandler(t, spy, WithAuthorizer(func(*http.Request, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+		return &query.ValidationPolicy{}, ErrPermissionDenied
+	}))
 
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT * FROM sensitive_data"}`))
 	res := httptest.NewRecorder()
@@ -86,14 +84,12 @@ func TestCommandAuthorizationRunsImmediatelyBeforeExecutor(t *testing.T) {
 		},
 	}
 
-	handler := mustHandler(t, spy, WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-		return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-			appendEvent("authorize")
-			require.Equal(t, CommandArrow, command.Type())
-			require.Equal(t, sql, command.SQL())
-			return nil, nil
-		}, nil
-	})))
+	handler := mustHandler(t, spy, WithAuthorizer(func(_ *http.Request, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+		appendEvent("authorize")
+		require.Equal(t, CommandArrow, command.Type())
+		require.Equal(t, sql, command.SQL())
+		return nil, nil
+	}))
 
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT 1 AS value"}`))
 	res := httptest.NewRecorder()
@@ -105,8 +101,7 @@ func TestCommandAuthorizationRunsImmediatelyBeforeExecutor(t *testing.T) {
 }
 
 func TestCanceledRequestContextReachesAuthorizationAndExecutor(t *testing.T) {
-	var requestContextErr error
-	var commandContextErr error
+	var authorizerContextErr error
 	var executorContextErr error
 
 	spy := &spyCommandExecutor{
@@ -117,13 +112,10 @@ func TestCanceledRequestContextReachesAuthorizationAndExecutor(t *testing.T) {
 		},
 	}
 
-	handler := mustHandler(t, spy, WithAuthorizer(AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
-		requestContextErr = r.Context().Err()
-		return func(ctx context.Context, _ Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-			commandContextErr = ctx.Err()
-			return nil, nil
-		}, nil
-	})))
+	handler := mustHandler(t, spy, WithAuthorizer(func(r *http.Request, _ Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+		authorizerContextErr = r.Context().Err()
+		return nil, nil
+	}))
 
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
@@ -132,8 +124,7 @@ func TestCanceledRequestContextReachesAuthorizationAndExecutor(t *testing.T) {
 	handler.ServeHTTP(res, req)
 
 	require.Equal(t, http.StatusOK, res.Code, res.Body.String())
-	require.ErrorIs(t, requestContextErr, context.Canceled)
-	require.ErrorIs(t, commandContextErr, context.Canceled)
+	require.ErrorIs(t, authorizerContextErr, context.Canceled)
 	require.ErrorIs(t, executorContextErr, context.Canceled)
 }
 
@@ -146,8 +137,7 @@ func TestAuthorizerHandlesConcurrentRequests(t *testing.T) {
 		} `json:"application"`
 	}
 
-	var requestCalls atomic.Int32
-	var commandCalls atomic.Int32
+	var authorizerCalls atomic.Int32
 	var executorCalls atomic.Int32
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
@@ -157,23 +147,20 @@ func TestAuthorizerHandlesConcurrentRequests(t *testing.T) {
 		},
 	}
 
-	handler := mustHandler(t, spy, WithAuthorizer(AuthorizerFunc[*fields](func(r *http.Request) (CommandAuthorizer[*fields], error) {
-		requestCalls.Add(1)
+	handler := mustHandler(t, spy, WithAuthorizer(func(r *http.Request, command Command[*fields]) (*query.ValidationPolicy, error) {
+		authorizerCalls.Add(1)
 		expected := r.Context().Value(authorizationContextKey{}).(int)
-		return func(_ context.Context, command Command[*fields]) (*query.ValidationPolicy, error) {
-			commandCalls.Add(1)
-			payload := command.Payload()
-			if payload.Application.Request != expected || payload.SQL != command.SQL() {
-				return nil, ErrInvalidCommand
-			}
-			payload.Application.Request = -1
-			payload.SQL = "changed"
-			if command.SQL() != fmt.Sprintf("SELECT %d", expected) {
-				return nil, ErrInvalidCommand
-			}
-			return nil, nil
-		}, nil
-	})))
+		payload := command.Payload()
+		if payload.Application.Request != expected || payload.SQL != command.SQL() {
+			return nil, ErrInvalidCommand
+		}
+		payload.Application.Request = -1
+		payload.SQL = "changed"
+		if command.SQL() != fmt.Sprintf("SELECT %d", expected) {
+			return nil, ErrInvalidCommand
+		}
+		return nil, nil
+	}))
 
 	statuses := make(chan int, requestCount)
 	var wg sync.WaitGroup
@@ -195,8 +182,7 @@ func TestAuthorizerHandlesConcurrentRequests(t *testing.T) {
 	for status := range statuses {
 		require.Equal(t, http.StatusOK, status)
 	}
-	require.Equal(t, int32(requestCount), requestCalls.Load())
-	require.Equal(t, int32(requestCount), commandCalls.Load())
+	require.Equal(t, int32(requestCount), authorizerCalls.Load())
 	require.Equal(t, int32(requestCount), executorCalls.Load())
 }
 
@@ -239,21 +225,15 @@ func TestHTTPAuthorizerReceivesExactValidatedCommandAndRequestContext(t *testing
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := setupTestDB(t)
-			var requestCalls atomic.Int32
-			var commandCalls atomic.Int32
+			var calls atomic.Int32
 
-			authorizer := AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				requestCalls.Add(1)
+			authorizer := func(r *http.Request, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+				calls.Add(1)
 				require.Equal(t, identity, r.Context().Value(authorizationContextKey{}))
-
-				return func(ctx context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-					commandCalls.Add(1)
-					require.Equal(t, identity, ctx.Value(authorizationContextKey{}))
-					require.Equal(t, CommandArrow, command.Type())
-					require.Equal(t, sql, command.SQL())
-					return nil, nil
-				}, nil
-			})
+				require.Equal(t, CommandArrow, command.Type())
+				require.Equal(t, sql, command.SQL())
+				return nil, nil
+			}
 
 			handler, err := New(db, WithAuthorizer(authorizer))
 			require.NoError(t, err)
@@ -264,8 +244,7 @@ func TestHTTPAuthorizerReceivesExactValidatedCommandAndRequestContext(t *testing
 			handler.ServeHTTP(res, req)
 
 			require.Equal(t, http.StatusOK, res.Code, res.Body.String())
-			require.Equal(t, int32(1), requestCalls.Load())
-			require.Equal(t, int32(1), commandCalls.Load())
+			require.Equal(t, int32(1), calls.Load())
 		})
 	}
 }
@@ -322,12 +301,10 @@ func TestHTTPCommandAuthorizationStatusMapping(t *testing.T) {
 			t.Run(tt.name+"/"+method, func(t *testing.T) {
 				var logs bytes.Buffer
 				var commandCalls atomic.Int32
-				authorizer := AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-					return func(context.Context, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-						commandCalls.Add(1)
-						return nil, tt.authErr
-					}, nil
-				})
+				authorizer := func(*http.Request, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+					commandCalls.Add(1)
+					return nil, tt.authErr
+				}
 
 				handler := mustHandler(t, failOnCallExecutor{t},
 					WithAuthorizer(authorizer),
@@ -362,95 +339,33 @@ func TestHTTPCommandAuthorizationStatusMapping(t *testing.T) {
 	}
 }
 
-func TestHTTPAuthorizerConfigurationFailsClosed(t *testing.T) {
-	db := setupTestDB(t)
-
-	t.Run("nil configured authorizer", func(t *testing.T) {
-		_, err := New(db, WithAuthorizer[json.RawMessage](nil))
-		require.Error(t, err)
-	})
-
-	t.Run("nil function adapter", func(t *testing.T) {
-		_, err := New(db, WithAuthorizer(AuthorizerFunc[json.RawMessage](nil)))
-		require.Error(t, err)
-	})
-
-	tests := []struct {
-		name       string
-		authorizer Authorizer[json.RawMessage]
-		wantStatus int
-		secret     string
+func TestHTTPRequestChecksPrecedeAuthorization(t *testing.T) {
+	for _, tt := range []struct {
+		name, method, target, body string
+		status                     int
 	}{
-		{
-			name: "request rejected as unauthenticated",
-			authorizer: AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				return nil, ErrUnauthenticated
-			}),
-			wantStatus: http.StatusUnauthorized,
-		},
-		{
-			name: "request rejected as forbidden",
-			authorizer: AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				return nil, ErrPermissionDenied
-			}),
-			wantStatus: http.StatusForbidden,
-		},
-		{
-			name: "request authorizer error is sanitized",
-			authorizer: AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				return nil, errors.New("identity provider exposed secret-session-cookie")
-			}),
-			wantStatus: http.StatusInternalServerError,
-			secret:     "secret-session-cookie",
-		},
-		{
-			name: "missing command authorizer",
-			authorizer: AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				return nil, nil
-			}),
-			wantStatus: http.StatusInternalServerError,
-		},
-	}
-
-	for _, tt := range tests {
+		{"POST missing SQL", http.MethodPost, "/", `{"type":"arrow"}`, http.StatusBadRequest},
+		{"GET missing SQL", http.MethodGet, "/?type=arrow", "", http.StatusBadRequest},
+		{"HEAD", http.MethodHead, "/?type=arrow&sql=SELECT+1", "", http.StatusMethodNotAllowed},
+	} {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(tt.authorizer))
+			var calls atomic.Int32
+			handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(func(*http.Request, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
+				calls.Add(1)
+				return nil, nil
+			}))
 
-			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT 1"}`))
 			res := httptest.NewRecorder()
-			handler.ServeHTTP(res, req)
+			handler.ServeHTTP(res, httptest.NewRequest(tt.method, tt.target, strings.NewReader(tt.body)))
 
-			require.Equal(t, tt.wantStatus, res.Code, res.Body.String())
-			if tt.secret != "" {
-				require.NotContains(t, res.Body.String(), tt.secret)
-			}
+			require.Equal(t, tt.status, res.Code, res.Body.String())
+			require.Zero(t, calls.Load())
 		})
 	}
 }
 
-func TestHTTPValidationPrecedesCommandAuthorization(t *testing.T) {
-	var commandCalls atomic.Int32
-	authorizer := AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-		return func(context.Context, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-			commandCalls.Add(1)
-			return nil, nil
-		}, nil
-	})
-
-	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(authorizer))
-
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow"}`))
-	res := httptest.NewRecorder()
-	handler.ServeHTTP(res, req)
-
-	require.Equal(t, http.StatusBadRequest, res.Code, res.Body.String())
-	require.Zero(t, commandCalls.Load())
-}
-
 func TestGenericAuthorizationDoesNotBypassRestrictedExec(t *testing.T) {
-	allow := WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-		return func(context.Context, Command[json.RawMessage]) (*query.ValidationPolicy, error) { return nil, nil }, nil
-	}))
+	allow := WithAuthorizer(func(*http.Request, Command[json.RawMessage]) (*query.ValidationPolicy, error) { return nil, nil })
 
 	t.Run("validation", func(t *testing.T) {
 		db := setupConfiguredDB(t, "", query.WithValidation())
@@ -469,9 +384,7 @@ func TestGenericAuthorizationDoesNotBypassRestrictedExec(t *testing.T) {
 
 func TestNilAuthorizerPolicyPreservesGlobalValidation(t *testing.T) {
 	db := setupConfiguredDB(t, "CALL gatekeeper_configure(blocked_functions := ['md5'])", query.WithValidation())
-	handler := mustHandler(t, db, WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return nil, nil }, nil
-	})))
+	handler := mustHandler(t, db, WithAuthorizer(func(*http.Request, Command[struct{}]) (*query.ValidationPolicy, error) { return nil, nil }))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT md5('x')"}`)))
 	require.Equal(t, http.StatusForbidden, res.Code)
@@ -485,35 +398,22 @@ func TestAuthorizerScopesValidationPerCommand(t *testing.T) {
 	type payload struct {
 		Tenant string `json:"tenant"`
 	}
-	authorizer := AuthorizerFunc[payload](func(*http.Request) (CommandAuthorizer[payload], error) {
-		return func(_ context.Context, command Command[payload]) (*query.ValidationPolicy, error) {
-			if command.Payload().Tenant == "" {
-				return nil, ErrPermissionDenied
-			}
-			return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: command.Payload().Tenant, Table: "*"}}}, nil
-		}, nil
-	})
-
-	t.Run("http", func(t *testing.T) {
-		handler := mustHandler(t, db, WithAuthorizer(authorizer))
-		post := func(body string) *httptest.ResponseRecorder {
-			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
-			res := httptest.NewRecorder()
-			handler.ServeHTTP(res, req)
-			return res
+	handler := mustHandler(t, db, WithAuthorizer(func(_ *http.Request, command Command[payload]) (*query.ValidationPolicy, error) {
+		if command.Payload().Tenant == "" {
+			return nil, ErrPermissionDenied
 		}
-		require.Equal(t, http.StatusOK, post(`{"type":"arrow","sql":"SELECT * FROM tenant_a.items","tenant":"tenant_a"}`).Code)
-		require.Equal(t, http.StatusForbidden, post(`{"type":"arrow","sql":"SELECT * FROM tenant_b.items","tenant":"tenant_a"}`).Code)
-		require.Equal(t, http.StatusForbidden, post(`{"type":"arrow","sql":"SELECT 1"}`).Code)
-		res := post(`{"type":"exec","sql":"SELECT 1","tenant":"tenant_a"}`)
-		require.Equal(t, http.StatusBadRequest, res.Code)
-		require.Contains(t, res.Body.String(), query.ErrExecWithValidation.Error())
-	})
-
-	t.Run("nil authorizer fails closed", func(t *testing.T) {
-		_, err := New(db, WithAuthorizer[payload](nil))
-		require.Error(t, err)
-		_, err = New(db, WithAuthorizer(AuthorizerFunc[payload](nil)))
-		require.Error(t, err)
-	})
+		return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: command.Payload().Tenant, Table: "*"}}}, nil
+	}))
+	post := func(body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+		res := httptest.NewRecorder()
+		handler.ServeHTTP(res, req)
+		return res
+	}
+	require.Equal(t, http.StatusOK, post(`{"type":"arrow","sql":"SELECT * FROM tenant_a.items","tenant":"tenant_a"}`).Code)
+	require.Equal(t, http.StatusForbidden, post(`{"type":"arrow","sql":"SELECT * FROM tenant_b.items","tenant":"tenant_a"}`).Code)
+	require.Equal(t, http.StatusForbidden, post(`{"type":"arrow","sql":"SELECT 1"}`).Code)
+	res := post(`{"type":"exec","sql":"SELECT 1","tenant":"tenant_a"}`)
+	require.Equal(t, http.StatusBadRequest, res.Code)
+	require.Contains(t, res.Body.String(), query.ErrExecWithValidation.Error())
 }

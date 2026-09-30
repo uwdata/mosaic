@@ -22,6 +22,11 @@ func TestWithMaxBytesRejectsNonpositiveLimits(t *testing.T) {
 	}
 }
 
+func TestWithAuthorizerRejectsNil(t *testing.T) {
+	_, err := applyOptions([]Option{WithAuthorizer[struct{}](nil)})
+	require.ErrorIs(t, err, errNilAuthorizer)
+}
+
 func TestWithCORSRejectsInvalidConfiguration(t *testing.T) {
 	tests := []Option{
 		WithCORS(CORSOptions{AllowedOrigins: []string{"app.example"}}),
