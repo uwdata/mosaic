@@ -18,7 +18,6 @@ import (
 type queryParams struct {
 	Type *CommandType `json:"type"`
 	SQL  *string      `json:"sql"`
-	Name *string      `json:"name"`
 	raw  []byte
 }
 

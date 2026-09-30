@@ -279,7 +279,6 @@ func TestCommandPayloadErrors(t *testing.T) {
 		{"second value", `{"type":"arrow","sql":"SELECT 1"} {}`, decode},
 		{"array", `[]`, decode},
 		{"wrong sql type", `{"type":"arrow","sql":42}`, decode},
-		{"wrong name type", `{"type":"arrow","sql":"SELECT 1","name":{}}`, decode},
 		{"missing sql", `{"type":"arrow"}`, "missing required 'sql' parameter"},
 		{"null sql", `{"type":"arrow","sql":"SELECT 1","sql":null}`, "missing required 'sql' parameter"},
 		{"removed json type", `{"type":"json","sql":"SELECT 1"}`, "invalid 'type' parameter: json"},
