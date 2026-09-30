@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -185,9 +186,7 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(tt.method, tt.uri, strings.NewReader(tt.body))
-			for name, values := range tt.headers {
-				req.Header[name] = values
-			}
+			maps.Copy(req.Header, tt.headers)
 			req.Header.Set("If-Match", `"other"`)
 			req.Header.Set("If-None-Match", "*")
 			res := httptest.NewRecorder()

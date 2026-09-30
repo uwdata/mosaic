@@ -165,16 +165,14 @@ func TestAuthorizerHandlesConcurrentRequests(t *testing.T) {
 	statuses := make(chan int, requestCount)
 	var wg sync.WaitGroup
 	for i := range requestCount {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			body := fmt.Sprintf(`{"type":"arrow","sql":"SELECT %d","application":{"request":%d}}`, i, i)
 			ctx := context.WithValue(t.Context(), authorizationContextKey{}, i)
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)).WithContext(ctx)
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, req)
 			statuses <- res.Code
-		}()
+		})
 	}
 	wg.Wait()
 	close(statuses)

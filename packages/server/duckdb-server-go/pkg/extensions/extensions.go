@@ -217,7 +217,7 @@ func namedError(category error, name, repository string, err error) error {
 // DuckDB derives an installed extension's name from the first non-empty part
 // of its basename and applies casing and aliases itself when LOAD runs.
 func installedExtensionName(extensionPath string) string {
-	for _, segment := range strings.Split(filepath.Base(extensionPath), ".") {
+	for segment := range strings.SplitSeq(filepath.Base(extensionPath), ".") {
 		if segment != "" {
 			return segment
 		}

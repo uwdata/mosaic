@@ -19,20 +19,20 @@ func TestPolicyDocument(t *testing.T) {
 	}{
 		{ValidationPolicy{}, `{"version":2,"options":{}}`},
 		{ValidationPolicy{AllowedTables: []TableRule{}}, `{"version":2,"options":{"allowed_tables":[]}}`},
-		{ValidationPolicy{AllowedFunctions: []FunctionRule{}, BlockedFunctions: []FunctionRule{}, UseDefaultFunctions: boolPtr(false)}, `{"version":2,"options":{"allowed_functions":[],"blocked_functions":[],"use_default_functions":false}}`},
+		{ValidationPolicy{AllowedFunctions: []FunctionRule{}, BlockedFunctions: []FunctionRule{}, UseDefaultFunctions: new(false)}, `{"version":2,"options":{"allowed_functions":[],"blocked_functions":[],"use_default_functions":false}}`},
 		{ValidationPolicy{AllowedTables: []TableRule{{SchemaPath: []string{"a"}, Table: "*"}}}, `{"version":2,"options":{"allowed_tables":[{"schema_path":["a"],"table":"*"}]}}`},
-		{ValidationPolicy{BlockedTables: []TableRule{{Catalog: stringPtr(""), SchemaPath: []string{"a", "b"}, Table: "*"}}, UseDefaultFunctions: boolPtr(true)}, `{"version":2,"options":{"blocked_tables":[{"catalog":"","schema_path":["a","b"],"table":"*"}],"use_default_functions":true}}`},
-		{ValidationPolicy{BlockedFunctions: []FunctionRule{{Catalog: stringPtr("system"), SchemaPath: []string{"main"}, Name: "md5", Type: "scalar"}, {SchemaPath: []string{"main"}, Name: "sum"}}}, `{"version":2,"options":{"blocked_functions":[{"catalog":"system","schema_path":["main"],"name":"md5","type":"scalar"},{"schema_path":["main"],"name":"sum"}]}}`},
+		{ValidationPolicy{BlockedTables: []TableRule{{Catalog: new(""), SchemaPath: []string{"a", "b"}, Table: "*"}}, UseDefaultFunctions: new(true)}, `{"version":2,"options":{"blocked_tables":[{"catalog":"","schema_path":["a","b"],"table":"*"}],"use_default_functions":true}}`},
+		{ValidationPolicy{BlockedFunctions: []FunctionRule{{Catalog: new("system"), SchemaPath: []string{"main"}, Name: "md5", Type: "scalar"}, {SchemaPath: []string{"main"}, Name: "sum"}}}, `{"version":2,"options":{"blocked_functions":[{"catalog":"system","schema_path":["main"],"name":"md5","type":"scalar"},{"schema_path":["main"],"name":"sum"}]}}`},
 	} {
 		got, err := tc.policy.document()
 		require.NoError(t, err)
 		require.JSONEq(t, tc.want, got)
 	}
 	const raw = "  {\"version\":2,\"options\":{\"allowed_tables\":null}}  "
-	got, err := (ValidationPolicy{JSON: stringPtr(raw)}).document()
+	got, err := (ValidationPolicy{JSON: new(raw)}).document()
 	require.NoError(t, err)
 	require.Equal(t, raw, got)
-	_, err = (ValidationPolicy{JSON: stringPtr(raw), BlockedTables: []TableRule{}}).document()
+	_, err = (ValidationPolicy{JSON: new(raw), BlockedTables: []TableRule{}}).document()
 	require.ErrorIs(t, err, ErrInvalidPolicy)
 }
 
@@ -97,14 +97,14 @@ func TestValidationPolicyAndResult(t *testing.T) {
 	sum := ResolvedFunction{Catalog: "system", SchemaPath: []string{"main"}, Name: "sum", Type: "aggregate"}
 	require.Contains(t, result.Functions, sum)
 	require.Contains(t, result.CallerFunctions, sum)
-	policy.AllowedFunctions = []FunctionRule{{Catalog: stringPtr("system"), SchemaPath: []string{"main"}, Name: "sum"}}
-	policy.UseDefaultFunctions = boolPtr(false)
+	policy.AllowedFunctions = []FunctionRule{{Catalog: new("system"), SchemaPath: []string{"main"}, Name: "sum"}}
+	policy.UseDefaultFunctions = new(false)
 	_, err = db.Query(t.Context(), "SELECT sum(value) FROM shared", &policy)
 	require.NoError(t, err)
 	_, err = db.Query(t.Context(), "SELECT lower('x') FROM shared", &policy)
 	require.ErrorIs(t, err, ErrAccessDenied)
 
-	data, err := db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{JSON: stringPtr(`{"version":2,"options":{"allowed_tables":[{"schema_path":["main"],"table":"shared"}]}}`)})
+	data, err := db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{JSON: new(`{"version":2,"options":{"allowed_tables":[{"schema_path":["main"],"table":"shared"}]}}`)})
 	require.NoError(t, err)
 	require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
 	result, err = db.ValidateSQL(t.Context(), "SELECT * FROM items", policy)
@@ -122,7 +122,7 @@ func TestValidationPolicyAndResult(t *testing.T) {
 	require.Equal(t, table.SchemaPath, details.Violations[0].SchemaPath)
 	require.Equal(t, table.Table, details.Violations[0].Table)
 	require.Equal(t, table.Type, details.Violations[0].ObjectType)
-	_, err = db.Query(t.Context(), "SELECT md5('x')", &ValidationPolicy{AllowedFunctions: []FunctionRule{{Catalog: stringPtr("system"), SchemaPath: []string{"main"}, Name: "md5"}}})
+	_, err = db.Query(t.Context(), "SELECT md5('x')", &ValidationPolicy{AllowedFunctions: []FunctionRule{{Catalog: new("system"), SchemaPath: []string{"main"}, Name: "md5"}}})
 	require.ErrorIs(t, err, ErrAccessDenied)
 	require.ErrorAs(t, err, &details)
 	require.Equal(t, "md5", details.Violations[0].FunctionName)
@@ -131,7 +131,7 @@ func TestValidationPolicyAndResult(t *testing.T) {
 	require.Empty(t, details.Violations[0].Catalog)
 	require.Empty(t, details.Violations[0].SchemaPath)
 	require.Empty(t, details.Violations[0].FunctionType)
-	_, err = db.ValidateSQL(t.Context(), "SELECT range(3)", ValidationPolicy{BlockedFunctions: []FunctionRule{{Catalog: stringPtr("system"), SchemaPath: []string{"main"}, Name: "range", Type: "scalar"}}})
+	_, err = db.ValidateSQL(t.Context(), "SELECT range(3)", ValidationPolicy{BlockedFunctions: []FunctionRule{{Catalog: new("system"), SchemaPath: []string{"main"}, Name: "range", Type: "scalar"}}})
 	require.ErrorIs(t, err, ErrAccessDenied)
 	require.ErrorAs(t, err, &details)
 	require.Equal(t, "range", details.Violations[0].FunctionName)
@@ -189,7 +189,7 @@ func TestValidatedConnectionLifecycle(t *testing.T) {
 func TestInvalidPolicyAndInvalidSQL(t *testing.T) {
 	db := setupTestDB(t, true)
 	for _, stmt := range []string{"SELECT 1", "SELECT 2", "-- comment only"} {
-		_, err := db.ValidateSQL(t.Context(), stmt, ValidationPolicy{JSON: stringPtr(`{}`)})
+		_, err := db.ValidateSQL(t.Context(), stmt, ValidationPolicy{JSON: new(`{}`)})
 		require.ErrorIs(t, err, ErrInvalidPolicy)
 	}
 	_, err := db.ValidateSQL(t.Context(), "SELECT 2", ValidationPolicy{AllowedFunctions: []FunctionRule{{SchemaPath: []string{"main"}}}})
@@ -200,6 +200,3 @@ func TestInvalidPolicyAndInvalidSQL(t *testing.T) {
 	require.Equal(t, "invalid_input", details.Code)
 	require.NotErrorIs(t, err, ErrInvalidPolicy)
 }
-
-func boolPtr(value bool) *bool       { return &value }
-func stringPtr(value string) *string { return &value }

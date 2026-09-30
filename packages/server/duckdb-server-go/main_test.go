@@ -20,7 +20,7 @@ func TestInitializeDatabase(t *testing.T) {
 		document *string
 	}{
 		{"unrestricted", nil},
-		{"configured", policyDocument(`{"version":2,"options":{"blocked_functions":[{"catalog":"system","schema_path":["main"],"name":"md5"}]}}`)},
+		{"configured", new(`{"version":2,"options":{"blocked_functions":[{"catalog":"system","schema_path":["main"],"name":"md5"}]}}`)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dsn := ":memory:"
@@ -126,8 +126,7 @@ func newConnector(t *testing.T, dsn, extensionList string, policy *string) *duck
 	return connector
 }
 
-func policyDocument(value string) *string { return &value }
-func defaultPolicy() *string              { return policyDocument(`{"version":2,"options":{}}`) }
+func defaultPolicy() *string { return new(`{"version":2,"options":{}}`) }
 func freshDSN(t *testing.T) string {
 	t.Helper()
 	return ":memory:?extension_directory=" + url.QueryEscape(t.TempDir())

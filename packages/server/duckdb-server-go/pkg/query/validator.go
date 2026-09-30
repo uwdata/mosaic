@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/duckdb/duckdb-go/v2"
 )
@@ -65,22 +66,23 @@ type ErrorDetails struct {
 }
 
 func (e ErrorDetails) Error() string {
-	details := "query"
+	var details strings.Builder
+	details.WriteString("query")
 	if e.Type != "" {
-		details += ": " + e.Type
+		details.WriteString(": " + e.Type)
 	} else if e.Code != "" {
-		details += ": " + e.Code
+		details.WriteString(": " + e.Code)
 	}
 	if e.Position != nil {
-		details += fmt.Sprintf(" at %d", *e.Position)
+		fmt.Fprintf(&details, " at %d", *e.Position)
 	}
 	if e.Message != "" {
-		details += ": " + e.Message
+		details.WriteString(": " + e.Message)
 	}
 	for _, v := range e.Violations {
-		details += ": " + v.Rule + ": " + v.Message
+		details.WriteString(": " + v.Rule + ": " + v.Message)
 	}
-	return details
+	return details.String()
 }
 
 func (e ErrorDetails) Is(target error) bool {

@@ -28,13 +28,13 @@ func responseEncoding(r *http.Request, response commandResponse) string {
 }
 
 func acceptEncodingQValue(header, coding string) float64 {
-	for _, part := range strings.Split(header, ",") {
+	for part := range strings.SplitSeq(header, ",") {
 		name, params, _ := strings.Cut(part, ";")
 		if strings.ToLower(strings.TrimSpace(name)) != coding {
 			continue
 		}
 		q := 1.0
-		for _, param := range strings.Split(params, ";") {
+		for param := range strings.SplitSeq(params, ";") {
 			param = strings.TrimSpace(param)
 			if len(param) >= 2 && strings.EqualFold(param[:2], "q=") {
 				q, _ = strconv.ParseFloat(param[2:], 64)

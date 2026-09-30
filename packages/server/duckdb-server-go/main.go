@@ -108,7 +108,7 @@ func run() int {
 	}
 	logger.Warn("DuckDB Server permits all HTTP origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
-	config := map[string]interface{}{
+	config := map[string]any{
 		"database":             *dbPath,
 		"address":              *address,
 		"port":                 *port,

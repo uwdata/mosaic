@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -30,9 +31,7 @@ func TestHTTPResponseCompression(t *testing.T) {
 		t.Helper()
 		req, err := http.NewRequestWithContext(t.Context(), method, uri, strings.NewReader(body))
 		require.NoError(t, err)
-		for name, values := range headers {
-			req.Header[name] = values
-		}
+		maps.Copy(req.Header, headers)
 		res, err := server.Client().Do(req)
 		require.NoError(t, err)
 		data, err := io.ReadAll(res.Body)
