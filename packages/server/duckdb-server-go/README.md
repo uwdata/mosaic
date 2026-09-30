@@ -86,8 +86,9 @@ checks its type and SQL, and before policy validation or execution. POST bodies 
 requests may reach the server.
 
 Omitting `WithAuthorizer` adds no application authorization, and a nil authorizer makes `New` fail.
-`ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400; unexpected
-errors are logged and returned as sanitized 500 responses. Authorization can allow or deny the normalized command type
+`ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400, and other errors
+to 500. The response body is the error's message verbatim, so keep secrets out of authorizer errors; unexpected errors
+are also logged. Authorization can allow or deny the normalized command type
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
@@ -158,7 +159,7 @@ Each POST command decodes into a fresh `T` using `encoding/json`. `Payload()` re
 
 Use structs, maps, or custom `UnmarshalJSON` implementations as needed. `json.RawMessage` preserves JSON value bytes, not surrounding whitespace. If no application fields are needed, `struct{}` skips application decoding.
 
-GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); read query parameters from `r.URL.Query()` inside the authorizer. Payload decoding failures reject the command with HTTP 400 before the authorizer runs; the response and a warning log include the decode error. Errors returned by the authorizer stay sanitized.
+GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); read query parameters from `r.URL.Query()` inside the authorizer. Payload decoding failures reject the command with HTTP 400 before the authorizer runs; the response and a warning log include the decode error.
 
 Application fields are untrusted: combine them with authenticated identity, as shown in the compiled [`ExampleNew`](pkg/server/example_test.go). Client caching can bypass the connector, and consolidation can discard query options. If fields affect results or access, isolate coordinator/cache/consolidation state per scope or disable that reuse.
 

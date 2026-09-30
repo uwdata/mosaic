@@ -26,16 +26,16 @@ func classifyError(err error) (int, string) {
 	}
 
 	if authErr, ok := errors.AsType[*authorizationError](err); ok {
+		status := http.StatusInternalServerError
 		switch {
 		case errors.Is(authErr, ErrInvalidCommand):
-			return http.StatusBadRequest, http.StatusText(http.StatusBadRequest)
+			status = http.StatusBadRequest
 		case errors.Is(authErr, ErrUnauthenticated):
-			return http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)
+			status = http.StatusUnauthorized
 		case errors.Is(authErr, ErrPermissionDenied):
-			return http.StatusForbidden, http.StatusText(http.StatusForbidden)
-		default:
-			return http.StatusInternalServerError, "authorization failed"
+			status = http.StatusForbidden
 		}
+		return status, authErr.Error()
 	}
 
 	status, message := http.StatusInternalServerError, err.Error()
