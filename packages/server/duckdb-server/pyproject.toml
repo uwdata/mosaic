@@ -29,6 +29,7 @@ dev = [
   "ruff",
   "watchdog",
   "ty",
+  "pyarrow-stubs>=20.0.0.20260819",
 ]
 
 [tool.hatch.build.targets.wheel]
