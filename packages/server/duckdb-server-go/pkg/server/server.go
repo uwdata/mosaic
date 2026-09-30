@@ -109,7 +109,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			s.logger.Error("server: failed to decode request body", "error", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			s.writeError(w, fmt.Errorf("%w: decode request body: %w", ErrInvalidCommand, err))
 			return
 		}
 		params.raw = raw

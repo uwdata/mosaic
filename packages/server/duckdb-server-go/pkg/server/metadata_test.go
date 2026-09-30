@@ -267,22 +267,24 @@ func TestCommandRawMessageGET(t *testing.T) {
 }
 
 func TestCommandPayloadErrors(t *testing.T) {
+	const decode = "server: invalid command: decode request body: "
 	tests := []struct {
 		name    string
 		payload string
+		want    string
 	}{
-		{"empty", ""},
-		{"malformed", `{`},
-		{"trailing data", `{"type":"arrow","sql":"SELECT 1"} trailing`},
-		{"second value", `{"type":"arrow","sql":"SELECT 1"} {}`},
-		{"array", `[]`},
-		{"wrong sql type", `{"type":"arrow","sql":42}`},
-		{"wrong name type", `{"type":"arrow","sql":"SELECT 1","name":{}}`},
-		{"missing sql", `{"type":"arrow"}`},
-		{"null sql", `{"type":"arrow","sql":"SELECT 1","sql":null}`},
-		{"removed json type", `{"type":"json","sql":"SELECT 1"}`},
-		{"unknown type", `{"type":"other","sql":"SELECT 1"}`},
-		{"null", `null`},
+		{"empty", "", decode},
+		{"malformed", `{`, decode},
+		{"trailing data", `{"type":"arrow","sql":"SELECT 1"} trailing`, decode},
+		{"second value", `{"type":"arrow","sql":"SELECT 1"} {}`, decode},
+		{"array", `[]`, decode},
+		{"wrong sql type", `{"type":"arrow","sql":42}`, decode},
+		{"wrong name type", `{"type":"arrow","sql":"SELECT 1","name":{}}`, decode},
+		{"missing sql", `{"type":"arrow"}`, "missing required 'sql' parameter"},
+		{"null sql", `{"type":"arrow","sql":"SELECT 1","sql":null}`, "missing required 'sql' parameter"},
+		{"removed json type", `{"type":"json","sql":"SELECT 1"}`, "invalid 'type' parameter: json"},
+		{"unknown type", `{"type":"other","sql":"SELECT 1"}`, "invalid 'type' parameter: other"},
+		{"null", `null`, "missing required 'type' parameter"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -294,6 +296,7 @@ func TestCommandPayloadErrors(t *testing.T) {
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.payload)))
 			require.Equal(t, http.StatusBadRequest, res.Code, res.Body.String())
+			require.True(t, strings.HasPrefix(res.Body.String(), tt.want), res.Body.String())
 			require.Zero(t, commandCalls.Load())
 		})
 	}
