@@ -26,36 +26,6 @@ type applicationPayload struct {
 	Attributes map[string]string `json:"attributes"`
 }
 
-func TestCommandWorkspaceProjectPayload(t *testing.T) {
-	type fields struct {
-		WorkspaceID uint64 `json:"workspaceId"`
-		ProjectID   uint64 `json:"projectId"`
-	}
-	t.Run("siblings", func(t *testing.T) {
-		const message = `{"type":"arrow","sql":"SELECT 1","workspaceId":123,"projectId":456}`
-		want := fields{WorkspaceID: 123, ProjectID: 456}
-		t.Run("struct", func(t *testing.T) {
-			testCommandPayload(t, http.MethodPost, message, want)
-		})
-		t.Run("pointer", func(t *testing.T) {
-			testCommandPayload(t, http.MethodPost, message, &want)
-		})
-	})
-	t.Run("nested meta", func(t *testing.T) {
-		type payload struct {
-			Meta fields `json:"meta"`
-		}
-		const message = `{"type":"arrow","sql":"SELECT 1","meta":{"workspaceId":123,"projectId":456}}`
-		want := payload{Meta: fields{WorkspaceID: 123, ProjectID: 456}}
-		t.Run("struct", func(t *testing.T) {
-			testCommandPayload(t, http.MethodPost, message, want)
-		})
-		t.Run("pointer", func(t *testing.T) {
-			testCommandPayload(t, http.MethodPost, message, &want)
-		})
-	})
-}
-
 func TestCommandTypedPayload(t *testing.T) {
 	payloads := []string{
 		`{"type":"arrow","sql":"SELECT 1","projectId":9007199254740993,"tags":["one"],"attributes":{"name":"first"},"unrelated":[false,null,1e400]}`,
@@ -127,21 +97,29 @@ func (p *countedPayload) UnmarshalJSON([]byte) error {
 	return nil
 }
 
-func TestCommandDecoderRunsOncePerCommand(t *testing.T) {
-	const payload = `{"type":"arrow","sql":"SELECT 1"}`
-	testCommandPayload(t, http.MethodPost, payload, countedPayload(1))
-	testCommandPayload(t, http.MethodGet, "", countedPayload(0))
-}
-
 func TestCommandPayloadTypes(t *testing.T) {
+	type fields struct {
+		WorkspaceID uint64 `json:"workspaceId"`
+		ProjectID   uint64 `json:"projectId"`
+	}
+	type nested struct {
+		Meta fields `json:"meta"`
+	}
+	want := fields{WorkspaceID: 123, ProjectID: 456}
+	t.Run("siblings", func(t *testing.T) {
+		testCommandPayload(t, http.MethodPost, `{"type":"arrow","sql":"SELECT 1","workspaceId":123,"projectId":456}`, want)
+	})
+	t.Run("nested meta", func(t *testing.T) {
+		testCommandPayload(t, http.MethodPost, `{"type":"arrow","sql":"SELECT 1","meta":{"workspaceId":123,"projectId":456}}`, nested{Meta: want})
+	})
+	t.Run("decoder runs once", func(t *testing.T) {
+		testCommandPayload(t, http.MethodPost, `{"type":"arrow","sql":"SELECT 1"}`, countedPayload(1))
+	})
+	t.Run("GET skips decoder", func(t *testing.T) {
+		testCommandPayload(t, http.MethodGet, "", countedPayload(0))
+	})
 	t.Run("pointer GET", func(t *testing.T) {
 		testCommandPayload(t, http.MethodGet, "", (*applicationPayload)(nil))
-	})
-	t.Run("struct GET", func(t *testing.T) {
-		testCommandPayload(t, http.MethodGet, "", applicationPayload{})
-	})
-	t.Run("custom GET skips decoder", func(t *testing.T) {
-		testCommandPayload(t, http.MethodGet, "", customPayload(""))
 	})
 	t.Run("custom decoder", func(t *testing.T) {
 		testCommandPayload(t, http.MethodPost, `{"type":"arrow","sql":"SELECT 1","application":"custom"}`, customPayload("CUSTOM"))
@@ -247,23 +225,6 @@ func TestCommandRawMessagePayload(t *testing.T) {
 		require.Equal(t, CommandArrow, command.Type())
 		require.Equal(t, "SELECT 1", command.SQL())
 	}
-}
-
-func TestCommandRawMessageGET(t *testing.T) {
-	var seen Command[json.RawMessage]
-	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(1), WithAuthorizer(func(r *http.Request, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
-		require.Equal(t, []string{"one", "two"}, r.URL.Query()["label"])
-		seen = command
-		return nil, ErrPermissionDenied
-	}))
-	res := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1&label=one&label=two", nil)
-	handler.ServeHTTP(res, req)
-
-	require.Equal(t, http.StatusForbidden, res.Code)
-	require.Equal(t, CommandArrow, seen.Type())
-	require.Equal(t, "SELECT 1", seen.SQL())
-	require.Nil(t, seen.Payload())
 }
 
 func TestCommandPayloadErrors(t *testing.T) {

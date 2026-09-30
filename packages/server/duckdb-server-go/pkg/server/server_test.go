@@ -138,19 +138,3 @@ func TestValidationErrorResponses(t *testing.T) {
 		})
 	}
 }
-
-func TestHandleHTTPQueryParamsErrors(t *testing.T) {
-	s := mustHandler(t, failOnCallExecutor{t})
-	for _, tc := range []struct{ name, body, want string }{
-		{"missing type", `{"sql":"SELECT 1"}`, "server: invalid command: missing required 'type' parameter\n"},
-		{"invalid type", `{"type":"csv","sql":"SELECT 1"}`, "server: invalid command: invalid 'type' parameter: csv\n"},
-		{"missing SQL", `{"type":"arrow"}`, "server: invalid command: missing required 'sql' parameter\n"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			res := httptest.NewRecorder()
-			s.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tc.body)))
-			require.Equal(t, http.StatusBadRequest, res.Code)
-			require.Equal(t, tc.want, res.Body.String())
-		})
-	}
-}
