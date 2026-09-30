@@ -23,7 +23,7 @@ export default {
     projects: [
       'packages/mosaic/*',
       'packages/vgplot/*',
-      'packages/server/*',
+      'packages/server/*/vitest.config.*',
     ]
   }
 };
