@@ -58,14 +58,7 @@ func run() int {
 	}
 
 	validation := gatekeeper.document != nil
-	var initializeOnce sync.Once
-	var initializeErr error
-	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
-		initializeOnce.Do(func() {
-			initializeErr = initializeDatabase(ctx, execer, *extensionsStr, gatekeeper.document)
-		})
-		return initializeErr
-	})
+	connector, err := newConnector(ctx, *dbPath, *extensionsStr, gatekeeper.document)
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
 		return 1
@@ -154,6 +147,15 @@ func run() int {
 		return 1
 	}
 	return 0
+}
+
+func newConnector(ctx context.Context, dsn, extensionList string, document *string) (*duckdb.Connector, error) {
+	var once sync.Once
+	var initErr error
+	return duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
+		once.Do(func() { initErr = initializeDatabase(ctx, execer, extensionList, document) })
+		return initErr
+	})
 }
 
 // initializeDatabase is the CLI's trusted initialization. Extensions named by --load-extensions are installed first so
