@@ -115,17 +115,8 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodGet:
 		q := r.URL.Query()
-		queryType := q.Get("type")
-		sqlQuery := q.Get("sql")
-
-		if queryType != "" {
-			cmd := CommandType(queryType)
-			params.Type = &cmd
-		}
-
-		if sqlQuery != "" {
-			params.SQL = &sqlQuery
-		}
+		params.Type = new(CommandType(q.Get("type")))
+		params.SQL = new(q.Get("sql"))
 
 	default:
 		s.logger.Error("server: invalid method", "method", r.Method)
