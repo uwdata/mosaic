@@ -96,7 +96,7 @@ func TestHTTPResponseCompression(t *testing.T) {
 			res, body := get(large, headers())
 			require.Equal(t, http.StatusOK, res.StatusCode)
 			require.Equal(t, encoding, res.Header.Get("Content-Encoding"))
-			require.Equal(t, commandResponses[CommandArrow].contentType, res.Header.Get("Content-Type"))
+			require.Equal(t, arrowContentType, res.Header.Get("Content-Type"))
 			require.Contains(t, strings.Join(res.Header.Values("Vary"), ","), "Accept-Encoding")
 			require.Less(t, len(body), len(plain))
 			decoded, err := decode(body)
@@ -180,7 +180,7 @@ func TestResponseEncodingMatchesGzhttp(t *testing.T) {
 	client := &http.Client{Transport: &http.Transport{DisableCompression: true}}
 	t.Cleanup(client.CloseIdleConnections)
 	uri := server.URL + "/?type=arrow&sql=" + url.QueryEscape(largeQuery)
-	large := commandResponse{contentType: commandResponses[CommandArrow].contentType, data: make([]byte, gzhttp.DefaultMinSize)}
+	large := commandResponse{contentType: arrowContentType, data: make([]byte, gzhttp.DefaultMinSize)}
 
 	tests := []struct{ accept, want string }{
 		{"", ""},

@@ -477,23 +477,6 @@ func TestNilAuthorizerPolicyPreservesGlobalValidation(t *testing.T) {
 	require.Equal(t, http.StatusForbidden, res.Code)
 }
 
-type synchronizedBuffer struct {
-	mu  sync.Mutex
-	buf bytes.Buffer
-}
-
-func (b *synchronizedBuffer) Write(p []byte) (int, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	return b.buf.Write(p)
-}
-
-func (b *synchronizedBuffer) Bytes() []byte {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	return bytes.Clone(b.buf.Bytes())
-}
-
 func TestAuthorizerScopesValidationPerCommand(t *testing.T) {
 	db := setupConfiguredDB(t, "")
 	require.NoError(t, db.Exec(t.Context(), `CREATE SCHEMA tenant_a; CREATE SCHEMA tenant_b;

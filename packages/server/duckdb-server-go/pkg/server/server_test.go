@@ -118,7 +118,7 @@ func TestValidationErrorResponses(t *testing.T) {
 		{"driver failure", errors.New("private-diagnostic"), 500, "ERROR"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var logs synchronizedBuffer
+			var logs bytes.Buffer
 			executor := &spyCommandExecutor{failOnCallExecutor: failOnCallExecutor{t},
 				queryFn: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 					return nil, errors.Join(query.ErrValidation, tc.err)

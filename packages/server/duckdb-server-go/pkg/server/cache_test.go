@@ -42,7 +42,7 @@ func TestHTTPCacheRevalidation(t *testing.T) {
 	require.NotEmpty(t, body)
 	etag := first.Header.Get("ETag")
 	require.Regexp(t, `^"[0-9a-f]{64}"$`, etag)
-	require.Equal(t, commandResponses[CommandArrow].contentType, first.Header.Get("Content-Type"))
+	require.Equal(t, arrowContentType, first.Header.Get("Content-Type"))
 
 	revalidated, body := get(etag)
 	require.Equal(t, http.StatusNotModified, revalidated.StatusCode)
@@ -90,7 +90,7 @@ func TestMatchesETag(t *testing.T) {
 }
 
 func TestResponseETagIncludesFormatAndEncoding(t *testing.T) {
-	response := commandResponse{contentType: commandResponses[CommandArrow].contentType, data: []byte("result")}
+	response := commandResponse{contentType: arrowContentType, data: []byte("result")}
 	etag := responseETag(response, "")
 	require.Regexp(t, `^"[0-9a-f]{64}"$`, etag)
 	require.Equal(t, strings.TrimSuffix(etag, `"`)+`-zstd"`, responseETag(response, "zstd"))

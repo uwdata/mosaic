@@ -22,14 +22,11 @@ type queryParams struct {
 	raw  []byte
 }
 
+const arrowContentType = "application/vnd.apache.arrow.stream"
+
 type commandResponse struct {
 	data        []byte
 	contentType string
-}
-
-var commandResponses = map[CommandType]commandResponse{
-	CommandExec:  {},
-	CommandArrow: {contentType: "application/vnd.apache.arrow.stream"},
 }
 
 type queryParamsError string
@@ -115,15 +112,10 @@ func (s *handler) commandAuthorizer(r *http.Request) (commandAuthorizer, error) 
 	return authorize, nil
 }
 
-func (s *handler) writeHTTPError(w http.ResponseWriter, err error) {
-	response := s.classifyAndLogError(err)
-	http.Error(w, response.message, response.status)
-}
-
 func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	authorize, err := s.commandAuthorizer(r)
 	if err != nil {
-		s.writeHTTPError(w, err)
+		s.writeError(w, err)
 		return
 	}
 
@@ -138,7 +130,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			var sizeErr *http.MaxBytesError
 			if errors.As(err, &sizeErr) {
-				s.writeHTTPError(w, err)
+				s.writeError(w, err)
 				return
 			}
 			s.logger.Error("server: failed to decode request body", "error", err)
@@ -169,7 +161,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 
 	response, err := s.execCommand(r.Context(), params, authorize)
 	if err != nil {
-		s.writeHTTPError(w, err)
+		s.writeError(w, err)
 		return
 	}
 
@@ -202,7 +194,7 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, authorize
 	if err := params.Validate(s.logger); err != nil {
 		return commandResponse{}, err
 	}
-	response := commandResponses[*params.Type]
+	var response commandResponse
 	var err error
 	var policy *query.ValidationPolicy
 
@@ -220,6 +212,7 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, authorize
 		err = s.db.Exec(ctx, *params.SQL)
 
 	case CommandArrow:
+		response.contentType = arrowContentType
 		response.data, err = s.db.Query(ctx, *params.SQL, policy)
 
 	default:
@@ -235,7 +228,7 @@ func (p queryParams) Validate(logger *slog.Logger) error {
 		return queryParamsError("missing required 'type' parameter")
 	}
 
-	if _, ok := commandResponses[*p.Type]; !ok {
+	if *p.Type != CommandArrow && *p.Type != CommandExec {
 		logger.Error("server: invalid 'type' parameter", "type", *p.Type)
 		return queryParamsError("invalid 'type' parameter: " + string(*p.Type))
 	}

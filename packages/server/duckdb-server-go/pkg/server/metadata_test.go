@@ -194,7 +194,7 @@ func TestCommandPayloadDecodeErrors(t *testing.T) {
 func testCommandPayloadDecodeError[T any](t *testing.T, invalid string) {
 	t.Helper()
 	var calls atomic.Int32
-	var logs synchronizedBuffer
+	var logs bytes.Buffer
 	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[T](func(*http.Request) (CommandAuthorizer[T], error) {
 		return func(context.Context, Command[T]) (*query.ValidationPolicy, error) {
 			calls.Add(1)
@@ -210,8 +210,8 @@ func testCommandPayloadDecodeError[T any](t *testing.T, invalid string) {
 	require.NoError(t, json.Unmarshal(logs.Bytes(), &diagnostic))
 	require.Equal(t, "WARN", diagnostic["level"])
 	require.Contains(t, diagnostic, "error_type")
-	require.NotContains(t, string(logs.Bytes()), "private-")
-	require.NotContains(t, string(logs.Bytes()), "18446744073709551616")
+	require.NotContains(t, logs.String(), "private-")
+	require.NotContains(t, logs.String(), "18446744073709551616")
 	if diagnostic["error_type"] == "*json.UnmarshalTypeError" {
 		require.NotEmpty(t, diagnostic["field"])
 		require.NotEmpty(t, diagnostic["target_type"])
