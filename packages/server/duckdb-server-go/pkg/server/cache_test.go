@@ -90,15 +90,6 @@ func TestMatchesETag(t *testing.T) {
 	}
 }
 
-func TestResponseETagIncludesFormatAndEncoding(t *testing.T) {
-	response := commandResponse{contentType: arrowContentType, data: []byte("result")}
-	etag := responseETag(response, "")
-	require.Regexp(t, `^"[0-9a-f]{64}"$`, etag)
-	require.Equal(t, strings.TrimSuffix(etag, `"`)+`-zstd"`, responseETag(response, "zstd"))
-	response.contentType = "application/octet-stream"
-	require.NotEqual(t, etag, responseETag(response, ""))
-}
-
 func TestHTTPCachePreconditions(t *testing.T) {
 	allowed := true
 	var executions int

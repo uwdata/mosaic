@@ -10,8 +10,8 @@ import (
 
 // gzhttp's encoding selection is unexported, so this mirrors it for the
 // default options; TestResponseEncodingMatchesGzhttp pins the two together.
-func responseEncoding(r *http.Request, response commandResponse) string {
-	if len(response.data) < gzhttp.DefaultMinSize || !gzhttp.DefaultContentTypeFilter(response.contentType) {
+func responseEncoding(r *http.Request, data []byte) string {
+	if len(data) < gzhttp.DefaultMinSize {
 		return ""
 	}
 	accept := r.Header.Get("Accept-Encoding")

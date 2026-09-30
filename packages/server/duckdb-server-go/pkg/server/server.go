@@ -23,11 +23,6 @@ type queryParams struct {
 
 const arrowContentType = "application/vnd.apache.arrow.stream"
 
-type commandResponse struct {
-	data        []byte
-	contentType string
-}
-
 // commandExecutor is private so the server package does not expose query's
 // current schema-policy plumbing as a supported extension point.
 type commandExecutor interface {
@@ -112,19 +107,19 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := s.execCommand(r, params)
+	data, err := s.execCommand(r, params)
 	if err != nil {
 		s.writeError(w, r, err)
 		return
 	}
 
-	if response.contentType == "" {
+	if *params.Type == CommandExec {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if r.Method == http.MethodGet && s.cacheControl != "" {
-		etag := responseETag(response, responseEncoding(r, response))
+		etag := responseETag(data, responseEncoding(r, data))
 		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" && !matchesETag(value, etag, false) {
 			http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)
 			return
@@ -137,43 +132,39 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", response.contentType)
-	if _, err = w.Write(response.data); err != nil {
-		s.logger.Error("server: failed to write response", "error", err, "content_type", response.contentType)
+	w.Header().Set("Content-Type", arrowContentType)
+	if _, err = w.Write(data); err != nil {
+		s.logger.Error("server: failed to write response", "error", err)
 	}
 }
 
-func (s *handler) execCommand(r *http.Request, params queryParams) (commandResponse, error) {
+func (s *handler) execCommand(r *http.Request, params queryParams) ([]byte, error) {
 	if err := params.Validate(); err != nil {
-		return commandResponse{}, err
+		return nil, err
 	}
 	ctx := r.Context()
-	var response commandResponse
 	var err error
 	var policy *query.ValidationPolicy
 
 	if s.authorizer != nil {
 		if policy, err = s.authorizer(r, params); err != nil {
-			return commandResponse{}, err
+			return nil, err
 		}
 	}
 
 	switch *params.Type {
 	case CommandExec:
 		if policy != nil {
-			return commandResponse{}, query.ErrExecWithValidation
+			return nil, query.ErrExecWithValidation
 		}
-		err = s.db.Exec(ctx, *params.SQL)
+		return nil, s.db.Exec(ctx, *params.SQL)
 
 	case CommandArrow:
-		response.contentType = arrowContentType
-		response.data, err = s.db.Query(ctx, *params.SQL, policy)
+		return s.db.Query(ctx, *params.SQL, policy)
 
 	default:
-		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", *params.Type)
+		return nil, fmt.Errorf("server: no executor for command type %q", *params.Type)
 	}
-
-	return response, err
 }
 
 func (p queryParams) Validate() error {
