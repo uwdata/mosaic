@@ -2,6 +2,7 @@ package query
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"database/sql"
 	"database/sql/driver"
@@ -24,7 +25,7 @@ type DB struct {
 // New opens a pooled database on connector. It does not install or load Gatekeeper; trusted initialization (the
 // connector's init callback or --load-extensions) owns that. With WithValidation, New fails when Gatekeeper is absent.
 func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (*DB, error) {
-	o := &Options{MaxConnections: 10, Logger: slog.Default()}
+	o := &Options{MaxConnections: 10}
 	for _, opt := range opts {
 		if err := opt(o); err != nil {
 			return nil, fmt.Errorf("query: failed to apply option: %w", err)
@@ -32,7 +33,7 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 	}
 	db := sql.OpenDB(connector)
 	db.SetMaxOpenConns(o.MaxConnections)
-	result := &DB{db: db, validation: o.Validation, logger: o.Logger}
+	result := &DB{db: db, validation: o.Validation, logger: cmp.Or(o.Logger, slog.Default())}
 	if o.Validation {
 		if err := db.PingContext(ctx); err != nil {
 			return nil, errors.Join(fmt.Errorf("query: failed to open connection: %w", err), db.Close())
