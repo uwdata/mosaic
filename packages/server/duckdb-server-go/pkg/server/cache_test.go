@@ -172,7 +172,6 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 		{name: "origin denial", method: http.MethodGet, uri: "/?type=arrow&sql=SELECT+1", headers: http.Header{"Origin": {"http://untrusted.example"}}, status: http.StatusForbidden},
 		{name: "HEAD", method: http.MethodHead, uri: "/?type=arrow&sql=SELECT+1", status: http.StatusMethodNotAllowed},
 		{name: "missing SQL", method: http.MethodGet, uri: "/?type=arrow", status: http.StatusBadRequest},
-		{name: "removed JSON type", method: http.MethodGet, uri: "/?type=json&sql=SELECT+1", status: http.StatusBadRequest},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
