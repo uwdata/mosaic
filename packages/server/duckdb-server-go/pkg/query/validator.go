@@ -154,7 +154,7 @@ func (db *DB) validateSQL(ctx context.Context, conn rowQuerier, query string, po
 	}
 	switch result.Details.Code {
 	case "invalid_input":
-		// Gatekeeper 0.3 reports invalid SQL and invalid policy documents with the same code.
+		// Gatekeeper reports invalid SQL and invalid policy documents with the same code.
 		if query == "SELECT 1" {
 			return result, errors.Join(ErrInvalidPolicy, result.Details)
 		}
