@@ -1,6 +1,7 @@
 package server
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -60,9 +61,6 @@ type Option interface {
 type optionFunc func(*config) error
 
 func (f optionFunc) apply(cfg *config) error {
-	if f == nil {
-		return errNilOption
-	}
 	return f(cfg)
 }
 
@@ -81,11 +79,7 @@ func applyOptions(opts []Option) (config, error) {
 
 func WithLogger(logger *slog.Logger) Option {
 	return optionFunc(func(cfg *config) error {
-		configured := logger
-		if configured == nil {
-			configured = slog.Default()
-		}
-		cfg.logger = configured
+		cfg.logger = cmp.Or(logger, slog.Default())
 		return nil
 	})
 }
