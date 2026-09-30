@@ -86,12 +86,14 @@ checks its type and SQL, and before policy validation or execution. POST bodies 
 requests may reach the server.
 
 Omitting `WithAuthorizer` adds no application authorization, and a nil authorizer makes `New` fail.
-`ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400, and other errors
-to 500. Every error response carries the error's message verbatim, including authorizer errors and Gatekeeper
-diagnostics; the server does not sanitize them, so redact what callers shouldn't see in the authorizer or in middleware.
-Unexpected authorizer errors are also logged. Authorization can allow or deny the normalized command type
-and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
-credentials.
+Authorizer errors map to statuses like the server's own: `ErrUnauthenticated`, `ErrPermissionDenied`, and
+`ErrInvalidCommand` map to HTTP 401, 403, and 400, wrapped query validation errors keep the statuses described under
+[Gatekeeper Configuration](#gatekeeper-configuration), and other errors map to 500. Every error response carries the
+error's message verbatim, including authorizer errors and Gatekeeper diagnostics; the server does not sanitize them, so
+redact what callers shouldn't see in the authorizer or in middleware. The server logs each error response once, at ERROR
+for 5xx statuses and WARN otherwise, except for canceled or timed-out requests. Authorization can allow or deny the
+normalized command type and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network,
+extensions, catalogs, or credentials.
 
 The authorizer returns `(*query.ValidationPolicy, error)`: an error denies the command, `nil, nil` adds no restrictions, and `policy, nil` validates on the execution connection and rejects `exec`. DB-level `query.WithValidation()` applies even when the returned policy is nil.
 

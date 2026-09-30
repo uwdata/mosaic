@@ -97,12 +97,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 			err = json.Unmarshal(raw, &params)
 		}
 		if err != nil {
-			if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
-				s.writeError(w, err)
-				return
-			}
-			s.logger.Error("server: failed to decode request body", "error", err)
-			s.writeError(w, fmt.Errorf("%w: decode request body: %w", ErrInvalidCommand, err))
+			s.writeError(w, r, fmt.Errorf("%w: decode request body: %w", ErrInvalidCommand, err))
 			return
 		}
 		params.raw = raw
@@ -113,14 +108,13 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		params.SQL = new(q.Get("sql"))
 
 	default:
-		s.logger.Error("server: invalid method", "method", r.Method)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		s.writeError(w, r, fmt.Errorf("%w: %s", errMethodNotAllowed, r.Method))
 		return
 	}
 
 	response, err := s.execCommand(r, params)
 	if err != nil {
-		s.writeError(w, err)
+		s.writeError(w, r, err)
 		return
 	}
 
@@ -151,7 +145,6 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *handler) execCommand(r *http.Request, params queryParams) (commandResponse, error) {
 	if err := params.Validate(); err != nil {
-		s.logger.Error("server: invalid command parameters", "error", err)
 		return commandResponse{}, err
 	}
 	ctx := r.Context()

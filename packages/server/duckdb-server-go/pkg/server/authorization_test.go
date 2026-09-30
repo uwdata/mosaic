@@ -147,34 +147,37 @@ func TestHTTPCommandAuthorizationStatusMapping(t *testing.T) {
 		name       string
 		authErr    error
 		wantStatus int
-		logged     bool
+		level      string
 	}{
 		{
 			name:       "unauthenticated",
 			authErr:    fmt.Errorf("%w: expired credential", ErrUnauthenticated),
 			wantStatus: http.StatusUnauthorized,
+			level:      "WARN",
 		},
 		{
 			name:       "permission denied",
 			authErr:    fmt.Errorf("%w: tenant policy", ErrPermissionDenied),
 			wantStatus: http.StatusForbidden,
+			level:      "WARN",
 		},
 		{
 			name:       "invalid policy command",
 			authErr:    fmt.Errorf("%w: unsupported statement", ErrInvalidCommand),
 			wantStatus: http.StatusBadRequest,
+			level:      "WARN",
 		},
 		{
-			name:       "unexpected failure is logged",
+			name:       "unexpected failure",
 			authErr:    errors.New("authorization backend failed with bearer super-secret-token"),
 			wantStatus: http.StatusInternalServerError,
-			logged:     true,
+			level:      "ERROR",
 		},
 		{
-			name:       "validation diagnostics pass through",
-			authErr:    fmt.Errorf("%w: %w", ErrPermissionDenied, errors.Join(query.ErrValidation, query.ErrorDetails{Code: "forbidden", Message: "private-diagnostic"})),
+			name:       "query errors keep their status",
+			authErr:    errors.Join(query.ErrValidation, query.ErrorDetails{Code: "forbidden", Message: "private-diagnostic"}),
 			wantStatus: http.StatusForbidden,
-			logged:     true,
+			level:      "WARN",
 		},
 		{
 			name:       "canceled request is not logged",
@@ -218,13 +221,14 @@ func TestHTTPCommandAuthorizationStatusMapping(t *testing.T) {
 				require.Equal(t, tt.wantStatus, res.Code, res.Body.String())
 				require.Equal(t, int32(1), commandCalls.Load())
 				require.Equal(t, tt.authErr.Error(), strings.TrimSpace(res.Body.String()))
-				if tt.logged {
-					var record map[string]any
-					require.NoError(t, json.Unmarshal(bytes.TrimSpace(logs.Bytes()), &record))
-					require.Equal(t, tt.authErr.Error(), record["error"])
-				} else {
+				if tt.level == "" {
 					require.Empty(t, logs.Bytes())
+					return
 				}
+				var record map[string]any
+				require.NoError(t, json.Unmarshal(logs.Bytes(), &record))
+				require.Equal(t, tt.level, record["level"])
+				require.Equal(t, tt.authErr.Error(), record["error"])
 			})
 		}
 	}

@@ -312,10 +312,8 @@ func TestCommandBodyLimits(t *testing.T) {
 }
 
 func TestHTTPBodyLimitCoversGet(t *testing.T) {
-	var logs bytes.Buffer
-	logger := slog.New(slog.NewJSONHandler(&logs, nil))
 	var seen int
-	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(16), WithLogger(logger), WithAuthorizer(func(r *http.Request, _ Command[struct{}]) (*query.ValidationPolicy, error) {
+	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(16), WithAuthorizer(func(r *http.Request, _ Command[struct{}]) (*query.ValidationPolicy, error) {
 		body, err := io.ReadAll(r.Body)
 		seen = len(body)
 		if err != nil {
@@ -329,7 +327,6 @@ func TestHTTPBodyLimitCoversGet(t *testing.T) {
 	handler.ServeHTTP(res, req)
 	require.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
 	require.Equal(t, 16, seen)
-	require.Contains(t, logs.String(), `"limit":16`)
 }
 
 func TestHTTPBodyLimitClosesConnection(t *testing.T) {
@@ -340,18 +337,4 @@ func TestHTTPBodyLimitClosesConnection(t *testing.T) {
 	require.NoError(t, res.Body.Close())
 	require.Equal(t, http.StatusRequestEntityTooLarge, res.StatusCode)
 	require.True(t, res.Close)
-}
-
-func TestHTTPBodyLimitLogsLimit(t *testing.T) {
-	var logs bytes.Buffer
-	logger := slog.New(slog.NewJSONHandler(&logs, nil))
-	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxBytes(1), WithLogger(logger))
-	res := httptest.NewRecorder()
-	handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"secret":"private-payload"}`)))
-	require.Equal(t, http.StatusRequestEntityTooLarge, res.Code)
-	var record map[string]any
-	require.NoError(t, json.Unmarshal(logs.Bytes(), &record))
-	require.Equal(t, "WARN", record["level"])
-	require.Equal(t, float64(1), record["limit"])
-	require.NotContains(t, logs.String(), "private-payload")
 }

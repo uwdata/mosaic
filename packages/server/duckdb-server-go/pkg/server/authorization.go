@@ -70,15 +70,10 @@ func WithAuthorizer[T any](authorize Authorizer[T]) Option {
 			var payload T
 			if wantsFields && params.raw != nil {
 				if err := json.Unmarshal(params.raw, &payload); err != nil {
-					cfg.logger.Warn("server: failed to decode command payload", "error", err)
 					return nil, fmt.Errorf("%w: decode command payload: %w", ErrInvalidCommand, err)
 				}
 			}
-			policy, err := authorize(r, Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload})
-			if err != nil {
-				return nil, &authorizationError{err: err}
-			}
-			return policy, nil
+			return authorize(r, Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload})
 		}
 		return nil
 	})
