@@ -1,6 +1,6 @@
 module github.com/uwdata/mosaic/packages/server/duckdb-server-go
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/apache/arrow-go/v18 v18.7.0

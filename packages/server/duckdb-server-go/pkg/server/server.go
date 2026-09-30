@@ -104,8 +104,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 			err = json.Unmarshal(raw, &params)
 		}
 		if err != nil {
-			var sizeErr *http.MaxBytesError
-			if errors.As(err, &sizeErr) {
+			if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 				s.writeError(w, err)
 				return
 			}

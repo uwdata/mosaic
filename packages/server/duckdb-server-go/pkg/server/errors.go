@@ -21,13 +21,11 @@ func (e *authorizationError) Unwrap() error {
 }
 
 func classifyError(err error) (int, string) {
-	var sizeErr *http.MaxBytesError
-	if errors.As(err, &sizeErr) {
+	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 		return http.StatusRequestEntityTooLarge, http.StatusText(http.StatusRequestEntityTooLarge)
 	}
 
-	var authErr *authorizationError
-	if errors.As(err, &authErr) {
+	if authErr, ok := errors.AsType[*authorizationError](err); ok {
 		switch {
 		case errors.Is(authErr, ErrInvalidCommand):
 			return http.StatusBadRequest, http.StatusText(http.StatusBadRequest)
@@ -42,10 +40,8 @@ func classifyError(err error) (int, string) {
 
 	status, message := http.StatusInternalServerError, err.Error()
 
-	var (
-		errorDetails query.ErrorDetails
-		paramsError  queryParamsError
-	)
+	_, isDetails := errors.AsType[query.ErrorDetails](err)
+	_, isParams := errors.AsType[queryParamsError](err)
 	switch {
 	case errors.Is(err, query.ErrInvalidPolicy):
 		message = http.StatusText(http.StatusInternalServerError)
@@ -54,8 +50,7 @@ func classifyError(err error) (int, string) {
 	case errors.Is(err, query.ErrExecWithValidation),
 		errors.Is(err, query.ErrUnsupportedStatement),
 		errors.Is(err, ErrInvalidCommand),
-		errors.As(err, &errorDetails),
-		errors.As(err, &paramsError):
+		isDetails, isParams:
 		status = http.StatusBadRequest
 	}
 
@@ -67,11 +62,9 @@ func classifyError(err error) (int, string) {
 
 func (s *handler) writeError(w http.ResponseWriter, err error) {
 	status, message := classifyError(err)
-	var sizeErr *http.MaxBytesError
-	switch {
-	case errors.As(err, &sizeErr):
+	if sizeErr, ok := errors.AsType[*http.MaxBytesError](err); ok {
 		s.logger.Warn("server: request body exceeds limit", "limit", sizeErr.Limit)
-	case errors.Is(err, query.ErrValidation):
+	} else if errors.Is(err, query.ErrValidation) {
 		if status == http.StatusInternalServerError {
 			s.logger.Error("server: query validator failed", "error", err)
 		} else {
@@ -79,8 +72,7 @@ func (s *handler) writeError(w http.ResponseWriter, err error) {
 		}
 	}
 
-	var authErr *authorizationError
-	if status == http.StatusInternalServerError && errors.As(err, &authErr) &&
+	if authErr, ok := errors.AsType[*authorizationError](err); ok && status == http.StatusInternalServerError &&
 		!errors.Is(authErr, context.Canceled) && !errors.Is(authErr, context.DeadlineExceeded) {
 		s.logger.Error("server: authorization failed", "error", authErr.err)
 	}
