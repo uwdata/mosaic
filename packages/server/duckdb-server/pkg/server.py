@@ -3,14 +3,17 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Literal, Protocol
+from typing import TYPE_CHECKING
 
 import msgspec
 from socketify import App
 
-from pkg.query import get_arrow_bytes
+from pkg.protocols import Handler
+from pkg.query import ArrowRequest, ExecRequest
 
 if TYPE_CHECKING:
+    from io import BytesIO
+
     from duckdb import DuckDBPyConnection as Con
     from socketify import Request as Req
     from socketify import Response as Res
@@ -20,19 +23,9 @@ logger = logging.getLogger(__name__)
 
 SLOW_QUERY_THRESHOLD = 5000
 
-
-class QueryParams(msgspec.Struct):
-    type: Literal["arrow", "exec"]
-    sql: str
-
-
-query_decoder = msgspec.json.Decoder(QueryParams)
-
-
-class Handler(Protocol):
-    def done(self) -> None: ...
-    def arrow(self, buffer: bytes) -> None: ...
-    def error(self, error: Any, status: int = 500) -> None: ...
+query_decoder: msgspec.json.Decoder[ArrowRequest | ExecRequest] = msgspec.json.Decoder(
+    ArrowRequest | ExecRequest
+)
 
 
 CORS_HEADERS = {
@@ -77,30 +70,33 @@ def handle_message(handler: Handler, con: Con, message: str | Buffer) -> None:
     handle_query(handler, con, query)
 
 
-def handle_query(handler: Handler, con: Con, query: QueryParams) -> None:
-    logger.debug(f"{query=}")
-
+def handle_query(handler: Handler, con: Con, query: ArrowRequest | ExecRequest) -> None:
+    logger.debug("query=%s", query)
     start = time.time()
-
-    sql = query.sql
-
     try:
-        match query.type:
-            case "exec":
-                con.execute(sql)
-                handler.done()
-            case "arrow":
-                buffer = get_arrow_bytes(con, sql)
-                handler.arrow(buffer)
+        query.run(handler, con)
     except Exception as e:
         logger.exception("Error processing query")
         handler.error(e)
 
     total = round((time.time() - start) * 1_000)
     if total > SLOW_QUERY_THRESHOLD:
-        logger.warning(f"DONE. Slow query took {total} ms.\n{sql}")
+        logger.warning("DONE. Slow query took %s ms.\n%s", total, query.sql)
     else:
-        logger.info(f"DONE. Query took {total} ms.\n{sql}")
+        logger.info("DONE. Query took %s ms.\n%s", total, query.sql)
+
+
+def handle_get(handler: Handler, req: Req, con: Con) -> None:
+    query: str | object = req.get_query("query")
+    if isinstance(query, str):
+        handle_message(handler, con, query)
+    else:
+        handler.error("missing required 'query' parameter", 400)
+
+
+async def handle_post(handler: Handler, res: Res, con: Con) -> None:
+    body: BytesIO = await res.get_data()
+    handle_message(handler, con, body.getvalue())
 
 
 def on_error(error: object, res: Res, req: Req) -> None:
@@ -119,14 +115,9 @@ def server(con: Con) -> None:
             case "OPTIONS":
                 handler.done()
             case "GET":
-                query = req.get_query("query")
-                if isinstance(query, str):
-                    handle_message(handler, con, query)
-                else:
-                    handler.error("missing required 'query' parameter", 400)
+                handle_get(handler, req, con)
             case "POST":
-                body = await res.get_data()
-                handle_message(handler, con, body.getvalue())
+                await handle_post(handler, res, con)
             case method:
                 handler.error(f"Unsupported HTTP method: {method}", 400)
 

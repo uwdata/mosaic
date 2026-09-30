@@ -32,7 +32,7 @@ def test_unknown_type_is_bad_request() -> None:
     handler = RecordingHandler()
     handle_message(handler, duckdb.connect(), '{"type": "json", "sql": "SELECT 1"}')
 
-    assert handler.errors == [("Invalid enum value 'json' - at `$.type`", 400)]
+    assert handler.errors == [("Invalid value 'json' - at `$.type`", 400)]
 
 
 def test_arrow_query_returns_buffer() -> None:
