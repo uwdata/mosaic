@@ -267,7 +267,7 @@ func TestCommandRawMessageGET(t *testing.T) {
 }
 
 func TestCommandPayloadErrors(t *testing.T) {
-	const decode = "server: invalid command: decode request body: "
+	const decode = "decode request body: "
 	tests := []struct {
 		name    string
 		payload string
@@ -295,7 +295,7 @@ func TestCommandPayloadErrors(t *testing.T) {
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.payload)))
 			require.Equal(t, http.StatusBadRequest, res.Code, res.Body.String())
-			require.True(t, strings.HasPrefix(res.Body.String(), tt.want), res.Body.String())
+			require.True(t, strings.HasPrefix(res.Body.String(), "server: invalid command: "+tt.want), res.Body.String())
 			require.Zero(t, commandCalls.Load())
 		})
 	}

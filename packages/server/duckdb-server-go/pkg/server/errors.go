@@ -39,7 +39,6 @@ func errorStatus(err error) int {
 	}
 
 	_, isDetails := errors.AsType[query.ErrorDetails](err)
-	_, isParams := errors.AsType[queryParamsError](err)
 	switch {
 	case errors.Is(err, query.ErrInvalidPolicy):
 		return http.StatusInternalServerError
@@ -48,7 +47,7 @@ func errorStatus(err error) int {
 	case errors.Is(err, query.ErrExecWithValidation),
 		errors.Is(err, query.ErrUnsupportedStatement),
 		errors.Is(err, ErrInvalidCommand),
-		isDetails, isParams:
+		isDetails:
 		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError

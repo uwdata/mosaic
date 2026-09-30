@@ -28,12 +28,6 @@ type commandResponse struct {
 	contentType string
 }
 
-type queryParamsError string
-
-func (e queryParamsError) Error() string {
-	return string(e)
-}
-
 // commandExecutor is private so the server package does not expose query's
 // current schema-policy plumbing as a supported extension point.
 type commandExecutor interface {
@@ -156,7 +150,8 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *handler) execCommand(r *http.Request, params queryParams) (commandResponse, error) {
-	if err := params.Validate(s.logger); err != nil {
+	if err := params.Validate(); err != nil {
+		s.logger.Error("server: invalid command parameters", "error", err)
 		return commandResponse{}, err
 	}
 	ctx := r.Context()
@@ -188,20 +183,17 @@ func (s *handler) execCommand(r *http.Request, params queryParams) (commandRespo
 	return response, err
 }
 
-func (p queryParams) Validate(logger *slog.Logger) error {
+func (p queryParams) Validate() error {
 	if p.Type == nil || *p.Type == "" {
-		logger.Error("server: missing required 'type' parameter")
-		return queryParamsError("missing required 'type' parameter")
+		return fmt.Errorf("%w: missing required 'type' parameter", ErrInvalidCommand)
 	}
 
 	if *p.Type != CommandArrow && *p.Type != CommandExec {
-		logger.Error("server: invalid 'type' parameter", "type", *p.Type)
-		return queryParamsError("invalid 'type' parameter: " + string(*p.Type))
+		return fmt.Errorf("%w: invalid 'type' parameter: %s", ErrInvalidCommand, *p.Type)
 	}
 
 	if p.SQL == nil || *p.SQL == "" {
-		logger.Error("server: missing required 'sql' parameter")
-		return queryParamsError("missing required 'sql' parameter")
+		return fmt.Errorf("%w: missing required 'sql' parameter", ErrInvalidCommand)
 	}
 
 	return nil
