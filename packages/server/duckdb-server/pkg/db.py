@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import duckdb
@@ -11,11 +12,14 @@ if TYPE_CHECKING:
 
     from pkg.protocols import Sql
 
+logger = logging.getLogger(__name__)
+
 
 class Database:
     con: DuckDBPyConnection
 
     def __init__(self, path: Path | str = ":memory:") -> None:
+        logger.info("Using DuckDB %s", path)
         self.con = duckdb.connect(path)
 
     def execute(self, sql: Sql) -> None:
