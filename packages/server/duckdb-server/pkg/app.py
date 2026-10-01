@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from io import BytesIO
 from typing import TYPE_CHECKING, TypedDict
 
 import msgspec
 from starlette.applications import Starlette
+from starlette.endpoints import HTTPEndpoint
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import Route
@@ -36,10 +38,19 @@ def _get_db(application: Starlette) -> Database:
     return obj
 
 
-async def handle(request: Request[AppState]) -> Response:
-    query = decoder.decode(request.query_params["query"])
-    db = _get_db(request.app)
-    return query.run_command(db)
+class Endpoint(HTTPEndpoint):
+    async def get(self, request: Request[AppState]) -> Response:
+        query = decoder.decode(request.query_params["query"])
+        db = _get_db(request.app)
+        return query.run_command(db)
+
+    async def post(self, request: Request[AppState]) -> Response:
+        buf = BytesIO()
+        async for chunk in request.stream():
+            buf.write(chunk)
+        query = decoder.decode(buf.getbuffer())
+        db = _get_db(request.app)
+        return query.run_command(db)
 
 
 def create_app(db_path: Path | str = ":memory:") -> Starlette:
@@ -52,7 +63,7 @@ def create_app(db_path: Path | str = ":memory:") -> Starlette:
     )
     # TODO @dangotbanned: Look into compression/tracing equivalent
     middleware = (cors,)
-    routes = (Route("/", handle, methods=("GET", "POST"), middleware=middleware),)
+    routes = (Route("/", Endpoint, methods=("GET", "POST"), middleware=middleware),)
 
     app = Starlette(routes=routes)
     app.state.db = Database(db_path)
