@@ -46,3 +46,4 @@ Mosaic API Reference.
 
 - [DuckDB API](/api/duckdb/duckdb)
 - [Data Server](/api/duckdb/data-server)
+- [Server Protocol](/api/duckdb/server-protocol)
