@@ -30,7 +30,7 @@ dev = [
   "pytest-cov",
   "pytest",
   "ruff",
-  "watchdog",
+  "watchfiles",
   "ty",
   "pyarrow-stubs>=20.0.0.20260819",
 ]

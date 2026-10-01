@@ -27,6 +27,8 @@ class Args(msgspec.Struct):
     port: int = 3000
     """HTTP Port."""
 
+    reload: bool = False
+
 
 def serve() -> None:
     parser = argparse.ArgumentParser(
@@ -39,6 +41,7 @@ def serve() -> None:
     )
     parser.add_argument("--address", help="HTTP Address.", default="127.0.0.1")
     parser.add_argument("--port", help="HTTP Port.", type=int, default=3000)
+    parser.add_argument("--reload", action="store_true")
     args = parser.parse_args(namespace=Args())
 
     config = uvicorn.Config(
@@ -47,6 +50,7 @@ def serve() -> None:
         port=args.port,
         http="zttp",
         http2=True,
+        reload=args.reload,
     )
     server = uvicorn.Server(config)
     server.run()
