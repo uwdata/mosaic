@@ -1,10 +1,12 @@
 import { ASTNode } from './ASTNode.js';
 import { OPTIONS } from '../constants.js';
 
-export function parseOptions(spec, ctx) {
+export function parseOptions(spec, ctx, parsers = {}) {
   const options = {};
   for (const key in spec) {
-    options[key] = ctx.maybeSelection(spec[key]);
+    options[key] = key in parsers
+      ? parsers[key](spec[key], ctx)
+      : ctx.maybeSelection(spec[key]);
   }
   return new OptionsNode(options);
 }
