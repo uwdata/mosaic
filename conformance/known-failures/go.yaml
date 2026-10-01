@@ -3,12 +3,12 @@
 # `pnpm -F @uwdata/mosaic-conformance status`. The go-cache and
 # go-gatekeeper files cover the same binary under other flags.
 server: go
-notes: "Closest to the target and the intended first `preagg` implementation (#1234). Already conforming: Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers. `errorStatus` (`pkg/server/errors.go`) already maps every error to a status that the HTTP path could carry as a `code`."
+notes: "Closest to the target and the first `preagg` implementation (#1289, behind `WithPreaggregation`). Already conforming: Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers. `classifyError` (`pkg/server/errors.go`) already yields the `code` and `reason` for every error; the HTTP path only emits them when preaggregation is enabled."
 failures:
   - area: HTTP errors are plain text
-    current: "`writeError` (`pkg/server/errors.go`) hands the verbatim error message to `http.Error`, so every failure is `text/plain`."
+    current: "Without `WithPreaggregation`, `writeError` (`pkg/server/errors.go`) hands the verbatim error message to `http.Error`, so every failure is `text/plain`; the installed binary never enables it."
     spec: JSON `Error` envelope (D4, D19).
-    fix: Map `errorStatus` to a `code` in `writeError`; write `{error, code, reason}` with `application/json`.
+    fix: Emit the JSON envelope `writeError` already builds for preaggregation on every deployment.
     cases:
       post/error-then-ok:
         - s1.error.content-type
@@ -57,25 +57,18 @@ failures:
       get/get-preagg-rejected:
         - error.content-type
         - error.not-json
-  - area: Parse errors are 500 without a policy
-    current: "`json_serialize_sql` runs only under validation, so a syntax error is an unclassified `internal_error`."
-    spec: "`bad_request` regardless of policy (D7)."
-    fix: Run statement extraction unconditionally, or map DuckDB parser errors.
+  - area: Parse errors are classified but plain text
+    current: "DuckDB parser and syntax errors map to `bad_request` / `sql_parse_error` in `classifyError` (`pkg/server/errors.go`), but without preaggregation enabled the body is still plain text."
+    spec: "`bad_request` with the envelope (D4, D7)."
+    fix: Covered by the envelope fix above.
     cases:
-      post/concurrent-association:
-        - s4.error.status.500
-      rest/sql-parse-error:
-        - error.status.500
       post/sql-parse-error:
-        - error.status.500
         - error.content-type
         - error.not-json
-      rest/concurrent-association:
-        - s4.error.status.500
-  - area: "`preagg` is unknown"
-    current: "`invalid 'type' parameter: preagg` as `bad_request`."
-    spec: "`unsupported_command` (D6). Go is the intended first `preagg` implementation (#1234)."
-    fix: Recognise the command and answer `unsupported_command` until implemented.
+  - area: "`preagg` is disabled in the installed binary"
+    current: "`preagg` is recognised and answered with `unsupported_command` / `command_disabled` unless the embedding application configures `WithPreaggregation`; the CLI does not, and without it the body is plain text."
+    spec: "`unsupported_command` (D6) with the envelope (D4)."
+    fix: Covered by the envelope fix above.
     cases:
       post/preagg-unsupported:
         - error.content-type

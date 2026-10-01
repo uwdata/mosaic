@@ -21,7 +21,10 @@ type queryParams struct {
 	raw  []byte
 }
 
-const arrowContentType = "application/vnd.apache.arrow.stream"
+const (
+	arrowContentType = "application/vnd.apache.arrow.stream"
+	jsonContentType  = "application/json"
+)
 
 // commandExecutor is private so the server package does not expose query's
 // current schema-policy plumbing as a supported extension point.
@@ -31,12 +34,14 @@ type commandExecutor interface {
 }
 
 type handler struct {
-	db           commandExecutor
-	logger       *slog.Logger
-	authorizer   commandAuthorizer
-	httpHandler  http.Handler
-	cacheControl string
-	varyHeaders  []string
+	db                    commandExecutor
+	logger                *slog.Logger
+	authorizer            commandAuthorizer
+	httpHandler           http.Handler
+	cacheControl          string
+	varyHeaders           []string
+	preaggregator         *query.PreAggregator
+	preaggregateNamespace func(context.Context, queryParams) (query.Namespace, error)
 }
 
 // New constructs a Mosaic HTTP handler backed by db. Omitting
@@ -51,7 +56,16 @@ func New(db *query.DB, opts ...Option) (http.Handler, error) {
 		return nil, err
 	}
 
-	return newHandler(db, cfg), nil
+	s := newHandler(db, cfg)
+	if cfg.preaggregate != nil {
+		p, err := query.NewPreAggregator(context.Background(), db, cfg.preaggregate.materializer)
+		if err != nil {
+			return nil, err
+		}
+		s.preaggregator = p
+		s.preaggregateNamespace = cfg.preaggregate.namespace
+	}
+	return s, nil
 }
 
 func newHandler(db commandExecutor, cfg config) *handler {
@@ -72,7 +86,7 @@ func newHandler(db commandExecutor, cfg config) *handler {
 }
 
 func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if s.cacheControl != "" {
+	if s.cacheControl != "" || s.preaggregator != nil {
 		w.Header().Set("Cache-Control", "no-store")
 	}
 	if len(s.varyHeaders) > 0 {
@@ -92,15 +106,23 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 			err = json.Unmarshal(raw, &params)
 		}
 		if err != nil {
-			s.writeError(w, r, fmt.Errorf("%w: decode request body: %w", ErrInvalidCommand, err))
+			s.writeError(w, r, malformedJSON(err))
 			return
 		}
 		params.raw = raw
 
 	case http.MethodGet:
 		q := r.URL.Query()
-		params.Type = new(CommandType(q.Get("type")))
-		params.SQL = new(q.Get("sql"))
+		if q.Has("type") {
+			params.Type = new(CommandType(q.Get("type")))
+		}
+		if q.Has("sql") {
+			params.SQL = new(q.Get("sql"))
+		}
+		if params.Type != nil && *params.Type == CommandPreagg {
+			s.writeError(w, r, invalidField("type", "preagg requires POST"))
+			return
+		}
 
 	default:
 		s.writeError(w, r, fmt.Errorf("%w: %s", errMethodNotAllowed, r.Method))
@@ -118,7 +140,12 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == http.MethodGet && s.cacheControl != "" {
+	contentType := arrowContentType
+	if *params.Type == CommandPreagg {
+		contentType = jsonContentType
+	}
+
+	if r.Method == http.MethodGet && s.cacheControl != "" && s.preaggregator == nil {
 		etag := responseETag(data, responseEncoding(r, data))
 		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" && !matchesETag(value, etag, false) {
 			http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)
@@ -132,7 +159,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", arrowContentType)
+	w.Header().Set("Content-Type", contentType)
 	if _, err = w.Write(data); err != nil {
 		s.logger.Error("server: failed to write response", "error", err)
 	}
@@ -160,7 +187,16 @@ func (s *handler) execCommand(r *http.Request, params queryParams) ([]byte, erro
 		return nil, s.db.Exec(ctx, *params.SQL)
 
 	case CommandArrow:
-		return s.db.Query(ctx, *params.SQL, policy)
+		if s.preaggregator == nil {
+			return s.db.Query(ctx, *params.SQL, policy)
+		}
+		return s.queryPreaggregate(r, params, policy)
+
+	case CommandPreagg:
+		if s.preaggregator == nil {
+			return nil, errUnsupportedCommand
+		}
+		return s.queryPreaggregate(r, params, policy)
 
 	default:
 		return nil, fmt.Errorf("server: no executor for command type %q", *params.Type)
@@ -169,15 +205,18 @@ func (s *handler) execCommand(r *http.Request, params queryParams) ([]byte, erro
 
 func (p queryParams) Validate() error {
 	if p.Type == nil || *p.Type == "" {
-		return fmt.Errorf("%w: missing required 'type' parameter", ErrInvalidCommand)
+		return missingField("type")
 	}
 
-	if *p.Type != CommandArrow && *p.Type != CommandExec {
-		return fmt.Errorf("%w: invalid 'type' parameter: %s", ErrInvalidCommand, *p.Type)
+	if *p.Type != CommandArrow && *p.Type != CommandExec && *p.Type != CommandPreagg {
+		return invalidField("type", "invalid 'type' parameter: "+string(*p.Type))
 	}
 
-	if p.SQL == nil || *p.SQL == "" {
-		return fmt.Errorf("%w: missing required 'sql' parameter", ErrInvalidCommand)
+	if p.SQL == nil {
+		return missingField("sql")
+	}
+	if *p.SQL == "" {
+		return invalidField("sql", "empty 'sql' parameter")
 	}
 
 	return nil
