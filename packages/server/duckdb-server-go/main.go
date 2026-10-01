@@ -35,7 +35,7 @@ func run() int {
 	flag.Var(&varyHeaders, "vary", "Comma-separated request header names to append to Vary; may be repeated")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	var gatekeeper gatekeeperFlag
-	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":1,"options":{}} enables validation with defaults`)
+	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":2,"options":{}} enables validation with defaults`)
 	flag.Parse()
 	*address = normalizeAddress(*address)
 
@@ -58,14 +58,7 @@ func run() int {
 	}
 
 	validation := gatekeeper.document != nil
-	var initializeOnce sync.Once
-	var initializeErr error
-	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
-		initializeOnce.Do(func() {
-			initializeErr = initializeDatabase(ctx, execer, *extensionsStr, gatekeeper.document)
-		})
-		return initializeErr
-	})
+	connector, err := newConnector(ctx, *dbPath, *extensionsStr, gatekeeper.document)
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
 		return 1
@@ -108,7 +101,7 @@ func run() int {
 	}
 	logger.Warn("DuckDB Server permits all HTTP origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
-	config := map[string]interface{}{
+	config := map[string]any{
 		"database":             *dbPath,
 		"address":              *address,
 		"port":                 *port,
@@ -154,6 +147,15 @@ func run() int {
 		return 1
 	}
 	return 0
+}
+
+func newConnector(ctx context.Context, dsn, extensionList string, document *string) (*duckdb.Connector, error) {
+	var once sync.Once
+	var initErr error
+	return duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
+		once.Do(func() { initErr = initializeDatabase(ctx, execer, extensionList, document) })
+		return initErr
+	})
 }
 
 // initializeDatabase is the CLI's trusted initialization. Extensions named by --load-extensions are installed first so

@@ -11,19 +11,11 @@ func TestNewRejectsInvalidConfiguration(t *testing.T) {
 	_, err := New(nil)
 	require.Error(t, err)
 
-	_, err = applyOptions([]Option{nil})
-	require.Error(t, err)
-}
-
-func TestWithMaxMessageBytesRejectsNonpositiveLimits(t *testing.T) {
-	for _, limit := range []int64{-1, 0} {
-		_, err := applyOptions([]Option{WithMaxMessageBytes(limit)})
-		require.ErrorContains(t, err, "must be positive")
-	}
-}
-
-func TestWithCORSRejectsInvalidConfiguration(t *testing.T) {
-	tests := []Option{
+	for i, option := range []Option{
+		nil,
+		WithMaxBytes(0),
+		WithMaxBytes(-1),
+		WithAuthorizer[struct{}](nil),
 		WithCORS(CORSOptions{AllowedOrigins: []string{"app.example"}}),
 		WithCORS(CORSOptions{AllowedOrigins: []string{"*"}}),
 		WithCORS(CORSOptions{AllowAllOrigins: true, AllowCredentials: true}),
@@ -31,11 +23,9 @@ func TestWithCORSRejectsInvalidConfiguration(t *testing.T) {
 		WithCORS(CORSOptions{AllowAllHeaders: true, AllowedHeaders: []string{"Authorization"}}),
 		WithCORS(CORSOptions{AllowedHeaders: []string{" "}}),
 		WithCORS(CORSOptions{MaxAge: -time.Second}),
-	}
-
-	for _, option := range tests {
+	} {
 		_, err := applyOptions([]Option{option})
-		require.Error(t, err)
+		require.Error(t, err, "option %d", i)
 	}
 }
 

@@ -1,11 +1,11 @@
 package server
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -38,13 +38,13 @@ type CORSOptions struct {
 }
 
 type config struct {
-	logger          *slog.Logger
-	authorizer      requestAuthorizer
-	cors            CORSOptions
-	corsProtection  *http.CrossOriginProtection
-	maxMessageBytes int64
-	cacheControl    string
-	varyHeaders     []string
+	logger         *slog.Logger
+	authorizer     commandAuthorizer
+	cors           CORSOptions
+	corsProtection *http.CrossOriginProtection
+	maxBytes       int64
+	cacheControl   string
+	varyHeaders    []string
 }
 
 func defaultConfig() config {
@@ -61,9 +61,6 @@ type Option interface {
 type optionFunc func(*config) error
 
 func (f optionFunc) apply(cfg *config) error {
-	if f == nil {
-		return errNilOption
-	}
 	return f(cfg)
 }
 
@@ -82,36 +79,22 @@ func applyOptions(opts []Option) (config, error) {
 
 func WithLogger(logger *slog.Logger) Option {
 	return optionFunc(func(cfg *config) error {
-		configured := logger
-		if configured == nil {
-			configured = slog.Default()
-		}
-		cfg.logger = configured
+		cfg.logger = cmp.Or(logger, slog.Default())
 		return nil
 	})
 }
 
-// WithMaxMessageBytes limits HTTP request bodies to n bytes, which must be
-// positive. The limit applies to every request before request authorization.
+// WithMaxBytes limits HTTP request bodies to n bytes, which must be
+// positive, using http.MaxBytesHandler. The limit applies to every request.
 // Omitting it leaves request bodies unbounded.
-func WithMaxMessageBytes(n int64) Option {
+func WithMaxBytes(n int64) Option {
 	return optionFunc(func(cfg *config) error {
 		if n <= 0 {
-			return errors.New("server: maximum message bytes must be positive")
+			return errors.New("server: maximum bytes must be positive")
 		}
-		cfg.maxMessageBytes = n
+		cfg.maxBytes = n
 		return nil
 	})
-}
-
-func isNilValue(value any) bool {
-	v := reflect.ValueOf(value)
-	switch v.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
-		return v.IsNil()
-	default:
-		return false
-	}
 }
 
 func WithCORS(options CORSOptions) Option {

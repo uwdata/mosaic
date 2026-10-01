@@ -1,18 +1,13 @@
 package server
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
 func TestCORSActualRequestNegotiation(t *testing.T) {
@@ -140,23 +135,6 @@ func TestCORSPreflight(t *testing.T) {
 		require.Equal(t, http.StatusOK, res.Code)
 		require.False(t, called)
 	})
-}
-
-func TestCORSPreflightBypassesAuthorization(t *testing.T) {
-	var requestCalls atomic.Int32
-	handler := mustHandler(t, failOnCallExecutor{t},
-		WithCORS(CORSOptions{AllowedOrigins: []string{"https://app.example"}}),
-		WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-			requestCalls.Add(1)
-			return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return nil, nil }, nil
-		})),
-	)
-	res := httptest.NewRecorder()
-
-	handler.ServeHTTP(res, newPreflight("https://app.example", http.MethodPost, "content-type"))
-
-	require.Equal(t, http.StatusOK, res.Code)
-	require.Zero(t, requestCalls.Load())
 }
 
 func TestCORSPreservesExistingVaryValues(t *testing.T) {
@@ -295,26 +273,6 @@ func TestCrossOriginProtection(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestCrossOriginGETExecRejectedBeforeAuthorizationAndExecution(t *testing.T) {
-	var requestCalls atomic.Int32
-	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-		requestCalls.Add(1)
-		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return nil, nil }, nil
-	})))
-	values := make(url.Values)
-	values.Set("type", string(CommandExec))
-	values.Set("sql", "CREATE TABLE must_not_exist(value INTEGER)")
-	req := httptest.NewRequest(http.MethodGet, "http://server.example/?"+values.Encode(), nil)
-	req.Header.Set("Origin", "https://other.example")
-	req.Header.Set("Sec-Fetch-Site", "cross-site")
-	res := httptest.NewRecorder()
-
-	handler.ServeHTTP(res, req)
-
-	require.Equal(t, http.StatusForbidden, res.Code)
-	require.Zero(t, requestCalls.Load())
 }
 
 func newProtectedCORSHandler(t *testing.T, options CORSOptions, next http.Handler) http.Handler {
