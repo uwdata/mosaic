@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from '@uwdata/mosaic-sql';
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, row_number, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clausePoint, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
@@ -245,6 +245,17 @@ describe('PreAggregator', () => {
     expect(await run(query)).toStrictEqual([13, true]);
   });
 
+  it('does not support window functions without aggregate inputs', async () => {
+    // should handle query, but through non-optimized route
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from('testData')
+        .select({ measure: avg('x'), rn: row_number().orderby('dim'), dim: 'dim' })
+        .groupby('dim')
+        .where(predicate);
+    };
+    expect(await run(query)).toStrictEqual([3.5, false]);
+  });
+
   it('supports queries with having clause', async () => {
     const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
@@ -321,6 +332,25 @@ describe('PreAggregator', () => {
     // one preaggregate row per expression value ('big', 'small')
     const rows = await mc.query(Query.from(info!.table).select({ n: count() }));
     expect(rows.get(0).n).toBe(2);
+  });
+
+  it('skips expression-valued selection fields over subqueries', async () => {
+    const size = sql`CASE WHEN "x" > 2 THEN 'big' ELSE 'small' END`;
+    const clause = clausePoint(size, 'big', { source: {} });
+    const query = (predicate: FilterExpr = []) => {
+      const counts = Query.from('testData')
+        .select({ order: 'order', freq: count() })
+        .groupby('order')
+        .where(predicate);
+      return Query.with({ counts })
+        .from('counts')
+        .select({ measure: sum('freq') });
+    };
+    // column references within verbatim SQL text can not be pushed
+    // down to subqueries, so expect the non-optimized route
+    const { value, info } = await runQuery(query, clause);
+    expect(value).toBe(2);
+    expect(info).toBeFalsy();
   });
 
   it('supports case-insensitive collisions among groupby dimensions', async () => {
