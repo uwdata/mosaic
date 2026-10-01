@@ -42,7 +42,11 @@ def serve() -> None:
     args = parser.parse_args(namespace=Args())
 
     config = uvicorn.Config(
-        create_app(args.database), host=args.address, port=args.port, http2=True
+        create_app(args.database),
+        host=args.address,
+        port=args.port,
+        http="zttp",
+        http2=True,
     )
     server = uvicorn.Server(config)
     server.run()
