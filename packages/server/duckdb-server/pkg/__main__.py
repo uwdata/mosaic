@@ -5,28 +5,16 @@ import logging
 import sys
 from typing import TYPE_CHECKING
 
-import duckdb
 import msgspec
 import uvicorn
 
 from pkg.app import create_app
-from pkg.server import server
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-
-
-def serve() -> None:
-    db_path = sys.argv[1] if len(sys.argv) >= 2 else ":memory:"  # ruff: ignore[magic-value-comparison]
-
-    logger.info(f"Using DuckDB {db_path}")
-
-    con = duckdb.connect(db_path)
-
-    server(con)
 
 
 class Args(msgspec.Struct):
@@ -40,7 +28,7 @@ class Args(msgspec.Struct):
     """HTTP Port."""
 
 
-def main() -> None:
+def serve() -> None:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
