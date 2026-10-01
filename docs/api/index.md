@@ -19,6 +19,7 @@ Mosaic API Reference.
 - [Aggregate Functions](/api/sql/aggregate-functions)
 - [Window Functions](/api/sql/window-functions)
 - [Data Loading](/api/sql/data-loading)
+- [Code Generators](/api/sql/code-generators)
 
 ## Mosaic Inputs
 

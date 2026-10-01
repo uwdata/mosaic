@@ -33,6 +33,7 @@ export { collectAggregates, collectColumns, collectParams, isAggregateExpression
 export { walk, type VisitorCallback, type VisitorResult } from './visit/walk.js';
 export { SQLCodeGenerator } from './visit/codegen/sql.js';
 export { DuckDBCodeGenerator, duckDBCodeGenerator } from './visit/codegen/duckdb.js';
+export { ClickHouseCodeGenerator, clickHouseCodeGenerator } from './visit/codegen/clickhouse.js';
 
 export { createTable, createSchema } from './load/create.js';
 export { loadExtension } from './load/extension.js';
