@@ -9,7 +9,10 @@ dependencies = [
   "msgspec",
   "pandas",
   "pyarrow",
-  "socketify"
+  "socketify",
+  "starlette>=1.7.0",
+  "uvicorn>=0.54.0",
+  "zttp>=0.0.34",
 ]
 
 [project.scripts]
