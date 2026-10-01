@@ -73,30 +73,6 @@ export function loadObjects(
 
 function parameters(options: Record<string, unknown>) {
   return Object.entries(options)
-    .map(([key, value]) => `${key}=${toDuckDBValue(value)}`)
+    .map(([key, value]) => `${key}=${literalToSQL(value)}`)
     .join(', ');
-}
-
-function toDuckDBValue(value: unknown): string {
-  switch (typeof value) {
-    case 'boolean':
-      return String(value);
-    case 'string':
-      return literalToSQL(value);
-    case 'undefined':
-    case 'object':
-      if (value == null) {
-        return 'NULL';
-      } else if (Array.isArray(value)) {
-        return '[' + value.map(v => toDuckDBValue(v)).join(', ') + ']';
-      } else {
-        return '{'
-          + Object.entries(value)
-              .map(([k, v]) => `${literalToSQL(k)}: ${toDuckDBValue(v)}`)
-              .join(', ')
-          + '}';
-      }
-    default:
-      return `${value}`;
-  }
 }
