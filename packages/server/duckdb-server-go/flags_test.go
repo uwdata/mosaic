@@ -14,7 +14,7 @@ func TestOptionalCommaListFlag(t *testing.T) {
 }
 
 func TestGatekeeperFlagPreservesDocument(t *testing.T) {
-	for _, document := range []string{` {"version":1,"options":{"allowed_tables":[]}} `, `null`, ``, `{"version":1,"version":2}`} {
+	for _, document := range []string{` {"version":2,"options":{"allowed_tables":[]}} `, `null`, ``, `{"version":1,"version":2}`} {
 		var flag gatekeeperFlag
 		require.Nil(t, flag.document)
 		require.NoError(t, flag.Set(document))

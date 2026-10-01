@@ -1,4 +1,4 @@
-import { SocketConnector } from './connectors/socket.js';
+import { RestConnector } from './connectors/rest.js';
 import { type Connector } from './connectors/Connector.js';
 import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
 import { voidLogger } from './util/void-logger.js';
@@ -52,7 +52,7 @@ export class Coordinator {
   protected _logger: Logger = voidLogger();
 
   /**
-   * @param db Database connector. Defaults to a web socket connection.
+   * @param db Database connector. Defaults to a REST connection.
    * @param options Coordinator options.
    * @param options.logger The logger to use, defaults to `console`.
    * @param options.manager The query manager to use.
@@ -64,7 +64,7 @@ export class Coordinator {
    * @param options.codegen SQL dialect visitor for the backend.
    */
   constructor(
-    db: Connector = new SocketConnector(),
+    db: Connector = new RestConnector(),
     options: {
       logger?: Logger | null;
       manager?: QueryManager;

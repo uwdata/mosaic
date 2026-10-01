@@ -11,19 +11,11 @@ func TestNewRejectsInvalidConfiguration(t *testing.T) {
 	_, err := New(nil)
 	require.Error(t, err)
 
-	_, err = applyOptions([]Option{nil})
-	require.Error(t, err)
-}
-
-func TestWithMaxMessageBytesRejectsNonpositiveLimits(t *testing.T) {
-	for _, limit := range []int64{-1, 0} {
-		_, err := applyOptions([]Option{WithMaxMessageBytes(limit)})
-		require.ErrorContains(t, err, "must be positive")
-	}
-}
-
-func TestWithCORSRejectsInvalidConfiguration(t *testing.T) {
-	tests := []Option{
+	for i, option := range []Option{
+		nil,
+		WithMaxBytes(0),
+		WithMaxBytes(-1),
+		WithAuthorizer[struct{}](nil),
 		WithCORS(CORSOptions{AllowedOrigins: []string{"app.example"}}),
 		WithCORS(CORSOptions{AllowedOrigins: []string{"*"}}),
 		WithCORS(CORSOptions{AllowAllOrigins: true, AllowCredentials: true}),
@@ -31,11 +23,9 @@ func TestWithCORSRejectsInvalidConfiguration(t *testing.T) {
 		WithCORS(CORSOptions{AllowAllHeaders: true, AllowedHeaders: []string{"Authorization"}}),
 		WithCORS(CORSOptions{AllowedHeaders: []string{" "}}),
 		WithCORS(CORSOptions{MaxAge: -time.Second}),
-	}
-
-	for _, option := range tests {
+	} {
 		_, err := applyOptions([]Option{option})
-		require.Error(t, err)
+		require.Error(t, err, "option %d", i)
 	}
 }
 
@@ -53,33 +43,6 @@ func TestWithCORSNormalizesAndCopiesConfiguration(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"https://app.example"}, cfg.cors.AllowedOrigins)
 	require.Equal(t, []string{"Content-Type"}, cfg.cors.AllowedHeaders)
-}
-
-func TestWithWebSocketRejectsInvalidConfiguration(t *testing.T) {
-	tests := []Option{
-		WithWebSocket(WebSocketOptions{AllowedOrigins: []string{"["}}),
-		WithWebSocket(WebSocketOptions{AllowedOrigins: []string{"*"}}),
-		WithWebSocket(WebSocketOptions{AllowedOrigins: []string{" "}}),
-		WithWebSocket(WebSocketOptions{
-			AllowedOrigins:  []string{"app.example"},
-			AllowAllOrigins: true,
-		}),
-	}
-
-	for _, option := range tests {
-		_, err := applyOptions([]Option{option})
-		require.Error(t, err)
-	}
-}
-
-func TestWithWebSocketCopiesConfiguration(t *testing.T) {
-	origins := []string{" *.Example "}
-	option := WithWebSocket(WebSocketOptions{AllowedOrigins: origins})
-	origins[0] = "changed.example"
-
-	cfg, err := applyOptions([]Option{option})
-	require.NoError(t, err)
-	require.Equal(t, []string{"*.Example"}, cfg.websocket.AllowedOrigins)
 }
 
 func TestWithCacheControl(t *testing.T) {

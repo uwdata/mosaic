@@ -1,4 +1,4 @@
-import { Coordinator, decodeIPC, DuckDBWASMConnector, RestConnector, SocketConnector } from '@uwdata/mosaic-core';
+import { Coordinator, decodeIPC, DuckDBWASMConnector, RestConnector } from '@uwdata/mosaic-core';
 import { clickHouseCodeGenerator, duckDBCodeGenerator } from '@uwdata/mosaic-sql';
 import { createAPIContext } from '@uwdata/vgplot';
 import { ClickHouseConnector } from './clickhouse/connector.js';
@@ -35,9 +35,6 @@ let wasm;
 export function setDatabaseConnector(type) {
   let connector;
   switch (type) {
-    case 'socket':
-      connector = new SocketConnector();
-      break;
     case 'rest':
       connector = new RestConnector();
       break;

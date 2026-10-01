@@ -99,7 +99,7 @@ The supported _options_ are:
 
 - _baseURL_: The base URL (default `null`) from which to load data files.
 - _namespace_: The namespace to use for vgplot API methods (default `'vg'`)`.
-- _connector_: The database connector to use, one of `null` (default, for no explicit connector code), `rest`, `socket`, or `wasm`.
+- _connector_: The database connector to use, one of `null` (default, for no explicit connector code), `rest`, or `wasm`.
 - _depth_: The starting text indentation depth (default `0`).
 - _imports_: A `Map` indicating external ESM packages to load. Each key is the name of the package to load, and each value is either a string or string array indicating what to import from that package. The default is `new Map([["@uwdata/vgplot", "* as vg"]])`.
 

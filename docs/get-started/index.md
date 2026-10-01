@@ -60,7 +60,7 @@ For local installation you should have `pnpm` and `node` version 22 or higher.
 
 After installation, you can run examples locally, using either DuckDB-WASM or a DuckDB server to load and process data.
 
-* Run `pnpm dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. The `socket` and `rest` connectors will only work if a local DuckDB server is running. For greater performance, launch and connect to a local DuckDB server as described below below.
+* Run `pnpm dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. The `rest` connector will only work if a local DuckDB server is running. For greater performance, launch and connect to a local DuckDB server as described below below.
 
 To launch a local DuckDB server:
 

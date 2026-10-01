@@ -11,7 +11,7 @@ async function wait() {
 
 describe('coordinator', () => {
   it('has accessible singleton', () => {
-    // Mock the connector, avoid instantiating default socket connector
+    // Mock the connector, avoid instantiating default REST connector
     const connector = {
       async query() {
         return null;

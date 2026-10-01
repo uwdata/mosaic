@@ -1,12 +1,11 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["websockets"]
 # ///
 """
 Mosaic Server Benchmark
 
-Benchmarks server implementations over HTTP POST and WebSocket,
+Benchmarks server implementations over HTTP POST,
 with response-size verification.
 
 Usage:
@@ -18,8 +17,6 @@ Options:
     -w, --warmup N          Warmup requests (default: 5)
     -s, --servers LIST      Comma-separated servers to test (default: auto-detect)
                             Options: rust, go, python, node
-    --ws-only               Only run WebSocket benchmarks
-    --http-only             Only run HTTP benchmarks
     -h, --help              Show this help
 
 If --servers is given (or auto-detected), each server is built, started,
@@ -30,7 +27,6 @@ a server already running on the given port.
 from __future__ import annotations
 
 import argparse
-import asyncio
 import http.client
 import json
 import math
@@ -40,8 +36,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-
-import websockets
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -181,41 +175,6 @@ def bench_http(
         elapsed = (time.perf_counter() - t0) * 1000
         timings.append(elapsed)
         resp_size = len(data)
-    return timings, resp_size
-
-
-# ---------------------------------------------------------------------------
-# WebSocket helpers
-# ---------------------------------------------------------------------------
-
-
-async def ws_query(ws: websockets.ClientConnection, qtype: str, sql: str) -> bytes:
-    await ws.send(json.dumps({"type": qtype, "sql": sql}))
-    resp = await ws.recv()
-    return resp if isinstance(resp, bytes) else resp.encode()
-
-
-async def bench_ws(
-    uri: str,
-    qtype: str,
-    sql: str,
-    n: int,
-    warmup: int,
-) -> tuple[list[float], int]:
-    """Returns (timings_ms, response_bytes) over a single persistent connection."""
-    resp_size = 0
-    async with websockets.connect(uri, max_size=50_000_000) as ws:
-        for _ in range(warmup):
-            data = await ws_query(ws, qtype, sql)
-            resp_size = len(data)
-
-        timings: list[float] = []
-        for _ in range(n):
-            t0 = time.perf_counter()
-            data = await ws_query(ws, qtype, sql)
-            elapsed = (time.perf_counter() - t0) * 1000
-            timings.append(elapsed)
-            resp_size = len(data)
     return timings, resp_size
 
 
@@ -390,14 +349,11 @@ def detect_servers() -> list[str]:
 # Benchmark runner
 # ---------------------------------------------------------------------------
 
-# Results: {transport: {label: median_ms}}
-ServerResults = dict[str, dict[str, float]]
+# Results: {label: median_ms}
+ServerResults = dict[str, float]
 
 
-def run_benchmarks(
-    host: str, port: int, iterations: int, warmup: int, run_http: bool, run_ws: bool
-) -> ServerResults:
-    ws_url = f"ws://{host}:{port}"
+def run_benchmarks(host: str, port: int, iterations: int, warmup: int) -> ServerResults:
     results: ServerResults = {}
 
     # Check server
@@ -422,33 +378,14 @@ def run_benchmarks(
     print(f"  Warmup:     {warmup}")
     print()
 
-    # HTTP benchmarks
-    if run_http:
-        http_results: dict[str, float] = {}
-        print("--- HTTP POST ---\n")
-        print_header()
-        for name, qtype, sql in BENCHMARKS:
-            label = f"{name} [{qtype}]"
-            timings, size = bench_http(host, port, qtype, sql, iterations, warmup)
-            print_row(label, timings, size)
-            http_results[label] = statistics.median(timings)
-        results["http"] = http_results
-        print()
-
-    # WebSocket benchmarks
-    if run_ws:
-        ws_results: dict[str, float] = {}
-        print("--- WebSocket ---\n")
-        print_header()
-        for name, qtype, sql in BENCHMARKS:
-            label = f"{name} [{qtype}]"
-            timings, size = asyncio.run(
-                bench_ws(ws_url, qtype, sql, iterations, warmup)
-            )
-            print_row(label, timings, size)
-            ws_results[label] = statistics.median(timings)
-        results["ws"] = ws_results
-        print()
+    print("--- HTTP POST ---\n")
+    print_header()
+    for name, qtype, sql in BENCHMARKS:
+        label = f"{name} [{qtype}]"
+        timings, size = bench_http(host, port, qtype, sql, iterations, warmup)
+        print_row(label, timings, size)
+        results[label] = statistics.median(timings)
+    print()
 
     return results
 
@@ -459,54 +396,39 @@ def print_comparison(all_results: dict[str, ServerResults]) -> None:
     if len(servers) < 2:  # ruff: ignore[magic-value-comparison]
         return
 
-    # Collect which transports were benchmarked
-    transports: set[str] = set()
-    for sr in all_results.values():
-        transports.update(sr.keys())
+    labels = list(all_results[servers[0]].keys())
 
-    for transport in sorted(transports):
-        transport_label = "HTTP POST" if transport == "http" else "WebSocket"
+    # Each server gets two sub-columns: median ms + relative
+    # e.g.  "  rust          go            python        node"
+    #       "  0.69 (1.14x)  0.56 (0.93x)  0.60 (0.99x) 0.61 (1.01x)"
+    sub_w = 14  # width per server column
+    label_w = 34
 
-        # Only include servers that have results for this transport
-        active = [s for s in servers if transport in all_results[s]]
-        if len(active) < 2:  # ruff: ignore[magic-value-comparison]
-            continue
+    header = f"  {'QUERY':<{label_w}s}" + "".join(f" {s:>{sub_w}s}" for s in servers)
+    units = f"  {'':<{label_w}s}" + "".join(f" {'ms (rel)':>{sub_w}s}" for _ in servers)
+    sep = "  " + "-" * (label_w + (sub_w + 1) * len(servers))
 
-        labels = list(all_results[active[0]][transport].keys())
+    print("=== Comparison: HTTP POST (median ms) ===\n")
+    print(header)
+    print(units)
+    print(sep)
 
-        # Each server gets two sub-columns: median ms + relative
-        # e.g.  "  rust          go            python        node"
-        #       "  0.69 (1.14x)  0.56 (0.93x)  0.60 (0.99x) 0.61 (1.01x)"
-        sub_w = 14  # width per server column
-        label_w = 34
+    for label in labels:
+        vals = [all_results[s].get(label) for s in servers]
+        valid = [v for v in vals if v is not None]
+        baseline = statistics.median(valid) if valid else 1.0
 
-        header = f"  {'QUERY':<{label_w}s}" + "".join(f" {s:>{sub_w}s}" for s in active)
-        units = f"  {'':<{label_w}s}" + "".join(
-            f" {'ms (rel)':>{sub_w}s}" for _ in active
-        )
-        sep = "  " + "-" * (label_w + (sub_w + 1) * len(active))
+        row = f"  {label:<{label_w}s}"
+        for v in vals:
+            if v is not None and baseline > 0:
+                rel = v / baseline
+                cell = f"{v:.2f} ({rel:.2f}x)"
+                row += f" {cell:>{sub_w}s}"
+            else:
+                row += f" {'—':>{sub_w}s}"
+        print(row)
 
-        print(f"=== Comparison: {transport_label} (median ms) ===\n")
-        print(header)
-        print(units)
-        print(sep)
-
-        for label in labels:
-            vals = [all_results[s][transport].get(label) for s in active]
-            valid = [v for v in vals if v is not None]
-            baseline = statistics.median(valid) if valid else 1.0
-
-            row = f"  {label:<{label_w}s}"
-            for v in vals:
-                if v is not None and baseline > 0:
-                    rel = v / baseline
-                    cell = f"{v:.2f} ({rel:.2f}x)"
-                    row += f" {cell:>{sub_w}s}"
-                else:
-                    row += f" {'—':>{sub_w}s}"
-            print(row)
-
-        print()
+    print()
 
 
 # ---------------------------------------------------------------------------
@@ -525,9 +447,6 @@ def main() -> None:
         help="Comma-separated list of servers (rust,go,python,node). "
         "If omitted, auto-detects available runtimes.",
     )
-    transport = parser.add_mutually_exclusive_group()
-    transport.add_argument("--ws-only", action="store_true", help="WebSocket only")
-    transport.add_argument("--http-only", action="store_true", help="HTTP only")
     args = parser.parse_args()
 
     if args.iterations < 1:
@@ -535,8 +454,6 @@ def main() -> None:
 
     host = "localhost"
     port = args.port
-    run_http = not args.ws_only
-    run_ws = not args.http_only
 
     servers = (
         [s.strip() for s in args.servers.split(",")]
@@ -582,9 +499,7 @@ def main() -> None:
                 continue
             print("  Server is ready.\n")
 
-            results = run_benchmarks(
-                host, port, args.iterations, args.warmup, run_http, run_ws
-            )
+            results = run_benchmarks(host, port, args.iterations, args.warmup)
             if results:
                 all_results[server] = results
         finally:
