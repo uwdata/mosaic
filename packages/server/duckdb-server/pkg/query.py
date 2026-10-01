@@ -3,15 +3,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, final
 
 import pyarrow as pa
+from starlette.responses import Response
 
 from pkg.protocols import Handler, Request, Sql
 
 if TYPE_CHECKING:
     from duckdb import DuckDBPyConnection as Con
 
+    from pkg.db import Database
+
+
+class ArrowResponse(Response):
+    media_type = "application/vnd.apache.arrow.stream"
+
 
 @final
-class ArrowRequest(Request, forbid_unknown_fields=False):
+class ArrowRequest(Request[pa.Buffer], forbid_unknown_fields=False):
     """Returns a result table."""
 
     @staticmethod
@@ -30,9 +37,17 @@ class ArrowRequest(Request, forbid_unknown_fields=False):
         buffer = sink.getvalue().to_pybytes()
         handler.arrow(buffer)
 
+    def _query(self, db: Database, /) -> pa.Buffer:
+        return db.get_arrow(self.sql)
+
+    # TODO @dangotbanned: Figure out if `pa.Buffer.__buffer__` requires 3.12
+    # starlette accepts memoryview, which might remove a copy that `to_pybytes` is doing
+    def _into_response(self, buffer: pa.Buffer, /) -> ArrowResponse:
+        return ArrowResponse(buffer.to_pybytes())
+
 
 @final
-class ExecRequest(Request, forbid_unknown_fields=False):
+class ExecRequest(Request[None], forbid_unknown_fields=False):
     """Statements run in order on one connection.
 
     The protocol guarantees neither atomicity nor rollback: a later statement
@@ -47,3 +62,9 @@ class ExecRequest(Request, forbid_unknown_fields=False):
     def run(self, handler: Handler, con: Con) -> None:
         con.execute(self.sql)
         handler.done()
+
+    def _query(self, db: Database) -> None:
+        db.execute(self.sql)
+
+    def _into_response(self, _: None, /) -> Response:
+        return Response()

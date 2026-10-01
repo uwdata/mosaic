@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, NewType, Protocol
+from typing import TYPE_CHECKING, Any, Generic, NewType, Protocol, TypeVar
 
 import msgspec
+
+if TYPE_CHECKING:
+    from starlette.responses import Response
+
+    from pkg.db import Database
 
 Sql = NewType("Sql", str)
 """SQL text. 
@@ -11,9 +16,14 @@ Sql = NewType("Sql", str)
 - For `exec` it MAY contain several`;` separated statements, executed in order.
 """
 
+R = TypeVar("R")
+
 
 class Request(
-    msgspec.Struct, tag=lambda s: s.removesuffix("Request").lower(), tag_field="type"
+    msgspec.Struct,
+    Generic[R],
+    tag=lambda s: s.removesuffix("Request").lower(),
+    tag_field="type",
 ):
     """A command object.
 
@@ -25,6 +35,17 @@ class Request(
     metadata envelope."""
 
     sql: Sql
+
+    def _query(self, db: Database, /) -> R:
+        raise NotImplementedError
+
+    def _into_response(self, result: R, /) -> Response:
+        raise NotImplementedError
+
+    # TODO @dangotbanned: Rename after switching fully from socketify
+    def run_command(self, db: Database, /) -> Response:
+        result = self._query(db)
+        return self._into_response(result)
 
 
 # TODO @dangotbanned: Replace with whatever the next framework wants
