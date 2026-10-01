@@ -51,6 +51,7 @@ def serve() -> None:
         http="zttp",
         http2=True,
         reload=args.reload,
+        log_level=logging.DEBUG,
     )
     server = uvicorn.Server(config)
     server.run()
