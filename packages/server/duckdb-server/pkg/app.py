@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+from http import HTTPStatus
 from io import BytesIO
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import msgspec
 from starlette.applications import Starlette
 from starlette.endpoints import HTTPEndpoint
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse as _JSONResponse
 from starlette.routing import Route
 
 from pkg.db import Database
@@ -25,6 +27,20 @@ _SECONDS_24_HOURS = 86_400
 decoder: msgspec.json.Decoder[ArrowRequest | ExecRequest] = msgspec.json.Decoder(
     ArrowRequest | ExecRequest
 )
+
+encoder = msgspec.json.Encoder()
+
+
+class JSONResponse(_JSONResponse):
+    def render(self, content: Any) -> bytes:
+        return encoder.encode(content)
+
+# TODO @dangotbanned: `"missing required 'query' parameter", 400`
+# TODO @dangotbanned: `"Error processing query", 500`
+async def handle_error(request: Request, response: Exception) -> Response | Any:
+    if isinstance(response, msgspec.DecodeError):
+        return JSONResponse({"detail": str(response)}, HTTPStatus.BAD_REQUEST)
+    return response
 
 
 # TODO @dangotbanned: figure out the dep injection to request
@@ -65,6 +81,6 @@ def create_app(db_path: Path | str = ":memory:") -> Starlette:
     middleware = (cors,)
     routes = (Route("/", Endpoint, methods=("GET", "POST"), middleware=middleware),)
 
-    app = Starlette(routes=routes)
+    app = Starlette(routes=routes, exception_handlers={Exception: handle_error})
     app.state.db = Database(db_path)
     return app
