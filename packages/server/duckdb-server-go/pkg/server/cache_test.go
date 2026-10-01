@@ -3,14 +3,13 @@ package server
 import (
 	"context"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
-	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
 	"github.com/stretchr/testify/require"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
@@ -44,7 +43,7 @@ func TestHTTPCacheRevalidation(t *testing.T) {
 	require.NotEmpty(t, body)
 	etag := first.Header.Get("ETag")
 	require.Regexp(t, `^"[0-9a-f]{64}"$`, etag)
-	require.Equal(t, commandResponses[CommandArrow].contentType, first.Header.Get("Content-Type"))
+	require.Equal(t, arrowContentType, first.Header.Get("Content-Type"))
 
 	revalidated, body := get(etag)
 	require.Equal(t, http.StatusNotModified, revalidated.StatusCode)
@@ -82,18 +81,13 @@ func TestMatchesETag(t *testing.T) {
 		{"\"bad\x7f\", \"tag\"", false, false},
 		{`*, "tag"`, false, false},
 		{`w/"tag"`, false, false},
+		{`"tag-gzip"`, false, false},
+		{`W/"tag-zstd"`, false, false},
 	}
 	for _, tt := range tests {
 		require.Equal(t, tt.strong, matchesETag(tt.value, `"tag"`, false), "strong: %q", tt.value)
 		require.Equal(t, tt.weak, matchesETag(tt.value, `"tag"`, true), "weak: %q", tt.value)
 	}
-}
-
-func TestResponseETagIncludesFormat(t *testing.T) {
-	response := commandResponse{contentType: commandResponses[CommandArrow].contentType, data: []byte("result")}
-	etag := responseETag(response)
-	response.contentType = "application/octet-stream"
-	require.NotEqual(t, etag, responseETag(response))
 }
 
 func TestHTTPCachePreconditions(t *testing.T) {
@@ -106,14 +100,12 @@ func TestHTTPCachePreconditions(t *testing.T) {
 			return []byte("result"), nil
 		},
 	}
-	handler := mustHandler(t, spy, WithCacheControl("private, no-cache"), WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
-			if !allowed {
-				return nil, ErrPermissionDenied
-			}
-			return nil, nil
-		}, nil
-	})))
+	handler := mustHandler(t, spy, WithCacheControl("private, no-cache"), WithAuthorizer(func(*http.Request, Command[struct{}]) (*query.ValidationPolicy, error) {
+		if !allowed {
+			return nil, ErrPermissionDenied
+		}
+		return nil, nil
+	}))
 	first := httptest.NewRecorder()
 	handler.ServeHTTP(first, httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", nil))
 	require.Equal(t, http.StatusOK, first.Code)
@@ -180,14 +172,11 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 		{name: "origin denial", method: http.MethodGet, uri: "/?type=arrow&sql=SELECT+1", headers: http.Header{"Origin": {"http://untrusted.example"}}, status: http.StatusForbidden},
 		{name: "HEAD", method: http.MethodHead, uri: "/?type=arrow&sql=SELECT+1", status: http.StatusMethodNotAllowed},
 		{name: "missing SQL", method: http.MethodGet, uri: "/?type=arrow", status: http.StatusBadRequest},
-		{name: "removed JSON type", method: http.MethodGet, uri: "/?type=json&sql=SELECT+1", status: http.StatusBadRequest},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(tt.method, tt.uri, strings.NewReader(tt.body))
-			for name, values := range tt.headers {
-				req.Header[name] = values
-			}
+			maps.Copy(req.Header, tt.headers)
 			req.Header.Set("If-Match", `"other"`)
 			req.Header.Set("If-None-Match", "*")
 			res := httptest.NewRecorder()
@@ -197,26 +186,6 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 			require.Empty(t, res.Header().Get("ETag"))
 		})
 	}
-}
-
-func TestHTTPCacheWebSocket(t *testing.T) {
-	spy := &spyCommandExecutor{
-		failOnCallExecutor: failOnCallExecutor{t},
-		queryFn:            func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
-	}
-	server := newWebSocketTestServer(t, mustHandler(t, spy, WithCacheControl("public, max-age=60"), WithVary("X-Dataset")))
-	conn, res, err := server.dial(&websocket.DialOptions{HTTPHeader: http.Header{"If-None-Match": {"*"}}})
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
-	require.Equal(t, http.StatusSwitchingProtocols, res.StatusCode)
-	require.Equal(t, "no-store", res.Header.Get("Cache-Control"))
-	require.Empty(t, res.Header.Get("ETag"))
-	require.Contains(t, strings.Join(res.Header.Values("Vary"), ","), "X-Dataset")
-	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]string{"type": "arrow", "sql": "SELECT 1"}))
-	messageType, result, err := conn.Read(server.ctx)
-	require.NoError(t, err)
-	require.Equal(t, websocket.MessageBinary, messageType)
-	require.Equal(t, []byte("result"), result)
 }
 
 func TestVaryIndependentOfCacheControl(t *testing.T) {
@@ -260,18 +229,16 @@ func TestHTTPCachePolicyVariation(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
 		queryFn: func(_ context.Context, _ string, policy *query.ValidationPolicy) ([]byte, error) {
-			return []byte(policy.AllowedTables[0].Schema), nil
+			return []byte(policy.AllowedTables[0].SchemaPath[0]), nil
 		},
 	}
-	authorizer := WithAuthorizer(AuthorizerFunc[struct{}](func(r *http.Request) (CommandAuthorizer[struct{}], error) {
+	authorizer := WithAuthorizer(func(r *http.Request, _ Command[struct{}]) (*query.ValidationPolicy, error) {
 		tenant := r.Header.Get("X-Tenant-Id")
 		if tenant == "" {
 			return nil, ErrUnauthenticated
 		}
-		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
-			return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: tenant, Table: "*"}}}, nil
-		}, nil
-	}))
+		return &query.ValidationPolicy{AllowedTables: []query.TableRule{{SchemaPath: []string{tenant}, Table: "*"}}}, nil
+	})
 	handler := mustHandler(t, spy, authorizer, WithVary("X-Region", "X-Tenant-Id"), WithCacheControl("public, max-age=60"))
 	get := func(tenant, etag string) *httptest.ResponseRecorder {
 		t.Helper()

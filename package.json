@@ -11,6 +11,7 @@
   },
   "packageManager": "pnpm@12.6.0",
   "scripts": {
+    "mkcert": "node bin/mkcert.js",
     "preinstall": "npx only-allow pnpm",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
@@ -26,6 +27,7 @@
     "test": "lerna run schema && pnpm run typecheck && vitest run && pnpm -F mosaic-widget test",
     "server": "cd packages/server/duckdb-server && pnpm run dev",
     "server:rust": "cd packages/server/duckdb-server-rust && cargo run",
+    "server:go": "cd packages/server/duckdb-server-go && go run -tags=duckdb_arrow .",
     "server:node": "nodemon packages/server/duckdb/bin/run-server.js",
     "dev": "vite"
   },

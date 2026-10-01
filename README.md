@@ -36,7 +36,7 @@ This repository contains a set of related packages, spanning the core Mosaic arc
 
 ### Mosaic Architecture (`packages/mosaic`)
 
-* [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/core): The core Mosaic components. A central coordinator, parameters and selections for linking scalar values or query predicates (respectively) across Mosaic clients, and filter groups with materialized views of pre-aggregated data. The Mosaic coordinator can send queries either over the network to a backing server (`socket` and `rest` clients) or to a client-side [DuckDB-WASM](https://github.com/duckdb/duckdb-wasm) instance (`wasm` client).
+* [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/core): The core Mosaic components. A central coordinator, parameters and selections for linking scalar values or query predicates (respectively) across Mosaic clients, and filter groups with materialized views of pre-aggregated data. The Mosaic coordinator can send queries either over the network to a backing server (`rest` client) or to a client-side [DuckDB-WASM](https://github.com/duckdb/duckdb-wasm) instance (`wasm` client).
 * [`mosaic-sql`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/sql): An API for convenient construction and analysis of SQL queries. Query objects then coerce to SQL query strings.
 
 ### vgplot Libraries (`packages/vgplot`)
@@ -51,10 +51,10 @@ This repository contains a set of related packages, spanning the core Mosaic arc
 
 ### DuckDB Servers (`packages/server`)
 
-* [`duckdb-server`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server): A Python-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
+* [`duckdb-server`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server): A Python-based server that runs a local DuckDB instance and supports queries over HTTP, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
 * [`duckdb-server-rust`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-rust): A Rust-based server similar to `duckdb-server` (Python) and `mosaic-duckdb` (Node.js) with additional support for HTTP/2. We are still evaluating what server component works best. DuckDB support for Rust is often delayed compared to Python.
 * [`duckdb-server-go`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go): A Go-based server similar to `duckdb-server` (Python) and `mosaic-duckdb` (Node.js) with additional support for HTTP/2. It has experimental support for multi-tenant access control, function allowlisting and blocklisting, and other features to harden the server for production use.
-* [`mosaic-duckdb`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb): A Promise-based Node.js API to DuckDB, along with a data server that supports transfer of [Apache Arrow](https://arrow.apache.org/) and JSON data over either Web Sockets or HTTP. Due to quality and maintenance issues involving the Node.js DuckDB client and Arrow extension, we recommend using the Python-based `duckdb-server` package instead. However, we retain this package for both backwards compatibility and internal testing use.
+* [`mosaic-duckdb`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb): A Promise-based Node.js API to DuckDB, along with a data server that supports transfer of [Apache Arrow](https://arrow.apache.org/) and JSON data over HTTP. Due to quality and maintenance issues involving the Node.js DuckDB client and Arrow extension, we recommend using the Python-based `duckdb-server` package instead. However, we retain this package for both backwards compatibility and internal testing use.
 
 ### Examples (`packages/examples`)
 

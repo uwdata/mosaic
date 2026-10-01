@@ -9,7 +9,7 @@ from .params import _ParamBase
 from .util import camelize, omit_none
 
 if TYPE_CHECKING:
-    from vgplot._types import TableName
+    from vgplot._types import MarkData, TableName
     from vgplot.spec import View
 
 
@@ -44,7 +44,7 @@ class Directive:
 @dataclass
 class Mark:
     mark: str
-    data: Any | None = None
+    data: MarkData = None
     enc: dict[str, Any] | None = None
 
     def to_dict(self, param_names: dict[int, str] | None = None) -> dict[str, Any]:
@@ -130,7 +130,7 @@ def directive(key: str, value: Any) -> Directive:
     return Directive(key, value)
 
 
-def mark(name: str, data: Any = None, **enc: Any) -> Mark:
+def mark(name: str, data: MarkData = None, **enc: Any) -> Mark:
     return Mark(name, data=data, enc=enc)
 
 

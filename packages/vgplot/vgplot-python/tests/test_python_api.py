@@ -157,6 +157,52 @@ class TestDataFrames:
         assert d["data"]["weather"] is weather
         assert d["data"]["athletes"] == {"type": "csv", "file": "athletes.csv"}
 
+    def test_frame_typing(self) -> None:
+        pytest.importorskip("polars")
+        pytest.importorskip("pandas")
+        pytest.importorskip("duckdb")
+        pytest.importorskip("pyarrow")
+        import duckdb
+        import pandas as pd
+        import polars as pl
+        import pyarrow as pa
+
+        data = {"a": [1]}
+
+        df_polars = pl.DataFrame(data)
+        df_pandas = pd.DataFrame(data)
+        df_duckdb = duckdb.from_arrow(df_polars)
+        df_pyarrow = pa.table(data)
+
+        mark_polars = vg.bar_x(df_polars)
+        vg.line(df_polars)
+        vg.circle(df_polars)
+        vg.mark("rectX", df_polars)
+
+        mark_pandas = vg.bar_x(df_pandas)
+        vg.line(df_pandas)
+        vg.circle(df_pandas)
+        vg.mark("rectX", df_pandas)
+
+        mark_duckdb = vg.bar_x(df_duckdb)
+        vg.line(df_duckdb)
+        vg.circle(df_duckdb)
+        vg.mark("rectX", df_duckdb)
+
+        mark_pyarrow = vg.bar_x(df_pyarrow)
+        vg.line(df_pyarrow)
+        vg.circle(df_pyarrow)
+        vg.mark("rectX", df_pyarrow)
+
+        if TYPE_CHECKING:
+            from typing_extensions import assert_type
+            from vgplot._types import MarkData
+
+            assert_type(mark_polars.data, MarkData)
+            assert_type(mark_pandas.data, MarkData)
+            assert_type(mark_duckdb.data, MarkData)
+            assert_type(mark_pyarrow.data, MarkData)
+
 
 if TYPE_CHECKING:
 
