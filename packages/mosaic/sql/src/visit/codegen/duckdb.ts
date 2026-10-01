@@ -56,6 +56,10 @@ import { SQLCodeGenerator } from './sql.js';
 import { CURRENT_ROW, FOLLOWING, PRECEDING, UNBOUNDED } from '../../ast/window-frame.js';
 import { WINDOW_EXTENT_EXPR } from '../../constants.js';
 
+// an open `--` comment would swallow whatever the serializer appends next;
+// `--` inside a string literal also matches, costing only a harmless newline
+const OPEN_LINE_COMMENT = /--[^\n]*$/;
+
 /**
  * DuckDB SQL dialect visitor for converting AST nodes to DuckDB-compatible SQL.
  */
@@ -414,7 +418,7 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
 
   visitVerbatim(node: VerbatimNode): string {
     const { value } = node;
-    return value;
+    return OPEN_LINE_COMMENT.test(value) ? `${value}\n` : value;
   }
 
   visitWhen(node: WhenNode): string {
