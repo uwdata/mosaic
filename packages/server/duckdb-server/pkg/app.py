@@ -14,13 +14,15 @@ from pkg.query import ArrowRequest, ExecRequest
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from starlette.datastructures import QueryParams
     from starlette.requests import Request
     from starlette.responses import Response
 
 
 _ALLOW_ALL = ("*",)
 _SECONDS_24_HOURS = 86_400
+decoder: msgspec.json.Decoder[ArrowRequest | ExecRequest] = msgspec.json.Decoder(
+    ArrowRequest | ExecRequest
+)
 
 
 # TODO @dangotbanned: figure out the dep injection to request
@@ -34,13 +36,8 @@ def _get_db(application: Starlette) -> Database:
     return obj
 
 
-def _into_request(obj: QueryParams) -> ArrowRequest | ExecRequest:
-    query: ArrowRequest | ExecRequest = msgspec.convert(obj, ArrowRequest | ExecRequest)
-    return query
-
-
 async def handle(request: Request[AppState]) -> Response:
-    query = _into_request(request.query_params)
+    query = decoder.decode(request.query_params["query"])
     db = _get_db(request.app)
     return query.run_command(db)
 
