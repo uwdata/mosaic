@@ -793,9 +793,7 @@ source = { editable = "packages/server/duckdb-server" }
 dependencies = [
     { name = "duckdb" },
     { name = "msgspec" },
-    { name = "pandas" },
     { name = "pyarrow" },
-    { name = "socketify" },
     { name = "starlette" },
     { name = "uvicorn" },
     { name = "zttp" },
@@ -816,9 +814,7 @@ dev = [
 requires-dist = [
     { name = "duckdb", specifier = ">=1.5.2" },
     { name = "msgspec" },
-    { name = "pandas" },
     { name = "pyarrow" },
-    { name = "socketify" },
     { name = "starlette", specifier = ">=1.7.0" },
     { name = "uvicorn", specifier = ">=0.54.0" },
     { name = "zttp", specifier = ">=0.0.34" },
@@ -3110,35 +3106,12 @@ wheels = [
 ]
 
 [[package]]
-name = "setuptools"
-version = "84.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6d/44/f5da03a8ef95d369145c5bb53050e7877c9f3d312e128605fd9504829143/setuptools-84.0.0.tar.gz", hash = "sha256:f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73", size = 1168449, upload-time = "2026-08-08T18:27:58.365Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/9c/c510029fc6ef33a6275cd2c5d3cecd6613dfd6aa401d57c54f1c18852ccf/setuptools-84.0.0-py3-none-any.whl", hash = "sha256:51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670", size = 818216, upload-time = "2026-08-08T18:27:56.719Z" },
-]
-
-[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
-]
-
-[[package]]
-name = "socketify"
-version = "0.0.31"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cffi" },
-    { name = "setuptools" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ef/74/c7ba0eadc4946de73c7146d6750542fda9b47883e6aaedadef88c1aba94e/socketify-0.0.31.tar.gz", hash = "sha256:7502bed5b382e75f04ea3c6d6b53b76f27bb8653740db92e3f2b55fab388df20", size = 4872407, upload-time = "2024-10-29T19:15:57.411Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/88/a9cac856802aace439aa7cce52924c3cf2da1d684509d9c4135f401b244b/socketify-0.0.31-cp313-cp313-any.whl", hash = "sha256:328e6e46f8a896e09400fd415c8d402b9da40a0a154c4bb4ac0d851d54d380c0", size = 4886370, upload-time = "2024-10-29T19:15:53.416Z" },
-    { url = "https://files.pythonhosted.org/packages/97/0c/302372aee5ab9d33c9edf9f881add00b5995677bde32d37f5b6edd79be89/socketify-0.0.31-pp310-pypy310_pp73-any.whl", hash = "sha256:379f109a87edf396ed513869ee921a70cf8f4694ce7ef347d414c72e2543c954", size = 4886379, upload-time = "2024-10-29T19:15:55.01Z" },
 ]
 
 [[package]]
