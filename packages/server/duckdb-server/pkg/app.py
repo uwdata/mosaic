@@ -36,6 +36,10 @@ def _get_db(application: Starlette) -> Database:
     return obj
 
 
+# TODO @dangotbanned: Slow query logging
+# start: `query.run_command`
+# end  : after the `Response` is served
+# - not sure how to hook into that yet
 class Endpoint(HTTPEndpoint):
     async def get(self, request: Request[AppState]) -> Response:
         query = deserialize_json(request.query_params["query"], Command)
