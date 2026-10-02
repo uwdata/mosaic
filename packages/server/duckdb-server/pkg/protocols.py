@@ -37,10 +37,12 @@ class Request(
     sql: Sql
 
     def _query(self, db: Database, /) -> R:
-        raise NotImplementedError
+        msg = f"'{type(self).__name__}.{self._query.__name__}()' is not yet implemented"
+        raise NotImplementedError(msg)
 
     def _into_response(self, result: R, /) -> Response:
-        raise NotImplementedError
+        msg = f"'{type(self).__name__}.{self._into_response.__name__}()' is not yet implemented"
+        raise NotImplementedError(msg)
 
     # TODO @dangotbanned: Rename after switching fully from socketify
     def run_command(self, db: Database, /) -> Response:

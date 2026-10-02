@@ -1,20 +1,22 @@
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, final
 
 import pyarrow as pa
-from starlette.responses import Response
 
 from pkg.protocols import Handler, Request, Sql
+from pkg.responses import ArrowResponse, EmptyResponse, empty_response
 
 if TYPE_CHECKING:
     from duckdb import DuckDBPyConnection as Con
 
     from pkg.db import Database
 
-
-class ArrowResponse(Response):
-    media_type = "application/vnd.apache.arrow.stream"
+if sys.version_info >= (3, 12):
+    from typing import TypeAliasType as Type
+else:
+    from typing_extensions import TypeAliasType as Type
 
 
 @final
@@ -66,5 +68,8 @@ class ExecRequest(Request[None], forbid_unknown_fields=False):
     def _query(self, db: Database) -> None:
         db.execute(self.sql)
 
-    def _into_response(self, _: None, /) -> Response:
-        return Response()
+    def _into_response(self, _: None, /) -> EmptyResponse:
+        return empty_response()
+
+
+Command = Type("Command", ArrowRequest | ExecRequest)

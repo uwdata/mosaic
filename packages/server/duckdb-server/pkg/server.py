@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 import msgspec
 from socketify import App
 
+from pkg.commands import ArrowRequest, ExecRequest
 from pkg.protocols import Handler
-from pkg.query import ArrowRequest, ExecRequest
 
 if TYPE_CHECKING:
     from io import BytesIO

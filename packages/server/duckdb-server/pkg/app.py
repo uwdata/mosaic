@@ -1,19 +1,18 @@
 from __future__ import annotations
 
-from http import HTTPStatus
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
-import msgspec
 from starlette.applications import Starlette
 from starlette.endpoints import HTTPEndpoint
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse as _JSONResponse
 from starlette.routing import Route
 
+from pkg.commands import Command
 from pkg.db import Database
-from pkg.query import ArrowRequest, ExecRequest
+from pkg.errors import create_exception_handlers
+from pkg.serde import deserialize_json
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -24,23 +23,6 @@ if TYPE_CHECKING:
 
 _ALLOW_ALL = ("*",)
 _SECONDS_24_HOURS = 86_400
-decoder: msgspec.json.Decoder[ArrowRequest | ExecRequest] = msgspec.json.Decoder(
-    ArrowRequest | ExecRequest
-)
-
-encoder = msgspec.json.Encoder()
-
-
-class JSONResponse(_JSONResponse):
-    def render(self, content: Any) -> bytes:
-        return encoder.encode(content)
-
-# TODO @dangotbanned: `"missing required 'query' parameter", 400`
-# TODO @dangotbanned: `"Error processing query", 500`
-async def handle_error(request: Request, response: Exception) -> Response | Any:
-    if isinstance(response, msgspec.DecodeError):
-        return JSONResponse({"detail": str(response)}, HTTPStatus.BAD_REQUEST)
-    return response
 
 
 # TODO @dangotbanned: figure out the dep injection to request
@@ -56,7 +38,7 @@ def _get_db(application: Starlette) -> Database:
 
 class Endpoint(HTTPEndpoint):
     async def get(self, request: Request[AppState]) -> Response:
-        query = decoder.decode(request.query_params["query"])
+        query = deserialize_json(request.query_params["query"], Command)
         db = _get_db(request.app)
         return query.run_command(db)
 
@@ -64,7 +46,7 @@ class Endpoint(HTTPEndpoint):
         buf = BytesIO()
         async for chunk in request.stream():
             buf.write(chunk)
-        query = decoder.decode(buf.getbuffer())
+        query = deserialize_json(buf.getbuffer(), Command)
         db = _get_db(request.app)
         return query.run_command(db)
 
@@ -81,6 +63,6 @@ def create_app(db_path: Path | str = ":memory:") -> Starlette:
     middleware = (cors,)
     routes = (Route("/", Endpoint, methods=("GET", "POST"), middleware=middleware),)
 
-    app = Starlette(routes=routes, exception_handlers={Exception: handle_error})
+    app = Starlette(routes=routes, exception_handlers=create_exception_handlers())
     app.state.db = Database(db_path)
     return app

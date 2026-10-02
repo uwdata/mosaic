@@ -3,7 +3,7 @@ from __future__ import annotations
 import duckdb
 import pyarrow as pa
 
-from pkg.query import ArrowRequest
+from pkg.commands import ArrowRequest
 
 
 def test_query_arrow() -> None:
