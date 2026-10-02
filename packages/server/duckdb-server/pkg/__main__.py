@@ -3,18 +3,21 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import msgspec
 import uvicorn
 
 from pkg.app import create_app
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+
+
+DIR_PKG = Path(__file__).parent
+DIR_DUCKDB_SERVER = DIR_PKG.parent
+KEYFILE = DIR_DUCKDB_SERVER / "localhost-key.pem"
+CERTFILE = DIR_DUCKDB_SERVER / "localhost.pem"
 
 
 class Args(msgspec.Struct):
@@ -47,6 +50,13 @@ def serve() -> None:
         reload_includes = "*.py"
     else:
         reload_includes = None
+    if KEYFILE.exists() and CERTFILE.exists():
+        ssl_keyfile = KEYFILE
+        ssl_certfile = CERTFILE
+    else:
+        ssl_keyfile = None
+        ssl_certfile = None
+
     config = uvicorn.Config(
         # I need to use a global and then a string here if I want reload
         # One way to "simplify" is `database` being a env variable
@@ -56,6 +66,8 @@ def serve() -> None:
         port=args.port,
         http="zttp",
         http2=True,
+        ssl_keyfile=ssl_keyfile,
+        ssl_certfile=ssl_certfile,
         log_level=logging.DEBUG,
         reload=reload,
         # NOTE: Needs to be passed to trigger a warning when config elsewhere is wrong
