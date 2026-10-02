@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, final
 
 import pyarrow as pa
 
-from pkg.protocols import Handler, Request, Sql
+from pkg.protocols import Handler, Request
 from pkg.responses import ArrowResponse, EmptyResponse, empty_response
 
 if TYPE_CHECKING:
@@ -23,15 +23,8 @@ else:
 class ArrowRequest(Request[pa.Buffer], forbid_unknown_fields=False):
     """Returns a result table."""
 
-    @staticmethod
-    def from_str(sql: str) -> ArrowRequest:
-        return ArrowRequest(Sql(sql))
-
-    def get_arrow(self, con: Con) -> pa.RecordBatchReader:
-        return con.query(self.sql).to_arrow_reader()
-
     def run(self, handler: Handler, con: Con) -> None:
-        reader = self.get_arrow(con)
+        reader = con.query(self.sql).to_arrow_reader()
         sink = pa.BufferOutputStream()
         with pa.ipc.new_stream(sink, reader.schema) as writer:
             for batch in reader:
