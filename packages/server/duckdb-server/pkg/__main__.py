@@ -43,15 +43,23 @@ def serve() -> None:
     parser.add_argument("--port", help="HTTP Port.", type=int, default=3000)
     parser.add_argument("--reload", action="store_true")
     args = parser.parse_args(namespace=Args())
-
+    if reload := args.reload:
+        reload_includes = "*.py"
+    else:
+        reload_includes = None
     config = uvicorn.Config(
+        # I need to use a global and then a string here if I want reload
+        # One way to "simplify" is `database` being a env variable
+        # Don't like either option
         create_app(args.database),
         host=args.address,
         port=args.port,
         http="zttp",
         http2=True,
-        reload=args.reload,
         log_level=logging.DEBUG,
+        reload=reload,
+        # NOTE: Needs to be passed to trigger a warning when config elsewhere is wrong
+        reload_includes=reload_includes,
     )
     server = uvicorn.Server(config)
     server.run()
