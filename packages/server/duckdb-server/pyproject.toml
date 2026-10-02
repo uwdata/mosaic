@@ -33,6 +33,7 @@ dev = [
   "watchfiles",
   "ty",
   "pyarrow-stubs>=20.0.0.20260819",
+  "httpx2>=2.13.1",
 ]
 
 [tool.hatch.build.targets.wheel]
