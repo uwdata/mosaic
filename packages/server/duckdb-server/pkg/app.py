@@ -44,7 +44,7 @@ class Endpoint(HTTPEndpoint):
     async def get(self, request: Request[AppState]) -> Response:
         query = deserialize_json(request.query_params["query"], Command)
         db = _get_db(request.app)
-        return query.run_command(db)
+        return query.run(db)
 
     async def post(self, request: Request[AppState]) -> Response:
         buf = BytesIO()
@@ -52,7 +52,7 @@ class Endpoint(HTTPEndpoint):
             buf.write(chunk)
         query = deserialize_json(buf.getbuffer(), Command)
         db = _get_db(request.app)
-        return query.run_command(db)
+        return query.run(db)
 
 
 def create_app(db_path: Path | str = ":memory:") -> Starlette:

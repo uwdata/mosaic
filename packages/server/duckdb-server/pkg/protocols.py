@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, NewType, Protocol, TypeVar
+from typing import TYPE_CHECKING, Generic, NewType, TypeVar
 
 import msgspec
 
@@ -19,7 +19,7 @@ Sql = NewType("Sql", str)
 R = TypeVar("R")
 
 
-class Request(
+class Command(
     msgspec.Struct,
     Generic[R],
     tag=lambda s: s.removesuffix("Request").lower(),
@@ -44,14 +44,6 @@ class Request(
         msg = f"'{type(self).__name__}.{self._into_response.__name__}()' is not yet implemented"
         raise NotImplementedError(msg)
 
-    # TODO @dangotbanned: Rename after switching fully from socketify
-    def run_command(self, db: Database, /) -> Response:
+    def run(self, db: Database, /) -> Response:
         result = self._query(db)
         return self._into_response(result)
-
-
-# TODO @dangotbanned: Replace with whatever the next framework wants
-class Handler(Protocol):
-    def done(self) -> None: ...
-    def arrow(self, buffer: bytes) -> None: ...
-    def error(self, error: Any, status: int = 500) -> None: ...
