@@ -32,6 +32,7 @@ The supported options are:
 - _uri_: The URI of the data server (default `"http://localhost:3000/"`).
 - _headers_: Additional request headers, as a `Headers` object, a plain object, or an array of name-value pairs. Alternatively, a function that returns headers, possibly asynchronously, which is called before every request, for example to supply a refreshed access token. The `Content-Type: application/json` header is always sent.
 - _fetch_: A [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch) implementation to use instead of the global `fetch`. Requests otherwise use `mode: "cors"` and `credentials: "omit"`; a custom implementation can change these, for example `(input, init) => fetch(input, { ...init, credentials: 'include' })`.
+- _retries_: The number of times to retry an `"arrow"` query (default `0`) after a network error or an HTTP 502 or 503 response, including a connection lost while downloading the result, waiting between attempts with exponential backoff and jitter. A server may have run the query before the failure, so a retried query can run more than once: only enable retries when your `"arrow"` queries do not modify data. A `Retry-After` response header sets the minimum wait; if it asks for more than five seconds, the query fails instead. A server on a different origin must list `Retry-After` in `Access-Control-Expose-Headers` for the connector to read it. `"exec"` queries are never retried, and retries count toward the coordinator [_timeout_](./coordinator#constructor).
 
 ```js
 const connector = restConnector({
