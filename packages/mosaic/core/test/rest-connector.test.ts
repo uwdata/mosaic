@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryManager } from '../src/QueryManager.js';
 import { RestConnector } from '../src/connectors/rest.js';
 
 type FetchMock = ReturnType<typeof mockFetch>;
@@ -100,5 +101,178 @@ describe('RestConnector', () => {
 
     await expect(result).rejects.toBe(reason);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('RestConnector retries', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'], now: 0 });
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  /** Respond with each step in turn: a thrown error, a status, or a response. */
+  function fetchSteps(...steps: (Error | number | Response)[]) {
+    let i = 0;
+    return mockFetch(() => {
+      const step = steps[i++];
+      if (step instanceof Error) throw step;
+      if (typeof step === 'number') return new Response(`status ${step}`, { status: step });
+      return step ?? new Response(new Uint8Array([1, 2, 3]));
+    });
+  }
+
+  function retryAfter(value: string, status = 503) {
+    return new Response('busy', { status, headers: { 'Retry-After': value } });
+  }
+
+  it('rejects retries that are not a non-negative integer', () => {
+    for (const retries of [-1, 1.5, NaN, Infinity]) {
+      expect(() => new RestConnector({ retries })).toThrow(RangeError);
+    }
+  });
+
+  it('does not retry by default', async () => {
+    const fetchMock = fetchSteps(new TypeError('Failed to fetch'));
+    await expect(new RestConnector({ fetch: fetchMock }).query(request))
+      .rejects.toThrow('Failed to fetch');
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('retries network errors with exponential backoff', async () => {
+    const fetchMock = fetchSteps(new TypeError('a'), new TypeError('b'), new TypeError('c'));
+    const result = new RestConnector({ fetch: fetchMock, retries: 3 }).query(request);
+
+    for (const [ms, calls] of [[124, 1], [1, 2], [249, 2], [1, 3], [499, 3], [1, 4]]) {
+      await vi.advanceTimersByTimeAsync(ms);
+      expect(fetchMock).toHaveBeenCalledTimes(calls);
+    }
+    expect(new Uint8Array(await result)).toEqual(new Uint8Array([1, 2, 3]));
+  });
+
+  it('fails once the retries are used up', async () => {
+    const fetchMock = fetchSteps(new TypeError('a'), new TypeError('b'));
+    const error = new RestConnector({ fetch: fetchMock, retries: 1 }).query(request).catch(err => err);
+
+    await vi.advanceTimersByTimeAsync(125);
+
+    expect(await error).toMatchObject({ message: 'b' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([502, 503])('retries HTTP %i', async status => {
+    const fetchMock = fetchSteps(status);
+    const result = new RestConnector({ fetch: fetchMock, retries: 1 }).query(request);
+
+    await vi.advanceTimersByTimeAsync(125);
+
+    expect(new Uint8Array(await result)).toEqual(new Uint8Array([1, 2, 3]));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([400, 429, 500, 504])('does not retry HTTP %i', async status => {
+    const fetchMock = fetchSteps(status);
+    await expect(new RestConnector({ fetch: fetchMock, retries: 2 }).query(request))
+      .rejects.toThrow(`HTTP status ${status}`);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('retries a result download that fails', async () => {
+    const lost = {
+      ok: true,
+      status: 200,
+      arrayBuffer: () => Promise.reject(new TypeError('terminated'))
+    } as unknown as Response;
+    const fetchMock = fetchSteps(lost);
+    const result = new RestConnector({ fetch: fetchMock, retries: 1 }).query(request);
+
+    await vi.advanceTimersByTimeAsync(125);
+
+    expect(new Uint8Array(await result)).toEqual(new Uint8Array([1, 2, 3]));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry exec queries', async () => {
+    const fetchMock = fetchSteps(503);
+    const connector = new RestConnector({ fetch: fetchMock, retries: 2 });
+    await expect(connector.query({ type: 'exec', sql: 'CREATE TABLE t (x INT)' }))
+      .rejects.toThrow('HTTP status 503');
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['seconds', '2', 2000],
+    ['a date', new Date(3000).toUTCString(), 3000]
+  ])('waits at least as long as a Retry-After in %s', async (_, value, wait) => {
+    const fetchMock = fetchSteps(retryAfter(value));
+    const result = new RestConnector({ fetch: fetchMock, retries: 1 }).query(request);
+
+    await vi.advanceTimersByTimeAsync(wait - 1);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await result;
+  });
+
+  it('fails when Retry-After asks for more than five seconds', async () => {
+    const fetchMock = fetchSteps(retryAfter('120'));
+    await expect(new RestConnector({ fetch: fetchMock, retries: 2 }).query(request))
+      .rejects.toThrow('Query failed with HTTP status 503: busy');
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it.each<[string, Error | number]>([
+    ['a network error', new TypeError('Failed to fetch')],
+    ['HTTP 503', 503]
+  ])('stops waiting to retry %s when aborted', async (_, failure) => {
+    const fetchMock = fetchSteps(failure);
+    const controller = new AbortController();
+    const reason = new Error('stop');
+    const result = new RestConnector({ fetch: fetchMock, retries: 2 })
+      .query(request, { signal: controller.signal });
+    const rejected = expect(result).rejects.toBe(reason);
+
+    await vi.advanceTimersByTimeAsync(50);
+    controller.abort(reason);
+    await rejected;
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('resolves headers before each attempt', async () => {
+    const fetchMock = fetchSteps(503);
+    let token = 0;
+    const headers = () => ({ Authorization: `Bearer ${++token}` });
+    const result = new RestConnector({ fetch: fetchMock, headers, retries: 1 }).query(request);
+
+    await vi.advanceTimersByTimeAsync(125);
+    await result;
+
+    expect(sentHeaders(fetchMock, 0).get('Authorization')).toBe('Bearer 1');
+    expect(sentHeaders(fetchMock, 1).get('Authorization')).toBe('Bearer 2');
+  });
+
+  it('does not extend the coordinator timeout when retrying', async () => {
+    vi.mocked(Math.random).mockReturnValue(1);
+    const fetchMock = fetchSteps(...Array.from({ length: 6 }, () => new TypeError('Failed to fetch')));
+    const manager = new QueryManager();
+    manager.connector(new RestConnector({ fetch: fetchMock, retries: 5 }));
+    manager.timeout(300);
+    const settled = vi.fn();
+    const error = manager.request({ type: 'arrow', query: 'SELECT 1' })
+      .then(settled, err => (settled(), err));
+
+    await vi.advanceTimersByTimeAsync(299);
+    expect(settled).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await error).toMatchObject({ name: 'TimeoutError' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
