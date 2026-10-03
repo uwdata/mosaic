@@ -21,9 +21,24 @@ Decode Arrow IPC bytes to an Arrow table. The _data_ argument is an `ArrowIPCByt
 
 ## restConnector
 
-`restConnector(uri)`
+`restConnector(options)`
 
-Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"http://localhost:3000/"`).
+Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) with the given _options_.
+
+The supported options are:
+
+- _uri_: The URI of the data server (default `"http://localhost:3000/"`).
+- _headers_: Additional request headers, as a `Headers` object, a plain object, or an array of name-value pairs. Alternatively, a function that returns headers, possibly asynchronously, which is called before every request, for example to supply a refreshed access token. The `Content-Type: application/json` header is always sent.
+- _fetch_: A [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch) implementation to use instead of the global `fetch`. Requests otherwise use `mode: "cors"` and `credentials: "omit"`; a custom implementation can change these, for example `(input, init) => fetch(input, { ...init, credentials: 'include' })`.
+
+```js
+const connector = restConnector({
+  uri: 'https://example.com/mosaic/',
+  headers: async () => ({ Authorization: `Bearer ${await getToken()}` })
+});
+```
+
+A data server on a different origin must allow these requests in its CORS preflight response. `Access-Control-Allow-Headers: *` covers custom headers such as `X-Api-Key`, but never `Authorization`, which a server must list by name: the Go server's command-line tool allows it, while the Python, Node.js, and Rust servers currently do not. Requests that include credentials also require the server to allow the specific origin and to send `Access-Control-Allow-Credentials: true`; a custom _fetch_ cannot provide these.
 
 ## wasmConnector
 
