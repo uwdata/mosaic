@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
 import duckdb
@@ -10,17 +9,42 @@ from duckdb import DuckDBPyConnection
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from pkg.protocols import Sql
+    from typing_extensions import Self
 
-logger = logging.getLogger(__name__)
+    from pkg.protocols import Sql
 
 
 class Database:
-    con: DuckDBPyConnection
+    _con: DuckDBPyConnection | None
+    path: Path | str
 
     def __init__(self, path: Path | str = ":memory:") -> None:
-        logger.info("Using DuckDB %s", path)
-        self.con = duckdb.connect(path)
+        self.path = path
+        self._con = None
+
+    def __enter__(self) -> Self:
+        if self._con is not None:
+            msg = f"{type(self).__name__!r} is not reentrant"
+            raise TypeError(msg)
+
+        self._con = duckdb.connect(self.path)
+        return self
+
+    @property
+    def con(self) -> DuckDBPyConnection:
+        con = self._con
+        if con is None:
+            msg = f"{type(self).__name__!r} connection should not be None"
+            raise TypeError(msg)
+        return con
+
+    def __exit__(self, *excinfo: object) -> None:
+        con = self._con
+        if con is None:
+            msg = f"{type(self).__name__!r} connection should not be None"
+            raise TypeError(msg)
+        con.close()
+        self._con = None
 
     def execute(self, sql: Sql) -> None:
         self.con.execute(sql)

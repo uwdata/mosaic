@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+from contextlib import asynccontextmanager
 from io import BytesIO
 from typing import TYPE_CHECKING, TypedDict
 
@@ -15,6 +17,7 @@ from pkg.errors import create_exception_handlers
 from pkg.serde import deserialize_json
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
     from pathlib import Path
 
     from starlette.requests import Request
@@ -23,17 +26,20 @@ if TYPE_CHECKING:
 
 _ALLOW_ALL = ("*",)
 _SECONDS_24_HOURS = 86_400
+logger = logging.getLogger(__name__)
 
 
-# TODO @dangotbanned: figure out the dep injection to request
 class AppState(TypedDict):
     db: Database
 
 
-def _get_db(application: Starlette) -> Database:
-    # NOTE: Really dislike this untyped `state`
-    obj: Database = application.state.db
-    return obj
+@asynccontextmanager
+async def lifespan(app: Starlette) -> AsyncIterator[AppState]:
+    db_path = app.state.db_path
+    with Database(db_path) as db:
+        logger.info("Connected to DuckDB %s", db_path)
+        yield {"db": db}
+    logger.info("Closed DuckDB %s", db_path)
 
 
 # TODO @dangotbanned: Slow query logging
@@ -43,7 +49,7 @@ def _get_db(application: Starlette) -> Database:
 class Endpoint(HTTPEndpoint):
     async def get(self, request: Request[AppState]) -> Response:
         query = deserialize_json(request.query_params["query"], Command)
-        db = _get_db(request.app)
+        db = request.state["db"]
         return query.run(db)
 
     async def post(self, request: Request[AppState]) -> Response:
@@ -51,7 +57,7 @@ class Endpoint(HTTPEndpoint):
         async for chunk in request.stream():
             buf.write(chunk)
         query = deserialize_json(buf.getbuffer(), Command)
-        db = _get_db(request.app)
+        db = request.state["db"]
         return query.run(db)
 
 
@@ -67,6 +73,8 @@ def create_app(db_path: Path | str = ":memory:") -> Starlette:
     middleware = (cors,)
     routes = (Route("/", Endpoint, methods=("GET", "POST"), middleware=middleware),)
 
-    app = Starlette(routes=routes, exception_handlers=create_exception_handlers())
-    app.state.db = Database(db_path)
+    app = Starlette(
+        routes=routes, exception_handlers=create_exception_handlers(), lifespan=lifespan
+    )
+    app.state.db_path = db_path
     return app
