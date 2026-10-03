@@ -2,12 +2,14 @@
 
 Database connectors issue query requests to a backing data source.
 
-A connector instance should expose a `query(query)` method that returns a Promise.
+A connector instance should expose a `query(query, options)` method that returns a Promise.
 The _query_ argument is an object with the following properties:
 
 - _sql_: The SQL query to evaluate.
 - _type_: The query format type, either `"exec"` (no return value) or `"arrow"`. This property is required; servers reject a request without it.
 - Any additional connector-specific options.
+
+The optional _options_ argument is an object with a _signal_ property: an [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that aborts when the coordinator no longer needs the result, because the coordinator was [cleared](./coordinator#clear) or the query exceeded the coordinator [_timeout_](./coordinator#constructor). A connector can use the signal to stop work early. The coordinator rejects the request either way, so connectors that ignore the signal still work.
 
 For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `ArrowIPCBytes` value, which is an `ArrayBuffer`, a `Uint8Array`, or an array of `Uint8Array` chunks; the coordinator decodes them to an Arrow table.
 
@@ -39,6 +41,8 @@ const connector = restConnector({
 ```
 
 A data server on a different origin must allow these requests in its CORS preflight response. `Access-Control-Allow-Headers: *` covers custom headers such as `X-Api-Key`, but never `Authorization`, which a server must list by name: the Go server's command-line tool allows it, while the Python, Node.js, and Rust servers currently do not. Requests that include credentials also require the server to allow the specific origin and to send `Access-Control-Allow-Credentials: true`; a custom _fetch_ cannot provide these.
+
+When the coordinator aborts a request, the connector aborts the HTTP request. Of the data servers, only the Go server then stops the running query; the others finish it anyway.
 
 ## wasmConnector
 

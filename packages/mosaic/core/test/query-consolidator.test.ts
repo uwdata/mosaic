@@ -139,4 +139,35 @@ describe('QueryConsolidationCaching', () => {
       [String(queries[1]), extracts[1], bytes.length]
     ]);
   });
+
+  it('delivers but does not cache extracts from an older generation', async () => {
+    const data = decodeIPC(tableToIPC(tableFromArrays({ col0: [1, 2], col1: [3, 4] }), {})!);
+    const queries = ['x', 'y'].map(c => Query.from({ source: 'table' }).select({ c }));
+    const entries: QueryEntry[] = queries.map(query => ({
+      request: { type: 'arrow', cache: true, query },
+      result: new QueryResult()
+    }));
+
+    const calls: unknown[][] = [];
+    const cache: Cache = {
+      get: () => undefined,
+      set: (...args) => (calls.push(args), args[1]),
+      clear: () => {},
+      bytes: () => 0
+    };
+    let generation = 0;
+    const combined: QueryEntry[] = [];
+    const c = consolidator(entry => combined.push(entry), cache, () => generation);
+    for (const entry of entries) {
+      c.add(entry, Priority.Normal);
+    }
+    await new Promise(resolve => setImmediate(resolve));
+
+    generation += 1;
+    combined[0].result.fulfill(data);
+    const extracts = await Promise.all(entries.map(entry => entry.result)) as Table[];
+
+    expect(Array.from(extracts[1])).toEqual([{ c: 3 }, { c: 4 }]);
+    expect(calls).toEqual([]);
+  });
 });
