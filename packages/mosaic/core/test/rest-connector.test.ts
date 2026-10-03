@@ -136,4 +136,25 @@ describe('RestConnector', () => {
       expect(() => new RestConnector({ method })).toThrow(RangeError);
     }
   });
+
+  it('passes the abort signal to fetch', async () => {
+    const fetchMock = mockFetch();
+    const { signal } = new AbortController();
+    await new RestConnector({ fetch: fetchMock }).query(request, { signal });
+    expect(fetchMock.mock.calls[0][1]!.signal).toBe(signal);
+  });
+
+  it('stops waiting for headers when aborted', async () => {
+    const fetchMock = mockFetch();
+    const headers = () => new Promise<HeadersInit>(() => {});
+    const controller = new AbortController();
+    const reason = new Error('stop');
+    const result = new RestConnector({ fetch: fetchMock, headers })
+      .query(request, { signal: controller.signal });
+
+    controller.abort(reason);
+
+    await expect(result).rejects.toBe(reason);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
