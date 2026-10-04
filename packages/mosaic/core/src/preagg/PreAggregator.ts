@@ -3,7 +3,7 @@ import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from 
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
-import { ConnectorError, isAbortError, PreAggregateModeError, referenceParts } from '../connectors/errors.js';
+import { ConnectorError, ConnectorErrorCode, isAbortError, PreAggregateModeError, referenceParts } from '../connectors/errors.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { QueryError } from '../util/query-error.js';
@@ -281,7 +281,7 @@ export class PreAggregator {
 
   async recover(client: MosaicClient, info: PreAggregateInfo, table: TableRefNode | null, error: unknown): Promise<boolean> {
     if (!this.registry || this.entries.get(client) !== info || !table
-      || !(error instanceof ConnectorError) || error.code !== 'table_not_found' || !error.reference
+      || !(error instanceof ConnectorError) || error.code !== ConnectorErrorCode.TableNotFound || !error.reference
       || referenceParts(error.reference).join('\0') !== table.table.join('\0')) {
       return false;
     }
@@ -300,7 +300,8 @@ export class PreAggregator {
     result.catch(err => {
       if (info.result === result) info.result = null;
       if (isAbortError(err)) return;
-      const refused = err instanceof ConnectorError && (err.code === 'lane_busy' || err.code === 'suppressed');
+      const refused = err instanceof ConnectorError
+        && (err.code === ConnectorErrorCode.LaneBusy || err.code === ConnectorErrorCode.Suppressed);
       this.mc.logger()[refused ? 'debug' : 'warn'](err);
     });
     info.result = result;
