@@ -1,6 +1,26 @@
 import type { PreaggResponse, TableReference } from './Connector.js';
 
+/** Values of `ConnectorError.code`. */
+export const ConnectorErrorCode = Object.freeze({
+  // the server error envelope's closed vocabulary (conformance/openapi.yaml, ErrorCode)
+  BadRequest: 'bad_request',
+  Unauthenticated: 'unauthenticated',
+  Forbidden: 'forbidden',
+  TableNotFound: 'table_not_found',
+  UnsupportedCommand: 'unsupported_command',
+  ResourceExhausted: 'resource_exhausted',
+  DeadlineExceeded: 'deadline_exceeded',
+  InternalError: 'internal_error',
+  // raised by the client, never sent by a server
+  MalformedResponse: 'malformed_response',
+  LaneBusy: 'lane_busy',
+  Suppressed: 'suppressed'
+} as const);
+
+export type ConnectorErrorCode = typeof ConnectorErrorCode[keyof typeof ConnectorErrorCode];
+
 export class ConnectorError extends Error {
+  /** A `ConnectorErrorCode` when known; a server may send a code this client does not recognize. */
   code?: string;
   status?: number;
   /** The managed table to rebuild; present only for `table_not_found`. */
@@ -24,10 +44,22 @@ export class ConnectorError extends Error {
 
 /** Client-side configuration error, distinct from a server `unsupported_command`. */
 export class PreAggregateModeError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = 'PreAggregateModeError';
   }
+}
+
+export class AbortError extends Error {
+  constructor(message = 'The operation was aborted', options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'AbortError';
+  }
+}
+
+/** Also matches the `DOMException` a cancelled fetch rejects with, which is not an `AbortError` instance. */
+export function isAbortError(value: unknown): boolean {
+  return value instanceof Error && value.name === 'AbortError';
 }
 
 /**
@@ -41,7 +73,7 @@ export function parseErrorResponse(value: unknown, status?: number): ConnectorEr
   if (code !== undefined && (typeof code !== 'string' || !code)) return null;
   const fields: ConstructorParameters<typeof ConnectorError>[1] = { status };
   if (code) fields.code = code;
-  if (code === 'table_not_found') {
+  if (code === ConnectorErrorCode.TableNotFound) {
     const parsed = parseTableReference(reference);
     if (parsed) fields.reference = parsed;
   }
@@ -69,20 +101,10 @@ export function parsePreaggResponse(value: unknown): PreaggResponse {
   const { reference, createdAt, rows, bytes } = (value ?? {}) as Record<string, unknown>;
   const parsed = parseTableReference(reference);
   if (!parsed || typeof createdAt !== 'string' || Number.isNaN(Date.parse(createdAt))) {
-    throw new ConnectorError('Malformed preagg response', { code: 'malformed_response' });
+    throw new ConnectorError('Malformed preagg response', { code: ConnectorErrorCode.MalformedResponse });
   }
   const response: PreaggResponse = { reference: parsed, createdAt };
   if (typeof rows === 'number') response.rows = rows;
   if (typeof bytes === 'number') response.bytes = bytes;
   return response;
-}
-
-export function abortError(message = 'The operation was aborted'): Error {
-  const err = new Error(message);
-  err.name = 'AbortError';
-  return err;
-}
-
-export function isAbortError(value: unknown): boolean {
-  return value instanceof Error && value.name === 'AbortError';
 }

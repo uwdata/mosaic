@@ -1,8 +1,9 @@
 import { TableRefNode } from '@uwdata/mosaic-sql';
 import type { Connector, PreaggResponse } from '../connectors/Connector.js';
 import {
-  abortError,
+  AbortError,
   ConnectorError,
+  ConnectorErrorCode,
   isAbortError,
   parsePreaggResponse,
   referenceParts
@@ -81,7 +82,7 @@ export class PreAggregateRegistry {
     if (failure) {
       if (Date.now() < failure.retryAt) {
         return Promise.reject(new ConnectorError(
-          `Preaggregation suppressed: ${failure.error.message}`, { code: 'suppressed', cause: failure.error }
+          `Preaggregation suppressed: ${failure.error.message}`, { code: ConnectorErrorCode.Suppressed, cause: failure.error }
         ));
       }
       this.failures.delete(sql);
@@ -94,7 +95,7 @@ export class PreAggregateRegistry {
       return entry.build ? entry.build.promise : Promise.resolve(entry.table!);
     }
     if (this.pending >= this.limits.maxPendingBuilds) {
-      return Promise.reject(new ConnectorError('Preaggregation lane is busy', { code: 'lane_busy' }));
+      return Promise.reject(new ConnectorError('Preaggregation lane is busy', { code: ConnectorErrorCode.LaneBusy }));
     }
 
     entry = { sql, table: null, build: null };
@@ -106,7 +107,7 @@ export class PreAggregateRegistry {
 
   reset(): void {
     for (const entry of this.entries.values()) {
-      if (entry.build) this.fail(entry.build, abortError('Preaggregates reset'));
+      if (entry.build) this.fail(entry.build, new AbortError('Preaggregates reset'));
     }
     this.entries.clear();
     this.failures.clear();
@@ -120,7 +121,7 @@ export class PreAggregateRegistry {
     promise.catch(() => {});
     const build: Build = { entry, timer: null!, promise, resolve, reject };
     build.timer = setTimeout(() => {
-      this.fail(build, new ConnectorError('Preaggregation deadline exceeded', { code: 'deadline_exceeded' }));
+      this.fail(build, new ConnectorError('Preaggregation deadline exceeded', { code: ConnectorErrorCode.DeadlineExceeded }));
     }, this.limits.timeoutMs);
     (build.timer as { unref?: () => void }).unref?.();
     return build;
