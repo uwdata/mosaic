@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "duckdb>=1.5.2",
+  "granian>=2.8.4",
   "msgspec",
   "pyarrow",
   "starlette>=1.7.0",
