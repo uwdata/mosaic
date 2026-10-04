@@ -32,18 +32,27 @@ To run the tests, use `uv run pytest`.
 
 The server supports queries via HTTP GET and POST. The GET endpoint is useful for debugging.
 
-For example, you can query it with [this url](<https://localhost:3000/?query={"type":"arrow","sql":"select 1"}>).
+For example, you can query it with [this url](<https://localhost:3000/?query={"type":"arrow","sql":"select 1"}>):
 
-Each endpoint takes a JSON object with a command in the `type`. The server supports the following commands.
+```terminal
+https://localhost:3000/?query={"type":"arrow","sql":"select 1"}
+```
 
-### `exec`
+Each endpoint accepts a `query` parameter, which is a JSON object with two required fields [^1]:
 
-Executes the SQL query in the `sql` field.
+### `type`
 
-### `arrow`
+A command type, discriminates between:
 
-Executes the SQL query in the `sql` field and returns the result in Apache Arrow format.
+- `arrow`: Execute a single statement and return the result in Apache Arrow format.
+- `exec`: Execute a one or more `";"`-separated statements for their side effects.
+
+### `sql`
+
+SQL query to execute.
 
 ## Publishing
 
 Run the build with `uv build`. Then publish with `uvx twine upload --skip-existing ../../dist/*`. We publish using tokens so when asked, set the username to `__token__` and then use your token as the password. Alternatively, create a [`.pypirc` file](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account).
+
+[^1]: Following (#1286) it is expected that the parameters may be simplified to `?type=arrow&sql=select 1`
