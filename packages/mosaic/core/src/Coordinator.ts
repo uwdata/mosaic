@@ -98,8 +98,8 @@ export class Coordinator {
 
   /**
    * Clear the coordinator state. Pending queries are rejected, and in-flight
-   * queries other than exec queries are aborted. A full clear (the default)
-   * also resets the pre-aggregator.
+   * queries other than exec queries are aborted. Clearing the cache also
+   * resets the pre-aggregator, forgetting any server-assigned table references.
    * @param options Options object.
    * @param options.clients If true, disconnect all clients.
    * @param options.cache If true, clear the query cache.
@@ -113,8 +113,10 @@ export class Coordinator {
       this.clients?.forEach(client => this.disconnect(client));
       this.clients = new Set;
     }
-    if (cache) this.manager.invalidate();
-    if (clients && cache) this.preaggregator?.reset();
+    if (cache) {
+      this.manager.invalidate();
+      this.preaggregator?.reset();
+    }
   }
 
   /**

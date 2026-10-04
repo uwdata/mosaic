@@ -213,7 +213,7 @@ describe('PreAggregator preagg mode', () => {
   });
 
   describe.each(['exec', 'preagg'] as const)('%s mode lifecycle', mode => {
-    it.each(['reset', 'clear', 'connector'])('preserves bindings until %s', async action => {
+    it.each(['reset', 'clear', 'cache', 'connector'])('preserves bindings until %s', async action => {
       const connector = new MockPreaggConnector();
       const mc = mode === 'preagg'
         ? preaggCoordinator(connector)
@@ -232,16 +232,13 @@ describe('PreAggregator preagg mode', () => {
       if (registry) expect(registry.lookup(sql)).toBe(info.table);
 
       mc.databaseConnector(connector);
+      mc.clear({ cache: false });
       expect(mc.preaggregator.entries.get(client)).toBe(info);
       if (registry) expect(registry.lookup(sql)).toBe(info.table);
-      for (const options of [{ clients: false }, { cache: false }]) {
-        mc.clear(options);
-        expect(mc.preaggregator.entries.get(client)).toBe(info);
-        if (registry) expect(registry.lookup(sql)).toBe(info.table);
-      }
 
       if (action === 'reset') mc.preaggregator.reset();
       else if (action === 'clear') mc.clear();
+      else if (action === 'cache') mc.clear({ clients: false });
       else mc.databaseConnector(new MockPreaggConnector());
       expect(mc.preaggregator.entries.size).toBe(0);
       if (registry) expect(registry.lookup(sql)).toBeNull();
