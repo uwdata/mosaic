@@ -72,9 +72,7 @@ If set to `null`, logging will be suppressed.
 Resets the state of the coordinator. Pending queries are rejected, and in-flight queries other than `exec` queries are aborted. Supports the following _options_:
 
 - _clients_: A Boolean flag (default `true`) indicating if all current clients should be disconnected.
-- _cache_: A Boolean flag (default `true`) indicating if the query cache should be cleared.
-
-When both flags are set, the pre-aggregator is also reset, forgetting any `preagg` table references.
+- _cache_: A Boolean flag (default `true`) indicating if the query cache should be cleared. This also resets the pre-aggregator, forgetting any `preagg` table references.
 
 ## exec
 
