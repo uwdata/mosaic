@@ -3,6 +3,6 @@
   "version": "0.32.0",
   "private": true,
   "scripts": {
-    "dev": "uv run duckdb-server --reload"
+    "dev": "uv run watchfiles --filter python --grace-period 5 --target-type command \"uv run duckdb-server\" pkg"
   }
 }
