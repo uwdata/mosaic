@@ -1,6 +1,6 @@
 import { count, Query } from '@uwdata/mosaic-sql';
 import type { Connector, ConnectorRequest, PreaggResponse } from '../../src/connectors/Connector.js';
-import { ConnectorError } from '../../src/connectors/errors.js';
+import { ConnectorError, ConnectorErrorCode } from '../../src/connectors/errors.js';
 import { Coordinator, Selection } from '../../src/index.js';
 import type { PreAggregateLimits } from '../../src/preagg/PreAggregateRegistry.js';
 import { fnv_hash } from '../../src/util/hash.js';
@@ -55,7 +55,7 @@ export class MockPreaggConnector implements Connector {
       return Promise.resolve(this.handler(request));
     }
     if (!this.supportsPreagg) {
-      return Promise.reject(new ConnectorError('Unsupported command: preagg', { code: 'unsupported_command' }));
+      return Promise.reject(new ConnectorError('Unsupported command: preagg', { code: ConnectorErrorCode.UnsupportedCommand }));
     }
     return new Promise((resolve, reject) => {
       const item: PendingRequest = { request, resolve, reject };
