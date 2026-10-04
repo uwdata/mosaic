@@ -30,7 +30,9 @@ To run the tests, use `uv run pytest`.
 
 ## API
 
-The server supports queries via HTTP GET and POST. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"arrow"}>).
+The server supports queries via HTTP GET and POST. The GET endpoint is useful for debugging.
+
+For example, you can query it with [this url](<https://localhost:3000/?query={"type":"arrow","sql":"select 1"}>).
 
 Each endpoint takes a JSON object with a command in the `type`. The server supports the following commands.
 
