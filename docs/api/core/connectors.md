@@ -27,7 +27,7 @@ Decode Arrow IPC bytes to an Arrow table. The _data_ argument is an `ArrowIPCByt
 
 Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"http://localhost:3000/"`).
 
-Failed requests reject with a `ConnectorError` carrying the HTTP `status`. Structured JSON failures also supply `code`, plus `reference` for `table_not_found`.
+Failed requests reject with a [`ConnectorError`](#connectorerror) carrying the HTTP `status`. A JSON error envelope from the server also supplies `code` and, for `table_not_found`, `reference`.
 
 ## wasmConnector
 
@@ -41,3 +41,16 @@ The supported options are:
 - _duckdb_: An existing DuckDB-WASM instance to query. If unspecified, a new instance is created.
 - _connection_: An existing connection to a DuckDB-WASM instance to use. If unspecified, a new connection is created.
 - _log_: A Boolean flag (default `false`) that indicates if DuckDB-WASM logs should be written to the browser console. This option is ignored when an existing _duckdb_ instance option is provided.
+
+## ConnectorError
+
+`new ConnectorError(message, fields)`
+
+The error a connector rejects with when a request fails. The optional _fields_ object may provide `code`, `status`, `reference`, and `cause`, which are exposed as instance properties:
+
+- _code_: A machine-readable failure class. Known values are exported as the `ConnectorErrorCode` constants, for example `ConnectorErrorCode.TableNotFound` (`"table_not_found"`); treat any other value as a generic failure.
+- _status_: The HTTP status code, for requests made over HTTP.
+- _reference_: The `{ catalog, schema, table }` reference of a missing managed table. Present only for `table_not_found`, where the coordinator uses it to rebuild the table.
+- _cause_: The underlying error, when the failure wraps one.
+
+The codes a server may report are `bad_request`, `unauthenticated`, `forbidden`, `table_not_found`, `unsupported_command`, `resource_exhausted`, `deadline_exceeded`, and `internal_error`. The coordinator itself raises `malformed_response` for a `preagg` response it cannot parse, `lane_busy` when too many pre-aggregation builds are already pending, `suppressed` while a recent failure for the same query cools down, and `deadline_exceeded` when a build exceeds its timeout.

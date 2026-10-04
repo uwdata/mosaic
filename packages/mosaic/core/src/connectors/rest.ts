@@ -13,15 +13,16 @@ interface RestOptions {
 }
 
 function errorFromResponse(status: number, contentType: string | null, body: string): ConnectorError {
+  let cause: unknown;
   if (/^application\/json\s*(;|$)/i.test(contentType?.trim() ?? '')) {
     try {
       const err = parseErrorResponse(JSON.parse(body), status);
       if (err) return err;
-    } catch {
-      // fall through to the generic error
+    } catch (err) {
+      cause = err;
     }
   }
-  return new ConnectorError(`Query failed with HTTP status ${status}: ${body}`, { status });
+  return new ConnectorError(`Query failed with HTTP status ${status}: ${body}`, { status, cause });
 }
 
 /**
