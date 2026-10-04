@@ -256,10 +256,11 @@ def build_and_start_rust(port: int) -> subprocess.Popen | None:
 
     print("  Starting Rust server ...")
     return subprocess.Popen(
-        ["cargo", "run", "--release", "--", "--port", str(port)],
+        ["cargo", "run", "--release", "--port", str(port)],
         cwd=rust_dir,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
     )
 
 
