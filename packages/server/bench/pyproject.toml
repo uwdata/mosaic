@@ -28,3 +28,14 @@ typing = [
 [build-system]
 requires      = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.ruff]
+extend = "../../../pyproject.toml"
+
+[tool.ruff.lint]
+extend-select                            = [
+  "logging-f-string",
+  "raise-within-try",
+  "raise-vanilla-args",
+]
+flake8-import-conventions.extend-aliases = { "typing.Literal" = "L", subprocess = "sp" }
