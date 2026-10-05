@@ -81,4 +81,59 @@ describe('RestConnector', () => {
     await expect(new RestConnector({ fetch: fetchMock }).query(request))
       .rejects.toThrow('Query failed with HTTP status 400: bad sql');
   });
+
+  it('sends arrow queries as URL parameters with GET', async () => {
+    const fetchMock = mockFetch();
+    const headers = { 'X-Api-Key': 'secret', 'Content-Type': 'application/json' };
+    const connector = new RestConnector({
+      uri: 'http://example.com/', fetch: fetchMock, headers, method: 'GET'
+    });
+
+    await connector.query({ type: 'arrow', sql: 'SELECT 1 + 1' });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://example.com/?type=arrow&sql=SELECT+1+%2B+1');
+    expect(init).toMatchObject({ method: 'GET', mode: 'cors', credentials: 'omit' });
+    expect(init!.body).toBeUndefined();
+    expect(sentHeaders(fetchMock).get('X-Api-Key')).toBe('secret');
+    expect(sentHeaders(fetchMock).has('Content-Type')).toBe(false);
+  });
+
+  it('posts exec queries when using GET', async () => {
+    const fetchMock = mockFetch();
+    const exec = { type: 'exec', sql: 'CREATE TABLE t (x INT)' } as const;
+    const connector = new RestConnector({ uri: 'http://example.com/', fetch: fetchMock, method: 'GET' });
+
+    await connector.query(exec);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://example.com/');
+    expect(init).toMatchObject({ method: 'POST', body: JSON.stringify(exec) });
+    expect(sentHeaders(fetchMock).get('Content-Type')).toBe('application/json');
+  });
+
+  it('posts queries with other fields when using GET', async () => {
+    const fetchMock = mockFetch();
+    const query = { type: 'arrow', sql: 'SELECT 1', projectId: 123 } as const;
+    await new RestConnector({ fetch: fetchMock, method: 'GET' }).query(query);
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'POST', body: JSON.stringify(query) });
+  });
+
+  it.each([
+    ['/mosaic/', '/mosaic/?type=arrow&sql=SELECT+1'],
+    ['http://example.com/?tenant=a', 'http://example.com/?tenant=a&type=arrow&sql=SELECT+1'],
+    ['http://example.com/#view?x', 'http://example.com/?type=arrow&sql=SELECT+1#view?x'],
+    ['http://example.com/?sql=SELECT+999&type=exec', 'http://example.com/?sql=SELECT+1&type=arrow']
+  ])('adds GET parameters to %s', async (uri, expected) => {
+    const fetchMock = mockFetch();
+    await new RestConnector({ uri, fetch: fetchMock, method: 'GET' }).query(request);
+    expect(fetchMock.mock.calls[0][0]).toBe(expected);
+  });
+
+  it('rejects an unknown method', () => {
+    for (const method of ['get', 'PUT']) {
+      // @ts-expect-error invalid method
+      expect(() => new RestConnector({ method })).toThrow(RangeError);
+    }
+  });
 });
