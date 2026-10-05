@@ -1,0 +1,30 @@
+[project]
+name            = "benchmark"
+version         = "0.1.0"
+description     = "Add your description here"
+readme          = "README.md"
+requires-python = ">=3.14"
+
+dependencies = [
+  "msgspec>=0.21.1",
+  "niquests>=3.21.2",
+  "polars>=1.44.2",
+]
+
+[project.scripts]
+benchmark = "benchmark:main"
+
+[dependency-groups]
+dev    = [
+  "ruff>=0.16.9",
+  { include-group = "typing" },
+]
+typing = [
+  "pyright>=1.1.414",
+  "ty>=0.0.84",
+  "typing-extensions>=4.16.0",
+]
+
+[build-system]
+requires      = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
