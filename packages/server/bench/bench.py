@@ -254,16 +254,13 @@ def build_and_start_rust(port: int) -> subprocess.Popen | None:
         print(f"  Build failed:\n{result.stderr}")
         return None
 
-    binary = rust_dir / "target" / "release" / "duckdb-server"
-    if not binary.exists():
-        print(f"  ERROR: Binary not found at {binary}")
-        return None
-
     print("  Starting Rust server ...")
     return subprocess.Popen(
-        [str(binary), "--port", str(port)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        ["cargo", "run", "--release", "--port", str(port)],
+        cwd=rust_dir,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
     )
 
 
