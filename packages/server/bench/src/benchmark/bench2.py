@@ -1,12 +1,3 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.14"
-# dependencies = [
-#   "niquests",
-#   "msgspec",
-#   "polars",
-# ]
-# ///
 from __future__ import annotations
 
 # ruff: file-ignore[camelcase-imported-as-acronym]
@@ -344,7 +335,7 @@ def main() -> None:
         nargs="*",
         choices=("rust", "go", "python", "node"),
         default=("rust", "go", "python", "node"),
-        help="Comma-separated list of servers (rust,go,python,node). "
+        help="Comma-separated list of servers. "
         "If omitted, auto-detects available runtimes.",
     )
     args = parser.parse_args(namespace=Options())

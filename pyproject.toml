@@ -2,7 +2,8 @@
 members = [
     "packages/server/duckdb-server",
     "packages/vgplot/widget",
-    "packages/vgplot/vgplot-python"
+    "packages/vgplot/vgplot-python",
+    "packages/server/bench",
 ]
 
 # https://github.com/charliermarsh/ruff
