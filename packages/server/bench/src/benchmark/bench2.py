@@ -184,12 +184,12 @@ class Server(Protocol):
     name: ServerName
     requires: tuple[Requirement, ...]
     path: Path
-    process: sp.Popen | None
+    process: sp.Popen[str] | None
 
     def build(self) -> sp.CompletedProcess[str] | None: ...
 
-    def start(self, port: Port, /) -> sp.Popen | None: ...
-    def stop(self, process: sp.Popen, /) -> None:
+    def start(self, port: Port, /) -> sp.Popen[str] | None: ...
+    def stop(self, process: sp.Popen[str], /) -> None:
         if process.poll() is None:
             process.terminate()
             try:
