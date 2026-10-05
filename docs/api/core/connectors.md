@@ -28,8 +28,9 @@ Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server
 The supported options are:
 
 - _uri_: The URI of the data server (default `"http://localhost:3000/"`).
-- _headers_: Additional request headers, as a `Headers` object, a plain object, or an array of name-value pairs. Alternatively, a function that returns headers, possibly asynchronously, which is called before every request, for example to supply a refreshed access token. The `Content-Type: application/json` header is always sent.
+- _headers_: Additional request headers, as a `Headers` object, a plain object, or an array of name-value pairs. Alternatively, a function that returns headers, possibly asynchronously, which is called before every request, for example to supply a refreshed access token. POST requests always send the `Content-Type: application/json` header.
 - _fetch_: A [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch) implementation to use instead of the global `fetch`. Requests otherwise use `mode: "cors"` and `credentials: "omit"`; a custom implementation can change these, for example `(input, init) => fetch(input, { ...init, credentials: 'include' })`.
+- _method_: The HTTP method for `"arrow"` queries, either `"POST"` (default) or `"GET"`. A GET request carries the query in `type` and `sql` URL parameters instead of a body, so browsers and proxies can cache the result if the data server accepts GET queries and marks its responses as cacheable. Requests that cannot be sent this way fall back to POST instead of failing: `"exec"` queries, which may change data, and queries with additional connector-specific options, which a GET request cannot carry. As with any HTTP cache, a cached result is not invalidated when the data changes, so it can be stale until it expires. A long query can exceed the URL length limit of a server or proxy, and because browsers cache CORS preflight results per URL, a cross-origin GET request with custom headers needs a preflight for every distinct query.
 
 ```js
 const connector = restConnector({
