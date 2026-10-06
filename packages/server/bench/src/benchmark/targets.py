@@ -15,7 +15,7 @@ TARGETS: Final = (
     ServerConfig(
         "rust",
         SERVER_DIR / "duckdb-server-rust",
-        depends=("cargo", "rust"),
+        depends=("cargo",),
         run=("cargo", "run", "--release"),
     ),
     ServerConfig(
