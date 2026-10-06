@@ -6,7 +6,7 @@ from typing import NewType
 
 type Group = L["tiny", "histogram / binning", "larger", "complex / realistic"]
 type ServerName = L["rust", "go", "python", "node"]
-type Requirement = L["cargo", "uv"] | ServerName
+type Requirement = L["cargo", "uv", "pnpm", "gcc"] | ServerName
 Port = NewType("Port", int)
 Seconds = NewType("Seconds", float)
 
