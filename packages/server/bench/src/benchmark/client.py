@@ -1,0 +1,96 @@
+from __future__ import annotations
+
+import time
+from typing import TYPE_CHECKING, Self
+
+import msgspec
+import niquests
+
+from benchmark.task import Command, Result
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+
+    from benchmark.common import Exec, Seconds, Type
+    from benchmark.task import Benchmark
+
+_JSON_ENCODER = msgspec.json.Encoder().encode
+_PING = Command.arrow("SELECT 1")
+
+
+class Client:
+    def __init__(
+        self, base_url: str, iterations: int, warmup: int, timeout: Seconds
+    ) -> None:
+        self._session = niquests.Session(
+            base_url=base_url, json_encoder=_JSON_ENCODER, timeout=timeout
+        )
+        self.base_url: str = base_url
+        self.iterations: int = iterations
+        self.warmup: int = warmup
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self._session.close()
+
+    def is_ready(self) -> bool:
+        return self._session.post("/", json=_PING).ok
+
+    def post[T: Type](self, command: Command[T]) -> bytes:
+        return self._session.post("/", json=command).raise_for_status().content or b""
+
+    def _run_benchmark[T: Type](
+        self, benchmark: Benchmark[T, None], /
+    ) -> Benchmark[T, Result]:
+        thousand = 1000
+        command = benchmark.command
+        counter = time.perf_counter
+        iterations = self.iterations
+
+        t0, t1 = 0.0, 0.0
+        data = b""
+        resp_size = 0
+
+        # Warmup
+        for _ in range(self.warmup):
+            t0 = counter()
+            data = self.post(command)
+            t1 = counter()
+            (t1 - t0) * thousand
+            resp_size = len(data)
+
+        # Cleanup
+        t0, t1 = 0.0, 0.0
+        data = b""
+        resp_size = 0
+
+        # Actual
+        timings: list[float] = []
+        for _ in range(iterations):
+            t0 = counter()
+            data = self.post(command)
+            t1 = counter()
+
+            timings.append((t1 - t0) * thousand)
+            resp_size = len(data)
+
+        return benchmark.with_result(Result(timings, resp_size))
+
+    def run_benchmarks[T: Type](
+        self,
+        sources: Iterable[Command[Exec]],
+        benchmarks: Iterable[Benchmark[T, None]],
+        /,
+    ) -> Iterator[Benchmark[T, Result]]:
+        print("Loading test data ...")
+        for command in sources:
+            self.post(command)
+        print("Data loaded.\n")
+
+        print("Starting benchmark run ...")
+        for b in benchmarks:
+            yield self._run_benchmark(b)
+
+        print("Benchmarks completed.\n")

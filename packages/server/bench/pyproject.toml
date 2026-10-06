@@ -33,9 +33,17 @@ build-backend = "uv_build"
 extend = "../../../pyproject.toml"
 
 [tool.ruff.lint]
-extend-select                            = [
+extend-select     = [
   "logging-f-string",
   "raise-within-try",
   "raise-vanilla-args",
+  "unconventional-import-alias",
 ]
-flake8-import-conventions.extend-aliases = { "typing.Literal" = "L", subprocess = "sp" }
+extend-safe-fixes = ["unconventional-import-alias"]
+
+exclude = ["bench.py"]
+
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"typing.Literal"       = "L"
+"typing.LiteralString" = "LS"
+subprocess             = "sp"
