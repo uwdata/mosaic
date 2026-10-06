@@ -18,8 +18,7 @@ def main() -> None:
         nargs="*",
         choices=("rust", "go", "python", "node"),
         default=("rust", "go", "python", "node"),
-        help="Comma-separated list of servers. "
-        "If omitted, auto-detects available runtimes.",
+        help="One or more servers to test.",
     )
     args = parser.parse_args(namespace=CLIOptions())
 
