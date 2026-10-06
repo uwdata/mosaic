@@ -27,15 +27,11 @@ class CLIOptions(msgspec.Struct, kw_only=True):
         return f"{self.scheme}://{self.host}:{(port or self.port)}"
 
 
-class ServerConfig(msgspec.Struct, kw_only=True):
+class ServerConfig(msgspec.Struct):
+    name: ServerName
     path: Path
     depends: tuple[Requirement, ...]
     run: tuple[str, ...]
-    alias: ServerName | None = None
 
     def is_available(self) -> bool:
         return all(shutil.which(dep) for dep in self.depends)
-
-    @property
-    def name(self) -> ServerName | str:
-        return self.alias or self.path.name
