@@ -51,7 +51,7 @@ class Runner(msgspec.Struct):
                 print("ERROR: Server did not start within 30s, skipping.\n")
                 return
 
-            print("Server is ready.\n")
+            print(f"{target.name!r} is ready.")
             results = (
                 result.into_row()
                 for result in client.run_benchmarks(self.sources, self.benchmarks)
