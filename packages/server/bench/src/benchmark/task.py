@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, final
+from typing import TYPE_CHECKING, Final, final
 from typing import LiteralString as LS
 
 import msgspec
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 @final
 class Command[T: Type](msgspec.Struct):
-    type: T
+    type: Final[T]
     sql: str
 
     @staticmethod
@@ -40,8 +40,8 @@ class Result(msgspec.Struct):
 class Benchmark[T: Type, R: (Result, None)](msgspec.Struct):
     group: Group
     name: str
-    command: Command[T]
-    result: R
+    command: Final[Command[T]]
+    result: Final[R]
 
     def with_result(self, result: Result) -> Benchmark[T, Result]:
         return Benchmark(self.group, self.name, self.command, result)

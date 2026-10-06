@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-benchmark = "benchmark:main"
+benchmark = "benchmark.main:main"
 
 [dependency-groups]
 dev    = [

@@ -27,16 +27,18 @@ class Server:
 
     @property
     def name(self) -> str:
-        return self.config.alias or self.config.path.name
+        return self.config.name
 
     def __enter__(self) -> Self:
         cfg = self.config
-        args = *cfg.run, "--port", str(self.port)
+        args = *cfg.run, f"--port {self.port}"
+        print("$", " ".join(args))
         self._process = sp.Popen(
             args, cwd=cfg.path, text=True, stdout=sp.PIPE, stderr=sp.STDOUT
         ).__enter__()
         return self
 
+    # TODO @dangotbanned: Fix this, it never exits
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
