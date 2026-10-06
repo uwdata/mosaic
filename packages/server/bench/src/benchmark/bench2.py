@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-# ruff: file-ignore[camelcase-imported-as-acronym]
 import argparse
 import dataclasses
 import subprocess as sp
