@@ -30,7 +30,7 @@ class Client:
         self.warmup: int = warmup
 
     def __enter__(self) -> Self:
-        print("Starting client ...")
+        print("Starting client")
         return self
 
     def __exit__(self, *args: object) -> None:
@@ -85,13 +85,13 @@ class Client:
         benchmarks: Iterable[Benchmark[T, None]],
         /,
     ) -> Iterator[Benchmark[T, Result]]:
-        print("Loading test data ...")
+        print("Loading test data")
         for command in sources:
             self.post(command)
-        print("Data loaded.\n")
+        print("Data loaded.")
 
-        print("Starting benchmark run ...")
+        print("Starting benchmark run")
         for b in benchmarks:
             yield self._run_benchmark(b)
 
-        print("Benchmarks completed.\n")
+        print(f"Benchmarks completed.\n{'-' * 80}")
