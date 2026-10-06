@@ -6,6 +6,7 @@ import msgspec
 import polars as pl
 
 from benchmark.client import Client
+from benchmark.common import GROUP_MEMBERS
 from benchmark.server import Server
 from benchmark.task import Command
 
@@ -16,9 +17,10 @@ if TYPE_CHECKING:
     from benchmark.config import CLIOptions, ServerConfig
     from benchmark.task import Benchmark
 
+
 SCHEMA = pl.Schema(
     {
-        "benchmark_group": str,
+        "benchmark_group": pl.Enum(GROUP_MEMBERS),  # provides sort order
         "benchmark_name": str,
         "command_type": str,
         "response_size": int,
@@ -62,6 +64,11 @@ class Runner(msgspec.Struct):
 
     def run_all(self) -> pl.DataFrame:
         it = (self.run(target) for target in self.targets)
-        results = pl.union(x for x in it if x is not None)
-        print(results)
+        results = (
+            pl.union(x.lazy() for x in it if x is not None)
+            .sort(pl.nth(0, 1), "server")
+            .collect()
+        )
+        with pl.Config(tbl_rows=100, fmt_table_cell_list_len=5, float_precision=2):
+            print(results)
         return results
