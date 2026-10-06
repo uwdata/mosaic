@@ -45,4 +45,10 @@ class Server:
         value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        return self._process.__exit__(exc_type, value, traceback)
+        if self._process.poll() is None:
+            self._process.terminate()
+            try:
+                self._process.wait(timeout=5)
+            except sp.TimeoutExpired:
+                self._process.kill()
+                self._process.wait()
