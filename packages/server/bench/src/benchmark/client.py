@@ -30,6 +30,7 @@ class Client:
         self.warmup: int = warmup
 
     def __enter__(self) -> Self:
+        print("Starting client ...")
         return self
 
     def __exit__(self, *args: object) -> None:
@@ -54,6 +55,7 @@ class Client:
         resp_size = 0
 
         # Warmup
+        print("Warming up ...")
         for _ in range(self.warmup):
             t0 = counter()
             data = self.post(command)
@@ -67,6 +69,7 @@ class Client:
         resp_size = 0
 
         # Actual
+        print(f"Running benchmark queries ({benchmark.name}) x{iterations}")
         timings: list[float] = []
         for _ in range(iterations):
             t0 = counter()
@@ -75,6 +78,8 @@ class Client:
 
             timings.append((t1 - t0) * thousand)
             resp_size = len(data)
+
+        print(f"Finished benchmark queries ({benchmark.name}) x{iterations}")
 
         return benchmark.with_result(Result(timings, resp_size))
 
