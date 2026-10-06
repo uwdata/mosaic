@@ -40,7 +40,7 @@ class Client:
         return self._session.post("/", json=_PING).ok
 
     def post[T: Type](self, command: Command[T]) -> bytes:
-        return self._session.post("/", json=command).raise_for_status().content or b""
+        return self._session.post("/", json=command).content or b""
 
     def _run_benchmark[T: Type](
         self, benchmark: Benchmark[T, None], /
@@ -55,7 +55,6 @@ class Client:
         resp_size = 0
 
         # Warmup
-        print("Warming up ...")
         for _ in range(self.warmup):
             t0 = counter()
             data = self.post(command)
@@ -69,7 +68,6 @@ class Client:
         resp_size = 0
 
         # Actual
-        print(f"Running benchmark queries ({benchmark.name}) x{iterations}")
         timings: list[float] = []
         for _ in range(iterations):
             t0 = counter()
@@ -78,8 +76,6 @@ class Client:
 
             timings.append((t1 - t0) * thousand)
             resp_size = len(data)
-
-        print(f"Finished benchmark queries ({benchmark.name}) x{iterations}")
 
         return benchmark.with_result(Result(timings, resp_size))
 
