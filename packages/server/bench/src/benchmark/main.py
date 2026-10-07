@@ -51,3 +51,8 @@ def main() -> None:
     print(f"Starting benchmarks for {sorted(server_names)!r}")
     runner = Runner(args, targets, SOURCES, BENCHMARKS)
     runner.run_all()
+
+
+if __name__ == "__main__":
+    # NOTE: Needed for debugger
+    main()
