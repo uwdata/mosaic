@@ -19,7 +19,8 @@ class CLIOptions(msgspec.Struct, kw_only=True):
     port: Port = Port(3000)
     iterations: int = 100
     warmup: int = 5
-
+    debug_server: bool = False
+    debug_client: bool = False
     timeout: Seconds = Seconds(30)
     servers: Sequence[ServerName] = ("rust", "go", "python", "node")
 
@@ -32,6 +33,7 @@ class ServerConfig(msgspec.Struct):
     path: Path
     depends: tuple[Requirement, ...]
     run: tuple[str, ...]
+    debug: bool = False
 
     def is_available(self) -> bool:
         return all(shutil.which(dep) for dep in self.depends)

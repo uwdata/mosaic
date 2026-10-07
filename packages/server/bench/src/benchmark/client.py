@@ -35,6 +35,7 @@ class Client:
 
     def __exit__(self, *args: object) -> None:
         self._session.close()
+        print("Closed client")
 
     def is_ready(self) -> bool:
         return self._session.post("/", json=_PING).ok
@@ -94,4 +95,4 @@ class Client:
         for b in benchmarks:
             yield self._run_benchmark(b)
 
-        print(f"Benchmarks completed.\n{'-' * 80}")
+        print("Benchmarks completed.")

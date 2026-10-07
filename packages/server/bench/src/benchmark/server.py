@@ -19,8 +19,10 @@ class Server:
     _process: Process
 
     @classmethod
-    def from_config(cls, config: ServerConfig, port: Port) -> Self:
+    def from_config(cls, config: ServerConfig, port: Port, *, debug: bool) -> Self:
         self = cls.__new__(cls)
+        if debug:
+            config = config.__replace__(debug=True)
         self.config = config
         self.port = port
         return self
@@ -33,18 +35,19 @@ class Server:
         cfg = self.config
         args = *cfg.run, f"--port {self.port}"
         print("$", " ".join(args))
+        pipe = None if cfg.debug else sp.DEVNULL
         self._process = sp.Popen(
-            args, cwd=cfg.path, text=True, stdout=sp.PIPE, stderr=sp.STDOUT
+            args, cwd=cfg.path, text=True, stdout=pipe, stderr=pipe
         ).__enter__()
         return self
 
-    # TODO @dangotbanned: Fix this, it never exits
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
         value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        print("Exiting server")
         if self._process.poll() is None:
             self._process.terminate()
             try:
