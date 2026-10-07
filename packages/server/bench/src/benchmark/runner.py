@@ -10,7 +10,7 @@ from benchmark.common import GROUP_MEMBERS
 from benchmark.server import Server
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Sequence
+    from collections.abc import Collection, Iterator, Sequence
 
     from benchmark.common import Exec, Type
     from benchmark.config import CLIOptions, ServerConfig
@@ -34,34 +34,34 @@ class Runner(msgspec.Struct):
     sources: Collection[Command[Exec]]
     benchmarks: Collection[Benchmark[Type, None]]
 
-    def run(self, target: ServerConfig) -> pl.DataFrame | None:
+    def run(self, target: ServerConfig) -> pl.LazyFrame:
         opts = self.options
         port = opts.port
         n, warmup, timeout = opts.iterations, opts.warmup, opts.timeout
-        if not target.is_available():
-            print(f"Skipping unavailable {target.name!r}")
-            return None
         with (
             Server.from_config(target, port, debug=opts.debug_server) as server,
             Client(opts.base_url(port), n, warmup, timeout) as client,
         ):
-            if not client.is_ready():
-                print("ERROR: Server did not start within 30s, skipping.\n")
-                return
-
+            client.ensure_ok()
             print(f"{target.name!r} is ready.")
             results = (
                 result.into_row()
                 for result in client.run_benchmarks(self.sources, self.benchmarks)
             )
-            return pl.DataFrame(results, orient="row", schema=SCHEMA).with_columns(
+            return pl.LazyFrame(results, orient="row", schema=SCHEMA).with_columns(
                 server=pl.lit(server.name)
             )
 
+    def _available_targets(self) -> Iterator[ServerConfig]:
+        for target in self.targets:
+            if target.is_available():
+                yield target
+            else:
+                print(f"Skipping unavailable target: {target.name!r}")
+
     def run_all(self) -> pl.DataFrame:
-        it = (self.run(target) for target in self.targets)
         results = (
-            pl.union(x.lazy() for x in it if x is not None)
+            pl.union(self.run(target) for target in self._available_targets())
             .sort(pl.nth(0, 1), "server")
             .collect()
         )

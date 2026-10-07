@@ -38,8 +38,10 @@ class Client:
         self._session.close()
         print("Closed client")
 
-    def is_ready(self) -> bool:
-        return self._session.post("/", json=_PING).status_code == HTTPStatus.OK
+    def ensure_ok(self) -> None:
+        response = self._session.post("/", json=_PING)
+        if response.status_code != HTTPStatus.OK:
+            response.raise_for_status()
 
     def post[T: Type](self, command: Command[T]) -> bytes:
         return self._session.post("/", json=command).content or b""
