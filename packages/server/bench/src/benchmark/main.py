@@ -35,6 +35,8 @@ def main() -> None:
 
     if args.iterations < 1:
         parser.error("--iterations must be >= 1")
+    if args.warmup < 1:
+        parser.error("--warmup must be >= 1")
 
     from benchmark.benches import BENCHMARKS, SOURCES
     from benchmark.runner import Runner
