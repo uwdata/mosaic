@@ -48,7 +48,7 @@ def main() -> None:
     else:
         targets = TARGETS
 
-    print(f"Starting benchmarks for {sorted(server_names)!r}")
+    print(f"Starting benchmarks for: {', '.join(repr(t.name) for t in targets)}")
     runner = Runner(args, targets, SOURCES, BENCHMARKS)
     runner.run_all()
 
