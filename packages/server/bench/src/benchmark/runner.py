@@ -42,7 +42,7 @@ class Runner(msgspec.Struct):
             print(f"Skipping unavailable {target.name!r}")
             return None
         with (
-            Server.from_config(target, port) as server,
+            Server.from_config(target, port, debug=opts.debug_server) as server,
             Client(opts.base_url(port), n, warmup, timeout) as client,
         ):
             if not client.is_ready():

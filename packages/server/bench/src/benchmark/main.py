@@ -23,6 +23,14 @@ def main() -> None:
         default=("rust", "go", "python", "node"),
         help="One or more servers to test.",
     )
+    parser.add_argument(
+        "--debug-server", action="store_true", help="Redirect server output to stdout"
+    )
+    parser.add_argument(
+        "--debug-client",
+        action="store_true",
+        help="Increase verbosity of client logging",
+    )
     args = parser.parse_args(namespace=CLIOptions())
 
     if args.iterations < 1:
