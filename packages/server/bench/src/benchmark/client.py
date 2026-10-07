@@ -54,7 +54,7 @@ class Client:
 
         t0, t1 = 0.0, 0.0
         data = b""
-        resp_size = 0
+        response_size = 0
 
         # Warmup
         for _ in range(self.warmup):
@@ -62,12 +62,11 @@ class Client:
             data = self.post(command)
             t1 = counter()
             (t1 - t0) * thousand
-            resp_size = len(data)
+            response_size = len(data)
 
         # Cleanup
         t0, t1 = 0.0, 0.0
         data = b""
-        resp_size = 0
 
         # Actual
         timings: list[float] = []
@@ -77,9 +76,7 @@ class Client:
             t1 = counter()
 
             timings.append((t1 - t0) * thousand)
-            resp_size = len(data)
-
-        return benchmark.with_result(Result(timings, resp_size))
+        return benchmark.with_result(Result(timings, response_size))
 
     def run_benchmarks[T: Type](
         self,
