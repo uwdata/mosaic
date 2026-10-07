@@ -8,14 +8,13 @@ import polars as pl
 from benchmark.client import Client
 from benchmark.common import GROUP_MEMBERS
 from benchmark.server import Server
-from benchmark.task import Command
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Sequence
 
     from benchmark.common import Exec, Type
     from benchmark.config import CLIOptions, ServerConfig
-    from benchmark.task import Benchmark
+    from benchmark.task import Benchmark, Command
 
 
 SCHEMA = pl.Schema(
@@ -26,9 +25,6 @@ SCHEMA = pl.Schema(
         "response_size": int,
         "timings": list[float],
     }
-)
-LOAD_QUERIES = tuple(
-    Command.load_parquet(stem) for stem in ("flights-200k", "athletes", "penguins")
 )
 
 
