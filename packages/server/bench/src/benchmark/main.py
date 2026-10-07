@@ -4,7 +4,10 @@ from __future__ import annotations
 def main() -> None:
     import argparse
 
+    from benchmark import _colorize_install
     from benchmark.config import CLIOptions
+
+    _colorize_install.install()
 
     parser = argparse.ArgumentParser(
         description="Mosaic Server Benchmark",
