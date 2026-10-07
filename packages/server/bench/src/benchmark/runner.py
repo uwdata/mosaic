@@ -11,7 +11,7 @@ from benchmark.common import GROUP_MEMBERS
 from benchmark.server import Server
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Sequence
+    from collections.abc import Collection, Sequence
 
     from benchmark.common import Exec, Type
     from benchmark.config import CLIOptions, ServerConfig
@@ -54,17 +54,8 @@ class Runner(msgspec.Struct):
                 pl.lit(server.name).alias("server"), *schema
             )
 
-    def _available_targets(self) -> Iterator[ServerConfig]:
-        for target in self.targets:
-            if target.is_available():
-                yield target
-            else:
-                print(f"Skipping unavailable target: {target.name!r}")
-
     def run_all(self) -> pl.DataFrame:
-        results_lazy = pl.union(
-            self.run(target) for target in self._available_targets()
-        )
+        results_lazy = pl.union(self.run(target) for target in self.targets)
         results_eager = self._summarize_results(results_lazy)
         with pl.Config(tbl_rows=40, float_precision=3):
             print(results_eager)
