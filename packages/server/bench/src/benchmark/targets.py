@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
-from benchmark.common import SERVER_DIR
-from benchmark.config import ServerConfig
+from benchmark.common import SERVER_DIR, ServerName
+from benchmark.config import DEFAULT_SERVERS, ServerConfig
 
-TARGETS: Final = (
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+
+_TARGETS: Final = (
     ServerConfig(
         "python",
         SERVER_DIR / "duckdb-server",
@@ -31,3 +34,20 @@ TARGETS: Final = (
         run=("go", "run", "-tags=duckdb_arrow", "."),
     ),
 )
+
+
+def select_targets(names: Iterable[ServerName], /) -> tuple[ServerConfig, ...]:
+    unique = set(names)
+    if unique != set(DEFAULT_SERVERS):
+        targets = (t for t in _TARGETS if t.name in unique)
+    else:
+        targets = _TARGETS
+    return tuple(_skip_unavailable(targets))
+
+
+def _skip_unavailable(targets: Iterable[ServerConfig], /) -> Iterator[ServerConfig]:
+    for target in targets:
+        if target.is_available():
+            yield target
+        else:
+            print(f"Skipping unavailable target: {target.name!r}")
