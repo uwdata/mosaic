@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import shutil
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 from typing import Literal as L
 
 import msgspec
@@ -11,6 +11,8 @@ from benchmark.common import Port, Requirement, Seconds, ServerName
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
+
+DEFAULT_SERVERS: Final = ("rust", "go", "python", "node")
 
 
 class CLIOptions(msgspec.Struct, kw_only=True):
@@ -22,7 +24,7 @@ class CLIOptions(msgspec.Struct, kw_only=True):
     debug_server: bool = False
     debug_client: bool = False
     timeout: Seconds = Seconds(30)
-    servers: Sequence[ServerName] = ("rust", "go", "python", "node")
+    servers: Sequence[ServerName] = DEFAULT_SERVERS
 
     def base_url(self, port: Port | None = None) -> str:
         return f"{self.scheme}://{self.host}:{(port or self.port)}"

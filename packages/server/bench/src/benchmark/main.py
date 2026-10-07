@@ -4,8 +4,7 @@ from __future__ import annotations
 def main() -> None:
     import argparse
 
-    from benchmark import _colorize_install
-    from benchmark.config import CLIOptions
+    from benchmark import _colorize_install, config
 
     _colorize_install.install()
 
@@ -19,8 +18,8 @@ def main() -> None:
     parser.add_argument(
         "--servers",
         nargs="*",
-        choices=("rust", "go", "python", "node"),
-        default=("rust", "go", "python", "node"),
+        choices=config.DEFAULT_SERVERS,
+        default=config.DEFAULT_SERVERS,
         help="One or more servers to test.",
     )
     parser.add_argument(
@@ -31,7 +30,7 @@ def main() -> None:
         action="store_true",
         help="Increase verbosity of client logging",
     )
-    args = parser.parse_args(namespace=CLIOptions())
+    args = parser.parse_args(namespace=config.CLIOptions())
 
     if args.iterations < 1:
         parser.error("--iterations must be >= 1")
@@ -40,14 +39,9 @@ def main() -> None:
 
     from benchmark.benches import BENCHMARKS, SOURCES
     from benchmark.runner import Runner
-    from benchmark.targets import TARGETS
+    from benchmark.targets import select_targets
 
-    server_names = set(args.servers)
-    if server_names != {"rust", "go", "python", "node"}:
-        targets = tuple(t for t in TARGETS if t.name in server_names)
-    else:
-        targets = TARGETS
-
+    targets = select_targets(args.servers)
     print(f"Starting benchmarks for: {', '.join(repr(t.name) for t in targets)}")
     runner = Runner(args, targets, SOURCES, BENCHMARKS)
     runner.run_all()
