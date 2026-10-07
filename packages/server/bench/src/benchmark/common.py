@@ -16,5 +16,7 @@ type Type = Arrow | Exec
 
 GROUP_MEMBERS: Final[tuple[Group, ...]] = get_args(Group.__value__)
 BENCHMARK_DIR = Path(__file__).parent
-SERVER_DIR = BENCHMARK_DIR.parent.parent.parent
+BENCH_DIR = BENCHMARK_DIR.parent.parent
+SERVER_DIR = BENCH_DIR.parent
 DATA_DIR = (SERVER_DIR.parent.parent / "data").as_posix()
+EXPORT_DIR = BENCH_DIR / "export"

@@ -7,11 +7,12 @@ import polars as pl
 from polars import selectors as cs
 
 from benchmark.client import Client
-from benchmark.common import GROUP_MEMBERS
+from benchmark.common import EXPORT_DIR, GROUP_MEMBERS
 from benchmark.server import Server
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Sequence
+    from pathlib import Path
 
     from benchmark.common import Exec, Type
     from benchmark.config import CLIOptions, ServerConfig
@@ -59,6 +60,7 @@ class Runner(msgspec.Struct):
         results_eager = self._summarize_results(results_lazy)
         with pl.Config(tbl_rows=40, float_precision=3):
             print(results_eager)
+        _write_results(results_eager, "results.parquet")
         return results_eager
 
     def _summarize_results(self, lf: pl.LazyFrame) -> pl.DataFrame:
@@ -77,3 +79,20 @@ class Runner(msgspec.Struct):
             .sort(cs.starts_with("benchmark"), "server")
             .collect()
         )
+
+def _write_results(df: pl.DataFrame, name: str) -> None:
+    path = _mkdir_gitignore(EXPORT_DIR) / name
+    path.touch()
+    df.write_parquet(path)
+    print(f"Exported results to {path.as_posix()}")
+
+
+def _mkdir_gitignore(path: Path) -> Path:
+    ignore = EXPORT_DIR / ".gitignore"
+    if ignore.exists():
+        return path
+    path.mkdir(exist_ok=True)
+    ignore.touch()
+    note = "# This directory contains machine-specific benchmark results\n# and should not be checked into version control."
+    ignore.write_text(f"{note}\n*\n", "utf-8", newline="\n")
+    return path
