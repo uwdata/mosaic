@@ -49,9 +49,8 @@ class Client:
     def _run_benchmark[T: Type](
         self, benchmark: Benchmark[T, None], /
     ) -> Benchmark[T, Result]:
-        thousand = 1000
         command = benchmark.command
-        counter = time.perf_counter
+        counter = time.perf_counter_ns
         iterations = self.iterations
 
         t0, t1 = 0.0, 0.0
@@ -63,7 +62,7 @@ class Client:
             t0 = counter()
             data = self.post(command)
             t1 = counter()
-            (t1 - t0) * thousand
+            (t1 - t0)
             response_size = len(data)
 
         # Cleanup
@@ -71,13 +70,12 @@ class Client:
         data = b""
 
         # Actual
-        timings: list[float] = []
+        timings: list[int] = []
         for _ in range(iterations):
             t0 = counter()
             data = self.post(command)
             t1 = counter()
-
-            timings.append((t1 - t0) * thousand)
+            timings.append(t1 - t0)
         return benchmark.with_result(Result(timings, response_size))
 
     def run_benchmarks[T: Type](
