@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import msgspec
 import polars as pl
+from polars import selectors as cs
 
 from benchmark.client import Client
 from benchmark.common import GROUP_MEMBERS
@@ -17,12 +18,12 @@ if TYPE_CHECKING:
     from benchmark.task import Benchmark, Command
 
 
-SCHEMA = pl.Schema(
+SCHEMA_INTO_ROW = pl.Schema(
     {
         "benchmark_group": pl.Enum(GROUP_MEMBERS),  # provides sort order
         "benchmark_name": str,
         "command_type": str,
-        "response_size": int,
+        "response_size": int,  # bytes
         "timings": pl.List(pl.Duration("ns")),
     }
 )
@@ -48,8 +49,9 @@ class Runner(msgspec.Struct):
                 result.into_row()
                 for result in client.run_benchmarks(self.sources, self.benchmarks)
             )
-            return pl.LazyFrame(results, orient="row", schema=SCHEMA).with_columns(
-                server=pl.lit(server.name)
+            schema = SCHEMA_INTO_ROW
+            return pl.LazyFrame(results, schema, orient="row").select(
+                pl.lit(server.name).alias("server"), *schema
             )
 
     def _available_targets(self) -> Iterator[ServerConfig]:
@@ -60,11 +62,27 @@ class Runner(msgspec.Struct):
                 print(f"Skipping unavailable target: {target.name!r}")
 
     def run_all(self) -> pl.DataFrame:
-        results = (
-            pl.union(self.run(target) for target in self._available_targets())
-            .sort(pl.nth(0, 1), "server")
+        results_lazy = pl.union(
+            self.run(target) for target in self._available_targets()
+        )
+        results_eager = self._summarize_results(results_lazy)
+        with pl.Config(tbl_rows=40, float_precision=3):
+            print(results_eager)
+        return results_eager
+
+    def _summarize_results(self, lf: pl.LazyFrame) -> pl.DataFrame:
+        t = pl.col("timings")
+        return (
+            lf.select(
+                "server",
+                cs.starts_with("benchmark"),
+                "response_size",
+                min=t.list.min(),
+                median=t.list.median(),
+                p95=t.list.agg(pl.element().quantile(0.95)),
+                mean=t.list.mean(),
+            )
+            .with_columns(cs.duration().dt.total_milliseconds(fractional=True))
+            .sort(cs.starts_with("benchmark"), "server")
             .collect()
         )
-        with pl.Config(tbl_rows=100, fmt_table_cell_list_len=5, float_precision=2):
-            print(results)
-        return results
