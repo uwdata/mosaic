@@ -30,10 +30,10 @@ class Command[T: Type](msgspec.Struct):
 
 @final
 class Result(msgspec.Struct):
-    timings: Sequence[float]
-    """timings_ms"""
+    timings: Sequence[int]
+    """Per-iteration execution time in nanoseconds."""
     response_size: int
-    """reponse bytes length"""
+    """Number of bytes returned in a response."""
 
 
 @final

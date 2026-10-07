@@ -23,7 +23,7 @@ SCHEMA = pl.Schema(
         "benchmark_name": str,
         "command_type": str,
         "response_size": int,
-        "timings": list[float],
+        "timings": pl.List(pl.Duration("ns")),
     }
 )
 
