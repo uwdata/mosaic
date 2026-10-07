@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Self
 
 import msgspec
@@ -38,7 +39,7 @@ class Client:
         print("Closed client")
 
     def is_ready(self) -> bool:
-        return self._session.post("/", json=_PING).ok
+        return self._session.post("/", json=_PING).status_code == HTTPStatus.OK
 
     def post[T: Type](self, command: Command[T]) -> bytes:
         return self._session.post("/", json=command).content or b""
