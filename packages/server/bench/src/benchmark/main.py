@@ -37,11 +37,22 @@ def main() -> None:
     if args.warmup < 1:
         parser.error("--warmup must be >= 1")
 
+    from rich.table import Table
+
     from benchmark.benches import BENCHMARKS, SOURCES
+    from benchmark.common import console
     from benchmark.runner import Runner
     from benchmark.targets import select_targets
 
     targets = select_targets(args.servers)
+    table = Table(show_header=False)
+    table.add_column()
+    table.add_column(justify="right")
+    table.add_row("iterations", str(args.iterations))
+    table.add_row("warmup", str(args.warmup))
+    table.add_row("port", str(args.port))
+    table.add_row("debug_server", str(args.debug_server))
+    console.print(table)
     runner = Runner(args, targets, SOURCES, BENCHMARKS)
     runner.run_all()
 
