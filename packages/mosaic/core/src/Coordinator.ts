@@ -205,7 +205,7 @@ export class Coordinator {
   // -- Client Management ----
 
   /**
-   * Update client data by submitting the given query and returning the()
+   * Update client data by submitting the given query and returning the
    * data (or error) to the client.
    * @param client A Mosaic client.
    * @param query The data query.
