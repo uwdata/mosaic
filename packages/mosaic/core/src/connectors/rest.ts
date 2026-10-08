@@ -1,4 +1,11 @@
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
+import type {
+  ArrowQueryRequest,
+  Connector,
+  ConnectorQueryOptions,
+  ConnectorQueryRequest,
+  ExecQueryRequest
+} from './Connector.js';
+import { abortable } from '../util/abort.js';
 
 interface RestOptions {
   /** The URI for the DuckDB REST server. */
@@ -56,14 +63,17 @@ export class RestConnector implements Connector {
     this._method = method;
   }
 
-  async query(query: ArrowQueryRequest): Promise<ArrayBuffer>;
-  async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: ConnectorQueryRequest): Promise<unknown> {
+  async query(query: ArrowQueryRequest, options?: ConnectorQueryOptions): Promise<ArrayBuffer>;
+  async query(query: ExecQueryRequest, options?: ConnectorQueryOptions): Promise<void>;
+  async query(query: ConnectorQueryRequest, { signal }: ConnectorQueryOptions = {}): Promise<unknown> {
     const get = this._method === 'GET' && query.type === 'arrow'
       && Object.keys(query).every(key => key === 'type' || key === 'sql');
+    signal?.throwIfAborted();
+    const init = typeof this._headers === 'function' ? this._headers() : this._headers;
     const headers = new Headers(
-      typeof this._headers === 'function' ? await this._headers() : this._headers
+      await (signal ? abortable(Promise.resolve(init), signal) : init)
     );
+    signal?.throwIfAborted();
     if (get) {
       headers.delete('Content-Type');
     } else {
@@ -77,7 +87,8 @@ export class RestConnector implements Connector {
       mode: 'cors',
       credentials: 'omit',
       headers,
-      body: get ? undefined : JSON.stringify(query)
+      body: get ? undefined : JSON.stringify(query),
+      signal
     });
 
     if (!res.ok) {
