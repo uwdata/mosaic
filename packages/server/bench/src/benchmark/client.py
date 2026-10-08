@@ -7,11 +7,12 @@ from typing import TYPE_CHECKING, Self
 import msgspec
 import niquests
 
+from benchmark import _rich
 from benchmark.common import console
 from benchmark.task import Command, Result
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Collection, Iterator
 
     from benchmark.common import Exec, Seconds, Type
     from benchmark.task import Benchmark
@@ -81,17 +82,20 @@ class Client:
 
     def run_benchmarks[T: Type](
         self,
-        sources: Iterable[Command[Exec]],
-        benchmarks: Iterable[Benchmark[T, None]],
+        sources: Collection[Command[Exec]],
+        benchmarks: Collection[Benchmark[T, None]],
         /,
     ) -> Iterator[Benchmark[T, Result]]:
-        console.print("Loading test data")
+        # NOTE: This one is too quick to be worth reporting start/end/duration
         for command in sources:
             self.post(command)
-        console.print("Data loaded.")
+        console.print("Data loaded")
 
-        console.print("Starting benchmark run")
-        for b in benchmarks:
-            yield self._run_benchmark(b)
-
-        console.print("Benchmarks completed.")
+        for bench in _rich.track(
+            benchmarks,
+            "Running benchmarks",
+            "Finished benchmarks",
+            refresh_per_second=4,
+            spinner="simpleDotsScrolling",
+        ):
+            yield self._run_benchmark(bench)
