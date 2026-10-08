@@ -1,0 +1,928 @@
+openapi: 3.1.0
+info:
+  title: Mosaic DuckDB server protocol (HTTP)
+  version: 0.1.0-draft
+  summary: HTTP transport for Mosaic coordinator commands against a DuckDB-backed server.
+  description: |
+    A Mosaic server exposes one endpoint that accepts a JSON command object and
+    returns an Arrow IPC stream, an empty acknowledgement, or a preaggregate
+    table reference. The Python widget carries the same command objects over
+    a Jupyter comm, framed as `CommRequest` and `CommReply` under
+    `components/schemas`; both transports share the command object and the
+    error envelope and differ only in framing. Client source of truth is
+    `packages/mosaic/core/src/connectors` (`Connector.ts`, `rest.ts`,
+    `errors.ts`); `preagg` lands in uwdata/mosaic#1224.
+
+    This document describes the desired state agreed for all server
+    implementations (Python, Rust, Go, Node). Per-server gaps are tracked in
+    `STATUS.md`. Items marked **Decision** are choices made where the
+    existing servers disagreed and are open for revision.
+
+    ### Transport rules
+
+    * The endpoint path is deployment-defined; the reference servers use `/`.
+      Servers MAY serve it over HTTPS; the reference servers do when a local
+      certificate pair is present.
+    * `POST` carries the command as a JSON body. Clients send
+      `Content-Type: application/json`. **Decision:** servers MAY reject other
+      media types with `415` + `bad_request`, and MUST NOT require a `charset`.
+    * `GET` carries `type` and `sql` as flat query-string parameters
+      (percent-encoded, not JSON-wrapped; `+` decodes to a space, so clients
+      MUST percent-encode it). Only `arrow` is allowed on GET, and its `sql`
+      MUST satisfy `ReadOnlySql`; servers MUST verify
+      that before execution, independent of any deployment policy, because a
+      single statement such as `DELETE ... RETURNING *` returns rows.
+      `exec`, `preagg`, and non-read-only SQL over GET are rejected with
+      `400` + `bad_request` so that reads can be cached and side effects
+      cannot be triggered by a link. `POST` `arrow` is not restricted this
+      way.
+    * Any other method returns `405` with `Allow: GET, POST, OPTIONS` and a
+      `bad_request` error body.
+    * Properties other than `type` and `sql` are application-owned and pass
+      through to deployment authorization untouched. Protocol fields MUST be
+      decoded independently of that payload.
+    * Success bodies are fully formed: an `arrow` response for zero rows MUST
+      still contain the schema message and end-of-stream marker.
+    * Errors are always the JSON envelope in the `Error` schema with
+      `Content-Type: application/json`, using the status listed for the code
+      in `ErrorCode`, including the `405`/`412`/`413`/`415` exceptions listed
+      there for `bad_request`. Servers MUST NOT return plain-text or empty
+      error bodies, and MUST NOT return `200` for a failed command.
+    * The envelope carries `code` (what the coordinator should do), `reason`
+      (a stable classification from `ErrorReason`), and `error` (text for
+      people, never parsed). Clients and the conformance suite assert on
+      `code`, `reason`, and `field`; the wording of `error` is not part of
+      the contract and MAY differ between servers.
+    * A server MAY attach a `diagnosticId` to a failed attempt and MAY send
+      the same value as the `X-Request-Id` response header on any response;
+      when both are present they MUST match. The value is server-generated
+      and opaque; clients MUST NOT supply one.
+    * `429` responses MAY carry `Retry-After` in seconds; when the envelope
+      also has `retryAfterMs`, the header MUST equal
+      `ceil(retryAfterMs / 1000)`.
+    * Servers SHOULD accept request bodies and query strings of at least 1 MiB
+      so that long generated SQL is not silently truncated. Servers MAY cap
+      bodies and reject larger ones with `413` + `bad_request`.
+    * Servers MAY compress response bodies per `Accept-Encoding`.
+
+    ### Failure guarantees
+
+    * `arrow`: a failure publishes no result. A response is either a complete
+      IPC stream or an error envelope, never both.
+    * `preagg`: publication is atomic. The reference in `PreaggResponse`
+      names a complete table; a build that fails or exceeds its deadline
+      leaves no partial table visible under any reference the server hands
+      out.
+    * `exec`: neither atomicity nor rollback is guaranteed. Statements run
+      in order and a later one MAY fail after earlier ones took effect;
+      committed effects remain, uncommitted work follows the engine's
+      transaction semantics, and the server never retries on the client's
+      behalf. Clients that need atomicity send an explicit transaction.
+    * `deadline_exceeded` ends the attempt and follows the rule of the
+      command above: nothing is published for `arrow` and `preagg`, and an
+      `exec` MAY have had effects that the client MUST NOT assume were
+      rolled back.
+    * Cancellation and other lifecycle commands are out of scope.
+
+    ### Caching
+
+    Servers keep no result cache; clients own freshness. HTTP caching is
+    optional and, when enabled, applies only to successful `GET` `arrow`
+    responses:
+
+    * The server emits a strong `ETag` derived from the encoded body and the
+      operator-configured `Cache-Control` value. Authorization and execution
+      always run before conditional evaluation, so a revoked caller gets
+      `403`, never `304`.
+    * `If-None-Match` is compared weakly (RFC 9110); a match returns `304`
+      with no body and the same `ETag`, `Cache-Control`, and `Vary`.
+    * `If-Match` is compared strongly; a mismatch returns `412` with a
+      `bad_request` envelope and no `ETag`.
+    * Every other response — `POST`, `exec`, errors, preflight — carries
+      `Cache-Control: no-store` and no `ETag`.
+    * Responses that depend on caller identity MUST list the identifying
+      headers in `Vary` (or use `private`/`no-store`).
+  license:
+    name: BSD-3-Clause
+    identifier: BSD-3-Clause
+
+servers:
+  - url: http://localhost:3000
+    description: Default for all reference servers.
+
+security: []
+
+tags:
+  - name: commands
+    description: Command endpoint shared by all `type` values.
+
+paths:
+  /:
+    post:
+      tags: [commands]
+      operationId: postCommand
+      summary: Run a command supplied as a JSON body.
+      description: |
+        The response depends on `type`:
+
+        | `type`   | status | Content-Type                          | body                              |
+        |----------|--------|---------------------------------------|-----------------------------------|
+        | `arrow`  | 200    | `application/vnd.apache.arrow.stream` | Arrow IPC **stream** (not file)   |
+        | `exec`   | 200    | none                                  | empty                             |
+        | `preagg` | 200    | `application/json`                    | `PreaggResponse`                  |
+
+        `POST` responses are never cacheable and carry `Cache-Control: no-store`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Request'
+            examples:
+              arrow:
+                value: { type: arrow, sql: "SELECT 1 AS x" }
+              exec:
+                value: { type: exec, sql: "CREATE TABLE t AS SELECT 1 AS x; INSERT INTO t VALUES (2)" }
+              preagg:
+                value: { type: preagg, sql: "SELECT category, count(*) AS n FROM analytics.public.events GROUP BY category" }
+              application_payload:
+                summary: Application-owned fields pass through to authorization.
+                value: { type: arrow, sql: "SELECT 1 AS x", projectId: "p_42" }
+      responses:
+        '200':
+          $ref: '#/components/responses/CommandSuccess'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/TableNotFound' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '429': { $ref: '#/components/responses/ResourceExhausted' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '504': { $ref: '#/components/responses/DeadlineExceeded' }
+
+    get:
+      tags: [commands]
+      operationId: getCommand
+      summary: Run a read-only `arrow` query supplied as query parameters.
+      description: |
+        Equivalent to `POST` with the same fields, restricted to `arrow` with
+        read-only SQL. `type` is required here as on `POST`. This is the only
+        cacheable form; see *Caching* above.
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [arrow]
+        - name: sql
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/ReadOnlySql'
+        - $ref: '#/components/parameters/IfNoneMatch'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          $ref: '#/components/responses/CommandSuccess'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/TableNotFound' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+        '429': { $ref: '#/components/responses/ResourceExhausted' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '504': { $ref: '#/components/responses/DeadlineExceeded' }
+
+    options:
+      tags: [commands]
+      operationId: preflight
+      summary: CORS preflight.
+      description: |
+        Browser clients call with `mode: 'cors'` and `credentials: 'omit'`.
+        Allowed origins, headers, and max-age are deployment configuration.
+        Servers SHOULD expose `ETag` via `Access-Control-Expose-Headers` when
+        caching is enabled. Preflight bypasses authorization and carries no
+        body.
+      responses:
+        '204':
+          description: Preflight accepted. `200` with an empty body is also acceptable.
+          headers:
+            Access-Control-Allow-Origin: { schema: { type: string } }
+            Access-Control-Allow-Methods: { schema: { type: string }, example: "GET, POST" }
+            Access-Control-Allow-Headers: { schema: { type: string } }
+            Access-Control-Expose-Headers: { schema: { type: string }, example: "ETag" }
+            Access-Control-Max-Age: { schema: { type: integer } }
+            Vary: { $ref: '#/components/headers/Vary' }
+
+components:
+  schemas:
+    CommandType:
+      type: string
+      enum: [arrow, exec, preagg]
+      description: |
+        Discriminates the command. `arrow` returns a result table; `exec` runs
+        statements for their side effects; `preagg` materializes a SELECT into
+        a server-managed table and returns its reference.
+
+    Sql:
+      type: string
+      minLength: 1
+      description: |
+        SQL text. For `arrow` and `preagg` this MUST be exactly one statement;
+        a trailing semicolon is permitted. For `exec` it MAY contain several
+        `;`-separated statements, executed in order.
+
+    ReadOnlySql:
+      allOf: [{ $ref: '#/components/schemas/Sql' }]
+      description: |
+        Exactly one read-only statement. The statement's root MUST be a
+        SELECT, VALUES, set operation, or CTE (DuckDB `SELECT_NODE`,
+        `SET_OPERATION_NODE`, `CTE_NODE`, `RECURSIVE_CTE_NODE`), and no part of
+        the statement, including a CTE body, subquery, or table function
+        argument, may modify state: no DML, DDL, PRAGMA, SET, ATTACH, COPY, or
+        other side-effecting construct, including ones that return rows such
+        as `DELETE ... RETURNING`. Checking only the root is insufficient on
+        engines that allow data-modifying CTEs. Servers MUST verify this before
+        execution whether or not a deployment policy is active, and reject
+        violations with `bad_request` / `not_read_only`. Required for `preagg`
+        and for any command delivered over HTTP GET.
+
+    ArrowRequest:
+      type: object
+      required: [type, sql]
+      properties:
+        type: { const: arrow }
+        sql: { $ref: '#/components/schemas/Sql' }
+      unevaluatedProperties: true
+
+    ExecRequest:
+      type: object
+      required: [type, sql]
+      properties:
+        type: { const: exec }
+        sql: { $ref: '#/components/schemas/Sql' }
+      unevaluatedProperties: true
+      description: |
+        Statements run in order on one connection. The protocol guarantees
+        neither atomicity nor rollback: a later statement MAY fail after
+        earlier ones took effect, effects that were committed remain, and the
+        server MUST NOT retry on the client's behalf or report which statements
+        completed. Whether uncommitted work survives the failure is the
+        engine's transaction semantics; clients that need atomicity wrap the
+        statements in an explicit transaction and treat its outcome by those
+        semantics.
+
+    PreaggRequest:
+      type: object
+      required: [type, sql]
+      properties:
+        type: { const: preagg }
+        sql:
+          allOf: [{ $ref: '#/components/schemas/ReadOnlySql' }]
+          description: |
+            The server validates the statement under the same source, function,
+            and external-access policy as `arrow` queries, then materializes it.
+      unevaluatedProperties: true
+      description: |
+        Publication is atomic: the table named in `PreaggResponse` is complete
+        and queryable when the response is sent, and a failed or timed-out
+        build MUST NOT leave a partial table visible under a reference the
+        server has handed out or will hand out.
+
+    Request:
+      description: |
+        A command object. `type` is required and discriminates; a missing
+        `type` is rejected with `bad_request` / `missing_field` (`field: type`),
+        a missing `sql` with `missing_field` (`field: sql`).
+        Properties other than `type` and `sql` are application-owned: servers
+        MUST accept them, MUST NOT let them override `type` or `sql`, and MAY
+        pass them to a deployment-specific authorizer. Mosaic defines no
+        metadata envelope.
+      oneOf:
+        - $ref: '#/components/schemas/ArrowRequest'
+        - $ref: '#/components/schemas/ExecRequest'
+        - $ref: '#/components/schemas/PreaggRequest'
+
+    ExecResponse:
+      type: object
+      description: |
+        Acknowledgement of a completed `exec`. Over HTTP the body is empty;
+        over the comm the reply is `CommExecReply`.
+      additionalProperties: false
+      maxProperties: 0
+
+    Identifier:
+      type: string
+      minLength: 1
+      description: |
+        One raw, unquoted SQL identifier component, exactly as the catalog
+        stores it. It MAY contain `.` or `"`; clients quote each component
+        separately (doubling embedded `"`) and MUST NOT split a component on
+        `.` or reassemble a dotted string to be parsed later.
+
+    SchemaPath:
+      type: array
+      items: { $ref: '#/components/schemas/Identifier' }
+      minItems: 1
+      description: |
+        Namespace path between the catalog and the object, outermost first.
+        DuckDB catalogs have exactly one level; engines with nested namespaces
+        supply more. Servers MUST NOT flatten a path into a dotted string, and
+        clients MUST handle any depth.
+
+    TableReference:
+      type: object
+      required: [catalog, schema, table]
+      properties:
+        catalog: { $ref: '#/components/schemas/Identifier' }
+        schema: { $ref: '#/components/schemas/SchemaPath' }
+        table: { $ref: '#/components/schemas/Identifier' }
+      additionalProperties: false
+      description: |
+        Fully qualified, explicit reference to a table. Clients build the SQL
+        name by quoting `catalog`, each `schema` component, and `table` and
+        joining them with `.` (`TableRefNode([catalog, ...schema, table])`).
+        The same shape appears in `PreaggResponse` (the table to query) and in
+        a `table_not_found` error (the table to rebuild); in the latter it is a
+        recovery instruction and carries no authorization by itself.
+
+    PreaggResponse:
+      type: object
+      required: [reference, createdAt]
+      properties:
+        reference: { $ref: '#/components/schemas/TableReference' }
+        createdAt:
+          type: string
+          format: date-time
+          description: |
+            RFC 3339 timestamp of the successful build's completion. Reusing an
+            existing table preserves it; rebuilding updates it.
+        rows:
+          type: integer
+          minimum: 0
+          description: Row count of the materialized table.
+        bytes:
+          type: integer
+          minimum: 1
+          description: |
+            Approximate size of the materialized table in bytes, as cheaply
+            known to the server's storage (for example compressed Parquet
+            size or an estimate from column widths). Omitted when unknown.
+      additionalProperties: false
+      description: |
+        Reference to a complete, queryable table; see `PreaggRequest` for the
+        publication guarantee. `rows` and `bytes` are informational; clients
+        MUST NOT depend on their presence or exactness.
+
+    Uuid:
+      type: string
+      minLength: 1
+      description: |
+        Client-chosen correlation id for the Jupyter comm transport, unique
+        among that client's outstanding requests. Opaque to the server.
+
+    CommRequest:
+      description: |
+        A command as sent over a Jupyter comm by the Mosaic widget: the
+        `Request` plus a `uuid` the reply echoes. Servers MUST validate `uuid`
+        before running the command: absent is `missing_field`, present but not
+        a non-empty string is `invalid_field`, both with `field: uuid`, and
+        neither executes any SQL.
+      allOf:
+        - $ref: '#/components/schemas/Request'
+        - type: object
+          required: [uuid]
+          properties:
+            uuid: { $ref: '#/components/schemas/Uuid' }
+
+    CommArrowReply:
+      type: object
+      required: [type, uuid]
+      properties:
+        type: { const: arrow }
+        uuid: { $ref: '#/components/schemas/Uuid' }
+      additionalProperties: false
+      description: The result travels as exactly one comm buffer holding the Arrow IPC stream.
+
+    CommExecReply:
+      type: object
+      required: [type, uuid]
+      properties:
+        type: { const: exec }
+        uuid: { $ref: '#/components/schemas/Uuid' }
+      additionalProperties: false
+      description: Acknowledgement of a completed `exec`; no buffers.
+
+    CommPreaggReply:
+      type: object
+      required: [type, uuid, result]
+      properties:
+        type: { const: preagg }
+        uuid: { $ref: '#/components/schemas/Uuid' }
+        result: { $ref: '#/components/schemas/PreaggResponse' }
+      additionalProperties: false
+
+    CommErrorReply:
+      type: object
+      required: [type, uuid, error]
+      properties:
+        type: { const: error }
+        uuid:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+          description: |
+            The request's `uuid`, or `null` when the request had no valid one
+            and the reply therefore cannot be correlated. `null` is only ever
+            sent on an error reply.
+        error: { $ref: '#/components/schemas/Error' }
+      additionalProperties: false
+
+    CommReply:
+      description: |
+        Exactly one reply per comm message, correlated by `uuid`. Framing is
+        the flat `type`/`uuid` envelope; the semantic payload is nested
+        (`result`, `error`) or carried as a buffer (`arrow`). Replies MAY
+        arrive in any order. Clients MUST log and drop a reply whose `uuid` is
+        `null` or unknown rather than fail.
+      oneOf:
+        - $ref: '#/components/schemas/CommArrowReply'
+        - $ref: '#/components/schemas/CommExecReply'
+        - $ref: '#/components/schemas/CommPreaggReply'
+        - $ref: '#/components/schemas/CommErrorReply'
+
+    ErrorCode:
+      type: string
+      description: |
+        Machine-readable failure class: what the coordinator should do about
+        the failure. The vocabulary is closed: servers MUST use exactly these
+        codes, and adding one requires a change to this schema. Clients treat
+        any code they do not recognise as a generic failure. The HTTP column is
+        the canonical status; where the HTTP transport itself dictates a more
+        specific status, that exception is listed and takes precedence. The
+        comm carries only the envelope.
+
+        | code                  | HTTP | when                                                                                   |
+        |-----------------------|------|----------------------------------------------------------------------------------------|
+        | `bad_request`         | 400  | The command cannot be run as written. HTTP exceptions, each tied to a reason: `405` `method_not_allowed`, `412` `precondition_failed`, `413` `payload_too_large`, `415` `unsupported_media_type`. |
+        | `unauthenticated`     | 401  | Caller identity required but absent or invalid.                                        |
+        | `forbidden`           | 403  | Authenticated caller denied by source/function/external-access policy, or a disallowed cross-origin request. |
+        | `table_not_found`     | 404  | A table in the caller's managed namespace does not exist. `reference` MUST be included so the coordinator can rebuild it. |
+        | `unsupported_command` | 400  | The command is known but not available in this implementation or deployment (for example `preagg` on an implementation without preaggregation, or `exec` when query validation is active). Clients MUST NOT fall back to `exec`. |
+        | `resource_exhausted`  | 429  | Admission, quota, row/byte, or concurrency limit reached. Clients suppress immediate retries; `retryAfterMs` MAY advise when. |
+        | `deadline_exceeded`   | 504  | The server's command deadline elapsed. The attempt is over and no result or materialization was published; for `exec`, effects committed before the deadline MAY remain and the client MUST NOT assume rollback or retry automatically. |
+        | `internal_error`      | 500  | Any other server-side failure, including DuckDB execution errors not classified above. |
+      enum:
+        - bad_request
+        - unauthenticated
+        - forbidden
+        - table_not_found
+        - unsupported_command
+        - resource_exhausted
+        - deadline_exceeded
+        - internal_error
+
+    ErrorReason:
+      type: string
+      description: |
+        Stable, specific classification of the failure, so that clients and
+        the conformance suite assert on it instead of on human-readable text.
+        Every reason belongs to exactly one code (enforced by `Error`); the
+        vocabulary is closed. Servers use the most specific reason they can
+        determine and the general one for the code (`internal_failure`,
+        `invalid_field`) otherwise. Provider-specific rules and engine
+        messages belong in `diagnostics` and `error`, not in new reasons.
+
+        | reason                         | code                  | when                                                                            |
+        |--------------------------------|-----------------------|---------------------------------------------------------------------------------|
+        | `malformed_json`               | `bad_request`         | The body or message is not a JSON object.                                       |
+        | `missing_field`                | `bad_request`         | A required protocol property is absent; `field` names it.                       |
+        | `invalid_field`                | `bad_request`         | A protocol property is present but unusable: wrong JSON type, unknown `type`, empty `sql`, or a `type` other than `arrow` over GET; `field` names it. |
+        | `sql_parse_error`              | `bad_request`         | The SQL does not parse.                                                         |
+        | `multiple_statements`          | `bad_request`         | `arrow` or `preagg` `sql` holds more than one statement.                        |
+        | `not_read_only`                | `bad_request`         | `ReadOnlySql` was required (GET, `preagg`) and the statement is not read-only.  |
+        | `unsupported_statement`        | `bad_request`         | The statement parses but its kind cannot be run by this command.                |
+        | `method_not_allowed`           | `bad_request`         | HTTP `405`.                                                                     |
+        | `payload_too_large`            | `bad_request`         | HTTP `413`.                                                                     |
+        | `unsupported_media_type`       | `bad_request`         | HTTP `415`.                                                                     |
+        | `precondition_failed`          | `bad_request`         | HTTP `412`: `If-Match` did not match.                                           |
+        | `authentication_required`      | `unauthenticated`     | No credentials were presented.                                                  |
+        | `authentication_failed`        | `unauthenticated`     | Credentials were presented and rejected.                                        |
+        | `policy_denied`                | `forbidden`           | A valid statement was denied by the deployment's source, function, or external-access policy. |
+        | `access_denied`                | `forbidden`           | The caller may not use this endpoint, tenant, or origin at all.                 |
+        | `materialization_missing`      | `table_not_found`     | A managed table the caller referenced does not exist; `reference` names it.     |
+        | `command_disabled`             | `unsupported_command` | The command is not enabled in this deployment.                                  |
+        | `resource_limit_exceeded`      | `resource_exhausted`  | An admission, quota, size, or concurrency limit was hit.                        |
+        | `command_deadline_exceeded`    | `deadline_exceeded`   | The command deadline elapsed.                                                   |
+        | `execution_failed`             | `internal_error`      | The engine failed while running a valid, permitted statement (binder, catalog, conversion, and runtime errors). |
+        | `validation_failed`            | `internal_error`      | The validator or policy infrastructure itself failed, including an invalid host policy. A statement the policy denies is `policy_denied`, not this. |
+        | `invalid_server_configuration` | `internal_error`      | The server is misconfigured.                                                    |
+        | `internal_failure`             | `internal_error`      | Anything else.                                                                  |
+      enum:
+        - malformed_json
+        - missing_field
+        - invalid_field
+        - sql_parse_error
+        - multiple_statements
+        - not_read_only
+        - unsupported_statement
+        - method_not_allowed
+        - payload_too_large
+        - unsupported_media_type
+        - precondition_failed
+        - authentication_required
+        - authentication_failed
+        - policy_denied
+        - access_denied
+        - materialization_missing
+        - command_disabled
+        - resource_limit_exceeded
+        - command_deadline_exceeded
+        - execution_failed
+        - validation_failed
+        - invalid_server_configuration
+        - internal_failure
+
+    SqlLocation:
+      type: object
+      required: [start]
+      properties:
+        start:
+          type: integer
+          minimum: 0
+          description: Zero-based UTF-8 byte offset into the submitted `sql`.
+        end:
+          type: integer
+          minimum: 0
+          description: Exclusive end offset, at least `start`. Omitted when only a position is known.
+      additionalProperties: false
+      description: |
+        Span of the submitted SQL a diagnostic refers to. Offsets are bytes of
+        the UTF-8 encoding, not characters, so that every server computes the
+        same value; omitted entirely when the provider reports no location.
+
+    DiagnosticSubject:
+      type: object
+      required: [kind, name]
+      properties:
+        kind:
+          type: string
+          enum: [table, function]
+          description: "`table` covers any named relation, including views."
+        catalog: { $ref: '#/components/schemas/Identifier' }
+        schema: { $ref: '#/components/schemas/SchemaPath' }
+        name: { $ref: '#/components/schemas/Identifier' }
+      additionalProperties: false
+      description: |
+        The object or function a diagnostic is about, with the same namespace
+        components as `TableReference`. `catalog` and `schema` are present when
+        the provider resolved them. A subject is descriptive only: it never
+        authorizes access to what it names and never triggers recovery.
+
+    Diagnostic:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          description: Human-readable explanation of this finding.
+        provider:
+          type: string
+          minLength: 1
+          description: Which validator or engine produced the finding, for example `gatekeeper` or `duckdb`.
+        rule:
+          type: string
+          minLength: 1
+          description: Provider-specific rule identifier. Opaque to the protocol.
+        subject: { $ref: '#/components/schemas/DiagnosticSubject' }
+        location: { $ref: '#/components/schemas/SqlLocation' }
+      additionalProperties: false
+
+    Error:
+      type: object
+      required: [error, code, reason]
+      properties:
+        error:
+          type: string
+          minLength: 1
+          description: |
+            Human-readable message. MAY include the engine's error text. Not
+            contractual: clients and tests MUST NOT depend on its wording.
+        code: { $ref: '#/components/schemas/ErrorCode' }
+        reason: { $ref: '#/components/schemas/ErrorReason' }
+        field:
+          type: string
+          minLength: 1
+          description: |
+            Name of the top-level request property a `missing_field` or
+            `invalid_field` error concerns. Prohibited for other reasons.
+        reference:
+          $ref: '#/components/schemas/TableReference'
+          description: |
+            The managed table to rebuild. Required for `table_not_found`, only
+            after the server has established that the reference lies in the
+            caller's managed namespace; prohibited for every other code so a
+            forbidden target cannot leak through the envelope.
+        diagnostics:
+          type: array
+          items: { $ref: '#/components/schemas/Diagnostic' }
+          description: |
+            Structured findings behind the failure, for example one entry per
+            policy violation. MAY be incomplete or omitted; what is disclosed
+            is a deployment decision that applies to `subject` and `message`
+            alike. Successful-validation evidence (resolved objects and
+            functions) is not an error diagnostic and is never sent here.
+        diagnosticId:
+          type: string
+          minLength: 1
+          description: |
+            Server-generated opaque identifier of this command attempt, for
+            correlating with server logs. Over HTTP the same value MAY also be
+            sent as `X-Request-Id`; when both are present they MUST match.
+            Clients MUST NOT supply it; the comm correlates by `uuid`, and
+            HTTP needs no correlation.
+        retryAfterMs:
+          type: integer
+          minimum: 0
+          description: |
+            Advisory delay before the client should try again. Only on
+            `resource_exhausted`. When HTTP `Retry-After` is also sent it MUST
+            equal `ceil(retryAfterMs / 1000)` seconds. Timing advice only: it
+            does not say whether re-running the command is safe.
+        catalog: false
+        schema: false
+        table: false
+      additionalProperties: true
+      description: |
+        Structured error envelope, identical over HTTP (JSON body with the
+        status mapped from `code`) and the comm (nested in `CommErrorReply`).
+        `code` says what
+        the coordinator should do, `reason` says precisely what went wrong, and
+        `error` is for people. The `allOf` below binds each `reason` to its
+        `code`, `field` to the field reasons, `reference` to
+        `table_not_found`, and `retryAfterMs` to `resource_exhausted`. Table
+        components never appear flat at the top level: a reference is always
+        the complete `reference` object, so a partial or unauthorized one
+        cannot leak through the envelope.
+      allOf:
+        - if: { required: [code], properties: { code: { const: bad_request } } }
+          then:
+            properties:
+              reason:
+                enum:
+                  - malformed_json
+                  - missing_field
+                  - invalid_field
+                  - sql_parse_error
+                  - multiple_statements
+                  - not_read_only
+                  - unsupported_statement
+                  - method_not_allowed
+                  - payload_too_large
+                  - unsupported_media_type
+                  - precondition_failed
+        - if: { required: [code], properties: { code: { const: unauthenticated } } }
+          then:
+            properties:
+              reason: { enum: [authentication_required, authentication_failed] }
+        - if: { required: [code], properties: { code: { const: forbidden } } }
+          then:
+            properties:
+              reason: { enum: [policy_denied, access_denied] }
+        - if: { required: [code], properties: { code: { const: table_not_found } } }
+          then:
+            properties:
+              reason: { enum: [materialization_missing] }
+        - if: { required: [code], properties: { code: { const: unsupported_command } } }
+          then:
+            properties:
+              reason: { enum: [command_disabled] }
+        - if: { required: [code], properties: { code: { const: resource_exhausted } } }
+          then:
+            properties:
+              reason: { enum: [resource_limit_exceeded] }
+        - if: { required: [code], properties: { code: { const: deadline_exceeded } } }
+          then:
+            properties:
+              reason: { enum: [command_deadline_exceeded] }
+        - if: { required: [code], properties: { code: { const: internal_error } } }
+          then:
+            properties:
+              reason: { enum: [execution_failed, validation_failed, invalid_server_configuration, internal_failure] }
+        - if: { required: [reason], properties: { reason: { enum: [missing_field, invalid_field] } } }
+          then: { required: [field] }
+          else: { properties: { field: false } }
+        - if: { required: [code], properties: { code: { const: table_not_found } } }
+          then: { required: [reference] }
+          else: { properties: { reference: false } }
+        - if: { required: [code], properties: { code: { const: resource_exhausted } } }
+          else: { properties: { retryAfterMs: false } }
+
+  parameters:
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      schema: { type: string }
+      description: Weak comparison against the current `ETag`; a match yields `304`.
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      schema: { type: string }
+      description: Strong comparison against the current `ETag`; a mismatch yields `412`.
+
+  headers:
+    X-Request-Id:
+      schema: { type: string, minLength: 1 }
+      description: |
+        Server-generated identifier of this request, for log correlation.
+        Optional on any response; equal to the envelope's `diagnosticId` when
+        both are present.
+    ETag:
+      schema: { type: string }
+      description: Strong validator for the encoded body. Only on cacheable `GET` `arrow` responses.
+    Cache-Control:
+      schema: { type: string }
+      description: Operator-configured value on cacheable responses; `no-store` on everything else once caching is enabled.
+    Vary:
+      schema: { type: string }
+      description: MUST include any request header that influenced the response, such as tenant headers.
+    Allow:
+      schema: { type: string }
+      example: "GET, POST, OPTIONS"
+
+  responses:
+    CommandSuccess:
+      description: Command completed. Media type is determined by the request `type`.
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+        Cache-Control: { $ref: '#/components/headers/Cache-Control' }
+        Vary: { $ref: '#/components/headers/Vary' }
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
+      content:
+        application/vnd.apache.arrow.stream:
+          schema:
+            type: string
+            format: binary
+            description: |
+              Arrow IPC stream: schema message, zero or more record batches,
+              end-of-stream marker. Servers MUST NOT send the IPC file format
+              (`ARROW1` magic + footer) and MUST NOT send an empty body for an
+              empty result.
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PreaggResponse'
+          example:
+            reference:
+              catalog: memory
+              schema: [mosaic_scope_a7]
+              table: preagg_c92f
+            createdAt: "2026-09-08T20:00:00Z"
+            rows: 1204
+    NotModified:
+      description: The `If-None-Match` validator matched. No body.
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+        Cache-Control: { $ref: '#/components/headers/Cache-Control' }
+        Vary: { $ref: '#/components/headers/Vary' }
+    BadRequest:
+      description: "`bad_request` or `unsupported_command`. The same body shape is used for `405`."
+      headers:
+        Allow:
+          $ref: '#/components/headers/Allow'
+          description: Only on `405`.
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            missing_type:
+              value: { error: "Missing required field: type", code: bad_request, reason: missing_field, field: type }
+            missing_sql:
+              value: { error: "Missing required field: sql", code: bad_request, reason: missing_field, field: sql }
+            unknown_type:
+              value: { error: "Unknown command type: csv", code: bad_request, reason: invalid_field, field: type }
+            get_exec:
+              value: { error: "Only arrow commands may be sent over GET", code: bad_request, reason: invalid_field, field: type }
+            get_not_read_only:
+              value: { error: "GET accepts read-only statements only", code: bad_request, reason: not_read_only }
+            multiple_statements:
+              value: { error: "arrow accepts exactly one statement", code: bad_request, reason: multiple_statements }
+            parse:
+              value:
+                error: "Parser Error: syntax error at or near \"SELEC\""
+                code: bad_request
+                reason: sql_parse_error
+                diagnostics:
+                  - message: "syntax error at or near \"SELEC\""
+                    provider: duckdb
+                    location: { start: 0, end: 5 }
+            exec_disabled:
+              value: { error: "exec is disabled when query validation is active", code: unsupported_command, reason: command_disabled }
+            preagg_disabled:
+              value: { error: "preagg is not enabled on this server", code: unsupported_command, reason: command_disabled }
+    Unauthenticated:
+      description: "`unauthenticated`."
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: "No tenant credentials in request headers", code: unauthenticated, reason: authentication_required }
+    Forbidden:
+      description: "`forbidden`."
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            policy:
+              summary: A statement denied by the deployment policy, with one diagnostic per violation.
+              value:
+                error: Query is not permitted
+                code: forbidden
+                reason: policy_denied
+                diagnostics:
+                  - message: Access to this table is not permitted
+                    provider: gatekeeper
+                    rule: table_not_allowed
+                    subject: { kind: table, catalog: analytics, schema: [finance], name: q3 }
+                    location: { start: 14 }
+                  - message: "remote URI prefix 's3://' is not allowed"
+                    provider: gatekeeper
+                    rule: remote_uri_not_allowed
+                    subject: { kind: function, name: read_parquet }
+            tenant:
+              value: { error: "Caller may not access schema 'other_tenant'", code: forbidden, reason: access_denied }
+    TableNotFound:
+      description: "`table_not_found`, with the authorized reference so the coordinator can rebuild a live preaggregate recipe."
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error: Materialized table is unavailable
+            code: table_not_found
+            reason: materialization_missing
+            reference:
+              catalog: memory
+              schema: [mosaic_scope_a7]
+              table: preagg_c92f
+    PreconditionFailed:
+      description: "`bad_request` / `precondition_failed`; the `If-Match` validator did not match. No `ETag`."
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: "If-Match did not match the current ETag", code: bad_request, reason: precondition_failed }
+    PayloadTooLarge:
+      description: "`bad_request` / `payload_too_large`; body exceeded the server's limit."
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: "Request body exceeds 16 MiB", code: bad_request, reason: payload_too_large }
+    UnsupportedMediaType:
+      description: "`bad_request` / `unsupported_media_type`; request `Content-Type` was not JSON."
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: "Content-Type must be application/json", code: bad_request, reason: unsupported_media_type }
+    ResourceExhausted:
+      description: "`resource_exhausted`."
+      headers:
+        Retry-After:
+          schema: { type: integer, minimum: 0 }
+          description: Optional seconds to wait before retrying; `ceil(retryAfterMs / 1000)` when the envelope carries `retryAfterMs`.
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: "Materialization capacity is temporarily exhausted", code: resource_exhausted, reason: resource_limit_exceeded, retryAfterMs: 1000 }
+    InternalError:
+      description: "`internal_error`, including unclassified DuckDB execution errors."
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            execution:
+              value: { error: "Catalog Error: Table with name foo does not exist!", code: internal_error, reason: execution_failed, diagnosticId: "req_01J9X4M2K8" }
+            validator:
+              summary: The validator itself failed; a statement the policy denies is `forbidden` instead.
+              value: { error: "Query validation failed", code: internal_error, reason: validation_failed, diagnosticId: "req_01J9X4M2K9" }
+    DeadlineExceeded:
+      description: "`deadline_exceeded`."
+      headers:
+        X-Request-Id: { $ref: '#/components/headers/X-Request-Id' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: "Command deadline exceeded after 30s", code: deadline_exceeded, reason: command_deadline_exceeded }

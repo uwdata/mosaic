@@ -24,6 +24,7 @@ export default {
       'packages/mosaic/*',
       'packages/vgplot/*',
       'packages/server/*/vitest.config.*',
+      'conformance/vitest.config.ts',
     ]
   }
 };

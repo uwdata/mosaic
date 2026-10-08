@@ -1,0 +1,37 @@
+# The Jupyter comm wire used by the Python widget (D25, D26). Command-level
+# cases also run here automatically, including the concurrent ones in
+# sequence.yaml; these are the uuid rules only this transport has. `correlation: manual` is a harness switch: the request is
+# sent exactly as written instead of receiving a generated uuid.
+
+- id: comm-missing-uuid
+  title: A message without a `uuid` gets one uncorrelated error and runs nothing
+  decisions: [D25]
+  transports: [comm]
+  layers: [wire]
+  correlation: manual
+  request: { type: arrow, sql: "SELECT 1 AS x" }
+  expect:
+    error: { code: bad_request, reason: missing_field, field: uuid }
+
+- id: comm-empty-uuid
+  title: An empty `uuid` is an invalid field, answered uncorrelated
+  decisions: [D25]
+  transports: [comm]
+  layers: [wire]
+  correlation: manual
+  request: { type: arrow, sql: "SELECT 1 AS x", uuid: "" }
+  expect:
+    error: { code: bad_request, reason: invalid_field, field: uuid }
+
+- id: comm-invalid-uuid-not-executed
+  title: A non-string `uuid` is rejected before the command runs
+  decisions: [D25]
+  transports: [comm]
+  layers: [wire]
+  requires: [exec]
+  steps:
+    - correlation: manual
+      request: { type: exec, sql: "CREATE TABLE conformance_comm_uuid AS SELECT 1 AS x", uuid: 42 }
+      expect: { error: { code: bad_request, reason: invalid_field, field: uuid } }
+    - request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM information_schema.tables WHERE table_name = 'conformance_comm_uuid'" }
+      expect: { arrow: { rows: [[0]] } }

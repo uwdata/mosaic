@@ -22,6 +22,8 @@ pipx run duckdb-server
 
 Alternatively, you can install the server with `pip install duckdb-server`. Then you can start the server with `duckdb-server`.
 
+The server accepts an optional database path (default in-memory) and a `--port` option (default `3000`), for example `duckdb-server data.db --port 3001`.
+
 ## Developer Setup
 
 For shared localhost HTTPS/HTTP/2 setup for Node, Rust, and Go, install [native mkcert](https://github.com/FiloSottile/mkcert#installation) on `PATH`, then run `pnpm mkcert` from the repository root. See the [server guide](https://github.com/uwdata/mosaic/blob/main/packages/server/README.md) for certificate discovery and renewal.

@@ -29,6 +29,7 @@
     "server:rust": "cd packages/server/duckdb-server-rust && cargo run",
     "server:go": "cd packages/server/duckdb-server-go && go run -tags=duckdb_arrow .",
     "server:node": "nodemon packages/server/duckdb/bin/run-server.js",
+    "conformance:lint": "npx --yes @redocly/cli@2.52.1 lint --config conformance/redocly.yaml",
     "dev": "vite"
   },
   "devDependencies": {

@@ -236,6 +236,37 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1
 
+  conformance:
+    dependencies:
+      '@uwdata/flechette':
+        specifier: ^2.5.0
+        version: 2.5.0
+      '@uwdata/mosaic-core':
+        specifier: workspace:*
+        version: link:../packages/mosaic/core
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.1
+    devDependencies:
+      '@duckdb/duckdb-wasm':
+        specifier: 1.33.1-dev57.0
+        version: 1.33.1-dev57.0
+      '@types/node':
+        specifier: ^26.0.0
+        version: 26.6.2
+      '@uwdata/mosaic-duckdb':
+        specifier: workspace:*
+        version: link:../packages/server/duckdb
+      web-worker:
+        specifier: 1.2.0
+        version: 1.2.0
+
   packages/examples/svelte-example:
     dependencies:
       '@uwdata/mosaic-core':
@@ -4954,6 +4985,9 @@ packages:
 
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
+
+  web-worker@1.2.0:
+    resolution: {integrity: sha512-PgF341avzqyx60neE9DD+XS26MMNMoUQRz9NOZwW32nPQrF6p77f1htcnjBSEV8BGMKZ16choqUG4hyI0Hx7mA==}
 
   webidl-conversions@8.0.1:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
@@ -9998,6 +10032,8 @@ snapshots:
   wcwidth@1.0.1:
     dependencies:
       defaults: 1.0.4
+
+  web-worker@1.2.0: {}
 
   webidl-conversions@8.0.1: {}
 

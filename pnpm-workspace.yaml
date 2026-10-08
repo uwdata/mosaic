@@ -5,6 +5,7 @@ packages:
   - "packages/server/*"
   - "packages/vgplot/*"
   - "packages/examples/*"
+  - "conformance"
 allowBuilds:
   esbuild: false
   nx: false

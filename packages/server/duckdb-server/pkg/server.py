@@ -60,7 +60,7 @@ class HTTPHandler(Handler):
 
     def arrow(self, buffer: bytes) -> None:
         res = self.begin(200)
-        res.write_header("Content-Type", "application/octet-stream")
+        res.write_header("Content-Type", "application/vnd.apache.arrow.stream")
         res.end(buffer)
 
     def error(self, error: object, status: int = 500) -> None:
@@ -110,7 +110,7 @@ def on_error(error: object, res: Res, req: Req) -> None:
         res.end(f"Error {error}")
 
 
-def server(con: Con) -> None:
+def server(con: Con, port: int = 3000) -> None:
     app = App()
 
     async def http_handler(res: Res, req: Req) -> None:
@@ -135,7 +135,7 @@ def server(con: Con) -> None:
     app.set_error_handler(on_error)
 
     app.listen(
-        3000,
+        port,
         lambda config: sys.stdout.write(
             f"DuckDB Server listening at http://localhost:{config.port}\n"
         ),
