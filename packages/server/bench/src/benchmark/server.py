@@ -3,6 +3,8 @@ from __future__ import annotations
 import subprocess as sp
 from typing import TYPE_CHECKING, Self
 
+from benchmark.common import console
+
 if TYPE_CHECKING:
     from types import TracebackType
 
@@ -34,7 +36,7 @@ class Server:
     def __enter__(self) -> Self:
         cfg = self.config
         args = *cfg.run, f"--port {self.port}"
-        print("$", " ".join(args))
+        console.print("$", " ".join(args))
         pipe = None if cfg.debug else sp.DEVNULL
         self._process = sp.Popen(
             args, cwd=cfg.path, text=True, stdout=pipe, stderr=pipe
@@ -47,7 +49,7 @@ class Server:
         value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        print("Exiting server")
+        console.print("Exiting server")
         if self._process.poll() is None:
             self._process.terminate()
             try:

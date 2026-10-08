@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Self
 import msgspec
 import niquests
 
+from benchmark.common import console
 from benchmark.task import Command, Result
 
 if TYPE_CHECKING:
@@ -31,12 +32,12 @@ class Client:
         self.warmup: int = warmup
 
     def __enter__(self) -> Self:
-        print("Starting client")
+        console.print("Starting client")
         return self
 
     def __exit__(self, *args: object) -> None:
         self._session.close()
-        print("Closed client")
+        console.print("Closed client")
 
     def ensure_ok(self) -> None:
         response = self._session.post("/", json=_PING)
@@ -84,13 +85,13 @@ class Client:
         benchmarks: Iterable[Benchmark[T, None]],
         /,
     ) -> Iterator[Benchmark[T, Result]]:
-        print("Loading test data")
+        console.print("Loading test data")
         for command in sources:
             self.post(command)
-        print("Data loaded.")
+        console.print("Data loaded.")
 
-        print("Starting benchmark run")
+        console.print("Starting benchmark run")
         for b in benchmarks:
             yield self._run_benchmark(b)
 
-        print("Benchmarks completed.")
+        console.print("Benchmarks completed.")

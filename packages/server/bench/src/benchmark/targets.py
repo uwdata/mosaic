@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final
 
-from benchmark.common import SERVER_DIR, ServerName
+from benchmark.common import SERVER_DIR, ServerName, console
 from benchmark.config import DEFAULT_SERVERS, ServerConfig
 
 if TYPE_CHECKING:
@@ -50,4 +50,4 @@ def _skip_unavailable(targets: Iterable[ServerConfig], /) -> Iterator[ServerConf
         if target.is_available():
             yield target
         else:
-            print(f"Skipping unavailable target: {target.name!r}")
+            console.print(f"Skipping unavailable target: {target.name!r}")
