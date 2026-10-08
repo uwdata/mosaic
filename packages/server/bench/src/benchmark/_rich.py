@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Literal as L
 
@@ -131,4 +132,26 @@ def track[T](
         yield from progress.track(
             iterable, total=total, description=msg_wait, update_period=update_period
         )
-    console.print(msg_done)
+    console.print(f"[green bold]{msg_done}[/]")
+
+
+def link(
+    path: Path,
+    text: str | None = None,
+    /,
+    relative: Path | None = None,
+    *,
+    bold: bool = False,
+) -> str:
+    """Format a link to `path`.
+
+    Args:
+        path: Destination file path.
+        text: (Optional) override for generated link text.
+        relative: A related path to use as an anchor for generated link text.
+            By default, uses the current working directory.
+        bold: Render the text as bold.
+    """
+    text = text or (path.relative_to(relative or Path.cwd()).as_posix())
+    text = text if not bold else f"[b]{text}[/b]"
+    return f"[link={path.as_uri()}]{text}[/]"
