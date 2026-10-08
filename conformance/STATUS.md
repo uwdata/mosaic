@@ -190,13 +190,13 @@ capability none of the reference servers has.
 
 Configuration: `duckdb-server-go` with default flags. Transports: post, get, rest.
 
-Closest to the target and the intended first `preagg` implementation (#1234). Already conforming: Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers. `errorStatus` (`pkg/server/errors.go`) already maps every error to a status that the HTTP path could carry as a `code`.
+Closest to the target and the first `preagg` implementation (#1289, behind `WithPreaggregation`). Already conforming: Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers. `classifyError` (`pkg/server/errors.go`) already yields the `code` and `reason` for every error; the HTTP path only emits them when preaggregation is enabled.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
-| HTTP errors are plain text | `writeError` (`pkg/server/errors.go`) hands the verbatim error message to `http.Error`, so every failure is `text/plain`. | JSON `Error` envelope (D4, D19). | Map `errorStatus` to a `code` in `writeError`; write `{error, code, reason}` with `application/json`. | 15 |
-| Parse errors are 500 without a policy | `json_serialize_sql` runs only under validation, so a syntax error is an unclassified `internal_error`. | `bad_request` regardless of policy (D7). | Run statement extraction unconditionally, or map DuckDB parser errors. | 4 |
-| `preagg` is unknown | `invalid 'type' parameter: preagg` as `bad_request`. | `unsupported_command` (D6). Go is the intended first `preagg` implementation (#1234). | Recognise the command and answer `unsupported_command` until implemented. | 1 |
+| HTTP errors are plain text | Without `WithPreaggregation`, `writeError` (`pkg/server/errors.go`) hands the verbatim error message to `http.Error`, so every failure is `text/plain`; the installed binary never enables it. | JSON `Error` envelope (D4, D19). | Emit the JSON envelope `writeError` already builds for preaggregation on every deployment. | 15 |
+| Parse errors are classified but plain text | DuckDB parser and syntax errors map to `bad_request` / `sql_parse_error` in `classifyError` (`pkg/server/errors.go`), but without preaggregation enabled the body is still plain text. | `bad_request` with the envelope (D4, D7). | Covered by the envelope fix above. | 1 |
+| `preagg` is disabled in the installed binary | `preagg` is recognised and answered with `unsupported_command` / `command_disabled` unless the embedding application configures `WithPreaggregation`; the CLI does not, and without it the body is plain text. | `unsupported_command` (D6) with the envelope (D4). | Covered by the envelope fix above. | 1 |
 | Exec and side effects over GET | GET runs `exec` and does not check the statement kind, so `CREATE TABLE` and `DELETE ... RETURNING` execute (`server.go`). | `arrow` only (D3); read-only root required (D3a). | Reject `exec` in the GET branch; run the `json_serialize_sql` walker for GET unconditionally. | 3 |
 | Multi-statement `arrow` | duckdb-go `prepareStmts` runs every statement and returns the last result. | `bad_request` (D16). | Count statements before execution. | 3 |
 | JSON keys match case-insensitively | `encoding/json` lets `TYPE: exec` override `type: arrow`; the request ran as `exec` and returned an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 2 |
@@ -224,12 +224,9 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
   - `get/get-missing-type`: `error.content-type`, `error.not-json`
   - `get/get-json-wrapped-query-rejected`: `error.content-type`, `error.not-json`
   - `get/get-preagg-rejected`: `error.content-type`, `error.not-json`
-- **Parse errors are 500 without a policy**
-  - `post/concurrent-association`: `s4.error.status.500`
-  - `rest/sql-parse-error`: `error.status.500`
-  - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
-  - `rest/concurrent-association`: `s4.error.status.500`
-- **`preagg` is unknown**
+- **Parse errors are classified but plain text**
+  - `post/sql-parse-error`: `error.content-type`, `error.not-json`
+- **`preagg` is disabled in the installed binary**
   - `post/preagg-unsupported`: `error.content-type`, `error.not-json`
 - **Exec and side effects over GET**
   - `get/get-exec-rejected`: `s1.error.status.200`, `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.rows`
@@ -265,7 +262,7 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
 ### With `--cache-control`
 
 Configuration: `duckdb-server-go --cache-control='public, max-age=60'`. Transports: post, get; smoke cases over rest.
-Everything in the Go `duckdb-server-go` table applies here too (31 inherited cases). Only the differences are listed.
+Everything in the Go `duckdb-server-go` table applies here too (28 inherited cases). Only the differences are listed.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
@@ -279,7 +276,7 @@ Everything in the Go `duckdb-server-go` table applies here too (31 inherited cas
 - **412 is plain text**
   - `get/cache-if-match`: `s1.error.content-type`, `s1.error.not-json`, `s3.error.content-type`, `s3.error.not-json`
 - **Errors under caching are still plain text**
-  - `get/cache-error-no-store`: `error.status.500`, `error.content-type`, `error.not-json`
+  - `get/cache-error-no-store`: `error.content-type`, `error.not-json`
 - **`ETag` is not exposed to browsers**
   - `get/cache-get-etag`: `s1.header.access-control-expose-headers`
 
@@ -288,41 +285,30 @@ Everything in the Go `duckdb-server-go` table applies here too (31 inherited cas
 ### With `--gatekeeper`
 
 Configuration: `duckdb-server-go --gatekeeper='{"version":2,"options":{}}'`; validation disables `exec` and denies local file access. Transports: post, get; smoke cases over rest.
-Everything in the Go `duckdb-server-go` table applies here too (16 inherited cases). Only the differences are listed.
+Everything in the Go `duckdb-server-go` table applies here too (23 inherited cases). Only the differences are listed.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
-| Disabled `exec` is `bad_request` | `ErrExecWithValidation` maps to `bad_request` (`pkg/server/errors.go`); an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml. | `unsupported_command` (D6). | Remap in `errorStatus`. | 1 |
-| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400) because Gatekeeper validation fails before DuckDB classifies the statement. | Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in STATUS.md). | Split validator errors from policy denials when mapping to codes. | 5 |
-| Parse error body is plain text | The status is right but the body is the Gatekeeper diagnostic as `text/plain`, with no envelope. | Envelope with the DuckDB message (D4, D7). | Covered by the envelope fix in go.yaml. | 1 |
+| Disabled `exec` is plain text | `ErrExecWithValidation` maps to `unsupported_command` / `command_disabled` (`pkg/server/errors.go`), but the body is plain text so the suite only sees the 400; an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml. | `unsupported_command` (D6) with the envelope (D4). | Covered by the envelope fix in go.yaml. | 1 |
+| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) because Gatekeeper reports its statement-count limit as a policy violation, indistinguishable from an AST cap except by message text. | Multi-statement is `bad_request` (D16). | Have Gatekeeper report structural limits with their own code, then map it. | 2 |
 | Local file reads are denied | Default Gatekeeper policy rejects `read_parquet` on a local path with a plain-text 403. | Deployment choice; the suite marks this configuration as lacking the `files` capability. Listed so the plain-text body is not lost. | Envelope fix in go.yaml; optionally allow the shared data directory in the test policy. | not observable |
 | Default policy denies `information_schema` | The rejection itself has the right status but a plain body, and the follow-up `information_schema.tables` probe is a plain-text 403, so the suite cannot confirm nothing was created. | Envelope on the rejection (D4); the probe is a test limitation, not a spec requirement. | Envelope fix in go.yaml; allow `information_schema` in the test policy or probe differently. | 2 |
-| Policy denials are plain text over HTTP and carry no `reason` or diagnostics | A statement the policy forbids is a 403 as `text/plain`; `errorStatus` already distinguishes `ErrAccessDenied` but the HTTP path emits no envelope and no `reason`, and the Gatekeeper violations (`rule`, `message`, object, function, position) are folded into the message. | Envelope with `forbidden` / `policy_denied` and one `diagnostics` entry per violation (D4, D7, D19, D21). | Same mapper as the other HTTP errors; project `query.Violation` onto `Diagnostic` with `provider: gatekeeper`. | 2 |
-| Correctly classified parse errors still lack `reason` | Under validation a syntax error is `bad_request`, so these cases passed before D19 and D24; the body is plain text and carries no `reason`, and the client connector has no code to surface. | `sql_parse_error` (D19). | Covered by the `reason` fix in go.yaml. | 3 |
+| Policy denials are plain text over HTTP and carry no `reason` or diagnostics | A statement the policy forbids is a 403 as `text/plain`; `classifyError` already yields `forbidden` / `policy_denied` but the HTTP path emits no envelope and no `reason`, and the Gatekeeper violations (`rule`, `message`, object, function, position) are folded into the message. | Envelope with `forbidden` / `policy_denied` and one `diagnostics` entry per violation (D4, D7, D19, D21). | Same mapper as the other HTTP errors; project `query.Violation` onto `Diagnostic` with `provider: gatekeeper`. | 2 |
 | JSON keys match case-insensitively | As in go.yaml, but here the shadowed `exec` is refused by validation, so the response is a 400 instead of an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 1 |
 
 <details><summary>Baselined violations by case</summary>
 
-- **Disabled `exec` is `bad_request`**
+- **Disabled `exec` is plain text**
   - `post/exec-unsupported`: `error.content-type`, `error.not-json`
 - **Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause**
-  - `post/sql-error-then-ok`: `s1.error.status.400`, `s1.error.content-type`, `s1.error.not-json`
   - `post/arrow-multi-statement`: `error.status.403`, `error.content-type`, `error.not-json`
-  - `post/sql-unknown-table`: `error.status.400`, `error.content-type`, `error.not-json`
   - `get/arrow-multi-statement`: `error.status.403`, `error.content-type`, `error.not-json`
-  - `rest/sql-error-then-ok`: `s1.error.status.400`, `s1.error.code.missing`, `s1.error.reason.missing`
-- **Parse error body is plain text**
-  - `post/sql-parse-error`: `error.content-type`, `error.not-json`
 - **Default policy denies `information_schema`**
   - `get/get-ddl-rejected`: `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.status.403`
   - `get/get-exec-rejected`: `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.status.403`
 - **Policy denials are plain text over HTTP and carry no `reason` or diagnostics**
   - `get/policy-denied-file`: `error.content-type`, `error.not-json`
   - `post/policy-denied-file`: `error.content-type`, `error.not-json`
-- **Correctly classified parse errors still lack `reason`**
-  - `post/concurrent-association`: `s2.error.content-type`, `s2.error.not-json`, `s4.error.content-type`, `s4.error.not-json`
-  - `rest/sql-parse-error`: `error.code.missing`, `error.reason.missing`
-  - `rest/concurrent-association`: `s2.error.code.missing`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.code.missing`, `s4.error.reason.missing`
 - **JSON keys match case-insensitively**
   - `post/protocol-fields-not-shadowed`: `arrow.status.400`
 

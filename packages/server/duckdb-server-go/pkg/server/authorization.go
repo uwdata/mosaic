@@ -19,8 +19,9 @@ var (
 type CommandType string
 
 const (
-	CommandArrow CommandType = "arrow"
-	CommandExec  CommandType = "exec"
+	CommandArrow  CommandType = "arrow"
+	CommandExec   CommandType = "exec"
+	CommandPreagg CommandType = "preagg"
 )
 
 // Command exposes the authoritative type and SQL alongside an application-owned
@@ -65,16 +66,23 @@ func WithAuthorizer[T any](authorize Authorizer[T]) Option {
 			return errNilAuthorizer
 		}
 
-		wantsFields := reflect.TypeFor[T]() != reflect.TypeFor[struct{}]()
 		cfg.authorizer = func(r *http.Request, params queryParams) (*query.ValidationPolicy, error) {
-			var payload T
-			if wantsFields && params.raw != nil {
-				if err := json.Unmarshal(params.raw, &payload); err != nil {
-					return nil, fmt.Errorf("%w: decode command payload: %w", ErrInvalidCommand, err)
-				}
+			command, err := decodeCommand[T](params)
+			if err != nil {
+				return nil, err
 			}
-			return authorize(r, Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload})
+			return authorize(r, command)
 		}
 		return nil
 	})
+}
+
+func decodeCommand[T any](params queryParams) (Command[T], error) {
+	var payload T
+	if reflect.TypeFor[T]() != reflect.TypeFor[struct{}]() && params.raw != nil {
+		if err := json.Unmarshal(params.raw, &payload); err != nil {
+			return Command[T]{}, fmt.Errorf("%w: decode command payload: %w", ErrInvalidCommand, err)
+		}
+	}
+	return Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload}, nil
 }

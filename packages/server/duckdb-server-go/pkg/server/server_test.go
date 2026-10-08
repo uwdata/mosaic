@@ -112,7 +112,7 @@ func TestValidationErrorResponses(t *testing.T) {
 		{"denial", query.ErrorDetails{Code: "forbidden", Message: "private-diagnostic"}, 403, "WARN"},
 		{"unsupported", query.ErrorDetails{Code: "unsupported", Message: "private-diagnostic"}, 400, "WARN"},
 		{"parser", query.ErrorDetails{Code: "parser", Message: "private-diagnostic"}, 400, "WARN"},
-		{"binding", query.ErrorDetails{Code: "binding", Message: "private-diagnostic"}, 400, "WARN"},
+		{"binding", query.ErrorDetails{Code: "binding", Message: "private-diagnostic"}, 500, "ERROR"},
 		{"invalid SQL", query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}, 400, "WARN"},
 		{"invalid policy", errors.Join(query.ErrInvalidPolicy, query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}), 500, "ERROR"},
 		{"driver failure", errors.New("private-diagnostic"), 500, "ERROR"},
