@@ -236,7 +236,8 @@ export default defineConfig({
             { text: 'Date Functions', link: '/api/sql/date-functions' },
             { text: 'Aggregate Functions', link: '/api/sql/aggregate-functions' },
             { text: 'Window Functions', link: '/api/sql/window-functions' },
-            { text: 'Data Loading', link: '/api/sql/data-loading' }
+            { text: 'Data Loading', link: '/api/sql/data-loading' },
+            { text: 'Code Generators', link: '/api/sql/code-generators' }
           ]
         },
         {
