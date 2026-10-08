@@ -23,6 +23,7 @@ export class QueryManager {
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
+  private _generation: number;
 
   constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
@@ -35,6 +36,7 @@ export class QueryManager {
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
+    this._generation = 0;
   }
 
   next(): void {
@@ -84,6 +86,7 @@ export class QueryManager {
     try {
       const { query, type, cache = false, options } = request;
       const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : String(query);
+      const generation = this._generation;
 
       if (cache) {
         const cached = this.clientCache.get(sql) ?? this.inflight.get(sql);
@@ -109,13 +112,24 @@ export class QueryManager {
 
       const data = await promise.finally(() => { if (cache) this.inflight.delete(sql); });
 
-      if (cache) this.clientCache.set(sql, data, tableByteLength(data) ?? 0);
+      if (cache && generation === this._generation) {
+        this.clientCache.set(sql, data, tableByteLength(data) ?? 0);
+      }
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.ready(type === 'exec' ? null : data);
     } catch (err) {
       result.reject(err);
     }
+  }
+
+  /**
+   * Clear the query cache and fence in-flight requests so that results
+   * issued before this call cannot populate the cache when they complete.
+   */
+  invalidate(): void {
+    this._generation += 1;
+    this.clientCache.clear();
   }
 
   /**
@@ -179,7 +193,11 @@ export class QueryManager {
    */
   consolidate(flag: boolean): void {
     if (flag && !this._consolidate) {
-      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache);
+      this._consolidate = consolidator(
+        this.enqueue.bind(this),
+        this.clientCache,
+        () => this._generation
+      );
     } else if (!flag && this._consolidate) {
       this._consolidate = null;
     }

@@ -2,9 +2,12 @@ import { DuckDB } from '@uwdata/mosaic-duckdb';
 import type {
   ArrowQueryRequest,
   Connector,
-  ConnectorQueryRequest,
-  ExecQueryRequest
+  ConnectorRequest,
+  ExecQueryRequest,
+  PreaggRequest,
+  PreaggResponse
 } from './Connector.js';
+import { materializeWithExec } from './Connector.js';
 
 /**
  * A Mosaic Connector backed by an in-process Node.js DuckDB instance.
@@ -31,8 +34,10 @@ export class NodeConnector implements Connector {
    */
   async query(query: ArrowQueryRequest): Promise<Uint8Array[]>;
   async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: ConnectorQueryRequest): Promise<unknown> {
+  async query(query: PreaggRequest): Promise<PreaggResponse>;
+  async query(query: ConnectorRequest): Promise<unknown> {
     const { type, sql } = query;
+    if (type === 'preagg') return materializeWithExec(this, sql);
     return type === 'exec' ? this._db.exec(sql) : this._db.arrowBuffer(sql);
   }
 }
