@@ -28,8 +28,9 @@ Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server
 The supported options are:
 
 - _uri_: The URI of the data server (default `"http://localhost:3000/"`).
-- _headers_: Additional request headers, as a `Headers` object, a plain object, or an array of name-value pairs. Alternatively, a function that returns headers, possibly asynchronously, which is called before every request, for example to supply a refreshed access token. The `Content-Type: application/json` header is always sent.
+- _headers_: Additional request headers, as a `Headers` object, a plain object, or an array of name-value pairs. Alternatively, a function that returns headers, possibly asynchronously, which is called before every request, for example to supply a refreshed access token. POST requests always send the `Content-Type: application/json` header.
 - _fetch_: A [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch) implementation to use instead of the global `fetch`. Requests otherwise use `mode: "cors"` and `credentials: "omit"`; a custom implementation can change these, for example `(input, init) => fetch(input, { ...init, credentials: 'include' })`.
+- _method_: The HTTP method for `"arrow"` queries, either `"POST"` (default) or `"GET"`. A GET request carries the query in `type` and `sql` URL parameters instead of a body, so browsers and proxies can cache the result when the data server allows it, as the Go server does with its `--cache-control` option. `"exec"` queries always use POST, as do queries that carry additional options, which the coordinator passes through to the connector and a GET request has no way to send. The Go and Rust servers accept GET queries; the Python and Node.js servers currently do not. A long query can exceed the URL length limit of a server or proxy, and because browsers cache CORS preflight results per URL, a cross-origin GET request with custom headers needs a preflight for every distinct query.
 
 ```js
 const connector = restConnector({
