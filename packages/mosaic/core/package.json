@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.33.1-dev57.0",
-    "@uwdata/flechette": "^2.5.0",
+    "@uwdata/flechette": "catalog:",
     "@uwdata/mosaic-sql": "workspace:^"
   },
   "devDependencies": {
