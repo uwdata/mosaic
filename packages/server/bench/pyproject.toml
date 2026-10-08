@@ -9,6 +9,7 @@ dependencies = [
   "msgspec>=0.21.1",
   "niquests>=3.21.2",
   "polars>=1.44.2",
+  "rich>=15.0.0",
 ]
 
 [project.scripts]

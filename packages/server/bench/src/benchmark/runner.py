@@ -9,7 +9,7 @@ import polars as pl
 from polars import selectors as cs
 
 from benchmark.client import Client
-from benchmark.common import EXPORT_DIR, GROUP_MEMBERS
+from benchmark.common import EXPORT_DIR, GROUP_MEMBERS, console
 from benchmark.server import Server
 
 if TYPE_CHECKING:
@@ -51,7 +51,7 @@ class Runner(msgspec.Struct):
             Client(opts.base_url(port), n, warmup, timeout) as client,
         ):
             client.ensure_ok()
-            print(f"{target.name!r} is ready.")
+            console.print(f"{target.name!r} is ready.")
             results = (
                 result.into_row()
                 for result in client.run_benchmarks(self.sources, self.benchmarks)
@@ -107,14 +107,16 @@ class Runner(msgspec.Struct):
 
 def _report_results(summaries: ResultSummary, prefix: str = "results-") -> None:
     export_dir = _mkdir_gitignore(EXPORT_DIR)
-    print("-" * 80)
+    console.rule()
     with pl.Config(tbl_rows=40, float_precision=2):
         for name, result in summaries.items():
             path = export_dir / f"{prefix}{name}.parquet"
             path.touch()
             result.write_parquet(path)
-            print(f"Exported {name!r} to: {path.relative_to(Path.cwd()).as_posix()}")
-            print(f"{result}\n")
+            console.print(
+                f"Exported {name!r} to: {path.relative_to(Path.cwd()).as_posix()}"
+            )
+            console.print(f"{result}\n")
 
 
 def _mkdir_gitignore(path: Path) -> Path:

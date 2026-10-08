@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Final, NewType, get_args
 from typing import Literal as L
 
+from rich.console import Console
+
 type Group = L["tiny", "histogram / binning", "larger", "complex / realistic"]
 type ServerName = L["rust", "go", "python", "node"]
 type Requirement = L["cargo", "uv", "pnpm", "gcc"] | ServerName
@@ -20,3 +22,5 @@ BENCH_DIR = BENCHMARK_DIR.parent.parent
 SERVER_DIR = BENCH_DIR.parent
 DATA_DIR = (SERVER_DIR.parent.parent / "data").as_posix()
 EXPORT_DIR = BENCH_DIR / "export"
+
+console: Final = Console()
