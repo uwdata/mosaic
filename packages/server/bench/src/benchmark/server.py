@@ -36,7 +36,7 @@ class Server:
     def __enter__(self) -> Self:
         cfg = self.config
         args = *cfg.run, f"--port {self.port}"
-        console.print("$", " ".join(args))
+        console.print(" ".join(("$", *args)), style="bold")
         pipe = None if cfg.debug else sp.DEVNULL
         self._process = sp.Popen(
             args, cwd=cfg.path, text=True, stdout=pipe, stderr=pipe
@@ -49,7 +49,7 @@ class Server:
         value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        console.print("Exiting server")
+        console.print("Exiting server", style="dim")
         if self._process.poll() is None:
             self._process.terminate()
             try:

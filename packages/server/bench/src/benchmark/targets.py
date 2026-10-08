@@ -48,6 +48,9 @@ def select_targets(names: Iterable[ServerName], /) -> tuple[ServerConfig, ...]:
 def _skip_unavailable(targets: Iterable[ServerConfig], /) -> Iterator[ServerConfig]:
     for target in targets:
         if target.is_available():
+            console.print(f"✅  {target.link()} is available")
             yield target
         else:
-            console.print(f"Skipping unavailable target: {target.name!r}")
+            console.print(
+                f"❌  {target.link()} requires {', '.join(target.missing_depends())}"
+            )
