@@ -6,6 +6,7 @@ from typing import Literal as L
 
 import msgspec
 
+from benchmark import _rich
 from benchmark.common import Port, Requirement, Seconds, ServerName
 
 if TYPE_CHECKING:
@@ -39,3 +40,9 @@ class ServerConfig(msgspec.Struct):
 
     def is_available(self) -> bool:
         return all(shutil.which(dep) for dep in self.depends)
+
+    def missing_depends(self) -> tuple[Requirement, ...]:
+        return tuple(dep for dep in self.depends if shutil.which(dep) is None)
+
+    def link(self) -> str:
+        return _rich.link(self.path, self.name, bold=True)

@@ -38,14 +38,10 @@ def main() -> None:
         parser.error("--warmup must be >= 1")
 
     from benchmark.benches import BENCHMARKS, SOURCES
-    from benchmark.common import console
     from benchmark.runner import Runner
     from benchmark.targets import select_targets
 
     targets = select_targets(args.servers)
-    console.print(
-        f"Starting benchmarks for: {', '.join(repr(t.name) for t in targets)}"
-    )
     runner = Runner(args, targets, SOURCES, BENCHMARKS)
     runner.run_all()
 

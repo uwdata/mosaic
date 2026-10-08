@@ -33,12 +33,12 @@ class Client:
         self.warmup: int = warmup
 
     def __enter__(self) -> Self:
-        console.print("Starting client")
+        console.print("Connecting client", style="dim")
         return self
 
     def __exit__(self, *args: object) -> None:
         self._session.close()
-        console.print("Closed client")
+        console.print("Closed client", style="dim")
 
     def ensure_ok(self) -> None:
         response = self._session.post("/", json=_PING)
@@ -89,7 +89,7 @@ class Client:
         # NOTE: This one is too quick to be worth reporting start/end/duration
         for command in sources:
             self.post(command)
-        console.print("Data loaded")
+        console.print("Data loaded", style="dim")
 
         for bench in _rich.track(
             benchmarks,

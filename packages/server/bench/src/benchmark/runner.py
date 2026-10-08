@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Literal as L
 
@@ -8,12 +7,14 @@ import msgspec
 import polars as pl
 from polars import selectors as cs
 
+from benchmark import _rich
 from benchmark.client import Client
 from benchmark.common import EXPORT_DIR, GROUP_MEMBERS, console
 from benchmark.server import Server
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Sequence
+    from pathlib import Path
 
     from benchmark.common import Exec, Type
     from benchmark.config import CLIOptions, ServerConfig
@@ -46,12 +47,13 @@ class Runner(msgspec.Struct):
         opts = self.options
         port = opts.port
         n, warmup, timeout = opts.iterations, opts.warmup, opts.timeout
+        console.rule(f"Running {target.link()}")
         with (
             Server.from_config(target, port, debug=opts.debug_server) as server,
             Client(opts.base_url(port), n, warmup, timeout) as client,
         ):
             client.ensure_ok()
-            console.print(f"{target.name!r} is ready.")
+            console.print("[green bold]Connected[/]")
             results = (
                 result.into_row()
                 for result in client.run_benchmarks(self.sources, self.benchmarks)
@@ -107,15 +109,13 @@ class Runner(msgspec.Struct):
 
 def _report_results(summaries: ResultSummary, prefix: str = "results-") -> None:
     export_dir = _mkdir_gitignore(EXPORT_DIR)
-    console.rule()
+    console.rule("Results")
     with pl.Config(tbl_rows=40, float_precision=2):
         for name, result in summaries.items():
             path = export_dir / f"{prefix}{name}.parquet"
             path.touch()
             result.write_parquet(path)
-            console.print(
-                f"Exported {name!r} to: {path.relative_to(Path.cwd()).as_posix()}"
-            )
+            console.print(f"Exported to: {_rich.link(path)}")
             console.print(f"{result}\n")
 
 
