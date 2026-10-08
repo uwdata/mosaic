@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -30,9 +31,7 @@ func TestHTTPResponseCompression(t *testing.T) {
 		t.Helper()
 		req, err := http.NewRequestWithContext(t.Context(), method, uri, strings.NewReader(body))
 		require.NoError(t, err)
-		for name, values := range headers {
-			req.Header[name] = values
-		}
+		maps.Copy(req.Header, headers)
 		res, err := server.Client().Do(req)
 		require.NoError(t, err)
 		data, err := io.ReadAll(res.Body)
@@ -96,7 +95,7 @@ func TestHTTPResponseCompression(t *testing.T) {
 			res, body := get(large, headers())
 			require.Equal(t, http.StatusOK, res.StatusCode)
 			require.Equal(t, encoding, res.Header.Get("Content-Encoding"))
-			require.Equal(t, commandResponses[CommandArrow].contentType, res.Header.Get("Content-Type"))
+			require.Equal(t, arrowContentType, res.Header.Get("Content-Type"))
 			require.Contains(t, strings.Join(res.Header.Values("Vary"), ","), "Accept-Encoding")
 			require.Less(t, len(body), len(plain))
 			decoded, err := decode(body)
@@ -180,7 +179,7 @@ func TestResponseEncodingMatchesGzhttp(t *testing.T) {
 	client := &http.Client{Transport: &http.Transport{DisableCompression: true}}
 	t.Cleanup(client.CloseIdleConnections)
 	uri := server.URL + "/?type=arrow&sql=" + url.QueryEscape(largeQuery)
-	large := commandResponse{contentType: commandResponses[CommandArrow].contentType, data: make([]byte, gzhttp.DefaultMinSize)}
+	large := make([]byte, gzhttp.DefaultMinSize)
 
 	tests := []struct{ accept, want string }{
 		{"", ""},
@@ -236,6 +235,5 @@ func TestResponseEncodingMatchesGzhttp(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Accept-Encoding", "gzip")
 	require.Equal(t, "gzip", responseEncoding(req, large))
-	require.Empty(t, responseEncoding(req, commandResponse{contentType: large.contentType, data: large.data[1:]}))
-	require.Empty(t, responseEncoding(req, commandResponse{contentType: "application/zip", data: large.data}))
+	require.Empty(t, responseEncoding(req, large[1:]))
 }

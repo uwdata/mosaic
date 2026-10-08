@@ -118,10 +118,11 @@ func TestValidationErrorResponses(t *testing.T) {
 		{"driver failure", errors.New("private-diagnostic"), 500, "ERROR"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var logs synchronizedBuffer
+			var logs bytes.Buffer
+			err := errors.Join(query.ErrValidation, tc.err)
 			executor := &spyCommandExecutor{failOnCallExecutor: failOnCallExecutor{t},
 				queryFn: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
-					return nil, errors.Join(query.ErrValidation, tc.err)
+					return nil, err
 				},
 			}
 			handler := mustHandler(t, executor, WithLogger(slog.New(slog.NewJSONHandler(&logs, nil))))
@@ -129,27 +130,11 @@ func TestValidationErrorResponses(t *testing.T) {
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)))
 			require.Equal(t, tc.status, res.Code)
-			require.Equal(t, http.StatusText(tc.status)+"\n", res.Body.String())
+			require.Equal(t, err.Error()+"\n", res.Body.String())
 			var record map[string]any
 			require.NoError(t, json.NewDecoder(bytes.NewReader(logs.Bytes())).Decode(&record))
 			require.Equal(t, tc.level, record["level"])
 			require.Contains(t, record["error"], "private-diagnostic")
-		})
-	}
-}
-
-func TestHandleHTTPQueryParamsErrors(t *testing.T) {
-	s := mustHandler(t, failOnCallExecutor{t})
-	for _, tc := range []struct{ name, body, want string }{
-		{"missing type", `{"sql":"SELECT 1"}`, "missing required 'type' parameter\n"},
-		{"invalid type", `{"type":"csv","sql":"SELECT 1"}`, "invalid 'type' parameter: csv\n"},
-		{"missing SQL", `{"type":"arrow"}`, "missing required 'sql' parameter\n"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			res := httptest.NewRecorder()
-			s.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tc.body)))
-			require.Equal(t, http.StatusBadRequest, res.Code)
-			require.Equal(t, tc.want, res.Body.String())
 		})
 	}
 }

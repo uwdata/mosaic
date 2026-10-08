@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
-  "packageManager": "pnpm@12.6.0",
+  "packageManager": "pnpm@12.9.1",
   "scripts": {
     "mkcert": "node bin/mkcert.js",
     "preinstall": "npx only-allow pnpm",

@@ -154,7 +154,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
           components: clippy, rustfmt
           cache: true
@@ -179,7 +179,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
-          go-version: "1.25"
+          go-version: "1.27"
           cache-dependency-path: ./packages/server/duckdb-server-go/go.sum
 
       - name: Cache DuckDB extensions
