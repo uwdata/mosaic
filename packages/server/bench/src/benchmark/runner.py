@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Literal as L
 
 import msgspec
 import polars as pl
@@ -12,22 +14,13 @@ from benchmark.server import Server
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Sequence
-    from pathlib import Path
 
     from benchmark.common import Exec, Type
     from benchmark.config import CLIOptions, ServerConfig
     from benchmark.task import Benchmark, Command
 
-
-SCHEMA_INTO_ROW = pl.Schema(
-    {
-        "benchmark_group": pl.Enum(GROUP_MEMBERS),  # provides sort order
-        "benchmark_name": str,
-        "command_type": str,
-        "response_size": int,  # bytes
-        "timings": pl.List(pl.Duration("ns")),
-    }
-)
+# NOTE: Probably will replace with a `Reporter` concept
+type ResultSummary = dict[L["main", "compare"], pl.DataFrame]
 
 
 class Runner(msgspec.Struct):
@@ -35,6 +28,19 @@ class Runner(msgspec.Struct):
     targets: Sequence[ServerConfig]
     sources: Collection[Command[Exec]]
     benchmarks: Collection[Benchmark[Type, None]]
+    benchmark_schema: pl.Schema = msgspec.field(default_factory=pl.Schema)
+
+    def __post_init__(self) -> None:
+        if not self.benchmark_schema:
+            self.benchmark_schema = pl.Schema(
+                {
+                    "benchmark_group": pl.Enum(GROUP_MEMBERS),
+                    "benchmark_name": pl.Enum(b.name for b in self.benchmarks),
+                    "command_type": str,
+                    "response_size": int,
+                    "timings": pl.List(pl.Duration("ns")),
+                }
+            )
 
     def run(self, target: ServerConfig) -> pl.LazyFrame:
         opts = self.options
@@ -50,20 +56,23 @@ class Runner(msgspec.Struct):
                 result.into_row()
                 for result in client.run_benchmarks(self.sources, self.benchmarks)
             )
-            schema = SCHEMA_INTO_ROW
+            schema = self.benchmark_schema
             return pl.LazyFrame(results, schema, orient="row").select(
                 pl.lit(server.name).alias("server"), *schema
             )
 
-    def run_all(self) -> pl.DataFrame:
+    def run_all(self) -> ResultSummary:
         results_lazy = pl.union(self.run(target) for target in self.targets)
-        results_eager = self._summarize_results(results_lazy)
-        with pl.Config(tbl_rows=40, float_precision=3):
-            print(results_eager)
-        _write_results(results_eager, "results.parquet")
-        return results_eager
+        summaries = self._summarize_results(results_lazy)
+        _report_results(summaries)
+        return summaries
 
-    def _summarize_results(self, lf: pl.LazyFrame) -> pl.DataFrame:
+    def _summarize_results(self, lf: pl.LazyFrame) -> ResultSummary:
+        main = lf.pipe(self._summarize_main)
+        pivot = main.pipe(self._compare_medians)
+        return dict(zip(("main", "compare"), pl.collect_all((main, pivot))))
+
+    def _summarize_main(self, lf: pl.LazyFrame) -> pl.LazyFrame:
         t = pl.col("timings")
         return (
             lf.select(
@@ -77,14 +86,35 @@ class Runner(msgspec.Struct):
             )
             .with_columns(cs.duration().dt.total_milliseconds(fractional=True))
             .sort(cs.starts_with("benchmark"), "server")
-            .collect()
         )
 
-def _write_results(df: pl.DataFrame, name: str) -> None:
-    path = _mkdir_gitignore(EXPORT_DIR) / name
-    path.touch()
-    df.write_parquet(path)
-    print(f"Exported results to {path.as_posix()}")
+    def _compare_medians(self, lf: pl.LazyFrame) -> pl.LazyFrame:
+        name = "benchmark_name"
+        servers = [target.name for target in self.targets]
+        server = "server"
+        value = "median"
+        lf = lf.select(name, server, value)
+        horizontal_median = pl.median(value).name.suffix("_server")
+        relative_diff = (pl.col(servers) / cs.ends_with("_server")).name.suffix("_diff")
+        return (
+            lf.pivot(server, on_columns=servers, index=name, values=value)
+            .join(lf.group_by(name).agg(horizontal_median), on=name)
+            .with_columns(relative_diff)
+            .select(name, *(cs.starts_with(s).round(2) for s in servers))
+            .sort(name)
+        )
+
+
+def _report_results(summaries: ResultSummary, prefix: str = "results-") -> None:
+    export_dir = _mkdir_gitignore(EXPORT_DIR)
+    print("-" * 80)
+    with pl.Config(tbl_rows=40, float_precision=2):
+        for name, result in summaries.items():
+            path = export_dir / f"{prefix}{name}.parquet"
+            path.touch()
+            result.write_parquet(path)
+            print(f"Exported {name!r} to: {path.relative_to(Path.cwd()).as_posix()}")
+            print(f"{result}\n")
 
 
 def _mkdir_gitignore(path: Path) -> Path:
