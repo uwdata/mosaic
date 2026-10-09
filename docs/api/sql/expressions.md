@@ -45,3 +45,11 @@ sql`${column("foo")} + ${param}`
 ```
 
 SQL expressions may be nested, in which case all nested column dependencies and parameter updates are still extractable via the collection visitors.
+
+## tableRef
+
+`tableRef(...ids)`
+
+Create an AST node that references a table or view by name.
+Multiple identifiers form a schema-qualified name, as in `tableRef("schema", "table")`; an array of identifiers is also accepted.
+Upon string coercion, each identifier will be properly quoted.

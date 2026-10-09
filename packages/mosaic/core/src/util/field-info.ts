@@ -1,4 +1,4 @@
-import type { AggregateNode } from '@uwdata/mosaic-sql';
+import type { AggregateNode, TableRefNode } from '@uwdata/mosaic-sql';
 import { Query, asTableRef, count, isAggregateExpression, isNode, isNull, max, min, sql } from '@uwdata/mosaic-sql';
 import { jsType } from './js-type.js';
 import type { Coordinator } from '../Coordinator.js';
@@ -108,7 +108,7 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
  * @param table The table name.
  * @returns Promise resolving to array of field information.
  */
-async function getTableInfo(mc: Coordinator, table: string): Promise<FieldInfo[]> {
+async function getTableInfo(mc: Coordinator, table: string | TableRefNode): Promise<FieldInfo[]> {
   const result = Array.from(
     await mc.query(`DESC ${asTableRef(table)}`)
   ) as ColumnDescription[];
