@@ -20,7 +20,13 @@ def main() -> None:
         nargs="*",
         choices=config.DEFAULT_SERVERS,
         default=config.DEFAULT_SERVERS,
-        help="One or more servers to test.",
+        help="One or more servers to test",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=30,
+        help="Seconds to wait for a server before giving up",
     )
     parser.add_argument(
         "--debug-server", action="store_true", help="Redirect server output to stdout"
@@ -46,6 +52,7 @@ def main() -> None:
     table.add_row("iterations", str(args.iterations))
     table.add_row("warmup", str(args.warmup))
     table.add_row("port", str(args.port))
+    table.add_row("timeout", str(args.timeout))
     table.add_row("debug_server", str(args.debug_server))
     console.print(table)
     runner = Runner(args, targets, SOURCES, BENCHMARKS)
