@@ -85,3 +85,14 @@ def link(
     text = text or (path.relative_to(relative or Path.cwd()).as_posix())
     text = text if not bold else f"[b]{text}[/b]"
     return f"[link={path.as_uri()}]{text}[/]"
+
+
+def capture(*lines: str) -> str:
+    """Get the string that Rich would render after joining `lines`.
+
+    Enables using rich to format text for `argparse`, without needing to handle
+    terminal detection manually.
+    """
+    with console.capture() as capture:
+        console.print("\n".join(lines))
+    return capture.get()
