@@ -3,6 +3,6 @@
   "version": "0.32.1",
   "private": true,
   "scripts": {
-    "dev": "uv run watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM uv run duckdb-server"
+    "dev": "uv run watchfiles --filter python --grace-period 5 --target-type command \"uv run duckdb-server\" pkg"
   }
 }
