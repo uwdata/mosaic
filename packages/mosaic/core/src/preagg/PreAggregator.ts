@@ -1,4 +1,4 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, VerbatimNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, rewrite, deepClone, isTableRef } from '@uwdata/mosaic-sql';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../clause/index.js';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
@@ -6,6 +6,7 @@ import type { Selection } from '../Selection.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { QueryError } from '../util/query-error.js';
+import { containsNode, queryScope, resolveRelation } from './lineage.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 import { subqueryPushdown } from './subquery-pushdown.js';
 
@@ -218,16 +219,18 @@ export class PreAggregator {
         client.query(filter) as SelectQuery,
         active, preaggCols, schema
       );
-      const createQuery = [
-        createSchema(schema),
-        createTable(_info.table, _info.create, { temp: false })
-      ];
-      _info.result = mc.exec(createQuery);
-      // if create query fails, log and mark as failed
-      _info.result.catch((e: Error) => {
-        mc.logger().error(new QueryError(e, createQuery.join(';\n')));
-        _info.result = null; // indicate lack of preagg view
-      });
+      if (_info) {
+        const createQuery = [
+          createSchema(schema),
+          createTable(_info.table, _info.create, { temp: false })
+        ];
+        _info.result = mc.exec(createQuery);
+        // if create query fails, log and mark as failed
+        _info.result.catch((e: Error) => {
+          mc.logger().error(new QueryError(e, createQuery.join(';\n')));
+          _info.result = null; // indicate lack of preagg view
+        });
+      }
       info = _info;
     }
 
@@ -338,18 +341,26 @@ function binInterval(
  * @param active Active (selected) columns.
  * @param preaggCols Pre-aggregation columns.
  * @param schema Database schema name.
- * @returns Pre-aggregation information.
+ * @returns Pre-aggregation information, or null if active column
+ *  expressions can not be pushed down to subqueries.
  */
 function preaggregateInfo(
   query: SelectQuery,
   active: ActiveColumnsResult,
   preaggCols: PreAggColumnsResult,
   schema: string
-): PreAggregateInfo {
+): PreAggregateInfo | null {
   query = deepClone(query);
   const { groupby, having, orderby, output, preagg, qualify, source } = preaggCols;
   const { columns = {} } = active;
   const selectClauses = query._select;
+
+  // bail if a column expression contains verbatim SQL text, as any
+  // column references within it can not be identified for pushdown
+  if (
+    !isTableRef(resolveRelation(query._from[0], queryScope(query)))
+    && Object.values(columns).some(c => containsNode(c, VerbatimNode))
+  ) return null;
 
   // top-level select and group by changes are overwritten below
   subqueryPushdown(
