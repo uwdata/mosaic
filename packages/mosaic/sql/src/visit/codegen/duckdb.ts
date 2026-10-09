@@ -176,7 +176,8 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
 
   visitInterval(node: IntervalNode): string {
     const { steps, name } = node;
-    return `INTERVAL ${steps} ${name}`;
+    // the quoted form supports negative and fractional steps
+    return `INTERVAL '${steps} ${name}'`;
   }
 
   visitJoinClause(node: JoinNode): string {
