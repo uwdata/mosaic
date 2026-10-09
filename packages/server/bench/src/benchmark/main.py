@@ -12,9 +12,11 @@ def main() -> None:
         description="Mosaic Server Benchmark",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--port", type=int, default=3000)
-    parser.add_argument("--iterations", type=int, default=100)
-    parser.add_argument("--warmup", type=int, default=5)
+    parser.add_argument("--port", type=int, default=3000, help="Server port")
+    parser.add_argument(
+        "--iterations", type=int, default=100, help="Requests per query"
+    )
+    parser.add_argument("--warmup", type=int, default=5, help="Warmup requests")
     parser.add_argument(
         "--servers",
         nargs="*",
