@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse as _argparse
 from typing import Any
 
+from benchmark.config import DEFAULT_SERVERS, CLIOptions
+
 
 class _HelpFormatter(
     _argparse.RawDescriptionHelpFormatter,
@@ -54,3 +56,54 @@ def arg_parser(entrypoint_name: str, /, description: str) -> _argparse.ArgumentP
         suggest_on_error=True,
         color=True,
     )
+
+
+def parse_options() -> CLIOptions:
+    parser = arg_parser(
+        "benchmark",
+        "Benchmarks server implementations over HTTP POST, with response-size verification",
+    )
+    parser.add_argument("--port", type=int, default=3000, help="Server port")
+    parser.add_argument(
+        "--iterations", type=int, default=100, help="Requests per query"
+    )
+    parser.add_argument("--warmup", type=int, default=5, help="Warmup requests")
+    parser.add_argument(
+        "--servers",
+        nargs="*",
+        choices=DEFAULT_SERVERS,
+        default=DEFAULT_SERVERS,
+        help="One or more servers to test",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=30,
+        help="Seconds to wait for a server before giving up",
+    )
+    parser.add_argument(
+        "--debug-server", action="store_true", help="Redirect server output to stdout"
+    )
+    args = parser.parse_args(namespace=CLIOptions())
+
+    if args.iterations < 1:
+        parser.error("--iterations must be >= 1")
+    if args.warmup < 1:
+        parser.error("--warmup must be >= 1")
+    return args
+
+
+def print_options(options: CLIOptions) -> None:
+    from rich.table import Table
+
+    from benchmark.common import console
+
+    table = Table(show_header=False)
+    table.add_column()
+    table.add_column(justify="right")
+    table.add_row("iterations", str(options.iterations))
+    table.add_row("warmup", str(options.warmup))
+    table.add_row("port", str(options.port))
+    table.add_row("timeout", str(options.timeout))
+    table.add_row("debug_server", str(options.debug_server))
+    console.print(table)
