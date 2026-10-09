@@ -23,7 +23,6 @@ class CLIOptions(msgspec.Struct, kw_only=True):
     iterations: int = 100
     warmup: int = 5
     debug_server: bool = False
-    debug_client: bool = False
     timeout: Seconds = Seconds(30)
     servers: Sequence[ServerName] = DEFAULT_SERVERS
 
