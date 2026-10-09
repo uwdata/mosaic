@@ -2,61 +2,17 @@ from __future__ import annotations
 
 
 def main() -> None:
+    from benchmark.cli import parse_options, print_options
 
-    from benchmark import config
-    from benchmark.cli import arg_parser
-    from benchmark.common import console
-
-    parser = arg_parser(
-        "benchmark",
-        "Benchmarks server implementations over HTTP POST, with response-size verification",
-    )
-    parser.add_argument("--port", type=int, default=3000, help="Server port")
-    parser.add_argument(
-        "--iterations", type=int, default=100, help="Requests per query"
-    )
-    parser.add_argument("--warmup", type=int, default=5, help="Warmup requests")
-    parser.add_argument(
-        "--servers",
-        nargs="*",
-        choices=config.DEFAULT_SERVERS,
-        default=config.DEFAULT_SERVERS,
-        help="One or more servers to test",
-    )
-    parser.add_argument(
-        "--timeout",
-        type=int,
-        default=30,
-        help="Seconds to wait for a server before giving up",
-    )
-    parser.add_argument(
-        "--debug-server", action="store_true", help="Redirect server output to stdout"
-    )
-    args = parser.parse_args(namespace=config.CLIOptions())
-
-    if args.iterations < 1:
-        parser.error("--iterations must be >= 1")
-    if args.warmup < 1:
-        parser.error("--warmup must be >= 1")
-
-    from rich.table import Table
+    args = parse_options()
 
     from benchmark.benches import BENCHMARKS, SOURCES
     from benchmark.runner import Runner
     from benchmark.targets import select_targets
 
     targets = select_targets(args.servers)
-    table = Table(show_header=False)
-    table.add_column()
-    table.add_column(justify="right")
-    table.add_row("iterations", str(args.iterations))
-    table.add_row("warmup", str(args.warmup))
-    table.add_row("port", str(args.port))
-    table.add_row("timeout", str(args.timeout))
-    table.add_row("debug_server", str(args.debug_server))
-    console.print(table)
-    runner = Runner(args, targets, SOURCES, BENCHMARKS)
-    runner.run_all()
+    print_options(args)
+    Runner(args, targets, SOURCES, BENCHMARKS).run_all()
 
 
 if __name__ == "__main__":
