@@ -2,23 +2,14 @@ from __future__ import annotations
 
 
 def main() -> None:
-    import argparse
 
-    from benchmark import _colorize_install, _rich, config
+    from benchmark import config
+    from benchmark.cli import arg_parser
     from benchmark.common import console
 
-    _colorize_install.install()
-
-    class HelpFormatter(
-        argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter
-    ): ...
-
-    parser = argparse.ArgumentParser(
-        description=_rich.capture(
-            "[bold]Mosaic Server Benchmark[/]\n",
-            "Benchmarks server implementations over HTTP POST, with response-size verification.",
-        ),
-        formatter_class=HelpFormatter,
+    parser = arg_parser(
+        "benchmark",
+        "Benchmarks server implementations over HTTP POST, with response-size verification",
     )
     parser.add_argument("--port", type=int, default=3000, help="Server port")
     parser.add_argument(

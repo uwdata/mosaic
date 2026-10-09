@@ -14,8 +14,12 @@ def install() -> None:
 
     with contextlib.suppress(ImportError):
         # https://github.com/python/typeshed/issues/16361
-        from _colorize import ANSIColors, Traceback, default_theme, set_theme  # ty: ignore[unresolved-import]  # pyrefly: ignore[missing-import]  # pyright: ignore[reportMissingTypeStubs]
+        from _colorize import ANSIColors, Argparse, Traceback, default_theme, set_theme  # ty: ignore[unresolved-import]  # pyrefly: ignore[missing-import]  # pyright: ignore[reportMissingTypeStubs]
 
+        # NOTE: argparse colors based on `cargo`
+        heading = ANSIColors.BOLD_GREEN
+        code = ANSIColors.CYAN
+        code_bold = ANSIColors.BOLD_CYAN
         set_theme(
             default_theme.copy_with(
                 traceback=Traceback(
@@ -25,6 +29,15 @@ def install() -> None:
                     filename=ANSIColors.BOLD_WHITE,
                     line_no=ANSIColors.BOLD_WHITE,
                     frame=ANSIColors.INTENSE_WHITE,
-                )
+                ),
+                argparse=Argparse(
+                    usage=heading,
+                    heading=heading,
+                    short_option=code_bold,
+                    long_option=code_bold,
+                    prog=code_bold,
+                    prog_extra=code,
+                    label=code,
+                ),
             )
         )
