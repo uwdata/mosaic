@@ -35,7 +35,7 @@ class Server:
 
     def __enter__(self) -> Self:
         cfg = self.config
-        args = *cfg.run, f"--port {self.port}"
+        args = *cfg.run, "--port", f"{self.port}"
         console.print(" ".join(("$", *args)), style="bold")
         pipe = None if cfg.debug else sp.DEVNULL
         self._process = sp.Popen(
