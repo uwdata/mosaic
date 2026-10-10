@@ -20,12 +20,9 @@ Exec = Type("Exec", L["exec"])
 CT = TypeVar("CT", bound=Arrow | Exec, covariant=True)
 """The type of `Command.type`."""
 
-GROUP_MEMBERS: Final[tuple[Group, ...]] = (
-    "tiny",
-    "histogram / binning",
-    "larger",
-    "complex / realistic",
-)
+GROUP_MEMBERS: Final = ("tiny", "histogram / binning", "larger", "complex / realistic")
+DEFAULT_SERVERS: Final = ("rust", "go", "python", "node")
+
 BENCHMARK_DIR = Path(__file__).parent
 BENCH_DIR = BENCHMARK_DIR.parent.parent
 SERVER_DIR = BENCH_DIR.parent
