@@ -1,22 +1,31 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Final, NewType, get_args
+from typing import Final, NewType
 from typing import Literal as L
 
 from rich.console import Console
+from typing_extensions import TypeAliasType as Type
+from typing_extensions import TypeVar
 
-type Group = L["tiny", "histogram / binning", "larger", "complex / realistic"]
-type ServerName = L["rust", "go", "python", "node"]
-type Requirement = L["cargo", "uv", "pnpm", "gcc"] | ServerName
+Group = Type("Group", L["tiny", "histogram / binning", "larger", "complex / realistic"])
+ServerName = Type("ServerName", L["rust", "go", "python", "node"])
+
+Requirement = Type("Requirement", L["cargo", "uv", "pnpm", "gcc"] | ServerName)
 Port = NewType("Port", int)
 Seconds = NewType("Seconds", float)
 
-type Arrow = L["arrow"]
-type Exec = L["exec"]
-type Type = Arrow | Exec
+Arrow = Type("Arrow", L["arrow"])
+Exec = Type("Exec", L["exec"])
+CT = TypeVar("CT", bound=Arrow | Exec, covariant=True)
+"""The type of `Command.type`."""
 
-GROUP_MEMBERS: Final[tuple[Group, ...]] = get_args(Group.__value__)
+GROUP_MEMBERS: Final[tuple[Group, ...]] = (
+    "tiny",
+    "histogram / binning",
+    "larger",
+    "complex / realistic",
+)
 BENCHMARK_DIR = Path(__file__).parent
 BENCH_DIR = BENCHMARK_DIR.parent.parent
 SERVER_DIR = BENCH_DIR.parent

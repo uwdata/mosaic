@@ -3,7 +3,7 @@ name            = "benchmark"
 version         = "0.1.0"
 description     = "Add your description here"
 readme          = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 
 dependencies = [
   "msgspec>=0.21.1",
@@ -52,6 +52,8 @@ extend-select     = [
 extend-safe-fixes = ["unconventional-import-alias"]
 
 [tool.ruff.lint.flake8-import-conventions.extend-aliases]
-"typing.Literal"       = "L"
-"typing.LiteralString" = "LS"
-subprocess             = "sp"
+"typing.Literal"                  = "L"
+"typing.LiteralString"            = "LS"
+"typing_extensions.LiteralString" = "LS"
+"typing_extensions.TypeAliasType" = "Type"
+subprocess                        = "sp"

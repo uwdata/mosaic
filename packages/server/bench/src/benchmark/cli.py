@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse as _argparse
+import sys
 from typing import Any
 
 from benchmark.config import DEFAULT_SERVERS, CLIOptions
@@ -45,16 +46,20 @@ def arg_parser(entrypoint_name: str, /, description: str) -> _argparse.ArgumentP
 
     [ruff docs]: https://docs.astral.sh/ruff/configuration/#full-command-line-interface
     """
-    from benchmark import _colorize_install
 
-    _colorize_install.install()
+    if sys.version_info >= (3, 14):
+        from benchmark import _colorize_install
+
+        _colorize_install.install()
+        kwds: dict[str, Any] = {"suggest_on_error": True, "color": True}
+    else:
+        kwds = {}
     return _argparse.ArgumentParser(
         prog=f"uv run {entrypoint_name}",
         usage="%(prog)s [OPTIONS]",
         description=description,
         formatter_class=_HelpFormatter,
-        suggest_on_error=True,
-        color=True,
+        **kwds,
     )
 
 
