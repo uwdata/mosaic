@@ -1,9 +1,7 @@
 [project]
 name            = "benchmark"
-version         = "0.1.0"
-description     = "Add your description here"
-readme          = "README.md"
 requires-python = ">=3.10"
+dynamic         = ["version"]
 
 dependencies = [
   "msgspec>=0.21.1",
@@ -27,8 +25,15 @@ typing = [
 ]
 
 [build-system]
-requires      = ["uv_build>=0.13.0,<0.14.0"]
-build-backend = "uv_build"
+requires      = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/benchmark"]
+
+[tool.hatch.version]
+path    = "package.json"
+pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.pyright]
 extends                            = "../../../pyproject.toml"

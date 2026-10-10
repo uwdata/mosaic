@@ -195,7 +195,6 @@ wheels = [
 
 [[package]]
 name = "benchmark"
-version = "0.1.0"
 source = { editable = "packages/server/bench" }
 dependencies = [
     { name = "msgspec" },

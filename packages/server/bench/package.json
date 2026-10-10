@@ -1,0 +1,11 @@
+{
+  "name": "bench",
+  "version": "0.32.1",
+  "private": true,
+  "scripts": {
+    "benchmark": "uv run benchmark",
+    "typecheck":"uv run pyright && uv run ty check",
+    "lint": "uv run ruff check && uv run ruff format",
+    "prerelease": "pnpm run lint"
+  }
+}
