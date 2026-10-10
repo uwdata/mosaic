@@ -25,6 +25,8 @@ type ResultSummary = dict[L["main", "compare"], pl.DataFrame]
 
 
 class Runner[T: Type](msgspec.Struct):
+    """Outer context for the benchmark program."""
+
     options: CLIOptions
     targets: Sequence[ServerConfig]
     sources: Collection[Command[Exec]]

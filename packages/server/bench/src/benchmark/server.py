@@ -16,6 +16,8 @@ type Process = sp.Popen[str]
 
 
 class Server:
+    """A managed subprocess, connected to `ServerConfig`."""
+
     config: ServerConfig
     port: Port
     _process: Process

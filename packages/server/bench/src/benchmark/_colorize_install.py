@@ -1,4 +1,7 @@
-"""https://github.com/dangotbanned/mosaic/blob/a35796f644df7d88eca465330396d7149df6a48a/packages/vgplot/spec-python/tools/_colorize_install.py"""
+"""Adapted from [spec-python/tools/_colorize_install.py][1].
+
+[1]: https://github.com/dangotbanned/mosaic/blob/a35796f644df7d88eca465330396d7149df6a48a/packages/vgplot/spec-python/tools/_colorize_install.py
+"""
 
 from __future__ import annotations
 
@@ -6,9 +9,7 @@ from __future__ import annotations
 def install() -> None:
     """Try to override the default `_colorize` theme, to work better with a dark terminal.
 
-    See [python/cpython#133346] for more info.
-
-    [python/cpython#133346]: https://github.com/python/cpython/issues/133346
+    For more info see ([python/cpython#133346](https://github.com/python/cpython/issues/133346)).
     """
     import contextlib
 
