@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import argparse as _argparse
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
+from typing import Literal as L
 
-from benchmark.config import DEFAULT_SERVERS, CLIOptions
+import msgspec
+
+from benchmark.common import DEFAULT_SERVERS, Port, Seconds, ServerName
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class _HelpFormatter(
@@ -63,48 +69,60 @@ def arg_parser(entrypoint_name: str, /, description: str) -> _argparse.ArgumentP
     )
 
 
-def parse_options() -> CLIOptions:
-    parser = arg_parser(
-        "benchmark",
-        "Benchmarks server implementations over HTTP POST, with response-size verification",
-    )
-    parser.add_argument("--port", type=int, default=3000, help="Server port")
-    parser.add_argument(
-        "--iterations", type=int, default=100, help="Requests per query"
-    )
-    parser.add_argument("--warmup", type=int, default=5, help="Warmup requests")
-    parser.add_argument(
-        "--servers",
-        nargs="*",
-        choices=DEFAULT_SERVERS,
-        default=DEFAULT_SERVERS,
-        help="One or more servers to test",
-    )
-    parser.add_argument(
-        "--timeout",
-        type=int,
-        default=30,
-        help="Seconds to wait for a server before giving up",
-    )
-    args = parser.parse_args(namespace=CLIOptions())
+class CLIOptions(msgspec.Struct, kw_only=True):
+    scheme: L["http", "https"] = "http"
+    host: L["localhost"] = "localhost"
+    port: Port = Port(3000)
+    iterations: int = 100
+    warmup: int = 5
+    timeout: Seconds = Seconds(30)
+    servers: Sequence[ServerName] = DEFAULT_SERVERS
 
-    if args.iterations < 1:
-        parser.error("--iterations must be >= 1")
-    if args.warmup < 1:
-        parser.error("--warmup must be >= 1")
-    return args
+    def base_url(self, port: Port | None = None) -> str:
+        return f"{self.scheme}://{self.host}:{(port or self.port)}"
 
+    @staticmethod
+    def parse() -> CLIOptions:
+        parser = arg_parser(
+            "benchmark",
+            "Benchmarks server implementations over HTTP POST, with response-size verification",
+        )
+        parser.add_argument("--port", type=int, default=3000, help="Server port")
+        parser.add_argument(
+            "--iterations", type=int, default=100, help="Requests per query"
+        )
+        parser.add_argument("--warmup", type=int, default=5, help="Warmup requests")
+        parser.add_argument(
+            "--servers",
+            nargs="*",
+            choices=DEFAULT_SERVERS,
+            default=DEFAULT_SERVERS,
+            help="One or more servers to test",
+        )
+        parser.add_argument(
+            "--timeout",
+            type=int,
+            default=30,
+            help="Seconds to wait for a server before giving up",
+        )
+        args = parser.parse_args(namespace=CLIOptions())
 
-def print_options(options: CLIOptions) -> None:
-    from rich.table import Table
+        if args.iterations < 1:
+            parser.error("--iterations must be >= 1")
+        if args.warmup < 1:
+            parser.error("--warmup must be >= 1")
+        return args
 
-    from benchmark.common import console
+    def print(self) -> None:
+        from rich.table import Table
 
-    table = Table(show_header=False)
-    table.add_column()
-    table.add_column(justify="right")
-    table.add_row("iterations", str(options.iterations))
-    table.add_row("warmup", str(options.warmup))
-    table.add_row("port", str(options.port))
-    table.add_row("timeout", str(options.timeout))
-    console.print(table)
+        from benchmark.common import console
+
+        table = Table(show_header=False)
+        table.add_column()
+        table.add_column(justify="right")
+        table.add_row("iterations", str(self.iterations))
+        table.add_row("warmup", str(self.warmup))
+        table.add_row("port", str(self.port))
+        table.add_row("timeout", str(self.timeout))
+        console.print(table)

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final
 
-from benchmark.common import SERVER_DIR, ServerName, console
-from benchmark.config import DEFAULT_SERVERS, ServerConfig
+from benchmark.common import DEFAULT_SERVERS, SERVER_DIR, ServerName, console
+from benchmark.server import ServerConfig
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator

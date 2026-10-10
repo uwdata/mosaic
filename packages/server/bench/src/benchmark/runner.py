@@ -17,8 +17,9 @@ if TYPE_CHECKING:
     from collections.abc import Collection, Sequence
     from pathlib import Path
 
+    from benchmark.cli import CLIOptions
     from benchmark.common import Exec
-    from benchmark.config import CLIOptions, ServerConfig
+    from benchmark.server import ServerConfig
     from benchmark.task import Benchmark, Command
 
 # NOTE: Probably will replace with a `Reporter` concept
