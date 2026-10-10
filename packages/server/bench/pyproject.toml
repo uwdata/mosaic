@@ -51,8 +51,6 @@ extend-select     = [
 ]
 extend-safe-fixes = ["unconventional-import-alias"]
 
-exclude = ["bench.py"]
-
 [tool.ruff.lint.flake8-import-conventions.extend-aliases]
 "typing.Literal"       = "L"
 "typing.LiteralString" = "LS"
