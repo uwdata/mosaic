@@ -1,36 +1,37 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic
 from typing import Literal as L
 
 import msgspec
 import polars as pl
 from polars import selectors as cs
+from typing_extensions import TypeAliasType as Type
 
 from benchmark import _rich
 from benchmark.client import Client
-from benchmark.common import EXPORT_DIR, GROUP_MEMBERS, console
+from benchmark.common import CT, EXPORT_DIR, GROUP_MEMBERS, console
 from benchmark.server import Server
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Sequence
     from pathlib import Path
 
-    from benchmark.common import Exec, Type
+    from benchmark.common import Exec
     from benchmark.config import CLIOptions, ServerConfig
     from benchmark.task import Benchmark, Command
 
 # NOTE: Probably will replace with a `Reporter` concept
-type ResultSummary = dict[L["main", "compare"], pl.DataFrame]
+ResultSummary = Type("ResultSummary", dict[L["main", "compare"], pl.DataFrame])
 
 
-class Runner[T: Type](msgspec.Struct):
+class Runner(msgspec.Struct, Generic[CT]):
     """Outer context for the benchmark program."""
 
     options: CLIOptions
     targets: Sequence[ServerConfig]
     sources: Collection[Command[Exec]]
-    benchmarks: Collection[Benchmark[T, None]]
+    benchmarks: Collection[Benchmark[CT, None]]
     benchmark_schema: pl.Schema = msgspec.field(default_factory=pl.Schema)
 
     def __post_init__(self) -> None:

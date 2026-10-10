@@ -90,7 +90,7 @@ ignore = ["**/.venv/", "../../../**/*typeshed*"]  # Do not display diagnostics i
 typeCheckingMode = "standard"
 reportUnnecessaryTypeIgnoreComment = "error"
 reportUnusedExpression = "none" # covered by ruff
-executionEnvironments = [ { root = "packages/server/bench/", pythonVersion="3.14", reportMissingTypeStubs = "error"} ]
+executionEnvironments = [ { root = "packages/server/bench/", reportMissingTypeStubs = "error"} ]
 
 [tool.ty.rules]
 missing-type-argument = "error"

@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 from typing import Literal as L
 
 from rich import progress as rp
+from typing_extensions import TypeAliasType as Type
+from typing_extensions import TypeVar
 
 from benchmark.common import console
 
@@ -15,14 +17,18 @@ if TYPE_CHECKING:
 
     from rich.style import StyleType
 
-type SpinnerName = L["dots", "dots2", "dots8", "dots10", "simpleDotsScrolling", "flip"]
+SpinnerName = Type(
+    "SpinnerName", L["dots", "dots2", "dots8", "dots10", "simpleDotsScrolling", "flip"]
+)
 """See [spinners.gif] for all 70+ options.
 
 [spinners.gif]: https://raw.githubusercontent.com/textualize/rich/9d8f9a372cc5916fd4781fec207ced7ddac2f08f/imgs/spinners.gif
 """
 
+T = TypeVar("T", infer_variance=True)
 
-def track[T](
+
+def track(
     iterable: Iterable[T],
     msg_wait: str = "Working",
     msg_done: str = "Finished.",

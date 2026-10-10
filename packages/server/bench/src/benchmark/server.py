@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import subprocess as sp
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
+
+from typing_extensions import Self
 
 from benchmark.common import console
 
@@ -12,15 +14,12 @@ if TYPE_CHECKING:
     from benchmark.config import ServerConfig
 
 
-type Process = sp.Popen[str]
-
-
 class Server:
     """A managed subprocess, connected to `ServerConfig`."""
 
     config: ServerConfig
     port: Port
-    _process: Process
+    _process: sp.Popen[str]
 
     @classmethod
     def from_config(cls, config: ServerConfig, port: Port, *, debug: bool) -> Self:

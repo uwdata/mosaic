@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, final
-from typing import LiteralString as LS
+from typing import TYPE_CHECKING, Final, Generic, final
 
 import msgspec
+from typing_extensions import LiteralString as LS
+from typing_extensions import TypeVar
 
-from benchmark.common import DATA_DIR, Arrow, Exec, Group, Type
+from benchmark.common import CT, DATA_DIR, Arrow, Exec, Group
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
 @final
-class Command[T: Type](msgspec.Struct):
+class Command(msgspec.Struct, Generic[CT]):
     """Message sent to the server."""
 
-    type: Final[T]
+    type: Final[CT]
     sql: str
 
     @staticmethod
@@ -40,14 +41,17 @@ class Result(msgspec.Struct):
     """Number of bytes returned in a response."""
 
 
+R = TypeVar("R", Result, None, covariant=True)
+
+
 @final
-class Benchmark[T: Type, R: (Result, None)](msgspec.Struct):
+class Benchmark(msgspec.Struct, Generic[CT, R]):
     group: Group
     name: str
-    command: Final[Command[T]]
+    command: Final[Command[CT]]
     result: Final[R]
 
-    def with_result(self, result: Result) -> Benchmark[T, Result]:
+    def with_result(self, result: Result) -> Benchmark[CT, Result]:
         """Return a copy with `result`."""
         return Benchmark(self.group, self.name, self.command, result)
 
@@ -56,8 +60,8 @@ class Benchmark[T: Type, R: (Result, None)](msgspec.Struct):
         return Benchmark(group, name, Command("arrow", sql), None)
 
     def into_row(
-        self: Benchmark[T, Result],
-    ) -> tuple[Group, str, T, int, Sequence[float]]:
+        self: Benchmark[CT, Result],
+    ) -> tuple[Group, str, CT, int, Sequence[float]]:
         return (
             self.group,
             self.name,
