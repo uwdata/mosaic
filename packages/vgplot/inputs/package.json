@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-inputs",
-  "version": "0.32.0",
+  "version": "0.32.1",
   "description": "Mosaic input components.",
   "keywords": [
     "inputs",
