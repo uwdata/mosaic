@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from benchmark.task import Benchmark
 
 _JSON_ENCODER = msgspec.json.Encoder().encode
-_PING = Command.arrow("SELECT 1")
+_PING = Command("arrow", "SELECT 1")
 
 
 class Client:
