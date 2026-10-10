@@ -20,10 +20,6 @@ class Command(msgspec.Struct, Generic[CT]):
     sql: str
 
     @staticmethod
-    def arrow(sql: str) -> Command[Arrow]:
-        return Command("arrow", sql)
-
-    @staticmethod
     def load_parquet(stem: LS) -> Command[Exec]:
         return Command(
             "exec",
@@ -59,9 +55,7 @@ class Benchmark(msgspec.Struct, Generic[CT, R]):
     def arrow(group: Group, name: LS, sql: LS) -> Benchmark[Arrow, None]:
         return Benchmark(group, name, Command("arrow", sql), None)
 
-    def into_row(
-        self: Benchmark[CT, Result],
-    ) -> tuple[Group, str, CT, int, Sequence[float]]:
+    def into_row(self) -> tuple[Group, str, CT, int, Sequence[float]]:
         return (
             self.group,
             self.name,

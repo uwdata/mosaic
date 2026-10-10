@@ -12,7 +12,6 @@ from benchmark.common import console
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from types import TracebackType
 
     from benchmark.common import Port, Requirement, ServerName
 
@@ -77,12 +76,7 @@ class Server:
         ).__enter__()
         return self
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
+    def __exit__(self, *args: object) -> None:
         console.print("Exiting server", style="dim")
         if self._process.poll() is None:
             self._process.terminate()
