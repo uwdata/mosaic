@@ -1,0 +1,64 @@
+[project]
+name            = "benchmark"
+requires-python = ">=3.10"
+dynamic         = ["version"]
+
+dependencies = [
+  "msgspec>=0.21.1",
+  "niquests>=3.21.2",
+  "polars>=1.44.2",
+  "rich>=15.0.0",
+]
+
+[project.scripts]
+benchmark = "benchmark.main:main"
+
+[dependency-groups]
+dev    = [
+  "ruff>=0.16.9",
+  { include-group = "typing" },
+]
+typing = [
+  "pyright>=1.1.414",
+  "ty>=0.0.84",
+  "typing-extensions>=4.16.0",
+]
+
+[build-system]
+requires      = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/benchmark"]
+
+[tool.hatch.version]
+path    = "package.json"
+pattern = "\"version\": \"(?P<version>.+?)\""
+
+[tool.pyright]
+extends                            = "../../../pyproject.toml"
+include                            = ["src"]
+typeCheckingMode                   = "strict"
+reportUnnecessaryTypeIgnoreComment = "error"
+reportUnknownArgumentType          = "none"
+reportUnknownMemberType            = "none"
+reportUnusedExpression             = "none"
+
+[tool.ruff]
+extend = "../../../pyproject.toml"
+
+[tool.ruff.lint]
+extend-select     = [
+  "logging-f-string",
+  "raise-within-try",
+  "raise-vanilla-args",
+  "unconventional-import-alias",
+]
+extend-safe-fixes = ["unconventional-import-alias"]
+
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"typing.Literal"                  = "L"
+"typing.LiteralString"            = "LS"
+"typing_extensions.LiteralString" = "LS"
+"typing_extensions.TypeAliasType" = "Type"
+subprocess                        = "sp"
