@@ -55,7 +55,11 @@ class Benchmark(msgspec.Struct, Generic[CT, R]):
     def arrow(group: Group, name: LS, sql: LS) -> Benchmark[Arrow, None]:
         return Benchmark(group, name, Command("arrow", sql), None)
 
-    def into_row(self) -> tuple[Group, str, CT, int, Sequence[float]]:
+    # NOTE: `self` must be annotated as `self.result.response_size` is not
+    # allowed until we have a result
+    def into_row(
+        self: Benchmark[CT, Result],
+    ) -> tuple[Group, str, CT, int, Sequence[float]]:
         return (
             self.group,
             self.name,
