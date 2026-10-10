@@ -32,16 +32,7 @@ class ArrowRequest(protocols.Command[pa.Buffer], forbid_unknown_fields=False):
 
 @final
 class ExecRequest(protocols.Command[None], forbid_unknown_fields=False):
-    """Statements run in order on one connection.
-
-    The protocol guarantees neither atomicity nor rollback: a later statement
-    MAY fail after earlier ones took effect, effects that were committed remain,
-    and the server MUST NOT retry on the client's behalf or report which statements
-    completed. Whether uncommitted work survives the failure is the
-    engine's transaction semantics; clients that need atomicity wrap the
-    statements in an explicit transaction and treat its outcome by those
-    semantics.
-    """
+    """Statements run in order on one connection."""
 
     def _query(self, db: Database) -> None:
         db.execute(self.sql)

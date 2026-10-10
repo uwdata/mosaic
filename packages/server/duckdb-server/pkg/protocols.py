@@ -25,15 +25,6 @@ class Command(
     tag=lambda s: s.removesuffix("Request").lower(),
     tag_field="type",
 ):
-    """A command object.
-
-    `type` is required and discriminates; a missing `type` is rejected with
-    `bad_request` / `missing_field` (`field: type`), a missing `sql` with `missing_field` (`field: sql`).
-    Properties other than `type` and `sql` are application-owned: servers
-    MUST accept them, MUST NOT let them override `type` or `sql`, and MAY
-    pass them to a deployment-specific authorizer. Mosaic defines no
-    metadata envelope."""
-
     sql: Sql
 
     def _query(self, db: Database, /) -> R:
