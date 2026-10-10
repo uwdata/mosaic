@@ -1,5 +1,5 @@
 {
-  "name": "bench",
+  "name": "benchmark",
   "version": "0.32.1",
   "private": true,
   "scripts": {
