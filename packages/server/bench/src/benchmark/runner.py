@@ -52,7 +52,7 @@ class Runner(msgspec.Struct, Generic[CT]):
         n, warmup, timeout = opts.iterations, opts.warmup, opts.timeout
         console.rule(f"Running {target.link()}")
         with (
-            Server.from_config(target, port, debug=opts.debug_server) as server,
+            Server.from_config(target, port) as server,
             Client(opts.base_url(port), n, warmup, timeout) as client,
         ):
             client.ensure_ok()

@@ -86,9 +86,6 @@ def parse_options() -> CLIOptions:
         default=30,
         help="Seconds to wait for a server before giving up",
     )
-    parser.add_argument(
-        "--debug-server", action="store_true", help="Redirect server output to stdout"
-    )
     args = parser.parse_args(namespace=CLIOptions())
 
     if args.iterations < 1:
@@ -110,5 +107,4 @@ def print_options(options: CLIOptions) -> None:
     table.add_row("warmup", str(options.warmup))
     table.add_row("port", str(options.port))
     table.add_row("timeout", str(options.timeout))
-    table.add_row("debug_server", str(options.debug_server))
     console.print(table)

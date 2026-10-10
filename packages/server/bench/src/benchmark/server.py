@@ -22,10 +22,8 @@ class Server:
     _process: sp.Popen[str]
 
     @classmethod
-    def from_config(cls, config: ServerConfig, port: Port, *, debug: bool) -> Self:
+    def from_config(cls, config: ServerConfig, port: Port) -> Self:
         self = cls.__new__(cls)
-        if debug:
-            config = config.__replace__(debug=True)
         self.config = config
         self.port = port
         return self
@@ -38,9 +36,8 @@ class Server:
         cfg = self.config
         args = *cfg.run, "--port", f"{self.port}"
         console.print(" ".join(("$", *args)), style="bold")
-        pipe = None if cfg.debug else sp.DEVNULL
         self._process = sp.Popen(
-            args, cwd=cfg.path, text=True, stdout=pipe, stderr=pipe
+            args, cwd=cfg.path, text=True, stdout=sp.DEVNULL, stderr=sp.DEVNULL
         ).__enter__()
         return self
 
