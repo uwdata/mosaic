@@ -84,11 +84,13 @@ include = [
     "packages/vgplot/vgplot-python/**/*.py",
     "dev/notebooks/weather.py",
     "specs/python/*.py",
+    "packages/server/bench/**/*.py"
 ]
 ignore = ["**/.venv/", "../../../**/*typeshed*"]  # Do not display diagnostics in external source code
 typeCheckingMode = "standard"
 reportUnnecessaryTypeIgnoreComment = "error"
 reportUnusedExpression = "none" # covered by ruff
+executionEnvironments = [ { root = "packages/server/bench/", pythonVersion="3.14", reportMissingTypeStubs = "error"} ]
 
 [tool.ty.rules]
 missing-type-argument = "error"
