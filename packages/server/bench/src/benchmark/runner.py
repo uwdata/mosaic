@@ -24,11 +24,11 @@ if TYPE_CHECKING:
 type ResultSummary = dict[L["main", "compare"], pl.DataFrame]
 
 
-class Runner(msgspec.Struct):
+class Runner[T: Type](msgspec.Struct):
     options: CLIOptions
     targets: Sequence[ServerConfig]
     sources: Collection[Command[Exec]]
-    benchmarks: Collection[Benchmark[Type, None]]
+    benchmarks: Collection[Benchmark[T, None]]
     benchmark_schema: pl.Schema = msgspec.field(default_factory=pl.Schema)
 
     def __post_init__(self) -> None:

@@ -30,6 +30,15 @@ typing = [
 requires      = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"
 
+[tool.pyright]
+extends                            = "../../../pyproject.toml"
+include                            = ["src"]
+typeCheckingMode                   = "strict"
+reportUnnecessaryTypeIgnoreComment = "error"
+reportUnknownArgumentType          = "none"
+reportUnknownMemberType            = "none"
+reportUnusedExpression             = "none"
+
 [tool.ruff]
 extend = "../../../pyproject.toml"
 
