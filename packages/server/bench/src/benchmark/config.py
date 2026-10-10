@@ -31,10 +31,27 @@ class CLIOptions(msgspec.Struct, kw_only=True):
 
 
 class ServerConfig(msgspec.Struct):
+    """How to start a server."""
+
     name: ServerName
+    """An identifier for reporting."""
     path: Path
+    """The path to the package."""
     depends: tuple[Requirement, ...]
+    """Refuse to start the server without these requirements."""
     run: tuple[str, ...]
+    """The command that starts the server.
+    
+    For example, if the CLI looks like:
+    ```bash
+    $ pnpm run server
+    ```
+
+    Then `run` should be:
+    ```py
+    ("pnpm", "run", "server")
+    ```
+    """
     debug: bool = False
 
     def is_available(self) -> bool:
