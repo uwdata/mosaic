@@ -53,10 +53,6 @@ class Client:
     ) -> Benchmark[T, Result]:
         command = benchmark.command
         counter = time.perf_counter_ns
-        iterations = self.iterations
-
-        t0, t1 = 0.0, 0.0
-        data = b""
         response_size = 0
 
         # Warmup
@@ -67,15 +63,11 @@ class Client:
             (t1 - t0)
             response_size = len(data)
 
-        # Cleanup
-        t0, t1 = 0.0, 0.0
-        data = b""
-
         # Actual
         timings: list[int] = []
-        for _ in range(iterations):
+        for _ in range(self.iterations):
             t0 = counter()
-            data = self.post(command)
+            self.post(command)
             t1 = counter()
             timings.append(t1 - t0)
         return benchmark.with_result(Result(timings, response_size))
