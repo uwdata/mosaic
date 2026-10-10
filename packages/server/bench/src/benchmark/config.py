@@ -22,7 +22,6 @@ class CLIOptions(msgspec.Struct, kw_only=True):
     port: Port = Port(3000)
     iterations: int = 100
     warmup: int = 5
-    debug_server: bool = False
     timeout: Seconds = Seconds(30)
     servers: Sequence[ServerName] = DEFAULT_SERVERS
 
@@ -52,7 +51,6 @@ class ServerConfig(msgspec.Struct):
     ("pnpm", "run", "server")
     ```
     """
-    debug: bool = False
 
     def is_available(self) -> bool:
         return all(shutil.which(dep) for dep in self.depends)
