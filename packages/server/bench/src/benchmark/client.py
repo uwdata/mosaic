@@ -22,6 +22,8 @@ _PING = Command.arrow("SELECT 1")
 
 
 class Client:
+    """A managed session/connection, scoped to a single server."""
+
     def __init__(
         self, base_url: str, iterations: int, warmup: int, timeout: Seconds
     ) -> None:

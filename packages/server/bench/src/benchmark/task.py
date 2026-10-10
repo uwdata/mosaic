@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 @final
 class Command[T: Type](msgspec.Struct):
+    """Message sent to the server."""
+
     type: Final[T]
     sql: str
 
@@ -30,6 +32,8 @@ class Command[T: Type](msgspec.Struct):
 
 @final
 class Result(msgspec.Struct):
+    """Data recorded per-benchmark."""
+
     timings: Sequence[int]
     """Per-iteration execution time in nanoseconds."""
     response_size: int
@@ -44,6 +48,7 @@ class Benchmark[T: Type, R: (Result, None)](msgspec.Struct):
     result: Final[R]
 
     def with_result(self, result: Result) -> Benchmark[T, Result]:
+        """Return a copy with `result`."""
         return Benchmark(self.group, self.name, self.command, result)
 
     @staticmethod
