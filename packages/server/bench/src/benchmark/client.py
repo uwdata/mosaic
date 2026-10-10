@@ -2,19 +2,20 @@ from __future__ import annotations
 
 import time
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 import msgspec
 import niquests
+from typing_extensions import Self
 
 from benchmark import _rich
-from benchmark.common import console
+from benchmark.common import CT, console
 from benchmark.task import Command, Result
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator
 
-    from benchmark.common import Exec, Seconds, Type
+    from benchmark.common import Exec, Seconds
     from benchmark.task import Benchmark
 
 _JSON_ENCODER = msgspec.json.Encoder().encode
@@ -47,12 +48,12 @@ class Client:
         if response.status_code != HTTPStatus.OK:
             response.raise_for_status()
 
-    def post[T: Type](self, command: Command[T]) -> bytes:
+    def post(self, command: Command[CT]) -> bytes:
         return self._session.post("/", json=command).content or b""
 
-    def _run_benchmark[T: Type](
-        self, benchmark: Benchmark[T, None], /
-    ) -> Benchmark[T, Result]:
+    def _run_benchmark(
+        self, benchmark: Benchmark[CT, None], /
+    ) -> Benchmark[CT, Result]:
         command = benchmark.command
         counter = time.perf_counter_ns
         response_size = 0
@@ -74,12 +75,12 @@ class Client:
             timings.append(t1 - t0)
         return benchmark.with_result(Result(timings, response_size))
 
-    def run_benchmarks[T: Type](
+    def run_benchmarks(
         self,
         sources: Collection[Command[Exec]],
-        benchmarks: Collection[Benchmark[T, None]],
+        benchmarks: Collection[Benchmark[CT, None]],
         /,
-    ) -> Iterator[Benchmark[T, Result]]:
+    ) -> Iterator[Benchmark[CT, Result]]:
         # NOTE: This one is too quick to be worth reporting start/end/duration
         for command in sources:
             self.post(command)
