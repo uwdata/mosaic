@@ -17,6 +17,12 @@ _DEFAULT_CERT: Final = Path("localhost.pem")
 _DEFAULT_KEY: Final = Path("localhost-key.pem")
 
 
+def user_config_path() -> Path:
+    return platformdirs.user_config_path(
+        appauthor="mosaic", appname="https", roaming=True
+    )
+
+
 class _BaseArgs(msgspec.Struct):
     database: Path | str = ":memory:"
     """Path of database file (e.g., "database.db". ":memory:" for in-memory database)."""
@@ -55,9 +61,7 @@ class Args(_BaseArgs):
         if cert.is_file() and cert.exists() and key.is_file() and key.exists():
             return ResolvedArgs(db, host, port, level, ssl=SSL(cert, key))
 
-        config = platformdirs.user_config_path(
-            appauthor="mosaic", appname="https", roaming=True
-        )
+        config = user_config_path()
         is_cert_default = cert == _DEFAULT_CERT
         is_key_default = key == _DEFAULT_KEY
         if is_cert_default and is_key_default:
