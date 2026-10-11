@@ -44,15 +44,13 @@ class ResolvedArgs(_BaseArgs):
 class Args(_BaseArgs):
     ssl_cert: Path = _DEFAULT_CERT
     ssl_key: Path = _DEFAULT_KEY
+    no_http2: bool = False
+    """Escape hatch to make benchmarking and testing possible."""
 
     def resolve(self) -> ResolvedArgs:
-        # NOTE: The number of cases is defined by the Go impl:
-        # - the defaults used and exist -> returned
-        # - user provided and exist -> returned
-        # - the defaults used -> check elsewhere, missing means disable HTTPS & HTTP/2
-        # - only one of cert/key provided -> error
-        # - user provided and not exist -> error
         db, host, port, level = self.database, self.address, self.port, self.log_level
+        if self.no_http2:
+            return ResolvedArgs(db, host, port, level)
         cert, key = self.ssl_cert, self.ssl_key
         if cert.is_file() and cert.exists() and key.is_file() and key.exists():
             return ResolvedArgs(db, host, port, level, ssl=SSL(cert, key))
@@ -103,6 +101,11 @@ class Args(_BaseArgs):
             default=_DEFAULT_KEY,
             dest="ssl_key",
             type=Path,
+        )
+        parser.add_argument(
+            "--no-http2",
+            action="store_true",
+            help="TEMPORARY FLAG. Required for benchmarks until https://github.com/uwdata/mosaic/pull/1332",
         )
         return parser.parse_args(_test_args or None, namespace=Args())
 

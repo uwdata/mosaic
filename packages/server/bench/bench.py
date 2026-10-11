@@ -256,11 +256,10 @@ def build_and_start_rust(port: int) -> subprocess.Popen | None:
 
     print("  Starting Rust server ...")
     return subprocess.Popen(
-        ["cargo", "run", "--release", "--port", str(port)],
+        ["cargo", "run", "--release", "--", "--port", str(port)],
         cwd=rust_dir,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
 
@@ -288,11 +287,9 @@ def build_and_start_go(port: int) -> subprocess.Popen | None:
 
 def build_and_start_python(port: int) -> subprocess.Popen | None:
     py_dir = SERVER_DIR / "duckdb-server"
-    if port != 3000:  # ruff: ignore[magic-value-comparison]
-        print("  WARNING: Python server does not support custom ports, using 3000")
     print("  Starting Python server ...")
     return subprocess.Popen(
-        ["uv", "run", "duckdb-server"],
+        ["uv", "run", "duckdb-server", "--no-http2", "--port", f"{port}"],
         cwd=py_dir,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
