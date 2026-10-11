@@ -449,7 +449,9 @@ def main() -> None:
     if args.iterations < 1:
         parser.error("--iterations must be >= 1")
 
-    host = "localhost"
+    # NOTE: rust/python are initialized with `"127.0.0.1"`
+    # They accept `"localhost"`, but it adds 2000ms per request (1-40ms)
+    host = "127.0.0.1"
     port = args.port
 
     servers = (
