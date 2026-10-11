@@ -7,6 +7,7 @@ requires-python = ">=3.10"
 dependencies = [
   "duckdb>=1.5.2",
   "msgspec",
+  "platformdirs>=4.11.14",
   "pyarrow",
   "starlette>=1.7.0",
   "uvicorn>=0.54.0",

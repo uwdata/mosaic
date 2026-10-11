@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -793,6 +793,7 @@ source = { editable = "packages/server/duckdb-server" }
 dependencies = [
     { name = "duckdb" },
     { name = "msgspec" },
+    { name = "platformdirs" },
     { name = "pyarrow" },
     { name = "starlette" },
     { name = "uvicorn" },
@@ -814,6 +815,7 @@ dev = [
 requires-dist = [
     { name = "duckdb", specifier = ">=1.5.2" },
     { name = "msgspec" },
+    { name = "platformdirs", specifier = ">=4.11.14" },
     { name = "pyarrow" },
     { name = "starlette", specifier = ">=1.7.0" },
     { name = "uvicorn", specifier = ">=0.54.0" },
