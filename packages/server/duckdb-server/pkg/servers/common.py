@@ -76,8 +76,16 @@ class Args(_BaseArgs):
             msg_0 = f"Unhandled case ({is_cert_default=}, {is_key_default=})\n{cert=}\n{key=}"
             raise NotImplementedError(msg_0)
 
+    @classmethod
+    def parse_sys_argv(cls) -> Args:
+        return cls._parse(None)
+
+    @classmethod
+    def parse_args(cls, *args: str) -> Args:
+        return cls._parse(args)
+
     @staticmethod
-    def parse(*_test_args: str) -> Args:
+    def _parse(args: tuple[str, ...] | None, /) -> Args:
         parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
@@ -107,7 +115,7 @@ class Args(_BaseArgs):
             action="store_true",
             help="TEMPORARY FLAG. Required for benchmarks until https://github.com/uwdata/mosaic/pull/1332",
         )
-        return parser.parse_args(_test_args or None, namespace=Args())
+        return parser.parse_args(args, namespace=Args())
 
 
 class Server(Protocol):

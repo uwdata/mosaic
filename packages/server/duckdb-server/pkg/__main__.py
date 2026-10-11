@@ -13,7 +13,7 @@ def serve() -> None:
     from pkg.servers._uvicorn import UvicornServer
     from pkg.servers.common import Args
 
-    args = Args.parse().resolve()
+    args = Args.parse_sys_argv().resolve()
     if ssl := args.ssl:
         logger.info("Using TLS certificate %s", ssl.cert)
     else:
