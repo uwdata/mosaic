@@ -7,9 +7,10 @@ requires-python = ">=3.10"
 dependencies = [
   "duckdb>=1.5.2",
   "msgspec",
-  "pandas",
   "pyarrow",
-  "socketify"
+  "starlette>=1.7.0",
+  "uvicorn>=0.54.0",
+  "zttp>=0.0.34",
 ]
 
 [project.scripts]
@@ -27,8 +28,10 @@ dev = [
   "pytest-cov",
   "pytest",
   "ruff",
-  "watchdog",
+  "watchfiles",
   "ty",
+  "pyarrow-stubs>=20.0.0.20260819",
+  "httpx2>=2.13.1",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -3,22 +3,18 @@ from __future__ import annotations
 import logging
 import sys
 
-import duckdb
-
-from pkg.server import server
+from pkg.app import create_app
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 def serve() -> None:
-    db_path = sys.argv[1] if len(sys.argv) >= 2 else ":memory:"  # ruff: ignore[magic-value-comparison]
+    from pkg.servers._uvicorn import UvicornServer
+    from pkg.servers.common import Args
 
-    logger.info(f"Using DuckDB {db_path}")
-
-    con = duckdb.connect(db_path)
-
-    server(con)
+    args = Args.parse()
+    UvicornServer.from_args(args, create_app(args.database)).run()
 
 
 if __name__ == "__main__":
