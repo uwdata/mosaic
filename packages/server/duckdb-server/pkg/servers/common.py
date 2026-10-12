@@ -46,6 +46,10 @@ class ResolvedArgs(_BaseArgs):
     ssl: SSL | None = None
 
 
+def file_exists(path: Path, /) -> bool:
+    return path.is_file() and path.exists()
+
+
 @final
 class Args(_BaseArgs):
     ssl_cert: Path = _DEFAULT_CERT
@@ -58,7 +62,7 @@ class Args(_BaseArgs):
         if self.no_http2:
             return ResolvedArgs(db, host, port, level)
         cert, key = self.ssl_cert, self.ssl_key
-        if cert.is_file() and cert.exists() and key.is_file() and key.exists():
+        if file_exists(cert) and file_exists(key):
             return ResolvedArgs(db, host, port, level, ssl=SSL(cert, key))
 
         config = user_config_path()
@@ -66,7 +70,7 @@ class Args(_BaseArgs):
         is_key_default = key == _DEFAULT_KEY
         if is_cert_default and is_key_default:
             cert, key = config / cert, config / key
-            if cert.is_file() and cert.exists() and key.is_file() and key.exists():
+            if file_exists(cert) and file_exists(key):
                 return ResolvedArgs(db, host, port, level, ssl=SSL(cert, key))
             else:
                 return ResolvedArgs(db, host, port, level)
