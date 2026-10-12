@@ -4,7 +4,7 @@ import pytest
 
 from pkg.servers.common import Args, user_config_path
 
-# TODO @dangotbanned: Switch this to an mark that's off by default
+# TODO @dangotbanned: Switch this to a mark that's off by default
 if not user_config_path().exists():
     pytest.skip("SSL cert/key tests depend on external state", allow_module_level=True)
 
