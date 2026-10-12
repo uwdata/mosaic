@@ -17,8 +17,6 @@ if TYPE_CHECKING:
 if not user_config_path().exists():
     pytest.skip("SSL cert/key tests depend on external state", allow_module_level=True)
 
-
-Stores: TypeAlias = L["cert", "key"]
 Status: TypeAlias = L["exists", "non-existent"]
 _STATUS: Final = "exists", "non-existent"
 
@@ -43,7 +41,7 @@ def re_compile(
 
 @dataclass
 class PEM:
-    stores: Stores
+    stores: L["cert", "key"]
     status: Status
 
     def path(self, parent: Path) -> Path:
