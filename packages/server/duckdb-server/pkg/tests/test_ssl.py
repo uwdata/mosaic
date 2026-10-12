@@ -3,20 +3,14 @@ from __future__ import annotations
 import functools
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, TypeAlias
+from pathlib import Path
+from typing import Final, TypeAlias
 from typing import Literal as L  # ruff: ignore[camelcase-imported-as-acronym]
 from unittest.mock import patch
 
 import pytest
 
 from pkg.servers.common import Args, file_exists, user_config_path
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-# TODO @dangotbanned: Switch this to a mark that's off by default
-if not user_config_path().exists():
-    pytest.skip("SSL cert/key tests depend on external state", allow_module_level=True)
 
 Status: TypeAlias = L["exists", "non-existent"]
 _STATUS: Final = "exists", "non-existent"
@@ -28,7 +22,9 @@ _STATIC_NAME_FILE_EXISTS: Final = f"{file_exists.__module__}.{file_exists.__name
 By importing the function itself, the dependency will be visible to IDEs and be less likely
 to break unintentionally.
 """
-
+_STATIC_NAME_USER_CONFIG_PATH: Final = (
+    f"{user_config_path.__module__}.{user_config_path.__name__}"
+)
 
 re_compile = functools.partial(re.compile, flags=re.IGNORECASE | re.DOTALL)
 """Overrides stdlib `flags` default for more lenient error message matching."""
@@ -46,8 +42,11 @@ class PEM:
         return path
 
 
-# TODO @dangotbanned: parametrize positive/negative cases
-def test_default() -> None:
+@pytest.mark.skipif(
+    not user_config_path().exists(),
+    reason="SSL cert/key tests depend on external state",
+)
+def test_default_has_config() -> None:
     parsed = Args.parse_args()
     resolved = parsed.resolve()
     assert resolved.ssl is not None
@@ -55,6 +54,18 @@ def test_default() -> None:
 
     assert cert.exists()
     assert key.exists()
+
+
+def test_default_no_config(tmp_path: Path) -> None:
+    if any(path for path in Path.cwd().iterdir() if path.suffix == ".pem"):
+        pytest.skip(
+            "Test requires the current working directory to not have any credentials stored.\n"
+            "Changing cwd is unsafe (https://docs.python.org/3/library/contextlib.html#contextlib.chdir)"
+        )
+    parsed = Args.parse_args()
+    with patch(_STATIC_NAME_USER_CONFIG_PATH, lambda *_, **__: tmp_path / "nope"):
+        resolved = parsed.resolve()
+        assert resolved.ssl is None
 
 
 @pytest.mark.parametrize("key_status", _STATUS)
