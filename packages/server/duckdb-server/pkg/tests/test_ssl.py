@@ -24,9 +24,9 @@ _STATUS: Final = "exists", "non-existent"
 
 
 _STATIC_NAME_FILE_EXISTS: Final = f"{file_exists.__module__}.{file_exists.__name__}"
-"""This function is patched using this string.
+"""This function is mocked using this string.
 
-By importing the function itself, this dependency will be visible to IDEs and be less likely
+By importing the function itself, the dependency will be visible to IDEs and be less likely
 to break unintentionally.
 """
 
