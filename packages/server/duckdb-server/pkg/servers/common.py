@@ -74,7 +74,7 @@ class Args(_BaseArgs):
             msg = "both --cert and --key are required for HTTPS"
             raise TypeError(msg)
         elif not (is_cert_default or is_key_default):
-            msg = "both --cert and --key do not exist"
+            msg = "both --cert and --key must exist"
             raise TypeError(msg)
         else:
             msg_0 = f"Unhandled case ({is_cert_default=}, {is_key_default=})\n{cert=}\n{key=}"
