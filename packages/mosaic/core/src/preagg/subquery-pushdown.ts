@@ -1,4 +1,4 @@
-import { ColumnNameRefNode, JoinNode, isAggregateExpression, isPivotQuery, isSelectQuery, isSetOperation, literal, type TableRefNode, type LiteralNode, type PivotQuery, type Query, type SelectQuery, type SQLNode, type SetOperation, isTableRef } from '@uwdata/mosaic-sql';
+import { ColumnNameRefNode, JoinNode, SelectClauseNode, isAggregateExpression, isPivotQuery, isSelectQuery, isSetOperation, literal, type ExprNode, type TableRefNode, type PivotQuery, type Query, type SelectQuery, type SQLNode, type SetOperation, isTableRef } from '@uwdata/mosaic-sql';
 import { isStar, queryScope, resolveRelation, tableEquals, type Scope } from './lineage.js';
 
 /**
@@ -12,15 +12,15 @@ import { isStar, queryScope, resolveRelation, tableEquals, type Scope } from './
 export function subqueryPushdown(query: Query, source: TableRefNode, cols: string[]): void {
   const memo = new Map<Query, boolean>();
 
-  const visitQuery = (q: Query, outer: Scope): boolean => {
+  const visitQuery = (q: Query, outer: Scope, append?: string[]): boolean => {
     if (memo.has(q)) return memo.get(q)!;
     memo.set(q, false);
     const scope = queryScope(q, outer);
     let result = false;
     if (isSelectQuery(q)) {
-      result = visitSelect(q, scope);
+      result = visitSelect(q, scope, append);
     } else if (isSetOperation(q)) {
-      result = visitSetOperation(q, scope);
+      result = visitSetOperation(q, scope, append);
     } else if (isPivotQuery(q)) {
       result = visitPivot(q, scope);
     }
@@ -43,14 +43,13 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
     return visitRelation(node, scope);
   };
 
-  const visitSelect = (q: SelectQuery, scope: Scope): boolean => {
+  const visitSelect = (q: SelectQuery, scope: Scope, append = missing(q)): boolean => {
     const found = q._from
       .map(node => visitFrom(node, scope))
       .some(x => x);
     if (!found) return false;
     if (!q._select.some(isStar)) {
-      const selected = new Set(q._select.map(x => x.alias));
-      q.select(cols.filter(c => !selected.has(c)));
+      appendSelect(q, append.map(c => [c, new ColumnNameRefNode(c)]));
     }
     if (isAggregateQuery(q)) {
       q.groupby(cols.filter(c => !hasColumn(q._groupby, c)));
@@ -58,11 +57,12 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
     return true;
   };
 
-  const visitSetOperation = (q: SetOperation, scope: Scope): boolean => {
-    const found = q.queries.map(sub => visitQuery(sub, scope));
+  // set operation inputs take output names from the first input by
+  // position, so all inputs must append the same columns in the same order
+  const visitSetOperation = (q: SetOperation, scope: Scope, append = missing(q)): boolean => {
+    const found = q.queries.map(sub => visitQuery(sub, scope, append));
     if (!found.some(x => x)) return false;
-    // set operation inputs must have matching arity
-    q.queries.forEach((sub, i) => { if (!found[i]) padNull(sub); });
+    q.queries.forEach((sub, i) => { if (!found[i]) padNull(sub, append); });
     return true;
   };
 
@@ -75,14 +75,21 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
     return true;
   };
 
-  const padNull = (q: Query): void => {
+  const padNull = (q: Query, append: string[]): void => {
     if (isSelectQuery(q)) {
-      const selected = new Set(q._select.map(x => x.alias));
-      const padding = cols.filter(c => !selected.has(c)).map(c => [c, literal(null)]);
-      q.select(padding as [string, LiteralNode][]);
+      appendSelect(q, append.map(c => [c, literal(null)]));
     } else if (isSetOperation(q)) {
-      q.queries.forEach(padNull);
+      q.queries.forEach(sub => padNull(sub, append));
     }
+  };
+
+  const missing = (q: Query): string[] => {
+    if (isSelectQuery(q)) {
+      if (q._select.some(isStar)) return [];
+      const selected = new Set(q._select.map(x => x.alias));
+      return cols.filter(c => !selected.has(c));
+    }
+    return isSetOperation(q) ? missing(q.queries[0]) : [];
   };
 
   visitQuery(query, new Map());
@@ -96,6 +103,17 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
 function isAggregateQuery(query: SelectQuery): boolean {
   return query._groupby.length > 0
     || query._select.some(node => isAggregateExpression(node));
+}
+
+/**
+ * Append select clauses without replacing existing clauses that share an
+ * alias, as set operation inputs may reuse names that are positionally
+ * assigned to different output columns.
+ * @param query The select query to modify.
+ * @param clauses The [alias, expression] pairs to append.
+ */
+function appendSelect(query: SelectQuery, clauses: [string, ExprNode][]): void {
+  query._select.push(...clauses.map(([alias, expr]) => new SelectClauseNode(expr, alias)));
 }
 
 function hasColumn(list: SQLNode[], name: string): boolean {
