@@ -99,7 +99,8 @@ def test_always_pair(cert_provided: bool, key_provided: bool, tmp_path: Path) ->
     args = []
     for stores, provided in (("cert", cert_provided), ("key", key_provided)):
         if provided:
-            p = PEM(stores, "exists")
+            # NOTE: pyright widens strings literals during iteration
+            p = PEM(stores, "exists")  # pyright: ignore[reportArgumentType]
             path = p.path(tmp_path)
             allow.add(path)
             args.extend((f"--{p.stores}", path.as_posix()))
