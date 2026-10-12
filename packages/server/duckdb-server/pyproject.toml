@@ -43,3 +43,11 @@ pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.ty.src]
 include = ["pkg"]
+
+[tool.pytest]
+filterwarnings = ["error"]
+markers = [
+  "smoke: a subset of tests to run cross-platform in ci",
+]
+strict_markers = true
+strict_xfail = true
