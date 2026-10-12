@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, TypeAlias
@@ -29,14 +30,8 @@ to break unintentionally.
 """
 
 
-def re_compile(
-    pattern: str, flags: re.RegexFlag = re.IGNORECASE | re.DOTALL
-) -> re.Pattern[str]:
-    """Compile a regular expression pattern, returning a Pattern object.
-
-    Overrides stdlib `flags` default for more lenient error message matching.
-    """
-    return re.compile(pattern, flags)
+re_compile = functools.partial(re.compile, flags=re.IGNORECASE | re.DOTALL)
+"""Overrides stdlib `flags` default for more lenient error message matching."""
 
 
 @dataclass
