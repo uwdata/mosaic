@@ -13,7 +13,7 @@ _TARGETS: Final = (
         "python",
         SERVER_DIR / "duckdb-server",
         depends=("uv",),
-        run=("uv", "run", "duckdb-server", "--no-http2"),
+        run=("uv", "run", "duckdb-server"),
     ),
     ServerConfig(
         "rust",
