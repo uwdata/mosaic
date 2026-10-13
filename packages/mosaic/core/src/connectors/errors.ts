@@ -2,7 +2,7 @@ import type { PreaggResponse, TableReference } from './Connector.js';
 
 /** Values of `ConnectorError.code`. */
 export const ConnectorErrorCode = Object.freeze({
-  // the server error envelope's closed vocabulary (conformance/openapi.yaml, ErrorCode)
+  // the server error envelope's closed vocabulary
   BadRequest: 'bad_request',
   Unauthenticated: 'unauthenticated',
   Forbidden: 'forbidden',
