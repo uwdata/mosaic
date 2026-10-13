@@ -95,15 +95,38 @@ function outputExpression(query: Query, name: string, outer: Scope): ExprNode | 
     const clause = query._select.find(c => c.alias === name);
     const expr = clause?.expr
       ?? (query._select.some(isStar) ? new ColumnNameRefNode(name) : undefined);
-    if (!expr || isAggregateExpression(expr) || hasWindow(expr)) return;
-    return baseExpression(query, expr, outer);
+    return selectExpression(query, expr, outer);
+  }
+  if (isSetOperation(query)) {
+    const index = outputNames(query)?.indexOf(name) ?? -1;
+    if (index >= 0) return positionalExpression(query, index, outer);
+  }
+}
+
+// set operation inputs after the first take output names by position
+function positionalExpression(query: Query, index: number, outer: Scope): ExprNode | undefined {
+  if (isSelectQuery(query)) {
+    if (query._select.some(isStar)) return;
+    return selectExpression(query, query._select[index]?.expr, outer);
   }
   if (isSetOperation(query)) {
     const scope = queryScope(query, outer);
-    const exprs = query.queries.map(q => outputExpression(q, name, scope));
+    const exprs = query.queries.map(q => positionalExpression(q, index, scope));
     const [expr] = exprs;
     return expr && exprs.every(e => e && `${e}` === `${expr}`) ? expr : undefined;
   }
+}
+
+function selectExpression(query: SelectQuery, expr: ExprNode | undefined, outer: Scope): ExprNode | undefined {
+  if (!expr || isAggregateExpression(expr) || hasWindow(expr)) return;
+  return baseExpression(query, expr, outer);
+}
+
+function outputNames(query: Query): string[] | undefined {
+  if (isSelectQuery(query)) {
+    return query._select.some(isStar) ? undefined : query._select.map(c => c.alias);
+  }
+  if (isSetOperation(query)) return outputNames(query.queries[0]);
 }
 
 function columnRefs(expr: ExprNode): ColumnRefNode[] {

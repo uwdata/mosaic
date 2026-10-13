@@ -144,6 +144,17 @@ describe('subqueryPushdown', () => {
     );
   });
 
+  it('aligns set operation inputs by position', () => {
+    const q = Query.unionAll(
+      Query.select({ s: 'a', v: 'x' }).from('data'),
+      Query.select('b', 'y').from('data'),
+      Query.select('c', 'z').from('other')
+    );
+    expect(pushdown(q, 'data', ['a', 'y'])).toBe(
+      'SELECT "a" AS "s", "x" AS "v", "a", "y" FROM "data" UNION ALL SELECT "b", "y", "a", "y" FROM "data" UNION ALL SELECT "c", "z", NULL AS "a", NULL AS "y" FROM "other"'
+    );
+  });
+
   it('ignores scalar subqueries', () => {
     const q = Query
       .select('x', { m: new ScalarSubqueryNode(Query.select({ m: sum('y') }).from('data')) })

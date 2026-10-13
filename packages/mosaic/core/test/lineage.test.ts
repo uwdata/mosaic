@@ -85,6 +85,30 @@ describe('baseExpression', () => {
     expect(baseExpression(mismatch, column('v'))).toBe(undefined);
   });
 
+  it('resolves set operation inputs by position', () => {
+    const q = Query.select('v').from(Query.unionAll(
+      Query.select({ v: 'x' }).from('data'),
+      Query.select('x').from('data'),
+      Query.select({ w: 'x' }).from('data')
+    ));
+    expect(`${baseExpression(q, column('v'))}`).toBe('"x"');
+
+    const swapped = Query.select('v').from(Query.unionAll(
+      Query.select({ v: 'x', w: 'y' }).from('data'),
+      Query.select({ w: 'y', v: 'x' }).from('data')
+    ));
+    expect(baseExpression(swapped, column('v'))).toBe(undefined);
+
+    const nested = Query.select('v').from(Query.unionAll(
+      Query.unionAll(
+        Query.select({ u: 'y', v: 'x' }).from('data'),
+        Query.select('y', 'x').from('data')
+      ),
+      Query.select('z', 'x').from('data')
+    ));
+    expect(`${baseExpression(nested, column('v'))}`).toBe('"x"');
+  });
+
   it('does not resolve aggregate, window, or missing columns', () => {
     const agg = Query
       .select('n')
