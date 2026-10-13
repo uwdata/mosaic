@@ -412,6 +412,22 @@ describe('PreAggregator', () => {
     expect(await run(query2)).toStrictEqual([4.5, true]);
   });
 
+  it('supports grouping column pushdown into positional set operation inputs', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query
+        .with({
+          r: Query.from('testData').select('dim', 'x', 'y').where(predicate),
+          s: Query.unionAll([
+            Query.from('r').select({ series: 'dim', v: 'x' }),
+            Query.from('r').select('dim', 'y')
+          ])
+        })
+        .from('s')
+        .select({ measure: sum('v') });
+    };
+    expect(await run(query)).toStrictEqual([20, true]);
+  });
+
   it('supports mean-centered aggregates over derived columns', async () => {
     const query = (predicate: FilterExpr = []) => {
       return Query

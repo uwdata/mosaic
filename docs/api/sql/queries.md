@@ -24,6 +24,7 @@ Query
   .with(/* a map of named common table expression queries */)
   .select(/* column names or name -> expression maps */)
   .distinct(/* boolean to denote distinct values only */)
+  .distinctOn(/* columns or expressions to deduplicate by */)
   .from(/* source table names or subqueries */)
   .sample(/* number of rows or % to sample */)
   .where(/* filter criteria */)
@@ -162,7 +163,7 @@ Coerce this query object to a SQL query string.
 `SelectQuery.select(...expressions)`
 
 Select columns and return this query instance.
-The _expressions_ argument may include column name strings, [`column` references](./expressions#column), and maps from column names to expressions (either as JavaScript `object` values or nested key-value arrays as produced by `Object.entries`).
+The _expressions_ argument may include column name strings, [`column` references](./expressions#column), [`star`](./expressions#star) and [`columns`](./expressions#columns) expressions, and maps from column names to expressions (either as JavaScript `object` values or nested key-value arrays as produced by `Object.entries`).
 
 ## from
 
@@ -183,6 +184,15 @@ The input _expressions_ should consist of one or more maps (as JavaScript `objec
 `SelectQuery.distinct(value = true)`
 
 Update the query to require `DISTINCT` values and return this query instance.
+
+## distinctOn
+
+`SelectQuery.distinctOn(...expressions)`
+
+Update the query to additionally require `DISTINCT ON` the provided _expressions_ and return this query instance.
+Only the first row for each distinct combination of _expressions_ is retained; use `orderby` to determine which row comes first.
+If any `DISTINCT ON` expressions are defined, they take precedence over the `distinct` flag.
+This method is additive: any previously defined distinct on expressions will still remain.
 
 ## sample
 
