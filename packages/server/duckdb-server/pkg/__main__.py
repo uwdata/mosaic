@@ -13,8 +13,13 @@ def serve() -> None:
     from pkg.servers._uvicorn import UvicornServer
     from pkg.servers.common import Args
 
-    args = Args.parse()
-    UvicornServer.from_args(args, create_app(args.database)).run()
+    args = Args.parse_sys_argv().resolve()
+    if ssl := args.ssl:
+        logger.info("Using TLS certificate %s", ssl.cert)
+    else:
+        logger.warning("No keys for HTTPS found")
+    server = UvicornServer.from_args(args, create_app(args.database))
+    server.run()
 
 
 if __name__ == "__main__":
