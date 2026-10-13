@@ -1,3 +1,4 @@
+export { AllNode } from './all.js';
 export { AggregateNode, aggregateNames, isAggregateFunction } from './aggregate.js';
 export { BetweenOpNode, NotBetweenOpNode } from './between-op.js'
 export { BinaryOpNode } from './binary-op.js';
@@ -12,16 +13,20 @@ export { FunctionNode } from './function.js';
 export { InOpNode } from './in-op.js';
 export { IntervalNode } from './interval.js';
 export { JoinNode, type JoinType, type JoinVariant } from './join.js';
+export { LambdaNode, LambdaVarNode } from './lambda.js';
 export { ListNode } from './list.js';
 export { LiteralNode } from './literal.js';
+export { NamedArgNode } from './named-arg.js';
 export { LogicalOpNode, AndNode, OrNode } from './logical-op.js';
 export { SQLNode, ExprNode, isNode } from './node.js';
 export { OrderByNode } from './order-by.js';
 export { ParamNode } from './param.js';
+export { QuantifiedOpNode, type ComparisonOp, type Quantifier } from './quantified-op.js';
 export { CreateQuery, type CreateTableOptions, CreateSchemaQuery, type CreateSchemaOptions, DescribeQuery, PivotQuery, type PivotSource, Query, SelectQuery, SetOperation, isCreateQuery, isCreateSchemaQuery, isDescribeQuery, isPivotQuery, isQuery, isSelectQuery, isSetOperation } from './query.js';
 export { SampleClauseNode } from './sample.js';
 export { ScalarSubqueryNode } from './subquery.js';
 export { SelectClauseNode } from './select.js';
+export { SliceNode, SubscriptNode } from './subscript.js';
 export { TableRefNode, isTableRef } from './table-ref.js';
 export { TupleNode } from './tuple.js';
 export { UnaryOpNode, UnaryPostfixOpNode } from './unary-op.js';

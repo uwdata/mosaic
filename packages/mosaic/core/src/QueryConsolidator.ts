@@ -114,7 +114,7 @@ function consolidationKey(query: MaybeArray<QueryType>, cache: Cache): string {
   if (isSelectQuery(query) && !cache.get(sql)) {
     if (
       query._where.length || query._qualify.length || query._having.length ||
-      query._orderby.length || query._distinct
+      query._orderby.length || query._distinct || query._distinctOn.length
     ) {
       // bail if query includes clauses that may refer to *derived* columns
       // that we can't resolve. also do not consolidate distinct queries

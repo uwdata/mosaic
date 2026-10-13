@@ -1,3 +1,4 @@
+export const ALL = 'ALL';
 export const COLUMN_REF = 'COLUMN_REF';
 export const COLUMN_PARAM = 'COLUMN_PARAM';
 export const TABLE_REF = 'TABLE_REF';
@@ -13,6 +14,11 @@ export const CAST = 'CAST';
 export const CASE = 'CASE';
 export const WHEN = 'WHEN';
 export const COLLATE = 'COLLATE';
+export const LAMBDA = 'LAMBDA';
+export const LAMBDA_VAR = 'LAMBDA_VAR';
+export const NAMED_ARG = 'NAMED_ARG';
+export const SUBSCRIPT = 'SUBSCRIPT';
+export const SLICE = 'SLICE';
 
 export const UNARY_OPERATOR = 'UNARY';
 export const UNARY_POSTFIX_OPERATOR = 'UNARY_POSTFIX';
@@ -21,6 +27,7 @@ export const BETWEEN_OPERATOR = 'BETWEEN';
 export const NOT_BETWEEN_OPERATOR = 'NOT_BETWEEN';
 export const LOGICAL_OPERATOR = 'LOGICAL_OPERATOR';
 export const IN_OPERATOR = 'IN';
+export const QUANTIFIED_OPERATOR = 'QUANTIFIED';
 
 export const FUNCTION = 'FUNCTION';
 export const AGGREGATE = 'AGGREGATE';
