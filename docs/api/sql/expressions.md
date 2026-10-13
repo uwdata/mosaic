@@ -31,6 +31,22 @@ The `int32(expression)`, `float32(expression)`, and `float64(expression)` functi
 Create an expression AST node that references a column by _name_.
 Upon string coercion, the column name will be properly quoted.
 
+## columns
+
+`columns(selector, unpack = false)`
+
+Create an AST node for a DuckDB `COLUMNS` expression, which expands to multiple columns.
+The _selector_ may be a regular expression string matched against column names, an array of column names, a [`lambda`](#lambda) over column names, or a [`star`](#star) expression.
+If _unpack_ is true, creates an unpacked `*COLUMNS` expression that expands to multiple function arguments.
+
+``` js
+Query.from("t").select(columns("^price_"))                  // COLUMNS('^price_')
+Query.from("t").select({ m: max(columns(["a", "b"])) })     // max(COLUMNS(['a', 'b'])) AS "m"
+greatest(columns(lambda("c", c => prefix(c, "x")), true))  // greatest(*COLUMNS(lambda "c": starts_with("c", 'x')))
+```
+
+When collecting columns with `collectColumns`, an array selector contributes the listed columns, while regular expression and lambda selectors contribute a `*` column reference.
+
 ## cte
 
 `cte(name, query, materialized)`
@@ -96,6 +112,29 @@ sql`${column("foo")} + ${param}`
 ```
 
 SQL expressions may be nested, in which case all nested column dependencies and parameter updates are still extractable via the collection visitors.
+
+## star
+
+`star(table, options)`
+
+Create an AST node for a star (`*`) expression that selects all columns, with optional `EXCLUDE`, `REPLACE`, and `RENAME` modifiers.
+If a _table_ is provided, the star is qualified, as in `table.*`.
+The _options_ object supports the following properties:
+
+- _exclude_: An array of column names to exclude.
+- _replace_: An object mapping column names to replacement expressions.
+- _rename_: An object mapping current column names to new names.
+
+``` js
+// SELECT * EXCLUDE ("id") REPLACE (("price" * 2) AS "price") RENAME ("qty" AS "quantity") FROM "t"
+Query.from("t").select(star(null, {
+  exclude: ["id"],
+  replace: { price: mul("price", 2) },
+  rename: { qty: "quantity" }
+}))
+```
+
+A star is a column reference with the column name `*`, so `collectColumns` reports it as referencing all columns, along with any columns referenced by replacement expressions.
 
 ## tryCast
 

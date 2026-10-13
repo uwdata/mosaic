@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Query, TableRefNode, add, column, count, join, mul, sql, sum } from '@uwdata/mosaic-sql';
+import { Query, TableRefNode, add, column, columns, count, join, mul, sql, star, sum } from '@uwdata/mosaic-sql';
 import { baseExpression, baseTable } from '../src/preagg/lineage.js';
 
 describe('baseTable', () => {
@@ -69,6 +69,39 @@ describe('baseExpression', () => {
   it('passes columns through star selections', () => {
     const q = Query.select('x').from(Query.select('*').from('data'));
     expect(`${baseExpression(q, column('x'))}`).toBe('"x"');
+  });
+
+  it('resolves columns through star modifiers', () => {
+    const sub = Query.select(star(null, {
+      exclude: ['a'],
+      replace: { b: mul('b', 2) },
+      rename: { c: 'd' }
+    })).from('data');
+    const q = (name: string) => baseExpression(Query.select(name).from(sub), column(name));
+    expect(`${q('x')}`).toBe('"x"');
+    expect(`${q('b')}`).toBe('("b" * 2)');
+    expect(`${q('d')}`).toBe('"c"');
+    expect(q('a')).toBe(undefined);
+    expect(q('c')).toBe(undefined);
+  });
+
+  it('does not resolve COLUMNS expressions over subqueries', () => {
+    const sub = Query.select('x').from('data');
+    expect(baseExpression(Query.select('x').from(sub), columns(['x']))).toBe(undefined);
+
+    const base = Query.select('x').from('data');
+    expect(`${baseExpression(base, columns(['x']))}`).toBe('COLUMNS([\'x\'])');
+
+    const expand = Query.select('x').from(Query.select(columns('^x$')).from('data'));
+    expect(baseExpression(expand, column('x'))).toBe(undefined);
+  });
+
+  it('does not resolve set operation inputs by position after a wildcard', () => {
+    const q = Query.select('v').from(Query.unionAll(
+      Query.select({ v: 'x' }).from('data'),
+      Query.select(columns(['x'])).from('data')
+    ));
+    expect(baseExpression(q, column('v'))).toBe(undefined);
   });
 
   it('resolves set operations with matching expressions', () => {

@@ -1,4 +1,4 @@
-import { ColumnNameRefNode, FromClauseNode, isAggregateExpression, isColumnRef, isPivotQuery, isQuery, isSelectQuery, isSetOperation, isTableRef, rewrite, ScalarSubqueryNode, TableRefNode, walk, WindowNode, type ColumnRefNode, type ExprNode, type Query, type SelectQuery, type SQLNode } from '@uwdata/mosaic-sql';
+import { ColumnNameRefNode, ColumnsNode, FromClauseNode, isAggregateExpression, isColumnRef, isPivotQuery, isQuery, isSelectQuery, isSetOperation, isTableRef, rewrite, ScalarSubqueryNode, StarNode, TableRefNode, walk, WindowNode, type ColumnRefNode, type ExprNode, type Query, type SelectQuery, type SQLNode } from '@uwdata/mosaic-sql';
 
 /** A query paired with the scope of CTEs visible to it. */
 export interface Binding {
@@ -81,6 +81,7 @@ export function baseExpression(
   const rel = resolveRelation(query._from[0], queryScope(query, outer));
   if (!rel) return;
   if (rel instanceof TableRefNode) return expr;
+  if (hasNode(expr, ColumnsNode)) return;
   const map = new Map<ExprNode, ExprNode>();
   for (const col of columnRefs(expr)) {
     const e = outputExpression(rel.query, col.column, rel.scope);
@@ -93,8 +94,7 @@ export function baseExpression(
 function outputExpression(query: Query, name: string, outer: Scope): ExprNode | undefined {
   if (isSelectQuery(query)) {
     const clause = query._select.find(c => c.alias === name);
-    const expr = clause?.expr
-      ?? (query._select.some(isStar) ? new ColumnNameRefNode(name) : undefined);
+    const expr = clause?.expr ?? starExpression(query, name);
     return selectExpression(query, expr, outer);
   }
   if (isSetOperation(query)) {
@@ -106,7 +106,7 @@ function outputExpression(query: Query, name: string, outer: Scope): ExprNode | 
 // set operation inputs after the first take output names by position
 function positionalExpression(query: Query, index: number, outer: Scope): ExprNode | undefined {
   if (isSelectQuery(query)) {
-    if (query._select.some(isStar)) return;
+    if (query._select.some(isWildcard)) return;
     return selectExpression(query, query._select[index]?.expr, outer);
   }
   if (isSetOperation(query)) {
@@ -118,13 +118,13 @@ function positionalExpression(query: Query, index: number, outer: Scope): ExprNo
 }
 
 function selectExpression(query: SelectQuery, expr: ExprNode | undefined, outer: Scope): ExprNode | undefined {
-  if (!expr || isAggregateExpression(expr) || hasWindow(expr)) return;
+  if (!expr || isAggregateExpression(expr) || hasNode(expr, WindowNode)) return;
   return baseExpression(query, expr, outer);
 }
 
 function outputNames(query: Query): string[] | undefined {
   if (isSelectQuery(query)) {
-    return query._select.some(isStar) ? undefined : query._select.map(c => c.alias);
+    return query._select.some(isWildcard) ? undefined : query._select.map(c => c.alias);
   }
   if (isSetOperation(query)) return outputNames(query.queries[0]);
 }
@@ -138,10 +138,10 @@ function columnRefs(expr: ExprNode): ColumnRefNode[] {
   return refs;
 }
 
-function hasWindow(expr: ExprNode): boolean {
+function hasNode(expr: SQLNode, type: typeof WindowNode | typeof ColumnsNode): boolean {
   let found = false;
   walk(expr, node => {
-    if (node instanceof WindowNode) return (found = true, -1);
+    if (node instanceof type) return (found = true, -1);
   });
   return found;
 }
@@ -152,6 +152,36 @@ function hasWindow(expr: ExprNode): boolean {
  */
 export function isStar(node: { expr: SQLNode }): boolean {
   return node.expr instanceof ColumnNameRefNode && node.expr.name === '*';
+}
+
+/**
+ * Test if a select clause may expand to multiple output columns, either
+ * as a star (*) or by including a COLUMNS expression.
+ * @param node The select clause.
+ */
+export function isWildcard(node: { expr: SQLNode }): boolean {
+  return isStar(node) || hasNode(node.expr, ColumnsNode);
+}
+
+/**
+ * Return the expression a select query's star clauses output for a
+ * column name, or undefined if no star clause outputs the name.
+ * @param query The select query.
+ * @param name The output column name.
+ */
+export function starExpression(query: SelectQuery, name: string): ExprNode | undefined {
+  for (const clause of query._select) {
+    if (!isStar(clause)) continue;
+    const { expr } = clause;
+    if (!(expr instanceof StarNode)) return new ColumnNameRefNode(name);
+    const replaced = expr.replace.find(c => c.alias === name);
+    if (replaced) return replaced.expr;
+    const renamed = expr.rename.find(([, to]) => to === name);
+    if (renamed) return new ColumnNameRefNode(renamed[0]);
+    const removed = expr.exclude.includes(name)
+      || expr.rename.some(([from]) => from === name);
+    if (!removed) return new ColumnNameRefNode(name);
+  }
 }
 
 /**

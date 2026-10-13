@@ -11,6 +11,7 @@ import {
   CollateNode,
   ColumnParamNode,
   ColumnRefNode,
+  ColumnsNode,
   CreateQuery,
   CreateSchemaQuery,
   FragmentNode,
@@ -37,6 +38,7 @@ import {
   SelectClauseNode,
   ScalarSubqueryNode,
   SliceNode,
+  StarNode,
   SubscriptNode,
   TableRefNode,
   TupleNode,
@@ -121,7 +123,12 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     const { column, table } = node;
     const tref = table ? `${this.toString(table)}.` : '';
     const id = column === '*' ? '*' : quoteIdentifier(column);
-    return `${tref}${id}`;
+    return `${tref}${id}${node instanceof StarNode ? starModifiers(this, node) : ''}`;
+  }
+
+  visitColumns(node: ColumnsNode): string {
+    const { selector, unpack } = node;
+    return `${unpack ? '*' : ''}COLUMNS(${this.toString(selector)})`;
   }
 
   visitCreateQuery(node: CreateQuery): string {
@@ -341,10 +348,14 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
 
   visitSelectClause(node: SelectClauseNode): string {
     const { expr, alias } = node;
+    const sql = this.toString(expr);
 
-    return !alias || isColumnRefFor(expr, alias)
-      ? this.toString(expr)
-      : `${this.toString(expr)} AS ${quoteIdentifier(alias)}`;
+    // DuckDB applies an alias to every column a COLUMNS expression expands
+    // to, so drop aliases that select() derived from the expression text
+    return !alias || isColumnRefFor(expr, alias) || isStarRef(expr)
+      || (alias === sql && isExpandingColumns(expr))
+      ? sql
+      : `${sql} AS ${quoteIdentifier(alias)}`;
   }
 
   visitSelectQuery(node: SelectQuery): string {
@@ -540,6 +551,14 @@ function isColumnRefFor(expr: unknown, name: string): expr is ColumnRefNode {
     && expr.column === name;
 }
 
+function isStarRef(expr: unknown): boolean {
+  return expr instanceof ColumnRefNode && expr.column === '*';
+}
+
+function isExpandingColumns(expr: ExprNode): boolean {
+  return expr instanceof ColumnsNode && !expr.unpack;
+}
+
 function betweenToString(
   visitor: SQLCodeGenerator,
   node: BetweenOpNode | NotBetweenOpNode,
@@ -558,6 +577,23 @@ function formatFrameExpr(visitor: SQLCodeGenerator, value: unknown, scope: strin
     : x === 0 ? CURRENT_ROW
     : !(x && Number.isFinite(x)) ? `${UNBOUNDED} ${scope}`
     : `${Math.abs(x)} ${scope}`;
+}
+
+function starModifiers(visitor: SQLCodeGenerator, node: StarNode) {
+  const { exclude, replace, rename } = node;
+  const sql: string[] = [];
+  if (exclude.length) {
+    sql.push(`EXCLUDE (${exclude.map(v => quoteIdentifier(v)).join(', ')})`);
+  }
+  if (replace.length) {
+    const list = replace.map(({ expr, alias }) => `${visitor.toString(expr)} AS ${quoteIdentifier(alias)}`);
+    sql.push(`REPLACE (${list.join(', ')})`);
+  }
+  if (rename.length) {
+    const list = rename.map(([from, to]) => `${quoteIdentifier(from)} AS ${quoteIdentifier(to)}`);
+    sql.push(`RENAME (${list.join(', ')})`);
+  }
+  return sql.map(s => ` ${s}`).join('');
 }
 
 function isCompoundQuery(query: Query) {

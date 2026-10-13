@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Query, ScalarSubqueryNode, TableRefNode, cast, count, FromClauseNode, gt, join, least, sql, sum } from '@uwdata/mosaic-sql';
+import { Query, ScalarSubqueryNode, TableRefNode, cast, columns, star, count, FromClauseNode, gt, join, least, sql, sum } from '@uwdata/mosaic-sql';
 import { subqueryPushdown } from '../src/preagg/subquery-pushdown.js';
 
 function pushdown(query: Query, source: string | string[], cols: string[]) {
@@ -36,6 +36,20 @@ describe('subqueryPushdown', () => {
   it('does not add select columns to star queries', () => {
     const q = Query.select('*').from('data');
     expect(pushdown(q, 'data', ['a'])).toBe('SELECT * FROM "data"');
+  });
+
+  it('adds columns removed by star modifiers', () => {
+    const q = Query
+      .select(star(null, { exclude: ['a'], rename: { b: 'b2' }, replace: { c: sql`c + 1` } }))
+      .from('data');
+    expect(pushdown(q, 'data', ['a', 'b', 'c', 'd'])).toBe(
+      'SELECT * EXCLUDE ("a") REPLACE (c + 1 AS "c") RENAME ("b" AS "b2"), "a", "b" FROM "data"'
+    );
+  });
+
+  it('does not add select columns to COLUMNS queries', () => {
+    const q = Query.select(columns('^[ab]$')).from('data');
+    expect(pushdown(q, 'data', ['a'])).toBe('SELECT COLUMNS(\'^[ab]$\') FROM "data"');
   });
 
   it('leaves queries over other tables unchanged', () => {
