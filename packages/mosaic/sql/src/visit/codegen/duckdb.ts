@@ -19,6 +19,8 @@ import {
   InOpNode,
   IntervalNode,
   JoinNode,
+  LambdaNode,
+  LambdaVarNode,
   ListNode,
   LiteralNode,
   LogicalOpNode,
@@ -203,6 +205,15 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     }
     const samp = sample ? ` USING SAMPLE ${this.toString(sample)}` : '';
     return `${this.toString(left)} ${variant}${type}JOIN ${this.toString(right)}${cond}${samp}`;
+  }
+
+  visitLambda(node: LambdaNode): string {
+    const { params, body } = node;
+    return `lambda ${params.map(p => quoteIdentifier(p)).join(', ')}: ${this.toString(body)}`;
+  }
+
+  visitLambdaVar(node: LambdaVarNode): string {
+    return quoteIdentifier(node.name);
   }
 
   visitList(node: ListNode): string {

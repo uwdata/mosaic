@@ -14,6 +14,7 @@ export { dateBin, dateMonth, dateMonthDay, dateDay, epoch_ms, timezone } from '.
 export { from } from './functions/from.js';
 export { days, hours, interval, microseconds, minutes, milliseconds, months, seconds, years } from './functions/interval.js';
 export { asof_join, cross_join, join, positional_join } from './functions/join.js';
+export { lambda } from './functions/lambda.js';
 export { list, listContains, listHasAll, listHasAny } from './functions/list.js';
 export { literal, verbatim } from './functions/literal.js';
 export { namedArg } from './functions/named-arg.js';

@@ -13,6 +13,7 @@ export { FunctionNode } from './function.js';
 export { InOpNode } from './in-op.js';
 export { IntervalNode } from './interval.js';
 export { JoinNode, type JoinType, type JoinVariant } from './join.js';
+export { LambdaNode, LambdaVarNode } from './lambda.js';
 export { ListNode } from './list.js';
 export { LiteralNode } from './literal.js';
 export { NamedArgNode } from './named-arg.js';

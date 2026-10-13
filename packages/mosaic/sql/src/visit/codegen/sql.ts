@@ -20,6 +20,8 @@ import type {
   InOpNode,
   IntervalNode,
   JoinNode,
+  LambdaNode,
+  LambdaVarNode,
   ListNode,
   LiteralNode,
   LogicalOpNode,
@@ -71,6 +73,8 @@ import {
   IN_OPERATOR,
   INTERVAL,
   JOIN_CLAUSE,
+  LAMBDA,
+  LAMBDA_VAR,
   LIST,
   LITERAL,
   LOGICAL_OPERATOR,
@@ -154,6 +158,8 @@ export abstract class SQLCodeGenerator {
       case IN_OPERATOR: return this.visitIn;
       case INTERVAL: return this.visitInterval;
       case JOIN_CLAUSE: return this.visitJoinClause;
+      case LAMBDA: return this.visitLambda;
+      case LAMBDA_VAR: return this.visitLambdaVar;
       case LIST: return this.visitList;
       case LITERAL: return this.visitLiteral;
       case LOGICAL_OPERATOR: return this.visitLogicalOperator;
@@ -219,6 +225,8 @@ export abstract class SQLCodeGenerator {
   abstract visitIn(node: InOpNode): string;
   abstract visitInterval(node: IntervalNode): string;
   abstract visitJoinClause(node: JoinNode): string;
+  abstract visitLambda(node: LambdaNode): string;
+  abstract visitLambdaVar(node: LambdaVarNode): string;
   abstract visitList(node: ListNode): string;
   abstract visitLiteral(node: LiteralNode): string;
   abstract visitLogicalOperator(node: LogicalOpNode<ExprNode>): string;

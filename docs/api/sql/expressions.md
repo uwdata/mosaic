@@ -40,6 +40,23 @@ The resulting node can be passed as an argument to the `Query.with()` method.
 The string-valued _name_ and Query-valued _query_ arguments are required.
 The optional boolean-valued _materialized_ argument indicates if the CTE should be materialized during query execution; if unspecified, it is left to the backing database to decide.
 
+## lambda
+
+`lambda(params, body)`
+
+Create an AST node for a lambda function, rendered as `lambda x, y: body` (requires DuckDB 1.3 or later).
+The _params_ argument is a parameter name string or an array of names.
+The _body_ argument is a callback that receives a parameter reference for each name and returns the body expression.
+Parameter references are distinct from column references: `collectColumns` and other column analyses ignore them, while column references in the body are still collected.
+Lambdas can be included among the arguments of a `FunctionNode`:
+
+``` js
+// list_transform("names", lambda "x": upper("x"))
+new FunctionNode("list_transform", [column("names"), lambda("x", x => upper(x))])
+```
+
+The _body_ may instead be an expression that references parameters using `LambdaVarNode` instances, which is useful when translating from another AST.
+
 ## literal
 
 `literal(value)`
