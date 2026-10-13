@@ -14,6 +14,16 @@ The node can be passed to `asc` or `desc` to set the sort direction.
 Query.from("t").select("a", "b", { n: count() }).groupby(all()).orderby(all())
 ```
 
+## cast
+
+`cast(expression, type)`
+
+Create an AST node that casts the input _expression_ to the given _type_ string, such as `"INTEGER"` or `"VARCHAR"`.
+String-valued _expression_ arguments are interpreted as column references.
+Maps to `(expression)::type`. If the cast fails, the query raises an error; use [`tryCast`](#trycast) to return `NULL` instead.
+
+The `int32(expression)`, `float32(expression)`, and `float64(expression)` functions are shorthands for casts to `INTEGER`, `FLOAT`, and `DOUBLE`, respectively.
+
 ## column
 
 `column(name)`
@@ -39,6 +49,18 @@ Upon string coercion, an appropriate SQL value will be produced.
 For example, string literals will be properly quoted and JavaScript `Date` objects that match an exact UTC date will be converted to the SQL Date definitions.
 The supported primitive types are: boolean, null, number, string, regexp, and Date (maps to SQL Date or Timestamp depending on the value).
 
+## namedArg
+
+`namedArg(name, expression)`
+
+Create an AST node for a named function argument, rendered as `name := expression`.
+String-valued _expression_ arguments are interpreted as column references; use [`literal`](#literal) for string values.
+Named arguments can be included among the arguments of a `FunctionNode`, for example to create struct values:
+
+``` js
+new FunctionNode("struct_pack", [namedArg("x", 1), namedArg("y", column("foo"))])
+```
+
 ## sql
 
 ``sql`...` ``
@@ -57,3 +79,10 @@ sql`${column("foo")} + ${param}`
 ```
 
 SQL expressions may be nested, in which case all nested column dependencies and parameter updates are still extractable via the collection visitors.
+
+## tryCast
+
+`tryCast(expression, type)`
+
+Like [`cast`](#cast), but returns `NULL` if the cast fails rather than raising an error.
+Maps to `TRY_CAST(expression AS type)`.

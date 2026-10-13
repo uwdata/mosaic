@@ -22,9 +22,11 @@ import {
   ListNode,
   LiteralNode,
   LogicalOpNode,
+  NamedArgNode,
   OrderByNode,
   ParamNode,
   PivotQuery,
+  QuantifiedOpNode,
   Query,
   DescribeQuery,
   SelectQuery,
@@ -32,6 +34,8 @@ import {
   SampleClauseNode,
   SelectClauseNode,
   ScalarSubqueryNode,
+  SliceNode,
+  SubscriptNode,
   TableRefNode,
   TupleNode,
   UnaryOpNode,
@@ -54,7 +58,7 @@ import { quoteIdentifier } from '../../util/string.js';
 import { literalToSQL } from '../../ast/literal.js';
 import { SQLCodeGenerator } from './sql.js';
 import { CURRENT_ROW, FOLLOWING, PRECEDING, UNBOUNDED } from '../../ast/window-frame.js';
-import { WINDOW_EXTENT_EXPR } from '../../constants.js';
+import { COLUMN_PARAM, COLUMN_REF, FUNCTION, LIST, SET_OPERATION, SLICE, SUBSCRIPT, WINDOW_EXTENT_EXPR } from '../../constants.js';
 
 /**
  * DuckDB SQL dialect visitor for converting AST nodes to DuckDB-compatible SQL.
@@ -96,8 +100,10 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   }
 
   visitCast(node: CastNode): string {
-    const { expr, cast } = node;
-    return `(${this.toString(expr)})::${cast}`;
+    const { expr, cast, isTry } = node;
+    return isTry
+      ? `TRY_CAST(${this.toString(expr)} AS ${cast})`
+      : `(${this.toString(expr)})::${cast}`;
   }
 
   visitCollate(node: CollateNode): string {
@@ -221,6 +227,11 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     return betweenToString(this, node, 'NOT BETWEEN');
   }
 
+  visitNamedArg(node: NamedArgNode): string {
+    const { name, expr } = node;
+    return `${quoteIdentifier(name)} := ${this.toString(expr)}`;
+  }
+
   visitOrderBy(node: OrderByNode): string {
     const { expr, desc, nullsFirst } = node;
     const dir = desc ? ' DESC'
@@ -301,6 +312,11 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     return this.visitQuery(node, sql);
   }
 
+  visitQuantified(node: QuantifiedOpNode): string {
+    const { op, expr, quantifier, subquery } = node;
+    return `(${this.toString(expr)} ${op} ${quantifier} ${this.toString(subquery)})`;
+  }
+
   visitSampleClause(node: SampleClauseNode): string {
     const { size, perc, method, seed } = node;
     const m = method ? `${method} ` : '';
@@ -377,7 +393,24 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
 
   visitSetOperation(node: SetOperation): string {
     const { op, queries } = node;
-    return this.visitQuery(node, [this.mapToString(queries).join(` ${op} `)]);
+    const sql = queries.map(q => {
+      const s = this.toString(q);
+      return isCompoundQuery(q) ? `(${s})` : s;
+    });
+    return this.visitQuery(node, [sql.join(` ${op} `)]);
+  }
+
+  visitSlice(node: SliceNode): string {
+    const { expr, start, end, step } = node;
+    const a = start ? this.toString(start) : '';
+    const b = end ? this.toString(end) : step ? '-' : '';
+    const c = step ? `:${this.toString(step)}` : '';
+    return `${subscriptTarget(this, expr)}[${a}:${b}${c}]`;
+  }
+
+  visitSubscript(node: SubscriptNode): string {
+    const { expr, index } = node;
+    return `${subscriptTarget(this, expr)}[${this.toString(index)}]`;
   }
 
   visitTableRef(node: TableRefNode): string {
@@ -465,7 +498,7 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
       : extent;
     const a = formatFrameExpr(this, prev, PRECEDING);
     const b = formatFrameExpr(this, next, FOLLOWING);
-    return `${frameType} BETWEEN ${a} AND ${b}${exclude ? ` ${exclude}` : ''}`;
+    return `${frameType} BETWEEN ${a} AND ${b}${exclude ? ` EXCLUDE ${exclude}` : ''}`;
   }
 
   visitWindowFunction(node: WindowFunctionNode): string {
@@ -514,6 +547,21 @@ function formatFrameExpr(visitor: SQLCodeGenerator, value: unknown, scope: strin
     : x === 0 ? CURRENT_ROW
     : !(x && Number.isFinite(x)) ? `${UNBOUNDED} ${scope}`
     : `${Math.abs(x)} ${scope}`;
+}
+
+function isCompoundQuery(query: Query) {
+  return query.type === SET_OPERATION
+    || query._with.length > 0
+    || query._orderby.length > 0
+    || query._limit != null
+    || query._offset != null;
+}
+
+const SUBSCRIPTABLE = new Set([COLUMN_PARAM, COLUMN_REF, FUNCTION, LIST, SLICE, SUBSCRIPT]);
+
+function subscriptTarget(visitor: SQLCodeGenerator, expr: ExprNode) {
+  const s = visitor.toString(expr);
+  return SUBSCRIPTABLE.has(expr.type) ? s : `(${s})`;
 }
 
 // Create a default DuckDB visitor instance for convenience

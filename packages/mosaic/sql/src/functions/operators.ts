@@ -5,6 +5,9 @@ import { LITERAL } from '../constants.js';
 import { BetweenOpNode, Extent, NotBetweenOpNode } from '../ast/between-op.js';
 import { BinaryOpNode } from '../ast/binary-op.js';
 import { InOpNode } from '../ast/in-op.js';
+import { type ComparisonOp, QuantifiedOpNode } from '../ast/quantified-op.js';
+import type { Query } from '../ast/query.js';
+import { ScalarSubqueryNode } from '../ast/subquery.js';
 import { AndNode, OrNode } from '../ast/logical-op.js';
 import { UnaryOpNode, UnaryPostfixOpNode } from '../ast/unary-op.js';
 import { asNode } from '../util/ast.js';
@@ -291,4 +294,24 @@ export function isInDistinct(expr: ExprValue, values: ExprValue[]) {
   return nodes.length === values.length ? inOp
     : nodes.length === 0 ? (values.length === 0 ? literal(false) : isNull(test))
     : or(inOp, isNull(test));
+}
+
+/**
+ * Comparison against any subquery row, as in `expr op ANY (subquery)`.
+ * @param expr The expression to test.
+ * @param op The comparison operator.
+ * @param subquery A subquery returning a single column.
+ */
+export function compareAny(expr: ExprValue, op: ComparisonOp, subquery: Query) {
+  return new QuantifiedOpNode(op, asNode(expr), 'ANY', new ScalarSubqueryNode(subquery));
+}
+
+/**
+ * Comparison against all subquery rows, as in `expr op ALL (subquery)`.
+ * @param expr The expression to test.
+ * @param op The comparison operator.
+ * @param subquery A subquery returning a single column.
+ */
+export function compareAll(expr: ExprValue, op: ComparisonOp, subquery: Query) {
+  return new QuantifiedOpNode(op, asNode(expr), 'ALL', new ScalarSubqueryNode(subquery));
 }

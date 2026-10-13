@@ -537,6 +537,20 @@ describe('Query', () => {
     await expect(Query.exceptAll(...q)).toBeValidQuery(q.join(' EXCEPT ALL '));
   });
 
+  it('parenthesizes compound set operation inputs', async () => {
+    const a = Query.select('num1').from('t1');
+    const b = Query.select('num1').from('t2');
+
+    await expect(Query.intersect(a, Query.union(a, b)))
+      .toBeValidQuery(`${a} INTERSECT (${a} UNION ${b})`);
+    await expect(Query.except(a, Query.except(b, a)))
+      .toBeValidQuery(`${a} EXCEPT (${b} EXCEPT ${a})`);
+    await expect(Query.union(a.clone().orderby('num1').limit(1).offset(1), b))
+      .toBeValidQuery(`(${a} ORDER BY "num1" LIMIT 1 OFFSET 1) UNION ${b}`);
+    await expect(Query.union(a, Query.with({ c: b }).select('num1').from('c')))
+      .toBeValidQuery(`${a} UNION (WITH "c" AS (${b}) SELECT "num1" FROM "c")`);
+  });
+
   it('renders set operation query modifiers', async () => {
     const q = [
       Query.select('num1', 'num2', 'num3').from('t1'),

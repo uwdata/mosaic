@@ -23,15 +23,19 @@ import type {
   ListNode,
   LiteralNode,
   LogicalOpNode,
+  NamedArgNode,
   OrderByNode,
   ParamNode,
   PivotQuery,
+  QuantifiedOpNode,
   DescribeQuery,
   SelectQuery,
   SetOperation,
   SampleClauseNode,
   SelectClauseNode,
   ScalarSubqueryNode,
+  SliceNode,
+  SubscriptNode,
   TableRefNode,
   TupleNode,
   UnaryOpNode,
@@ -70,15 +74,19 @@ import {
   LIST,
   LITERAL,
   LOGICAL_OPERATOR,
+  NAMED_ARG,
   NOT_BETWEEN_OPERATOR,
   ORDER_BY,
   PARAM,
   PIVOT_QUERY,
+  QUANTIFIED_OPERATOR,
   SAMPLE_CLAUSE,
   SCALAR_SUBQUERY,
   SELECT_CLAUSE,
   SELECT_QUERY,
   SET_OPERATION,
+  SLICE,
+  SUBSCRIPT,
   TABLE_REF,
   TUPLE,
   UNARY_OPERATOR,
@@ -149,15 +157,19 @@ export abstract class SQLCodeGenerator {
       case LIST: return this.visitList;
       case LITERAL: return this.visitLiteral;
       case LOGICAL_OPERATOR: return this.visitLogicalOperator;
+      case NAMED_ARG: return this.visitNamedArg;
       case NOT_BETWEEN_OPERATOR: return this.visitNotBetween;
       case ORDER_BY: return this.visitOrderBy;
       case PARAM: return this.visitParam;
       case PIVOT_QUERY: return this.visitPivotQuery;
+      case QUANTIFIED_OPERATOR: return this.visitQuantified;
       case SAMPLE_CLAUSE: return this.visitSampleClause;
       case SCALAR_SUBQUERY: return this.visitScalarSubquery;
       case SELECT_CLAUSE: return this.visitSelectClause;
       case SELECT_QUERY: return this.visitSelectQuery;
       case SET_OPERATION: return this.visitSetOperation;
+      case SLICE: return this.visitSlice;
+      case SUBSCRIPT: return this.visitSubscript;
       case TABLE_REF: return this.visitTableRef;
       case TUPLE: return this.visitTuple;
       case UNARY_OPERATOR: return this.visitUnary;
@@ -210,15 +222,19 @@ export abstract class SQLCodeGenerator {
   abstract visitList(node: ListNode): string;
   abstract visitLiteral(node: LiteralNode): string;
   abstract visitLogicalOperator(node: LogicalOpNode<ExprNode>): string;
+  abstract visitNamedArg(node: NamedArgNode): string;
   abstract visitNotBetween(node: NotBetweenOpNode): string;
   abstract visitOrderBy(node: OrderByNode): string;
   abstract visitParam(node: ParamNode): string;
   abstract visitPivotQuery(node: PivotQuery): string;
+  abstract visitQuantified(node: QuantifiedOpNode): string;
   abstract visitSampleClause(node: SampleClauseNode): string;
   abstract visitScalarSubquery(node: ScalarSubqueryNode): string;
   abstract visitSelectClause(node: SelectClauseNode): string;
   abstract visitSelectQuery(node: SelectQuery): string;
   abstract visitSetOperation(node: SetOperation): string;
+  abstract visitSlice(node: SliceNode): string;
+  abstract visitSubscript(node: SubscriptNode): string;
   abstract visitTableRef(node: TableRefNode): string;
   abstract visitTuple(node: TupleNode): string;
   abstract visitUnary(node: UnaryOpNode): string;
