@@ -15,6 +15,7 @@ benchmark = "benchmark.main:main"
 
 [dependency-groups]
 dev    = [
+  "duckdb-server",
   "ruff>=0.16.9",
   { include-group = "typing" },
 ]
@@ -62,3 +63,6 @@ extend-safe-fixes = ["unconventional-import-alias"]
 "typing_extensions.LiteralString" = "LS"
 "typing_extensions.TypeAliasType" = "Type"
 subprocess                        = "sp"
+
+[tool.uv.sources]
+"duckdb-server" = { workspace = true }
