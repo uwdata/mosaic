@@ -70,7 +70,9 @@ def arg_parser(entrypoint_name: str, /, description: str) -> _argparse.ArgumentP
 
 
 class CLIOptions(msgspec.Struct, kw_only=True):
-    scheme: L["http", "https"] = "http"
+    scheme: L["http", "https"] = "https"
+    # NOTE: rust/python are initialized with `"127.0.0.1"`
+    # They accept `"localhost"`, but it adds 2000ms per request (1-40ms)
     host: L["localhost"] = "localhost"
     port: Port = Port(3000)
     iterations: int = 100
