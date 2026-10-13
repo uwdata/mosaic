@@ -1,5 +1,5 @@
 import { ColumnNameRefNode, JoinNode, SelectClauseNode, isAggregateExpression, isPivotQuery, isSelectQuery, isSetOperation, literal, type ExprNode, type TableRefNode, type PivotQuery, type Query, type SelectQuery, type SQLNode, type SetOperation, isTableRef } from '@uwdata/mosaic-sql';
-import { isStar, queryScope, resolveRelation, tableEquals, type Scope } from './lineage.js';
+import { isStar, isWildcard, queryScope, resolveRelation, starExpression, tableEquals, type Scope } from './lineage.js';
 
 /**
  * Push selected columns down to subqueries, ensuring they are included as
@@ -43,12 +43,14 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
     return visitRelation(node, scope);
   };
 
-  const visitSelect = (q: SelectQuery, scope: Scope, append = missing(q)): boolean => {
+  const visitSelect = (q: SelectQuery, scope: Scope, append?: string[]): boolean => {
     const found = q._from
       .map(node => visitFrom(node, scope))
       .some(x => x);
     if (!found) return false;
-    if (!q._select.some(isStar)) {
+    if (!append) {
+      appendSelect(q, missing(q).map(c => [c, new ColumnNameRefNode(c)]));
+    } else if (!q._select.some(isWildcard)) {
       appendSelect(q, append.map(c => [c, new ColumnNameRefNode(c)]));
     }
     if (isAggregateQuery(q)) {
@@ -85,9 +87,9 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
 
   const missing = (q: Query): string[] => {
     if (isSelectQuery(q)) {
-      if (q._select.some(isStar)) return [];
+      if (q._select.some(c => isWildcard(c) && !isStar(c))) return [];
       const selected = new Set(q._select.map(x => x.alias));
-      return cols.filter(c => !selected.has(c));
+      return cols.filter(c => !selected.has(c) && !starExpression(q, c));
     }
     return isSetOperation(q) ? missing(q.queries[0]) : [];
   };

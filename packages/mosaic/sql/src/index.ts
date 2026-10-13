@@ -23,6 +23,7 @@ export { and, or, not, isNull, isNotNull, bitNot, bitAnd, bitOr, bitLeft, bitRig
 export { asc, desc } from './functions/order-by.js';
 export { geojson, x, y, centroid, centroidX, centroidY } from './functions/spatial.js';
 export { sql } from './functions/sql-template-tag.js';
+export { columns, star, type StarOptions } from './functions/star.js';
 export { regexp_matches, contains, prefix, suffix, lower, upper, length } from './functions/string.js';
 export { slice, subscript } from './functions/subscript.js';
 export { unnest } from './functions/unnest.js';
