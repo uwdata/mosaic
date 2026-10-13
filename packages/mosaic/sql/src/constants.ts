@@ -1,3 +1,4 @@
+export const ALL = 'ALL';
 export const COLUMN_REF = 'COLUMN_REF';
 export const COLUMN_PARAM = 'COLUMN_PARAM';
 export const TABLE_REF = 'TABLE_REF';

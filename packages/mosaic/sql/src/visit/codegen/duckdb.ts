@@ -73,6 +73,10 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     return `${name}(${arg})${filt}`;
   }
 
+  visitAll(): string {
+    return 'ALL';
+  }
+
   visitBetween(node: BetweenOpNode): string {
     return betweenToString(this, node, 'BETWEEN');
   }

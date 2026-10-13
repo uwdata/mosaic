@@ -2,6 +2,7 @@ import type {
   SQLNode,
   ExprNode,
   AggregateNode,
+  AllNode,
   BetweenOpNode,
   NotBetweenOpNode,
   BinaryOpNode,
@@ -48,6 +49,7 @@ import type {
 } from '../../ast/index.js';
 import {
   AGGREGATE,
+  ALL,
   BETWEEN_OPERATOR,
   BINARY_OPERATOR,
   CASE,
@@ -126,6 +128,7 @@ export abstract class SQLCodeGenerator {
   protected getVisitMethod(nodeType: string) {
     switch (nodeType) {
       case AGGREGATE: return this.visitAggregate;
+      case ALL: return this.visitAll;
       case BETWEEN_OPERATOR: return this.visitBetween;
       case BINARY_OPERATOR: return this.visitBinary;
       case CASE: return this.visitCase;
@@ -186,6 +189,7 @@ export abstract class SQLCodeGenerator {
 
   // Abstract methods that must be implemented by concrete visitors
   abstract visitAggregate(node: AggregateNode): string;
+  abstract visitAll(node: AllNode): string;
   abstract visitBetween(node: BetweenOpNode): string;
   abstract visitBinary(node: BinaryOpNode): string;
   abstract visitCase(node: CaseNode): string;

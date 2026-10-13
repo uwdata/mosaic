@@ -2,6 +2,18 @@
 
 SQL expression builders. All SQL expressions are represented in the form of an abstract syntax tree (AST). Helper methods and functions build out this tree.
 
+## all
+
+`all()`
+
+Create an AST node for the SQL `ALL` keyword, for use in `GROUP BY ALL` and `ORDER BY ALL` clauses.
+Grouping by `ALL` groups by all non-aggregate columns in the `SELECT` clause; ordering by `ALL` sorts by all columns from left to right.
+The node can be passed to `asc` or `desc` to set the sort direction.
+
+``` js
+Query.from("t").select("a", "b", { n: count() }).groupby(all()).orderby(all())
+```
+
 ## column
 
 `column(name)`

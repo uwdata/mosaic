@@ -3,6 +3,7 @@ import './init.js';
 
 export * from './ast/index.js';
 
+export { all } from './functions/all.js';
 export { argmax, argmin, arrayAgg, avg, corr, count, covariance, covarPop, entropy, first, geomean, kurtosis, mad, max, median, min, mode, last, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, skewness, stddev, stddevPop, stringAgg, sum, variance, varPop } from './functions/aggregate.js';
 export { cond } from './functions/case.js';
 export { cast, float32, float64, int32 } from './functions/cast.js';
