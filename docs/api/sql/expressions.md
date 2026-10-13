@@ -94,6 +94,20 @@ Named arguments can be included among the arguments of a `FunctionNode`, for exa
 new FunctionNode("struct_pack", [namedArg("x", 1), namedArg("y", column("foo"))])
 ```
 
+## positionalRef
+
+`positionalRef(index)`
+
+Create an AST node for a positional column reference by 1-based _index_, rendered as `#index`.
+Within an `ORDER BY` clause, a positional reference refers to a column of the `SELECT` clause; elsewhere it refers to a column of the `FROM` clause relation.
+
+``` js
+// SELECT #2 AS "x" FROM "t" ORDER BY #1
+Query.from("t").select({ x: positionalRef(2) }).orderby(positionalRef(1))
+```
+
+As the referenced column is not named, `collectColumns` reports a positional reference as referencing all columns (`*`).
+
 ## sql
 
 ``sql`...` ``
@@ -121,9 +135,19 @@ Create an AST node for a star (`*`) expression that selects all columns, with op
 If a _table_ is provided, the star is qualified, as in `table.*`.
 The _options_ object supports the following properties:
 
-- _exclude_: An array of column names to exclude.
+- _exclude_: An array of columns to exclude, as column name strings or [`column`](#column) references.
 - _replace_: An object mapping column names to replacement expressions.
-- _rename_: An object mapping current column names to new names.
+- _rename_: An object mapping current column names to new names, or an array of `[column, name]` pairs, where _column_ is a column name string or [`column`](#column) reference.
+
+Use `column` references with a _table_ argument to exclude or rename table-qualified columns, for example to disambiguate columns that share a name across joined tables:
+
+``` js
+// SELECT * EXCLUDE ("b"."id") RENAME ("b"."value" AS "value_b") FROM ...
+star(null, {
+  exclude: [column("id", "b")],
+  rename: [[column("value", "b"), "value_b"]]
+})
+```
 
 ``` js
 // SELECT * EXCLUDE ("id") REPLACE (("price" * 2) AS "price") RENAME ("qty" AS "quantity") FROM "t"

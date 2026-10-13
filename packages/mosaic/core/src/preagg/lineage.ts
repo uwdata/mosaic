@@ -1,4 +1,4 @@
-import { ColumnNameRefNode, ColumnsNode, FromClauseNode, isAggregateExpression, isColumnRef, isPivotQuery, isQuery, isSelectQuery, isSetOperation, isTableRef, rewrite, ScalarSubqueryNode, StarNode, TableRefNode, walk, WindowNode, type ColumnRefNode, type ExprNode, type Query, type SelectQuery, type SQLNode } from '@uwdata/mosaic-sql';
+import { ColumnNameRefNode, ColumnsNode, FromClauseNode, isAggregateExpression, isColumnRef, isPivotQuery, isQuery, isSelectQuery, isSetOperation, isTableRef, PositionalRefNode, rewrite, ScalarSubqueryNode, StarNode, TableRefNode, walk, WindowNode, type ColumnRefNode, type ExprNode, type Query, type SelectQuery, type SQLNode } from '@uwdata/mosaic-sql';
 
 /** A query paired with the scope of CTEs visible to it. */
 export interface Binding {
@@ -81,7 +81,7 @@ export function baseExpression(
   const rel = resolveRelation(query._from[0], queryScope(query, outer));
   if (!rel) return;
   if (rel instanceof TableRefNode) return expr;
-  if (hasNode(expr, ColumnsNode)) return;
+  if (hasNode(expr, ColumnsNode) || hasNode(expr, PositionalRefNode)) return;
   const map = new Map<ExprNode, ExprNode>();
   for (const col of columnRefs(expr)) {
     const e = outputExpression(rel.query, col.column, rel.scope);
@@ -138,7 +138,7 @@ function columnRefs(expr: ExprNode): ColumnRefNode[] {
   return refs;
 }
 
-function hasNode(expr: SQLNode, type: typeof WindowNode | typeof ColumnsNode): boolean {
+function hasNode(expr: SQLNode, type: new (...args: never[]) => SQLNode): boolean {
   let found = false;
   walk(expr, node => {
     if (node instanceof type) return (found = true, -1);
@@ -177,9 +177,9 @@ export function starExpression(query: SelectQuery, name: string): ExprNode | und
     const replaced = expr.replace.find(c => c.alias === name);
     if (replaced) return replaced.expr;
     const renamed = expr.rename.find(([, to]) => to === name);
-    if (renamed) return new ColumnNameRefNode(renamed[0]);
-    const removed = expr.exclude.includes(name)
-      || expr.rename.some(([from]) => from === name);
+    if (renamed) return new ColumnNameRefNode(renamed[0].column);
+    const removed = expr.exclude.some(c => c.column === name)
+      || expr.rename.some(([from]) => from.column === name);
     if (!removed) return new ColumnNameRefNode(name);
   }
 }
