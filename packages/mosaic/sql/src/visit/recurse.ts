@@ -67,7 +67,7 @@ export const recurse: Record<string, string[]> = {
   [PIVOT_QUERY]: ['_with', 'source', '_on', '_in', '_using', '_groupby', '_orderby'],
   [SCALAR_SUBQUERY]: ['subquery'],
   [SELECT_CLAUSE]: ['expr'],
-  [SELECT_QUERY]: ['_with', '_select', '_from', '_where', '_sample', '_groupby', '_having', '_window', '_qualify', '_orderby'],
+  [SELECT_QUERY]: ['_with', '_select', '_distinctOn', '_from', '_where', '_sample', '_groupby', '_having', '_window', '_qualify', '_orderby'],
   [SET_OPERATION]: ['queries', '_orderby'],
   [TUPLE]: ['values'],
   [UNARY_OPERATOR]: ['expr'],

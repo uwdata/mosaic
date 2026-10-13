@@ -322,14 +322,17 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
 
   visitSelectQuery(node: SelectQuery): string {
     const {
-      _select, _distinct, _from, _sample, _where,
+      _select, _distinct, _distinctOn, _from, _sample, _where,
       _groupby, _having, _window, _qualify
     } = node;
 
     const sql: string[] = [];
 
     // SELECT
-    sql.push(`SELECT${_distinct ? ' DISTINCT' : ''} ${this.mapToString(_select).join(', ')}`);
+    const distinct = _distinctOn.length
+      ? ` DISTINCT ON (${this.mapToString(_distinctOn).join(', ')})`
+      : _distinct ? ' DISTINCT' : '';
+    sql.push(`SELECT${distinct} ${this.mapToString(_select).join(', ')}`);
 
     // FROM
     if (_from.length) {

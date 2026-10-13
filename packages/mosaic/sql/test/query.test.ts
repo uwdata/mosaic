@@ -90,6 +90,25 @@ describe('Query', () => {
     ).toBeValidQuery('SELECT DISTINCT "num1", "num2", "num3" FROM "t1"');
   });
 
+  it('selects distinct on columns', async () => {
+    await expect(
+      Query
+        .select('num1', 'num2', 'num3')
+        .distinctOn('num1', column('num2'))
+        .from('t1')
+        .orderby('num1', 'num2', desc('num3'))
+    ).toBeValidQuery('SELECT DISTINCT ON ("num1", "num2") "num1", "num2", "num3" FROM "t1" ORDER BY "num1", "num2", "num3" DESC');
+
+    await expect(
+      Query
+        .select('num1', 'num2')
+        .distinct()
+        .distinctOn('num2')
+        .setDistinctOn('num1')
+        .from('t1')
+    ).toBeValidQuery('SELECT DISTINCT ON ("num1") "num1", "num2" FROM "t1"');
+  });
+
   it('selects with limit and offset modifiers', async () => {
     await expect(
       Query
