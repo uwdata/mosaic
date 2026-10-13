@@ -71,9 +71,8 @@ def arg_parser(entrypoint_name: str, /, description: str) -> _argparse.ArgumentP
 
 class CLIOptions(msgspec.Struct, kw_only=True):
     scheme: L["http", "https"] = "https"
-    # NOTE: rust/python are initialized with `"127.0.0.1"`
-    # They accept `"localhost"`, but it adds 2000ms per request (1-40ms)
-    host: L["localhost"] = "localhost"
+    # NOTE: localhost is slower on (at least) windows
+    host: L["localhost", "127.0.0.1"] = "127.0.0.1"
     port: Port = Port(3000)
     iterations: int = 100
     warmup: int = 5
@@ -88,6 +87,12 @@ class CLIOptions(msgspec.Struct, kw_only=True):
         parser = arg_parser(
             "benchmark",
             "Benchmarks server implementations over HTTP POST, with response-size verification",
+        )
+        parser.add_argument(
+            "--host",
+            choices=("localhost", "127.0.0.1"),
+            default="127.0.0.1",
+            help="Server host",
         )
         parser.add_argument("--port", type=int, default=3000, help="Server port")
         parser.add_argument(
@@ -125,6 +130,7 @@ class CLIOptions(msgspec.Struct, kw_only=True):
         table.add_column(justify="right")
         table.add_row("iterations", str(self.iterations))
         table.add_row("warmup", str(self.warmup))
+        table.add_row("host", self.host)
         table.add_row("port", str(self.port))
         table.add_row("timeout", str(self.timeout))
         console.print(table)
