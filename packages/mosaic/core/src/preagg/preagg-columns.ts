@@ -1,8 +1,8 @@
-import { asNode, collectAggregates, isAggregateExpression, isColumnRef, isSelectQuery, rewrite, sql } from '@uwdata/mosaic-sql';
+import { asNode, collectAggregates, isAggregateExpression, isColumnRef, isSelectQuery, rewrite, sql, WindowNode } from '@uwdata/mosaic-sql';
 import type { AggregateNode, ColumnRefNode, ExprNode, TableRefNode } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
 import { resolvePositional } from '../util/positional.js';
-import { baseExpression, baseTable } from './lineage.js';
+import { baseExpression, baseTable, containsNode } from './lineage.js';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
 // result of determining columns for preaggregation optimization
@@ -65,6 +65,9 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
         // rewrite original select clause to use preaggregates
         output[alias] = result;
       } else {
+        // bail if expression contains a window function, as
+        // window values cannot serve as groupby dimensions
+        if (containsNode(expr, WindowNode)) return null;
         // include non-aggregates in preagg table and update results
         preagg[alias] = expr;
         output[alias] = asNode(alias);
