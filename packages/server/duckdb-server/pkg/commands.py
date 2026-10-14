@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, final
 import pyarrow as pa
 
 from pkg import protocols
-from pkg.protocols import readonly_buffer
 from pkg.responses import ArrowResponse, EmptyResponse, empty_response
 
 if TYPE_CHECKING:
@@ -25,8 +24,10 @@ class ArrowRequest(protocols.Command[pa.Buffer], forbid_unknown_fields=False):
     def _query(self, db: Database, /) -> pa.Buffer:
         return db.get_arrow(self.sql)
 
+    # TODO @dangotbanned: Figure out if `pa.Buffer.__buffer__` requires 3.12
+    # starlette accepts memoryview, which might remove a copy that `to_pybytes` is doing
     def _into_response(self, buffer: pa.Buffer, /) -> ArrowResponse:
-        return ArrowResponse(readonly_buffer(buffer))
+        return ArrowResponse(buffer.to_pybytes())
 
 
 @final
