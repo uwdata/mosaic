@@ -19,7 +19,7 @@ export { ListNode } from './list.js';
 export { LiteralNode } from './literal.js';
 export { NamedArgNode } from './named-arg.js';
 export { LogicalOpNode, AndNode, OrNode } from './logical-op.js';
-export { SQLNode, ExprNode, isNode } from './node.js';
+export { SQLNode, ExprNode, isNode, getDefaultVisitor, setDefaultVisitor } from './node.js';
 export { OrderByNode } from './order-by.js';
 export { ParamNode } from './param.js';
 export { QuantifiedOpNode, type ComparisonOp, type Quantifier } from './quantified-op.js';

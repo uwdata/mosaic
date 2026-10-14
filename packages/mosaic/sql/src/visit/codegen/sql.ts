@@ -54,6 +54,7 @@ import type {
   WindowFrameExprNode,
   WithClauseNode
 } from '../../ast/index.js';
+import type { ColumnDescription, JSType } from '../../types.js';
 import {
   AGGREGATE,
   ALL,
@@ -262,4 +263,13 @@ export abstract class SQLCodeGenerator {
   abstract visitWindowFrame(node: WindowFrameNode): string;
   abstract visitWindowFunction(node: WindowFunctionNode): string;
   abstract visitWithClause(node: WithClauseNode): string;
+
+  // Map a SQL data type to its corresponding JavaScript type
+  abstract jsType(type: string): JSType;
+
+  // Format a literal value as a SQL constant using this dialect's rules
+  abstract literalToSQL(value: unknown): string;
+
+  // Reshape rows from a DESCRIBE query into `ColumnDescription` form
+  abstract normalizeDescribeResult(rows: unknown[]): ColumnDescription[];
 }
