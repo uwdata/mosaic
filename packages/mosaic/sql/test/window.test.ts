@@ -46,6 +46,17 @@ describe('Window functions', () => {
       .toBeValidExpr('first_value("num1") OVER (ROWS BETWEEN 2 PRECEDING AND 3 FOLLOWING)');
   });
 
+  it('support frame exclusion', async () => {
+    await expect(first_value('num1').frame(frameRows([1, 1], 'TIES')).orderby('num1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE TIES)');
+    await expect(first_value('num1').frame(frameRange([null, 0], 'CURRENT ROW')).orderby('num1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE CURRENT ROW)');
+    await expect(first_value('num1').frame(frameGroups([1, 1], 'GROUP')).orderby('num1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE GROUP)');
+    await expect(first_value('num1').frame(frameRows([1, 1], 'NO OTHERS')))
+      .toBeValidExpr('first_value("num1") OVER (ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE NO OTHERS)');
+  });
+
   it('support range frame', async () => {
     await expect(first_value('num1').frame(frameRange([0, null])))
       .toBeValidExpr('first_value("num1") OVER (RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
