@@ -6,8 +6,7 @@ from pkg.servers import common
 
 if TYPE_CHECKING:
     import uvicorn
-    from _typeshed import Incomplete
-    from typing_extensions import Self
+    from typing_extensions import LiteralString, Self
 
 
 class UvicornServer(common.Server):
@@ -15,7 +14,9 @@ class UvicornServer(common.Server):
         self._server: uvicorn.Server = server
 
     @classmethod
-    def from_args(cls, args: common.ResolvedArgs, app: Incomplete, /) -> Self:
+    def from_args(
+        cls, args: common.ResolvedArgs, app_factory_path: LiteralString, /
+    ) -> Self:
         import uvicorn
 
         if ssl := args.ssl:
@@ -28,7 +29,8 @@ class UvicornServer(common.Server):
             ssl_certfile = None
 
         config = uvicorn.Config(
-            app,
+            app_factory_path,
+            factory=True,
             host=args.address,
             port=args.port,
             http="zttp",
