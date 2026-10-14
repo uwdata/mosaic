@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
-# TODO @dangotbanned: fix hot reloading
 def serve() -> None:
     from pkg.servers._uvicorn import UvicornServer
     from pkg.servers.common import Args
