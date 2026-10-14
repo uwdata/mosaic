@@ -1,11 +1,16 @@
 import { expect, describe, it } from 'vitest';
 import {
+  all,
   argmax,
   asof_join,
   clickHouseCodeGenerator,
   column,
+  count,
+  desc,
+  gt,
   join,
   min,
+  mul,
   positional_join,
   Query
 } from '../../../src/index.js';
@@ -93,6 +98,25 @@ describe('ClickHouse select-alias collision overrides', () => {
       + 'min("time_stamp") AS "__clickhouse_alias_1" '
       + 'FROM "t" GROUP BY "time_stamp")'
     );
+  });
+
+  it('rejects star projections with shadowing aliases', () => {
+    const q = Query.select('*', { y: mul('y', 10) }).from('t').orderby('y');
+    expect(() => q.toString(gen)).toThrow(/Star projections cannot be combined/);
+  });
+
+  it('does not treat star projections as aliases', () => {
+    const q = Query.select('*').from('t').groupby('a').having(gt(count('*'), 1));
+    expect(q.toString(gen)).toBe('SELECT * FROM "t" GROUP BY "a" HAVING (count(*) > 1)');
+  });
+});
+
+describe('ClickHouse ALL overrides', () => {
+  it('renders GROUP BY ALL and ORDER BY ALL', () => {
+    expect(Query.from('t').select('a', { n: count() }).groupby(all()).toString(gen))
+      .toBe('SELECT "a", count(*) AS "n" FROM "t" GROUP BY ALL');
+    expect(Query.from('t').select('a', 'b').orderby(desc(all())).toString(gen))
+      .toBe('SELECT "a", "b" FROM "t" ORDER BY ALL DESC');
   });
 });
 

@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   Query,
+  all,
   WindowFunctionNode,
   WindowNode,
   argmax,
@@ -22,6 +23,7 @@ import {
   desc,
   div,
   epoch_ms,
+  eq,
   frameRows,
   geomean,
   gt,
@@ -42,6 +44,7 @@ import {
   mad,
   min,
   mode,
+  mul,
   nth_value,
   pow,
   prefix,
@@ -58,9 +61,11 @@ import {
   regrSYY,
   regexp_matches,
   sql,
+  star,
   sum,
   suffix,
   timezone,
+  tryCast,
   unnest,
 } from '../../../src/index.js';
 import {
@@ -495,5 +500,49 @@ describe.skipIf(!enabled)('ClickHouse execution', { timeout: 15_000 }, () => {
       localTime: '2024-01-01 19:04:05.678',
       month: '2012-01-01'
     }]);
+  });
+
+  it('executes star REPLACE and qualified stars', async () => {
+    const result = await query(Query
+      .with({
+        a: Query.select({ k: literal(1), x: literal(10) }),
+        b: Query.select({ j: literal(1), y: literal(2) })
+      })
+      .select(star('a', { replace: { x: mul('x', 'y') } }), star('b'))
+      .from(join('a', 'b', { on: eq('k', 'j') })));
+    expect(result).toEqual([{ k: 1, x: 20, j: 1, y: 2 }]);
+  });
+
+  it('executes GROUP BY ALL and ORDER BY ALL', async () => {
+    const source = sql`values('a Int32, b Int32', (1, 1), (1, 2), (1, 2), (2, 1))`;
+    const result = await query(Query
+      .select('a', 'b', { n: count() })
+      .from(source)
+      .groupby(all())
+      .orderby(desc(all())));
+    expect(result).toEqual([
+      { a: 2, b: 1, n: 1 },
+      { a: 1, b: 2, n: 2 },
+      { a: 1, b: 1, n: 1 }
+    ]);
+  });
+
+  it('executes DISTINCT ON', async () => {
+    const source = sql`values('k Int32, v Int32', (1, 10), (1, 11), (2, 20))`;
+    const result = await query(Query
+      .select('k', 'v')
+      .distinctOn('k')
+      .from(source)
+      .orderby('k', 'v'));
+    expect(result).toEqual([{ k: 1, v: 10 }, { k: 2, v: 20 }]);
+  });
+
+  it('executes TRY_CAST', async () => {
+    const result = await query(Query.select({
+      good: tryCast(literal('12'), 'INTEGER'),
+      bad: tryCast(literal('abc'), 'INTEGER'),
+      enumValue: tryCast(literal('b'), "Enum8('a' = 1, 'b' = 2)")
+    }));
+    expect(result).toEqual([{ good: 12, bad: null, enumValue: 'b' }]);
   });
 });

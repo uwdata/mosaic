@@ -1,9 +1,9 @@
 import {
   AggregateNode,
-  AllNode,
   BinaryOpNode,
   CastNode,
   CollateNode,
+  ColumnRefNode,
   ColumnsNode,
   CreateQuery,
   CreateSchemaQuery,
@@ -21,6 +21,7 @@ import {
   SelectQuery,
   SetOperation,
   SliceNode,
+  StarNode,
   SubscriptNode,
   UnaryOpNode,
   UnnestNode,
@@ -32,7 +33,7 @@ import {
 import { LITERAL } from '../../constants.js';
 import { quoteIdentifier } from '../../util/string.js';
 import { walk } from '../walk.js';
-import { SQLDialectCodeGenerator } from './dialect.js';
+import { SQLDialectCodeGenerator, isStarRef } from './dialect.js';
 import type { ColumnDescription, JSType } from '../../types.js';
 
 /**
@@ -44,8 +45,10 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
   }
 
   visitCast(node: CastNode): string {
-    const { expr, cast } = node;
-    return `CAST(${this.toString(expr)} AS ${cast})`;
+    const { expr, cast, isTry } = node;
+    return isTry
+      ? `accurateCastOrNull(${this.toString(expr)}, ${this.literalToSQL(cast)})`
+      : `CAST(${this.toString(expr)} AS ${cast})`;
   }
 
   visitBinary(node: BinaryOpNode): string {
@@ -82,6 +85,13 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
     throw new Error(`${node.type} is not supported.`);
   }
 
+  visitColumnRef(node: ColumnRefNode): string {
+    if (node instanceof StarNode && (node.exclude.length || node.rename.length)) {
+      throw new Error('Star EXCLUDE and RENAME are not supported.');
+    }
+    return super.visitColumnRef(node);
+  }
+
   visitCreateQuery(node: CreateQuery): string {
     const { name, query, replace, temp, view } = node;
     return 'CREATE'
@@ -116,10 +126,6 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
   }
 
   visitValues(node: ValuesNode): never {
-    throw new Error(`${node.type} is not supported.`);
-  }
-
-  visitAll(node: AllNode): never {
     throw new Error(`${node.type} is not supported.`);
   }
 
@@ -357,6 +363,11 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
     // source column, then rename back in an outer SELECT so callers still
     // see the original names.
     if (!hasAliasCollision(node)) return super.visitSelectQuery(node);
+    if (node._select.some(sel => isStarRef(sel.expr))) {
+      throw new Error(
+        'Star projections cannot be combined with aliases that shadow source columns.'
+      );
+    }
 
     const inner = node.clone();
     inner._select = [];
@@ -466,7 +477,9 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
 }
 
 function hasAliasCollision(node: SelectQuery): boolean {
-  const aliases = new Set(node._select.map(sel => sel.alias).filter(Boolean));
+  const aliases = new Set(node._select
+    .filter(sel => sel.alias && !isStarRef(sel.expr))
+    .map(sel => sel.alias));
   if (aliases.size === 0) return false;
   let foundCollision = false;
   const clauses = [...node._groupby, ...node._orderby, ...node._having];

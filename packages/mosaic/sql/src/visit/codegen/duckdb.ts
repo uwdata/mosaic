@@ -45,10 +45,6 @@ export class DuckDBCodeGenerator extends SQLDialectCodeGenerator {
     return `${name}(${arg})${filt}`;
   }
 
-  visitAll(): string {
-    return 'ALL';
-  }
-
   visitCast(node: CastNode): string {
     const { expr, cast, isTry } = node;
     return isTry

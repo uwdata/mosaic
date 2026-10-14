@@ -53,6 +53,10 @@ import { quoteIdentifier } from '../../util/string.js';
  * code generators (duckdb, clickhouse).
  */
 export abstract class SQLDialectCodeGenerator extends SQLCodeGenerator {
+  visitAll(): string {
+    return 'ALL';
+  }
+
   visitBetween(node: BetweenOpNode): string {
     return betweenToString(this, node, 'BETWEEN');
   }
@@ -424,7 +428,7 @@ function isColumnRefFor(expr: unknown, name: string): expr is ColumnRefNode {
     && expr.column === name;
 }
 
-function isStarRef(expr: unknown): boolean {
+export function isStarRef(expr: unknown): boolean {
   return expr instanceof ColumnRefNode && expr.column === '*';
 }
 
