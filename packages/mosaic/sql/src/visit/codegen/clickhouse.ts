@@ -1,19 +1,27 @@
 import {
   AggregateNode,
+  AllNode,
   BinaryOpNode,
   CastNode,
   CollateNode,
+  ColumnsNode,
   CreateQuery,
   CreateSchemaQuery,
   FunctionNode,
   JoinNode,
+  LambdaNode,
+  LambdaVarNode,
   LiteralNode,
+  NamedArgNode,
   PivotQuery,
+  QuantifiedOpNode,
   Query,
   SampleClauseNode,
   SelectClauseNode,
   SelectQuery,
   SetOperation,
+  SliceNode,
+  SubscriptNode,
   UnaryOpNode,
   UnnestNode,
   ValuesNode,
@@ -108,6 +116,38 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
   }
 
   visitValues(node: ValuesNode): never {
+    throw new Error(`${node.type} is not supported.`);
+  }
+
+  visitAll(node: AllNode): never {
+    throw new Error(`${node.type} is not supported.`);
+  }
+
+  visitColumns(node: ColumnsNode): never {
+    throw new Error(`${node.type} is not supported.`);
+  }
+
+  visitLambda(node: LambdaNode): never {
+    throw new Error(`${node.type} is not supported.`);
+  }
+
+  visitLambdaVar(node: LambdaVarNode): never {
+    throw new Error(`${node.type} is not supported.`);
+  }
+
+  visitNamedArg(node: NamedArgNode): never {
+    throw new Error(`${node.type} is not supported.`);
+  }
+
+  visitQuantified(node: QuantifiedOpNode): never {
+    throw new Error(`${node.type} is not supported.`);
+  }
+
+  visitSlice(node: SliceNode): never {
+    throw new Error(`${node.type} is not supported.`);
+  }
+
+  visitSubscript(node: SubscriptNode): never {
     throw new Error(`${node.type} is not supported.`);
   }
 

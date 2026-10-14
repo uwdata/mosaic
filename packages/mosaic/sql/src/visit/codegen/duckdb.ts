@@ -2,15 +2,26 @@ import {
   AggregateNode,
   CastNode,
   CollateNode,
+  ColumnsNode,
   CreateQuery,
   CreateSchemaQuery,
+  ExprNode,
+  LambdaNode,
+  LambdaVarNode,
+  NamedArgNode,
   PivotQuery,
+  QuantifiedOpNode,
   SampleClauseNode,
+  SliceNode,
+  SubscriptNode,
   UnnestNode,
   WindowFunctionNode,
   isQuery
 } from '../../ast/index.js';
+import { COLUMN_PARAM, COLUMN_REF, FUNCTION, LIST, SLICE, SUBSCRIPT } from '../../constants.js';
+import { quoteIdentifier } from '../../util/string.js';
 import { SQLDialectCodeGenerator } from './dialect.js';
+import type { SQLCodeGenerator } from './sql.js';
 import type { ColumnDescription, JSType } from '../../types.js';
 
 /**
@@ -34,14 +45,25 @@ export class DuckDBCodeGenerator extends SQLDialectCodeGenerator {
     return `${name}(${arg})${filt}`;
   }
 
+  visitAll(): string {
+    return 'ALL';
+  }
+
   visitCast(node: CastNode): string {
-    const { expr, cast } = node;
-    return `(${this.toString(expr)})::${cast}`;
+    const { expr, cast, isTry } = node;
+    return isTry
+      ? `TRY_CAST(${this.toString(expr)} AS ${cast})`
+      : `(${this.toString(expr)})::${cast}`;
   }
 
   visitCollate(node: CollateNode): string {
     const { expr, collation } = node;
     return `${this.toString(expr)} COLLATE ${collation}`;
+  }
+
+  visitColumns(node: ColumnsNode): string {
+    const { selector, unpack } = node;
+    return `${unpack ? '*' : ''}COLUMNS(${this.toString(selector)})`;
   }
 
   visitCreateQuery(node: CreateQuery): string {
@@ -59,6 +81,20 @@ export class DuckDBCodeGenerator extends SQLDialectCodeGenerator {
     return 'CREATE SCHEMA '
       + (strict ? '' : 'IF NOT EXISTS ')
       + this.toString(name);
+  }
+
+  visitLambda(node: LambdaNode): string {
+    const { params, body } = node;
+    return `lambda ${params.map(p => quoteIdentifier(p)).join(', ')}: ${this.toString(body)}`;
+  }
+
+  visitLambdaVar(node: LambdaVarNode): string {
+    return quoteIdentifier(node.name);
+  }
+
+  visitNamedArg(node: NamedArgNode): string {
+    const { name, expr } = node;
+    return `${quoteIdentifier(name)} := ${this.toString(expr)}`;
   }
 
   visitPivotQuery(node: PivotQuery): string {
@@ -93,11 +129,29 @@ export class DuckDBCodeGenerator extends SQLDialectCodeGenerator {
     return this.visitQuery(node, sql);
   }
 
+  visitQuantified(node: QuantifiedOpNode): string {
+    const { op, expr, quantifier, subquery } = node;
+    return `(${this.toString(expr)} ${op} ${quantifier} ${this.toString(subquery)})`;
+  }
+
   visitSampleClause(node: SampleClauseNode): string {
     const { size, perc, method, seed } = node;
     const m = method ? `${method} ` : '';
     const s = seed != null ? ` REPEATABLE (${seed})` : '';
     return `${m}(${size}${perc ? '%' : ' ROWS'})${s}`;
+  }
+
+  visitSlice(node: SliceNode): string {
+    const { expr, start, end, step } = node;
+    const a = start ? this.toString(start) : '';
+    const b = end ? this.toString(end) : step ? '-' : '';
+    const c = step ? `:${this.toString(step)}` : '';
+    return `${subscriptTarget(this, expr)}[${a}:${b}${c}]`;
+  }
+
+  visitSubscript(node: SubscriptNode): string {
+    const { expr, index } = node;
+    return `${subscriptTarget(this, expr)}[${this.toString(index)}]`;
   }
 
   visitUnnest(node: UnnestNode): string {
@@ -173,6 +227,13 @@ export class DuckDBCodeGenerator extends SQLDialectCodeGenerator {
   normalizeDescribeResult(rows: unknown[]): ColumnDescription[] {
     return rows as ColumnDescription[];
   }
+}
+
+const SUBSCRIPTABLE = new Set([COLUMN_PARAM, COLUMN_REF, FUNCTION, LIST, SLICE, SUBSCRIPT]);
+
+function subscriptTarget(visitor: SQLCodeGenerator, expr: ExprNode) {
+  const s = visitor.toString(expr);
+  return SUBSCRIPTABLE.has(expr.type) ? s : `(${s})`;
 }
 
 // Create a default DuckDB visitor instance for convenience

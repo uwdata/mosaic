@@ -1,4 +1,5 @@
 import { ColumnRefNode } from './ast/column-ref.js';
+import { ColumnsNode } from './ast/columns.js';
 import { ExprNode, SQLNode } from './ast/node.js';
 import { TableRefNode } from './ast/table-ref.js';
 import { Query } from './ast/query.js';
@@ -78,6 +79,7 @@ export type SelectEntry =
   | null
   | string
   | ColumnRefNode
+  | ColumnsNode
   | [string, ExprNode]
   | Record<string, ExprValue>;
 

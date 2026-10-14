@@ -2,6 +2,7 @@ import type {
   SQLNode,
   ExprNode,
   AggregateNode,
+  AllNode,
   BetweenOpNode,
   NotBetweenOpNode,
   BinaryOpNode,
@@ -11,6 +12,7 @@ import type {
   CollateNode,
   ColumnParamNode,
   ColumnRefNode,
+  ColumnsNode,
   CreateQuery,
   CreateSchemaQuery,
   FragmentNode,
@@ -19,18 +21,24 @@ import type {
   InOpNode,
   IntervalNode,
   JoinNode,
+  LambdaNode,
+  LambdaVarNode,
   ListNode,
   LiteralNode,
   LogicalOpNode,
+  NamedArgNode,
   OrderByNode,
   ParamNode,
   PivotQuery,
+  QuantifiedOpNode,
   DescribeQuery,
   SelectQuery,
   SetOperation,
   SampleClauseNode,
   SelectClauseNode,
   ScalarSubqueryNode,
+  SliceNode,
+  SubscriptNode,
   TableRefNode,
   TupleNode,
   UnaryOpNode,
@@ -49,6 +57,7 @@ import type {
 import type { ColumnDescription, JSType } from '../../types.js';
 import {
   AGGREGATE,
+  ALL,
   BETWEEN_OPERATOR,
   BINARY_OPERATOR,
   CASE,
@@ -56,6 +65,7 @@ import {
   COLLATE,
   COLUMN_PARAM,
   COLUMN_REF,
+  COLUMNS,
   CREATE_QUERY,
   CREATE_SCHEMA_QUERY,
   DESCRIBE_QUERY,
@@ -66,18 +76,24 @@ import {
   IN_OPERATOR,
   INTERVAL,
   JOIN_CLAUSE,
+  LAMBDA,
+  LAMBDA_VAR,
   LIST,
   LITERAL,
   LOGICAL_OPERATOR,
+  NAMED_ARG,
   NOT_BETWEEN_OPERATOR,
   ORDER_BY,
   PARAM,
   PIVOT_QUERY,
+  QUANTIFIED_OPERATOR,
   SAMPLE_CLAUSE,
   SCALAR_SUBQUERY,
   SELECT_CLAUSE,
   SELECT_QUERY,
   SET_OPERATION,
+  SLICE,
+  SUBSCRIPT,
   TABLE_REF,
   TUPLE,
   UNARY_OPERATOR,
@@ -127,6 +143,7 @@ export abstract class SQLCodeGenerator {
   protected getVisitMethod(nodeType: string) {
     switch (nodeType) {
       case AGGREGATE: return this.visitAggregate;
+      case ALL: return this.visitAll;
       case BETWEEN_OPERATOR: return this.visitBetween;
       case BINARY_OPERATOR: return this.visitBinary;
       case CASE: return this.visitCase;
@@ -134,6 +151,7 @@ export abstract class SQLCodeGenerator {
       case COLLATE: return this.visitCollate;
       case COLUMN_PARAM: return this.visitColumnParam;
       case COLUMN_REF: return this.visitColumnRef;
+      case COLUMNS: return this.visitColumns;
       case CREATE_QUERY: return this.visitCreateQuery;
       case CREATE_SCHEMA_QUERY: return this.visitCreateSchemaQuery;
       case DESCRIBE_QUERY: return this.visitDescribeQuery;
@@ -144,18 +162,24 @@ export abstract class SQLCodeGenerator {
       case IN_OPERATOR: return this.visitIn;
       case INTERVAL: return this.visitInterval;
       case JOIN_CLAUSE: return this.visitJoinClause;
+      case LAMBDA: return this.visitLambda;
+      case LAMBDA_VAR: return this.visitLambdaVar;
       case LIST: return this.visitList;
       case LITERAL: return this.visitLiteral;
       case LOGICAL_OPERATOR: return this.visitLogicalOperator;
+      case NAMED_ARG: return this.visitNamedArg;
       case NOT_BETWEEN_OPERATOR: return this.visitNotBetween;
       case ORDER_BY: return this.visitOrderBy;
       case PARAM: return this.visitParam;
       case PIVOT_QUERY: return this.visitPivotQuery;
+      case QUANTIFIED_OPERATOR: return this.visitQuantified;
       case SAMPLE_CLAUSE: return this.visitSampleClause;
       case SCALAR_SUBQUERY: return this.visitScalarSubquery;
       case SELECT_CLAUSE: return this.visitSelectClause;
       case SELECT_QUERY: return this.visitSelectQuery;
       case SET_OPERATION: return this.visitSetOperation;
+      case SLICE: return this.visitSlice;
+      case SUBSCRIPT: return this.visitSubscript;
       case TABLE_REF: return this.visitTableRef;
       case TUPLE: return this.visitTuple;
       case UNARY_OPERATOR: return this.visitUnary;
@@ -187,6 +211,7 @@ export abstract class SQLCodeGenerator {
 
   // Abstract methods that must be implemented by concrete visitors
   abstract visitAggregate(node: AggregateNode): string;
+  abstract visitAll(node: AllNode): string;
   abstract visitBetween(node: BetweenOpNode): string;
   abstract visitBinary(node: BinaryOpNode): string;
   abstract visitCase(node: CaseNode): string;
@@ -194,6 +219,7 @@ export abstract class SQLCodeGenerator {
   abstract visitCollate(node: CollateNode): string;
   abstract visitColumnParam(node: ColumnParamNode): string;
   abstract visitColumnRef(node: ColumnRefNode): string;
+  abstract visitColumns(node: ColumnsNode): string;
   abstract visitCreateQuery(node: CreateQuery): string;
   abstract visitCreateSchemaQuery(node: CreateSchemaQuery): string;
   abstract visitDescribeQuery(node: DescribeQuery): string;
@@ -204,18 +230,24 @@ export abstract class SQLCodeGenerator {
   abstract visitIn(node: InOpNode): string;
   abstract visitInterval(node: IntervalNode): string;
   abstract visitJoinClause(node: JoinNode): string;
+  abstract visitLambda(node: LambdaNode): string;
+  abstract visitLambdaVar(node: LambdaVarNode): string;
   abstract visitList(node: ListNode): string;
   abstract visitLiteral(node: LiteralNode): string;
   abstract visitLogicalOperator(node: LogicalOpNode<ExprNode>): string;
+  abstract visitNamedArg(node: NamedArgNode): string;
   abstract visitNotBetween(node: NotBetweenOpNode): string;
   abstract visitOrderBy(node: OrderByNode): string;
   abstract visitParam(node: ParamNode): string;
   abstract visitPivotQuery(node: PivotQuery): string;
+  abstract visitQuantified(node: QuantifiedOpNode): string;
   abstract visitSampleClause(node: SampleClauseNode): string;
   abstract visitScalarSubquery(node: ScalarSubqueryNode): string;
   abstract visitSelectClause(node: SelectClauseNode): string;
   abstract visitSelectQuery(node: SelectQuery): string;
   abstract visitSetOperation(node: SetOperation): string;
+  abstract visitSlice(node: SliceNode): string;
+  abstract visitSubscript(node: SubscriptNode): string;
   abstract visitTableRef(node: TableRefNode): string;
   abstract visitTuple(node: TupleNode): string;
   abstract visitUnary(node: UnaryOpNode): string;

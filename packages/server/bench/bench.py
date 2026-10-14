@@ -254,14 +254,10 @@ def build_and_start_rust(port: int) -> subprocess.Popen | None:
         print(f"  Build failed:\n{result.stderr}")
         return None
 
-    binary = rust_dir / "target" / "release" / "duckdb-server"
-    if not binary.exists():
-        print(f"  ERROR: Binary not found at {binary}")
-        return None
-
     print("  Starting Rust server ...")
     return subprocess.Popen(
-        [str(binary), "--port", str(port)],
+        ["cargo", "run", "--release", "--", "--port", str(port)],
+        cwd=rust_dir,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
@@ -291,11 +287,9 @@ def build_and_start_go(port: int) -> subprocess.Popen | None:
 
 def build_and_start_python(port: int) -> subprocess.Popen | None:
     py_dir = SERVER_DIR / "duckdb-server"
-    if port != 3000:  # ruff: ignore[magic-value-comparison]
-        print("  WARNING: Python server does not support custom ports, using 3000")
     print("  Starting Python server ...")
     return subprocess.Popen(
-        ["uv", "run", "duckdb-server"],
+        ["uv", "run", "duckdb-server", "--no-http2", "--port", f"{port}"],
         cwd=py_dir,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -452,7 +446,9 @@ def main() -> None:
     if args.iterations < 1:
         parser.error("--iterations must be >= 1")
 
-    host = "localhost"
+    # NOTE: rust/python are initialized with `"127.0.0.1"`
+    # They accept `"localhost"`, but it adds 2000ms per request (1-40ms)
+    host = "127.0.0.1"
     port = args.port
 
     servers = (

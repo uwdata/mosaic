@@ -8,6 +8,7 @@ import {
   WhenNode,
   ColumnParamNode,
   ColumnRefNode,
+  ColumnsNode,
   FragmentNode,
   FromClauseNode,
   FunctionNode,
@@ -25,6 +26,7 @@ import {
   SetOperation,
   SelectClauseNode,
   ScalarSubqueryNode,
+  StarNode,
   TableRefNode,
   TupleNode,
   UnaryOpNode,
@@ -43,7 +45,7 @@ import {
 } from '../../ast/index.js';
 import { SQLCodeGenerator } from './sql.js';
 import { CURRENT_ROW, FOLLOWING, PRECEDING, UNBOUNDED } from '../../ast/window-frame.js';
-import { WINDOW_EXTENT_EXPR } from '../../constants.js';
+import { SET_OPERATION, WINDOW_EXTENT_EXPR } from '../../constants.js';
 import { quoteIdentifier } from '../../util/string.js';
 
 /**
@@ -77,7 +79,7 @@ export abstract class SQLDialectCodeGenerator extends SQLCodeGenerator {
     const { column, table } = node;
     const tref = table ? `${this.toString(table)}.` : '';
     const id = column === '*' ? '*' : quoteIdentifier(column);
-    return `${tref}${id}`;
+    return `${tref}${id}${node instanceof StarNode ? starModifiers(this, node) : ''}`;
   }
 
   visitDescribeQuery(node: DescribeQuery): string {
@@ -222,22 +224,29 @@ export abstract class SQLDialectCodeGenerator extends SQLCodeGenerator {
 
   visitSelectClause(node: SelectClauseNode): string {
     const { expr, alias } = node;
+    const sql = this.toString(expr);
 
-    return !alias || isColumnRefFor(expr, alias)
-      ? this.toString(expr)
-      : `${this.toString(expr)} AS ${quoteIdentifier(alias)}`;
+    // DuckDB applies an alias to every column a COLUMNS expression expands
+    // to, so drop aliases that select() derived from the expression text
+    return !alias || isColumnRefFor(expr, alias) || isStarRef(expr)
+      || (alias === sql && isExpandingColumns(expr))
+      ? sql
+      : `${sql} AS ${quoteIdentifier(alias)}`;
   }
 
   visitSelectQuery(node: SelectQuery): string {
     const {
-      _select, _distinct, _from, _sample, _where,
+      _select, _distinct, _distinctOn, _from, _sample, _where,
       _groupby, _having, _window, _qualify
     } = node;
 
     const sql: string[] = [];
 
     // SELECT
-    sql.push(`SELECT${_distinct ? ' DISTINCT' : ''} ${this.mapToString(_select).join(', ')}`);
+    const distinct = _distinctOn.length
+      ? ` DISTINCT ON (${this.mapToString(_distinctOn).join(', ')})`
+      : _distinct ? ' DISTINCT' : '';
+    sql.push(`SELECT${distinct} ${this.mapToString(_select).join(', ')}`);
 
     // FROM
     if (_from.length) {
@@ -282,7 +291,11 @@ export abstract class SQLDialectCodeGenerator extends SQLCodeGenerator {
 
   visitSetOperation(node: SetOperation): string {
     const { op, queries } = node;
-    return this.visitQuery(node, [this.mapToString(queries).join(` ${op} `)]);
+    const sql = queries.map(q => {
+      const s = this.toString(q);
+      return isCompoundQuery(q) ? `(${s})` : s;
+    });
+    return this.visitQuery(node, [sql.join(` ${op} `)]);
   }
 
   visitTableRef(node: TableRefNode): string {
@@ -356,7 +369,7 @@ export abstract class SQLDialectCodeGenerator extends SQLCodeGenerator {
       : extent;
     const a = formatFrameExpr(this, prev, PRECEDING);
     const b = formatFrameExpr(this, next, FOLLOWING);
-    return `${frameType} BETWEEN ${a} AND ${b}${exclude ? ` ${exclude}` : ''}`;
+    return `${frameType} BETWEEN ${a} AND ${b}${exclude ? ` EXCLUDE ${exclude}` : ''}`;
   }
 
   visitWithClause(node: WithClauseNode): string {
@@ -411,6 +424,14 @@ function isColumnRefFor(expr: unknown, name: string): expr is ColumnRefNode {
     && expr.column === name;
 }
 
+function isStarRef(expr: unknown): boolean {
+  return expr instanceof ColumnRefNode && expr.column === '*';
+}
+
+function isExpandingColumns(expr: ExprNode): boolean {
+  return expr instanceof ColumnsNode && !expr.unpack;
+}
+
 function betweenToString(
   visitor: SQLCodeGenerator,
   node: BetweenOpNode | NotBetweenOpNode,
@@ -429,4 +450,29 @@ function formatFrameExpr(visitor: SQLCodeGenerator, value: unknown, scope: strin
     : x === 0 ? CURRENT_ROW
     : !(x && Number.isFinite(x)) ? `${UNBOUNDED} ${scope}`
     : `${Math.abs(x)} ${scope}`;
+}
+
+function starModifiers(visitor: SQLCodeGenerator, node: StarNode) {
+  const { exclude, replace, rename } = node;
+  const sql: string[] = [];
+  if (exclude.length) {
+    sql.push(`EXCLUDE (${exclude.map(v => quoteIdentifier(v)).join(', ')})`);
+  }
+  if (replace.length) {
+    const list = replace.map(({ expr, alias }) => `${visitor.toString(expr)} AS ${quoteIdentifier(alias)}`);
+    sql.push(`REPLACE (${list.join(', ')})`);
+  }
+  if (rename.length) {
+    const list = rename.map(([from, to]) => `${quoteIdentifier(from)} AS ${quoteIdentifier(to)}`);
+    sql.push(`RENAME (${list.join(', ')})`);
+  }
+  return sql.map(s => ` ${s}`).join('');
+}
+
+function isCompoundQuery(query: Query) {
+  return query.type === SET_OPERATION
+    || query._with.length > 0
+    || query._orderby.length > 0
+    || query._limit != null
+    || query._offset != null;
 }
