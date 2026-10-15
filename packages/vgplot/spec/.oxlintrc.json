@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "nursery": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "restriction": "error",
+    "style": "error",
+    "suspicious": "error"
+  },
+  "extends": [
+    "../../../.oxlintrc.json"
+  ],
+  "ignorePatterns": [
+    "**/*.js"
+  ],
+  "rules": {
+    "id-length": "off",
+    "max-lines": "off",
+    "no-inline-comments": "off",
+    "no-magic-numbers": [
+      "error",
+      {
+        "ignoreNumericLiteralTypes": true
+      }
+    ],
+    "sort-imports": "off",
+    "unicorn/filename-case": "off"
+  }
+}

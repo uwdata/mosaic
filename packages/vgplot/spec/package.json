@@ -45,6 +45,8 @@
     "@uwdata/vgplot": "workspace:^"
   },
   "devDependencies": {
+    "oxlint": "^1.88.0",
+    "oxlint-tsgolint": "^7.0.2004",
     "ts-json-schema-generator": "3.0.0-native.5"
   }
 }
