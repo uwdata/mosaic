@@ -28,7 +28,6 @@ func run() int {
 	address := flag.String("address", "localhost", "HTTP Address")
 	port := flag.String("port", "3000", "HTTP Port")
 	poolSize := flag.Int("connection-pool-size", 10, "Max connection pool size")
-	https := flag.Bool("https", false, "Enable HTTPS with automatically managed localhost certificates")
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
 	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET arrow responses; enables ETag validation for those queries")
@@ -36,7 +35,7 @@ func run() int {
 	flag.Var(&varyHeaders, "vary", "Comma-separated request header names to append to Vary; may be repeated")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	var gatekeeper gatekeeperFlag
-	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":1,"options":{}} enables validation with defaults`)
+	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":2,"options":{}} enables validation with defaults`)
 	flag.Parse()
 	*address = normalizeAddress(*address)
 
@@ -52,21 +51,14 @@ func run() int {
 		return 1
 	}
 
-	tlsConfig, err := configureHTTPS(*https, *address, *certFile, *keyFile, logger)
+	tlsConfig, err := configureHTTPS(*certFile, *keyFile, logger)
 	if err != nil {
 		logger.Error("main: HTTPS setup failed", "error", err)
 		return 1
 	}
 
 	validation := gatekeeper.document != nil
-	var initializeOnce sync.Once
-	var initializeErr error
-	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
-		initializeOnce.Do(func() {
-			initializeErr = initializeDatabase(ctx, execer, *extensionsStr, gatekeeper.document)
-		})
-		return initializeErr
-	})
+	connector, err := newConnector(ctx, *dbPath, *extensionsStr, gatekeeper.document)
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
 		return 1
@@ -102,15 +94,14 @@ func run() int {
 			AllowAllHeaders: true,
 			MaxAge:          30 * 24 * time.Hour,
 		}),
-		server.WithWebSocket(server.WebSocketOptions{AllowAllOrigins: true}),
 	)
 	if err != nil {
 		logger.Error("main: error creating server", "error", err)
 		return 1
 	}
-	logger.Warn("DuckDB Server permits all HTTP and WebSocket origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
+	logger.Warn("DuckDB Server permits all HTTP origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
-	config := map[string]interface{}{
+	config := map[string]any{
 		"database":             *dbPath,
 		"address":              *address,
 		"port":                 *port,
@@ -145,10 +136,10 @@ func run() int {
 	httpServer := &http.Server{Addr: addr, Handler: s, TLSConfig: tlsConfig, ReadHeaderTimeout: 10 * time.Second}
 
 	if tlsConfig != nil {
-		logger.Info(fmt.Sprintf("DuckDB Server listening on https://%s and wss://%s", addr, addr))
+		logger.Info(fmt.Sprintf("DuckDB Server listening on https://%s", addr))
 		err = httpServer.ListenAndServeTLS("", "")
 	} else {
-		logger.Info(fmt.Sprintf("DuckDB Server listening on http://%s and ws://%s", addr, addr))
+		logger.Info(fmt.Sprintf("DuckDB Server listening on http://%s", addr))
 		err = httpServer.ListenAndServe()
 	}
 	if err != nil {
@@ -156,6 +147,15 @@ func run() int {
 		return 1
 	}
 	return 0
+}
+
+func newConnector(ctx context.Context, dsn, extensionList string, document *string) (*duckdb.Connector, error) {
+	var once sync.Once
+	var initErr error
+	return duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
+		once.Do(func() { initErr = initializeDatabase(ctx, execer, extensionList, document) })
+		return initErr
+	})
 }
 
 // initializeDatabase is the CLI's trusted initialization. Extensions named by --load-extensions are installed first so

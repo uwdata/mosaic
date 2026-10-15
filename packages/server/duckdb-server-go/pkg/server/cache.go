@@ -47,12 +47,9 @@ func WithVary(headers ...string) Option {
 	})
 }
 
-func responseETag(response commandResponse, encoding string) string {
-	hash := sha256.New()
-	_, _ = hash.Write([]byte(response.contentType))
-	_, _ = hash.Write([]byte{0})
-	_, _ = hash.Write(response.data)
-	tag := `"` + hex.EncodeToString(hash.Sum(nil))
+func responseETag(data []byte, encoding string) string {
+	sum := sha256.Sum256(data)
+	tag := `"` + hex.EncodeToString(sum[:])
 	if encoding != "" {
 		tag += "-" + encoding
 	}
