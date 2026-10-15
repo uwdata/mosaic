@@ -16,6 +16,10 @@ describe('Aggregate functions', () => {
     await expect(expr).toBeValidExpr('count(DISTINCT "num1")');
   });
 
+  it('reject distinct without an aggregate argument', () => {
+    expect(() => count().distinct()).toThrowError(/requires an aggregate argument/);
+  });
+
   it('support filter', async () => {
     const foo = column('num1');
     await expect(avg(foo).where(gt(foo, 5)))
