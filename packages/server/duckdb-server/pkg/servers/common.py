@@ -9,12 +9,14 @@ import msgspec
 import platformdirs
 
 if TYPE_CHECKING:
-    from _typeshed import Incomplete
-    from typing_extensions import Self
+    from typing_extensions import LiteralString, Self
 
 
 _DEFAULT_CERT: Final = Path("localhost.pem")
 _DEFAULT_KEY: Final = Path("localhost-key.pem")
+
+ENV_DB_PATH = "MOSAIC_DB_PATH"
+IN_MEMORY_DB_NAME = ":memory:"
 
 
 def user_config_path() -> Path:
@@ -23,10 +25,13 @@ def user_config_path() -> Path:
     )
 
 
-class _BaseArgs(msgspec.Struct):
-    database: Path | str = ":memory:"
-    """Path of database file (e.g., "database.db". ":memory:" for in-memory database)."""
+class _HelpFormatter(
+    argparse.RawDescriptionHelpFormatter,
+    argparse.ArgumentDefaultsHelpFormatter,
+): ...
 
+
+class _BaseArgs(msgspec.Struct):
     address: str = "127.0.0.1"
     """HTTP Address."""
 
@@ -34,6 +39,8 @@ class _BaseArgs(msgspec.Struct):
     """HTTP Port."""
 
     log_level: Literal[0, 10, 20, 30, 40, 50] = logging.DEBUG
+
+    reload: bool = False
 
 
 class SSL(msgspec.Struct):
@@ -58,12 +65,12 @@ class Args(_BaseArgs):
     """Escape hatch to make benchmarking and testing possible."""
 
     def resolve(self) -> ResolvedArgs:
-        db, host, port, level = self.database, self.address, self.port, self.log_level
+        host, port, level, reload = self.address, self.port, self.log_level, self.reload
         if self.no_http2:
-            return ResolvedArgs(db, host, port, level)
+            return ResolvedArgs(host, port, level, reload)
         cert, key = self.ssl_cert, self.ssl_key
         if file_exists(cert) and file_exists(key):
-            return ResolvedArgs(db, host, port, level, ssl=SSL(cert, key))
+            return ResolvedArgs(host, port, level, reload, ssl=SSL(cert, key))
 
         config = user_config_path()
         is_cert_default = cert == _DEFAULT_CERT
@@ -71,9 +78,9 @@ class Args(_BaseArgs):
         if is_cert_default and is_key_default:
             cert, key = config / cert, config / key
             if file_exists(cert) and file_exists(key):
-                return ResolvedArgs(db, host, port, level, ssl=SSL(cert, key))
+                return ResolvedArgs(host, port, level, reload, ssl=SSL(cert, key))
             else:
-                return ResolvedArgs(db, host, port, level)
+                return ResolvedArgs(host, port, level, reload)
         elif is_cert_default ^ is_key_default:
             msg = "both --cert and --key are required for HTTPS"
             raise TypeError(msg)
@@ -95,12 +102,14 @@ class Args(_BaseArgs):
     @staticmethod
     def _parse(args: tuple[str, ...] | None, /) -> Args:
         parser = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
-        )
-        parser.add_argument(
-            "--database",
-            help="Path of database file (e.g., 'database.db'. ':memory:' for in-memory database)",
-            default=":memory:",
+            formatter_class=_HelpFormatter,
+            prog="uv run duckdb-server",
+            usage="%(prog)s [OPTIONS]",
+            description=(
+                f"By default, the server uses an in-memory database where all data is lost when the process finishes.\n"
+                f"For persistent storage, set `${ENV_DB_PATH}` to a value you'd pass to `duckdb.connect(...)`.\n"
+                f"See also: https://duckdb.org/docs/current/clients/python/overview#connection-options"
+            ),
         )
         parser.add_argument("--address", help="HTTP Address", default="127.0.0.1")
         parser.add_argument("--port", help="HTTP Port", type=int, default=3000)
@@ -123,10 +132,17 @@ class Args(_BaseArgs):
             action="store_true",
             help="TEMPORARY FLAG. Required for benchmarks until https://github.com/uwdata/mosaic/pull/1332",
         )
+        parser.add_argument(
+            "--reload",
+            action="store_true",
+            help="Restart the server when changes in python files are detected.",
+        )
         return parser.parse_args(args, namespace=Args())
 
 
 class Server(Protocol):
     @classmethod
-    def from_args(cls, args: ResolvedArgs, app: Incomplete, /) -> Self: ...
+    def from_args(
+        cls, args: ResolvedArgs, app_factory_path: LiteralString, /
+    ) -> Self: ...
     def run(self) -> None: ...

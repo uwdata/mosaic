@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from contextlib import asynccontextmanager
 from io import BytesIO
 from typing import TYPE_CHECKING, TypedDict
@@ -18,7 +17,6 @@ from pkg.serde import deserialize_json
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
-    from pathlib import Path
 
     from starlette.requests import Request
     from starlette.responses import Response
@@ -26,7 +24,6 @@ if TYPE_CHECKING:
 
 _ALLOW_ALL = ("*",)
 _SECONDS_24_HOURS = 86_400
-logger = logging.getLogger(__name__)
 
 
 class AppState(TypedDict):
@@ -34,12 +31,13 @@ class AppState(TypedDict):
 
 
 @asynccontextmanager
-async def lifespan(app: Starlette) -> AsyncIterator[AppState]:
-    db_path = app.state.db_path
-    with Database(db_path) as db:
-        logger.info("Connected to DuckDB %s", db_path)
+async def lifespan(_: Starlette, /) -> AsyncIterator[AppState]:
+    """Executed once per application instance.
+
+    https://uvicorn.dev/concepts/lifespan/
+    """
+    with Database.from_env() as db:
         yield {"db": db}
-    logger.info("Closed DuckDB %s", db_path)
 
 
 # TODO @dangotbanned: Slow query logging
@@ -61,7 +59,7 @@ class Endpoint(HTTPEndpoint):
         return query.run(db)
 
 
-def create_app(db_path: Path | str = ":memory:") -> Starlette:
+def create_app() -> Starlette:
     cors = Middleware(
         CORSMiddleware,
         allow_origins=_ALLOW_ALL,
@@ -72,9 +70,6 @@ def create_app(db_path: Path | str = ":memory:") -> Starlette:
     # TODO @dangotbanned: Look into compression/tracing equivalent
     middleware = (cors,)
     routes = (Route("/", Endpoint, methods=("GET", "POST"), middleware=middleware),)
-
-    app = Starlette(
+    return Starlette(
         routes=routes, exception_handlers=create_exception_handlers(), lifespan=lifespan
     )
-    app.state.db_path = db_path
-    return app
