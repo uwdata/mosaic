@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Final, Literal, Protocol, final
+from typing import TYPE_CHECKING, Final, Literal, NewType, Protocol, final
 
 import msgspec
 import platformdirs
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from typing_extensions import LiteralString, Self
 
 
@@ -17,6 +20,8 @@ _DEFAULT_KEY: Final = Path("localhost-key.pem")
 
 ENV_DB_PATH = "MOSAIC_DB_PATH"
 IN_MEMORY_DB_NAME = ":memory:"
+
+Url = NewType("Url", str)
 
 
 def user_config_path() -> Path:
@@ -51,6 +56,10 @@ class SSL(msgspec.Struct):
 @final
 class ResolvedArgs(_BaseArgs):
     ssl: SSL | None = None
+
+    def base_url(self) -> Url:
+        scheme = "https" if self.ssl else "http"
+        return Url(f"{scheme}://{self.address}:{self.port}")
 
 
 def file_exists(path: Path, /) -> bool:
@@ -146,3 +155,5 @@ class Server(Protocol):
         cls, args: ResolvedArgs, app_factory_path: LiteralString, /
     ) -> Self: ...
     def run(self) -> None: ...
+    @contextlib.contextmanager
+    def run_in_thread(self) -> Generator[None]: ...

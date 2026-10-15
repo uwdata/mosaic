@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import contextlib
 import sys
-from contextlib import suppress
+import threading
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pkg.servers import common
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     import uvicorn
     from typing_extensions import LiteralString, Self
 
@@ -64,8 +68,34 @@ class UvicornServer(common.Server):
             runner = ChangeReload(config, server.run, sockets=[config.bind_socket()])
         else:
             runner = server
-        with suppress(KeyboardInterrupt):
+        with contextlib.suppress(KeyboardInterrupt):
             runner.run()
 
         if not server.started and not reload:
             sys.exit(STARTUP_FAILURE)
+
+    @contextlib.contextmanager
+    def run_in_thread(self) -> Generator[None]:
+        # https://github.com/Kludex/uvicorn/discussions/1103?sort=top#discussioncomment-941726
+        # `ValueError: signal only works in main thread of the main interpreter`
+        # Means that `--reload` cannot be tested in this way
+        thread = threading.Thread(target=self.run)
+        with _dont_capture_signals(self._server) as server:
+            thread.start()
+            try:
+                while not server.started:
+                    time.sleep(0.001)
+                yield
+            finally:
+                server.should_exit = True
+                thread.join()
+
+
+@contextlib.contextmanager
+def _dont_capture_signals(self: uvicorn.Server) -> Generator[uvicorn.Server]:
+    capture_signals = self.capture_signals
+    self.capture_signals = contextlib.nullcontext  # ty: ignore[invalid-assignment]
+    try:
+        yield self
+    finally:
+        self.capture_signals = capture_signals  # ty: ignore[invalid-assignment]
