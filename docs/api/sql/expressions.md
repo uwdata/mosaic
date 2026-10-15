@@ -136,6 +136,14 @@ Query.from("t").select(star(null, {
 
 A star is a column reference with the column name `*`, so `collectColumns` reports it as referencing all columns, along with any columns referenced by replacement expressions.
 
+## tableRef
+
+`tableRef(...ids)`
+
+Create an AST node that references a table or view by name.
+Multiple identifiers form a schema-qualified name, as in `tableRef("schema", "table")`; an array of identifiers is also accepted.
+Upon string coercion, each identifier will be properly quoted.
+
 ## tryCast
 
 `tryCast(expression, type)`
