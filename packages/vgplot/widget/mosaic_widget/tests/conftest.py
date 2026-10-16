@@ -6,6 +6,7 @@ from contextlib import AbstractContextManager as ContextManager
 from contextlib import nullcontext
 from functools import partial
 from importlib.util import find_spec
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Generic, TypeAlias, TypeVar
 
 import narwhals as nw
@@ -136,3 +137,8 @@ def nw_lazyframe(lazy: Backend[LazyAllowed]) -> LazyFrameConstructor:
         return from_dict(data, backend=PYARROW).lazy(lazy.value)
 
     return constructor
+
+
+@pytest.fixture(scope="session")
+def data_dir() -> Path:
+    return Path(__file__).parent.parent.parent.parent.parent.parent / "data"
