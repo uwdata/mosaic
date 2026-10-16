@@ -126,16 +126,7 @@ export default {
       view.model.save_changes();
     }
 
-    /** @param {unknown} error */
-    function showError(error) {
-      logger.error(error);
-      const pre = document.createElement('pre');
-      pre.className = 'error';
-      pre.textContent = String(error);
-      view.el.replaceChildren(pre);
-    }
-
-    view.model.on('change:spec', () => updateSpec().catch(showError));
+    view.model.on('change:spec', () => updateSpec());
 
     function configureCoordinator() {
       coordinator().preaggregator.schema = getPreaggSchema();
@@ -156,7 +147,6 @@ export default {
       if (msg.error) {
         // @ts-ignore
         query.reject(msg.error);
-        showError(msg.error);
       } else {
         switch (msg.type) {
           case 'arrow': {
@@ -177,7 +167,7 @@ export default {
 
     coordinator().databaseConnector(connector);
     configureCoordinator();
-    updateSpec().catch(showError);
+    updateSpec();
 
     return () => {
       // cleanup
