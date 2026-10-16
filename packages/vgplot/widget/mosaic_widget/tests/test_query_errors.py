@@ -1,39 +1,28 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeAlias, TypedDict
+from types import MethodType
 from typing import Literal as L  # ruff: ignore[camelcase-imported-as-acronym]
 
-import narwhals as nw
 import pytest
 
-from mosaic_widget import MosaicWidget
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-
-class DataParquet(TypedDict):
-    type: L["parquet"]
-    file: str
-
-
-DataDefs: TypeAlias = dict[str, DataParquet]
-
-
-def parquet(name: str, file: Path) -> DataDefs:
-    return {name: {"type": "parquet", "file": file.as_posix()}}
+from mosaic_widget import MosaicWidget, _QueryParams
 
 
 @pytest.fixture(scope="module")
-def widget(data_dir: Path) -> MosaicWidget:
-    real_path = data_dir / "berlin-covid.parquet"
-    assert real_path.exists(), "expected a small file"
-    fake_path = data_dir / "nope-nope-nope-123.parquet"
-    assert fake_path.exists() is False, "why did you create this?"
+def widget() -> MosaicWidget:
+    """A widget that surfaces errors, removing a [decorator] that swallows them.
 
-    table = nw.read_parquet(real_path, backend="pyarrow").to_arrow()
+    [decorator]. https://github.com/jupyter-widgets/ipywidgets/commit/e3e7da4cc14e62681a40cecf8b6e8a0918ef38b5
+    """
+    widget = MosaicWidget()
+    unwrapped_method = widget._handle_msg.__func__.__closure__[0].cell_contents
+    assert unwrapped_method.__name__ == "_handle_msg"
+    widget._handle_msg = MethodType(unwrapped_method, widget)
+    return widget
 
-    spec_data = {
-        "data": parquet("real-spec", real_path) | parquet("fake-spec", fake_path)
-    }
-    return MosaicWidget(spec_data, None, {"real-frame": table})
+
+def send_message(widget: MosaicWidget, sql: str, type: L["arrow", "exec"]) -> None:
+    """Construct a message and send it into where the frontend calls."""
+    data = {"method": "custom", "content": _QueryParams(type=type, sql=sql, uuid="1")}
+    msg = {"content": {"data": data}, "buffers": []}
+    widget._handle_msg(msg)
