@@ -8,7 +8,7 @@ from mosaic_widget import MosaicWidget, _QueryParams
 from mosaic_widget._exceptions import MosaicWidgetError
 
 
-def test_query_error_is_sent_to_frontend(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_query_error_is_sent_to_frontend() -> None:
     widget = MosaicWidget()
 
     bad_query: _QueryParams = {
