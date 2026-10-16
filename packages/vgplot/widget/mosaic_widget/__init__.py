@@ -7,12 +7,13 @@ import time
 from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
 
 import anywidget
+import anywidget.experimental
 import duckdb
 import pyarrow as pa
 import traitlets
 
 from mosaic_widget import _db
-from mosaic_widget._exceptions import PerformanceWarning, warn
+from mosaic_widget._exceptions import MosaicWidgetError, PerformanceWarning, warn
 from mosaic_widget._frame_interop import (
     frame_to_duckdb_registrable,
     is_registrable_frame,
@@ -20,7 +21,7 @@ from mosaic_widget._frame_interop import (
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoFrame
-    from typing_extensions import Buffer, TypeIs
+    from typing_extensions import Buffer, Never, TypeIs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -32,6 +33,11 @@ class _QueryParams(TypedDict):
     type: Literal["arrow", "exec"]
     sql: str
     uuid: str  # name
+
+
+class _JSError(TypedDict):
+    message: str
+    stack: str
 
 
 class SupportsToDict(Protocol):
@@ -242,3 +248,13 @@ class MosaicWidget(anywidget.AnyWidget):
         if not predicates:
             return base
         return f"{base} WHERE {' AND '.join(f'({p})' for p in predicates)}"
+
+    @anywidget.experimental.command
+    def _raise_widget_error(
+        self, content: _JSError, buffers: list[bytes | Buffer]
+    ) -> Never:
+        if stack := content["stack"]:
+            msg = f"{content['message']}\n{stack}"
+        else:
+            msg = content["message"]
+        raise MosaicWidgetError(msg)

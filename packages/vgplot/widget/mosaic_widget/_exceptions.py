@@ -3,6 +3,10 @@ from __future__ import annotations
 import warnings
 
 
+class MosaicWidgetError(Exception):
+    """Any kind of error raised by `mosaic_widget`."""
+
+
 class MosaicWidgetWarning(UserWarning):
     """Any kind of warning issued by `mosaic_widget`."""
 

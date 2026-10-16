@@ -18,10 +18,22 @@ import { v4 as uuidv4 } from 'uuid';
  * @property {Params} params The current params.
  */
 
+/**
+ * @typedef {{message: string, stack: string}} JSError
+ * An error that is sent to the python widget.
+ */
+
 /** @type {import('anywidget/types').AnyWidget<Model>} */
 export default {
   initialize(view) {
     view.model.set('preagg_schema', coordinator().preaggregator.schema);
+    window.addEventListener("error", (e) => {
+      const { error } = e;
+      /** @type JSError */
+      const msg = { message: error.toString(), stack: error.stack ?? '' }
+      view.experimental.invoke("_raise_widget_error", msg);
+      return false;
+    });
   },
 
   render(view) {
