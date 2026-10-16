@@ -168,18 +168,19 @@ export function isWildcard(node: { expr: SQLNode }): boolean {
  * column name, or undefined if no star clause outputs the name.
  * @param query The select query.
  * @param name The output column name.
- * @param relations The names of the FROM relations that may provide the
- *  column. If specified, table-qualified stars and star modifiers apply
- *  only when they reference one of these relations. Otherwise, all
- *  table qualifiers are assumed to reference the column's relation.
+ * @param relations The table paths (or aliases) of the FROM relations
+ *  that may provide the column. If specified, table-qualified stars and
+ *  star modifiers apply only when they reference one of these relations.
+ *  Otherwise, all table qualifiers are assumed to reference the column's
+ *  relation.
  */
 export function starExpression(
   query: SelectQuery,
   name: string,
-  relations?: (string | undefined)[]
+  relations?: (string[] | undefined)[]
 ): ExprNode | undefined {
-  const applies = (ref: ColumnRefNode) =>
-    !relations || !ref.table || relations.includes(ref.table.name);
+  const applies = (ref: ColumnRefNode) => !relations || !ref.table
+    || relations.some(path => path && suffixEquals(ref.table!.table, path));
   for (const clause of query._select) {
     if (!isStar(clause)) continue;
     const expr = clause.expr as ColumnRefNode;
@@ -193,6 +194,14 @@ export function starExpression(
       || expr.rename.some(([from]) => from.column === name && applies(from));
     if (!removed) return new ColumnNameRefNode(name);
   }
+}
+
+// without catalog access we can't tell which schema a search path resolves
+// a bare table name to, so this wrongly matches FROM t (resolved to s1.t)
+// against a qualifier of s2.t
+export function suffixEquals(a: string[], b: string[]): boolean {
+  const n = Math.min(a.length, b.length);
+  return a.slice(-n).every((v, i) => v === b[b.length - n + i]);
 }
 
 /**
