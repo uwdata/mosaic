@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Query, ScalarSubqueryNode, TableRefNode, cast, columns, star, count, FromClauseNode, gt, join, least, sql, sum } from '@uwdata/mosaic-sql';
+import { Query, ScalarSubqueryNode, TableRefNode, cast, column, columns, cross_join, star, count, FromClauseNode, gt, join, least, sql, sum } from '@uwdata/mosaic-sql';
 import { subqueryPushdown } from '../src/preagg/subquery-pushdown.js';
 
 function pushdown(query: Query, source: string | string[], cols: string[]) {
@@ -98,7 +98,7 @@ describe('subqueryPushdown', () => {
       .select('x', 'y')
       .from('a', 'b');
     expect(pushdown(q, 'data', ['c'])).toBe(
-      'WITH "a" AS (SELECT "x", "c" FROM "data"), "b" AS (SELECT "y" FROM "other"), "unused" AS (SELECT "z" FROM "data") SELECT "x", "y", "c" FROM "a", "b"'
+      'WITH "a" AS (SELECT "x", "c" FROM "data"), "b" AS (SELECT "y" FROM "other"), "unused" AS (SELECT "z" FROM "data") SELECT "x", "y", "a"."c" AS "c" FROM "a", "b"'
     );
   });
 
@@ -144,7 +144,61 @@ describe('subqueryPushdown', () => {
         { using: ['k'] }
       ));
     expect(pushdown(q, 'data', ['c'])).toBe(
-      'SELECT "x", "y", "c" FROM (SELECT "x", "k", "c" FROM "data") AS "l" JOIN (SELECT "y", "k" FROM "other") AS "r" USING ("k")'
+      'SELECT "x", "y", "l"."c" AS "c" FROM (SELECT "x", "k", "c" FROM "data") AS "l" JOIN (SELECT "y", "k" FROM "other") AS "r" USING ("k")'
+    );
+  });
+
+  it('applies table-qualified star modifiers only to their tables', () => {
+    const q = (exclude: string) => Query
+      .select(star(null, { exclude: [column('num1', exclude)] }))
+      .from(cross_join('t1', 't2'));
+    expect(pushdown(q('t2'), 't1', ['num1'])).toBe(
+      'SELECT * EXCLUDE ("t2"."num1") FROM "t1" CROSS JOIN "t2"'
+    );
+    expect(pushdown(q('t1'), 't1', ['num1'])).toBe(
+      'SELECT * EXCLUDE ("t1"."num1"), "t1"."num1" AS "num1" FROM "t1" CROSS JOIN "t2"'
+    );
+  });
+
+  it('matches star modifier qualifiers by schema', () => {
+    const q = (exclude: string[]) => Query
+      .select(star(null, { exclude: [column('a', exclude)] }))
+      .from(cross_join(['s1', 't'], ['s2', 't']));
+    const from = 'FROM "s1"."t" CROSS JOIN "s2"."t"';
+    expect(pushdown(q(['s2', 't']), ['s1', 't'], ['a'])).toBe(
+      `SELECT * EXCLUDE ("s2"."t"."a") ${from}`
+    );
+    expect(pushdown(q(['s1', 't']), ['s1', 't'], ['a'])).toBe(
+      `SELECT * EXCLUDE ("s1"."t"."a"), "s1"."t"."a" AS "a" ${from}`
+    );
+    expect(pushdown(q(['t']), ['s1', 't'], ['a'])).toBe(
+      `SELECT * EXCLUDE ("t"."a"), "s1"."t"."a" AS "a" ${from}`
+    );
+  });
+
+  it('matches star modifier qualifiers against aliases', () => {
+    const q = Query
+      .select(star(null, { exclude: [column('a', 't')] }))
+      .from(join(new FromClauseNode(new TableRefNode('t'), 'x'), 't', { using: ['k'] }));
+    expect(pushdown(q, 't', ['a'])).toBe(
+      'SELECT * EXCLUDE ("t"."a"), "a" FROM "t" AS "x" JOIN "t" USING ("k")'
+    );
+  });
+
+  it('adds columns not output by table-qualified stars', () => {
+    const q = Query.select(star('t2')).from(cross_join('t1', 't2'));
+    expect(pushdown(q, 't1', ['num1'])).toBe(
+      'SELECT "t2".*, "t1"."num1" AS "num1" FROM "t1" CROSS JOIN "t2"'
+    );
+  });
+
+  it('qualifies columns pushed into aggregate joins', () => {
+    const q = Query
+      .select({ n: count() })
+      .from(cross_join('t1', 't2'))
+      .groupby(column('num1', 't2'));
+    expect(pushdown(q, 't1', ['num1'])).toBe(
+      'SELECT count(*) AS "n", "t1"."num1" AS "num1" FROM "t1" CROSS JOIN "t2" GROUP BY "t2"."num1", "t1"."num1"'
     );
   });
 

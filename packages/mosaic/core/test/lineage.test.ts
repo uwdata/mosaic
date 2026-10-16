@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Query, TableRefNode, add, column, columns, count, join, mul, sql, star, sum } from '@uwdata/mosaic-sql';
+import { Query, TableRefNode, add, column, columns, count, join, mul, positionalRef, sql, star, sum } from '@uwdata/mosaic-sql';
 import { baseExpression, baseTable } from '../src/preagg/lineage.js';
 
 describe('baseTable', () => {
@@ -83,6 +83,22 @@ describe('baseExpression', () => {
     expect(`${q('d')}`).toBe('"c"');
     expect(q('a')).toBe(undefined);
     expect(q('c')).toBe(undefined);
+  });
+
+  it('resolves columns through table-qualified star modifiers', () => {
+    const sub = Query.select(star('data', {
+      exclude: [column('a', 'data')],
+      rename: [[column('c', 'data'), 'd']]
+    })).from('data');
+    const q = (name: string) => baseExpression(Query.select(name).from(sub), column(name));
+    expect(`${q('d')}`).toBe('"c"');
+    expect(q('a')).toBe(undefined);
+    expect(q('c')).toBe(undefined);
+  });
+
+  it('does not resolve positional references over subqueries', () => {
+    const sub = Query.select('x').from('data');
+    expect(baseExpression(Query.select('x').from(sub), positionalRef(1))).toBe(undefined);
   });
 
   it('does not resolve COLUMNS expressions over subqueries', () => {

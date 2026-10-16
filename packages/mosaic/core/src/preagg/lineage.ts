@@ -1,4 +1,4 @@
-import { ColumnNameRefNode, ColumnsNode, FromClauseNode, isAggregateExpression, isColumnRef, isPivotQuery, isQuery, isSelectQuery, isSetOperation, isTableRef, rewrite, ScalarSubqueryNode, StarNode, TableRefNode, walk, WindowNode, type ColumnRefNode, type ExprNode, type Query, type SelectQuery, type SQLNode } from '@uwdata/mosaic-sql';
+import { ColumnNameRefNode, ColumnsNode, FromClauseNode, isAggregateExpression, isColumnRef, isPivotQuery, isQuery, isSelectQuery, isSetOperation, isTableRef, PositionalRefNode, rewrite, ScalarSubqueryNode, StarNode, TableRefNode, walk, WindowNode, type ColumnRefNode, type ExprNode, type Query, type SelectQuery, type SQLNode } from '@uwdata/mosaic-sql';
 
 /** A query paired with the scope of CTEs visible to it. */
 export interface Binding {
@@ -81,7 +81,7 @@ export function baseExpression(
   const rel = resolveRelation(query._from[0], queryScope(query, outer));
   if (!rel) return;
   if (rel instanceof TableRefNode) return expr;
-  if (hasNode(expr, ColumnsNode)) return;
+  if (hasNode(expr, ColumnsNode) || hasNode(expr, PositionalRefNode)) return;
   const map = new Map<ExprNode, ExprNode>();
   for (const col of columnRefs(expr)) {
     const e = outputExpression(rel.query, col.column, rel.scope);
@@ -138,7 +138,7 @@ function columnRefs(expr: ExprNode): ColumnRefNode[] {
   return refs;
 }
 
-function hasNode(expr: SQLNode, type: typeof WindowNode | typeof ColumnsNode): boolean {
+function hasNode(expr: SQLNode, type: new (...args: never[]) => SQLNode): boolean {
   let found = false;
   walk(expr, node => {
     if (node instanceof type) return (found = true, -1);
@@ -168,20 +168,40 @@ export function isWildcard(node: { expr: SQLNode }): boolean {
  * column name, or undefined if no star clause outputs the name.
  * @param query The select query.
  * @param name The output column name.
+ * @param relations The table paths (or aliases) of the FROM relations
+ *  that may provide the column. If specified, table-qualified stars and
+ *  star modifiers apply only when they reference one of these relations.
+ *  Otherwise, all table qualifiers are assumed to reference the column's
+ *  relation.
  */
-export function starExpression(query: SelectQuery, name: string): ExprNode | undefined {
+export function starExpression(
+  query: SelectQuery,
+  name: string,
+  relations?: (string[] | undefined)[]
+): ExprNode | undefined {
+  const applies = (ref: ColumnRefNode) => !relations || !ref.table
+    || relations.some(path => path && suffixEquals(ref.table!.table, path));
   for (const clause of query._select) {
     if (!isStar(clause)) continue;
-    const { expr } = clause;
+    const expr = clause.expr as ColumnRefNode;
+    if (!applies(expr)) continue;
     if (!(expr instanceof StarNode)) return new ColumnNameRefNode(name);
     const replaced = expr.replace.find(c => c.alias === name);
     if (replaced) return replaced.expr;
     const renamed = expr.rename.find(([, to]) => to === name);
-    if (renamed) return new ColumnNameRefNode(renamed[0]);
-    const removed = expr.exclude.includes(name)
-      || expr.rename.some(([from]) => from === name);
+    if (renamed) return new ColumnNameRefNode(renamed[0].column);
+    const removed = expr.exclude.some(c => c.column === name && applies(c))
+      || expr.rename.some(([from]) => from.column === name && applies(from));
     if (!removed) return new ColumnNameRefNode(name);
   }
+}
+
+// without catalog access we can't tell which schema a search path resolves
+// a bare table name to, so this wrongly matches FROM t (resolved to s1.t)
+// against a qualifier of s2.t
+export function suffixEquals(a: string[], b: string[]): boolean {
+  const n = Math.min(a.length, b.length);
+  return a.slice(-n).every((v, i) => v === b[b.length - n + i]);
 }
 
 /**

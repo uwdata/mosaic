@@ -5,7 +5,7 @@ import type { LiteralNode } from '../ast/literal.js';
 import type { ListNode } from '../ast/list.js';
 import type { SQLNode } from '../ast/node.js';
 import type { ParamNode } from '../ast/param.js';
-import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, COLUMNS, FRAGMENT, LIST, LITERAL, PARAM, SCALAR_SUBQUERY, VERBATIM, WINDOW } from '../constants.js';
+import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, COLUMNS, FRAGMENT, LIST, LITERAL, PARAM, POSITIONAL_REF, SCALAR_SUBQUERY, VERBATIM, WINDOW } from '../constants.js';
 import type { ParamLike } from '../types.js';
 import { walk } from './walk.js';
 
@@ -88,6 +88,7 @@ export function collectAggregates(root: SQLNode) {
  * they are not object-equal node instances.
  * COLUMNS expressions with a list of names contribute those columns;
  * regular expression and lambda selectors contribute a '*' column reference.
+ * Positional references (#n) also contribute a '*' column reference.
  * @param root The root of the AST to search.
  */
 export function collectColumns(root: SQLNode) {
@@ -100,6 +101,8 @@ export function collectColumns(root: SQLNode) {
       for (const ref of selectedColumns(node as ColumnsNode)) {
         cols[`${ref}`] = ref;
       }
+    } else if (node.type === POSITIONAL_REF) {
+      cols['*'] = new ColumnNameRefNode('*');
     }
   });
   return Object.values(cols);

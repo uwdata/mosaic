@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import { columns as collected } from './util/columns.js';
-import { add, collectColumns, column, columns, deepClone, greatest, isColumnRef, lambda, max, prefix, Query, rewrite, star, StarNode } from '../src/index.js';
+import { add, collectColumns, column, columns, cross_join, deepClone, greatest, isColumnRef, lambda, max, prefix, Query, rewrite, star, StarNode } from '../src/index.js';
 
 describe('star', () => {
   it('generates plain and qualified stars', async () => {
@@ -23,6 +23,16 @@ describe('star', () => {
     );
     await expect(Query.select(star('t1', { exclude: ['num1', 'num2'] })).from('t1'))
       .toBeValidQuery('SELECT "t1".* EXCLUDE ("num1", "num2") FROM "t1"');
+  });
+
+  it('generates table-qualified star modifiers', async () => {
+    const s = star(null, {
+      exclude: [column('int1', 't1')],
+      rename: [[column('num1', 't2'), 'n1'], ['txt2', 't2txt']]
+    });
+    await expect(Query.select(s).from(cross_join('t1', 't2'))).toBeValidQuery(
+      'SELECT * EXCLUDE ("t1"."int1") RENAME ("t2"."num1" AS "n1", "txt2" AS "t2txt") FROM "t1" CROSS JOIN "t2"'
+    );
   });
 
   it('is a column reference to all columns', () => {

@@ -21,6 +21,7 @@ export { namedArg } from './functions/named-arg.js';
 export { abs, ceil, exp, floor, greatest, isFinite, isInfinite, isNaN, least, ln, log, round, sign, sqrt, trunc } from './functions/numeric.js';
 export { and, or, not, isNull, isNotNull, bitNot, bitAnd, bitOr, bitLeft, bitRight, add, sub, mul, div, idiv, mod, pow, eq, neq, lt, gt, lte, gte, isDistinct, isNotDistinct, isBetween, isNotBetween, isIn, isInDistinct, compareAny, compareAll } from './functions/operators.js';
 export { asc, desc } from './functions/order-by.js';
+export { positionalRef } from './functions/positional-ref.js';
 export { geojson, x, y, centroid, centroidX, centroidY } from './functions/spatial.js';
 export { sql } from './functions/sql-template-tag.js';
 export { columns, star, type StarOptions } from './functions/star.js';
