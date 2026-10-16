@@ -168,18 +168,29 @@ export function isWildcard(node: { expr: SQLNode }): boolean {
  * column name, or undefined if no star clause outputs the name.
  * @param query The select query.
  * @param name The output column name.
+ * @param relations The names of the FROM relations that may provide the
+ *  column. If specified, table-qualified stars and star modifiers apply
+ *  only when they reference one of these relations. Otherwise, all
+ *  table qualifiers are assumed to reference the column's relation.
  */
-export function starExpression(query: SelectQuery, name: string): ExprNode | undefined {
+export function starExpression(
+  query: SelectQuery,
+  name: string,
+  relations?: (string | undefined)[]
+): ExprNode | undefined {
+  const applies = (ref: ColumnRefNode) =>
+    !relations || !ref.table || relations.includes(ref.table.name);
   for (const clause of query._select) {
     if (!isStar(clause)) continue;
-    const { expr } = clause;
+    const expr = clause.expr as ColumnRefNode;
+    if (!applies(expr)) continue;
     if (!(expr instanceof StarNode)) return new ColumnNameRefNode(name);
     const replaced = expr.replace.find(c => c.alias === name);
     if (replaced) return replaced.expr;
     const renamed = expr.rename.find(([, to]) => to === name);
     if (renamed) return new ColumnNameRefNode(renamed[0].column);
-    const removed = expr.exclude.some(c => c.column === name)
-      || expr.rename.some(([from]) => from.column === name);
+    const removed = expr.exclude.some(c => c.column === name && applies(c))
+      || expr.rename.some(([from]) => from.column === name && applies(from));
     if (!removed) return new ColumnNameRefNode(name);
   }
 }

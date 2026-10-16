@@ -1,4 +1,4 @@
-import { ColumnNameRefNode, JoinNode, SelectClauseNode, isAggregateExpression, isPivotQuery, isSelectQuery, isSetOperation, literal, type ExprNode, type TableRefNode, type PivotQuery, type Query, type SelectQuery, type SQLNode, type SetOperation, isTableRef } from '@uwdata/mosaic-sql';
+import { ColumnNameRefNode, FromClauseNode, JoinNode, SelectClauseNode, isAggregateExpression, isPivotQuery, isSelectQuery, isSetOperation, literal, type ExprNode, type TableRefNode, type PivotQuery, type Query, type SelectQuery, type SQLNode, type SetOperation, isTableRef } from '@uwdata/mosaic-sql';
 import { isStar, isWildcard, queryScope, resolveRelation, starExpression, tableEquals, type Scope } from './lineage.js';
 
 /**
@@ -34,22 +34,26 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
     return rel ? visitQuery(rel.query, rel.scope) : false;
   };
 
-  const visitFrom = (node: SQLNode, scope: Scope): boolean => {
+  const visitFrom = (node: SQLNode, scope: Scope, relations: (string | undefined)[]): void => {
     if (node instanceof JoinNode) {
-      const left = visitFrom(node.left, scope);
-      const right = visitFrom(node.right, scope);
-      return left || right;
+      visitFrom(node.left, scope, relations);
+      visitFrom(node.right, scope, relations);
+    } else if (visitRelation(node, scope)) {
+      relations.push(relationName(node));
     }
-    return visitRelation(node, scope);
+  };
+
+  const sourceRelations = (q: SelectQuery, scope: Scope): (string | undefined)[] => {
+    const relations: (string | undefined)[] = [];
+    q._from.forEach(node => visitFrom(node, scope, relations));
+    return relations;
   };
 
   const visitSelect = (q: SelectQuery, scope: Scope, append?: string[]): boolean => {
-    const found = q._from
-      .map(node => visitFrom(node, scope))
-      .some(x => x);
-    if (!found) return false;
+    const relations = sourceRelations(q, scope);
+    if (!relations.length) return false;
     if (!append) {
-      appendSelect(q, missing(q).map(c => [c, new ColumnNameRefNode(c)]));
+      appendSelect(q, missingSelect(q, relations).map(c => [c, new ColumnNameRefNode(c)]));
     } else if (!q._select.some(isWildcard)) {
       appendSelect(q, append.map(c => [c, new ColumnNameRefNode(c)]));
     }
@@ -61,7 +65,7 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
 
   // set operation inputs take output names from the first input by
   // position, so all inputs must append the same columns in the same order
-  const visitSetOperation = (q: SetOperation, scope: Scope, append = missing(q)): boolean => {
+  const visitSetOperation = (q: SetOperation, scope: Scope, append = missing(q.queries[0], scope)): boolean => {
     const found = q.queries.map(sub => visitQuery(sub, scope, append));
     if (!found.some(x => x)) return false;
     q.queries.forEach((sub, i) => { if (!found[i]) padNull(sub, append); });
@@ -85,13 +89,16 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
     }
   };
 
-  const missing = (q: Query): string[] => {
-    if (isSelectQuery(q)) {
-      if (q._select.some(c => isWildcard(c) && !isStar(c))) return [];
-      const selected = new Set(q._select.map(x => x.alias));
-      return cols.filter(c => !selected.has(c) && !starExpression(q, c));
-    }
-    return isSetOperation(q) ? missing(q.queries[0]) : [];
+  const missing = (q: Query, outer: Scope): string[] => {
+    const scope = queryScope(q, outer);
+    if (isSelectQuery(q)) return missingSelect(q, sourceRelations(q, scope));
+    return isSetOperation(q) ? missing(q.queries[0], scope) : [];
+  };
+
+  const missingSelect = (q: SelectQuery, relations: (string | undefined)[]): string[] => {
+    if (q._select.some(c => isWildcard(c) && !isStar(c))) return [];
+    const selected = new Set(q._select.map(x => x.alias));
+    return cols.filter(c => !selected.has(c) && !starExpression(q, c, relations));
   };
 
   visitQuery(query, new Map());
@@ -116,6 +123,13 @@ function isAggregateQuery(query: SelectQuery): boolean {
  */
 function appendSelect(query: SelectQuery, clauses: [string, ExprNode][]): void {
   query._select.push(...clauses.map(([alias, expr]) => new SelectClauseNode(expr, alias)));
+}
+
+function relationName(node: SQLNode): string | undefined {
+  if (node instanceof FromClauseNode) {
+    return node.alias ?? (isTableRef(node.expr) ? node.expr.name : undefined);
+  }
+  return isTableRef(node) ? node.name : undefined;
 }
 
 function hasColumn(list: SQLNode[], name: string): boolean {

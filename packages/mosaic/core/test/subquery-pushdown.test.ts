@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Query, ScalarSubqueryNode, TableRefNode, cast, columns, star, count, FromClauseNode, gt, join, least, sql, sum } from '@uwdata/mosaic-sql';
+import { Query, ScalarSubqueryNode, TableRefNode, cast, column, columns, cross_join, star, count, FromClauseNode, gt, join, least, sql, sum } from '@uwdata/mosaic-sql';
 import { subqueryPushdown } from '../src/preagg/subquery-pushdown.js';
 
 function pushdown(query: Query, source: string | string[], cols: string[]) {
@@ -145,6 +145,25 @@ describe('subqueryPushdown', () => {
       ));
     expect(pushdown(q, 'data', ['c'])).toBe(
       'SELECT "x", "y", "c" FROM (SELECT "x", "k", "c" FROM "data") AS "l" JOIN (SELECT "y", "k" FROM "other") AS "r" USING ("k")'
+    );
+  });
+
+  it('applies table-qualified star modifiers only to their tables', () => {
+    const q = (exclude: string) => Query
+      .select(star(null, { exclude: [column('num1', exclude)] }))
+      .from(cross_join('t1', 't2'));
+    expect(pushdown(q('t2'), 't1', ['num1'])).toBe(
+      'SELECT * EXCLUDE ("t2"."num1") FROM "t1" CROSS JOIN "t2"'
+    );
+    expect(pushdown(q('t1'), 't1', ['num1'])).toBe(
+      'SELECT * EXCLUDE ("t1"."num1"), "num1" FROM "t1" CROSS JOIN "t2"'
+    );
+  });
+
+  it('adds columns not output by table-qualified stars', () => {
+    const q = Query.select(star('t2')).from(cross_join('t1', 't2'));
+    expect(pushdown(q, 't1', ['num1'])).toBe(
+      'SELECT "t2".*, "num1" FROM "t1" CROSS JOIN "t2"'
     );
   });
 
