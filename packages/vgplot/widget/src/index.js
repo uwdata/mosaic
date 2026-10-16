@@ -2,12 +2,16 @@ import { coordinator, isSelection } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 import './style.css';
 import { v4 as uuidv4 } from 'uuid';
+/**
+ * @import { Connector, Selection, ArrowQueryRequest, ExecQueryRequest, ArrowIPCBytes} from '@uwdata/mosaic-core'
+ * @import { Spec } from '@uwdata/mosaic-spec'
+ */
 
 /**
  * @typedef {Record<string, {value: unknown, predicate?: string}>} Params
  *
  * @typedef Model
- * @property {import('@uwdata/mosaic-spec').Spec} spec
+ * @property {Spec} spec
  *  The current Mosaic specification.
  * @property {string} preagg_schema The database schema in which to store
  *  pre-aggregated materialized views (default 'mosaic').
@@ -26,12 +30,12 @@ export default {
     const getPreaggSchema = () => view.model.get('preagg_schema');
     const logger = coordinator().logger();
 
-    /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
+    /** @type Map<string, {query: ArrowQueryRequest | ExecQueryRequest, startTime: number, resolve: (value: any) => ArrowIPCBytes | void, reject: (reason?: any) => void}> */
     const openQueries = new Map();
 
     /**
-     * @param {Record<any, unknown>} query the query to send
-     * @param {(value: any) => void} resolve the promise resolve callback
+     * @param {ArrowQueryRequest | ExecQueryRequest} query the query to send
+     * @param {(value: any) => ArrowIPCBytes | void} resolve the promise resolve callback
      * @param {(reason?: any) => void} reject the promise reject callback
      */
     function send(query, resolve, reject) {
@@ -46,8 +50,9 @@ export default {
       view.model.send({ ...query, uuid });
     }
 
-    /** @type {import('@uwdata/mosaic-core').Connector} */
+    /** @type {Connector} */
     const connector = {
+      // @ts-ignore
       query(query) {
         return new Promise((resolve, reject) => send(query, resolve, reject));
       },
@@ -60,7 +65,7 @@ export default {
     /**
      * Serialize a selection's resolved predicate — a single expression or an
      * implicitly conjunctive array — to a SQL string.
-     * @param {import('@uwdata/mosaic-core').Selection} selection
+     * @param {Selection} selection
      * @returns {string}
      */
     function predicateSQL(selection) {
@@ -69,6 +74,7 @@ export default {
       return parts.length > 1 ? parts.map(s => `(${s})`).join(' AND ') : (parts[0] ?? '');
     }
 
+    /** @type {string} */
     let appliedSpecJSON;
 
     async function updateSpec() {
@@ -108,6 +114,7 @@ export default {
       view.model.save_changes();
     }
 
+    /** @param {unknown} error */
     function showError(error) {
       logger.error(error);
       const pre = document.createElement('pre');
@@ -131,19 +138,23 @@ export default {
       const query = openQueries.get(msg.uuid);
       openQueries.delete(msg.uuid);
 
+      // @ts-ignore
       logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
 
       if (msg.error) {
+        // @ts-ignore
         query.reject(msg.error);
         showError(msg.error);
       } else {
         switch (msg.type) {
           case 'arrow': {
             logger.log('arrow bytes', buffers[0].buffer.byteLength);
+            // @ts-ignore
             query.resolve(buffers[0].buffer);
             break;
           }
           default: {
+            // @ts-ignore
             query.resolve({});
             break;
           }
@@ -163,6 +174,7 @@ export default {
   },
 };
 
+/** @param {Spec} spec */
 function instantiateSpec(spec) {
   // parse specification, and instantiate it
   // astToDOM creates a new vgplot API context with the
