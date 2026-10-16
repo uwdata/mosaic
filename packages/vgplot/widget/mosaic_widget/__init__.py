@@ -143,25 +143,20 @@ class MosaicWidget(anywidget.AnyWidget):
         sql = content["sql"]
         command = content["type"]
 
-        try:
-            if command == "arrow":
-                result = self.con.query(sql).arrow()
-                sink = pa.BufferOutputStream()
-                with pa.ipc.new_stream(sink, result.schema) as writer:
-                    for batch in result:
-                        writer.write(batch)
-                buf = sink.getvalue()
-
-                self.send({"type": "arrow", "uuid": uuid}, buffers=[buf.to_pybytes()])
-            elif command == "exec":
-                self.con.execute(sql)
-                self.send({"type": "exec", "uuid": uuid})
-            else:
-                msg = f"Unknown command {command}"
-                raise ValueError(msg)
-        except Exception as e:
-            logger.exception("Error processing query")
-            self.send({"error": str(e), "uuid": uuid})
+        if command == "arrow":
+            result = self.con.query(sql).arrow()
+            sink = pa.BufferOutputStream()
+            with pa.ipc.new_stream(sink, result.schema) as writer:
+                for batch in result:
+                    writer.write(batch)
+            buf = sink.getvalue()
+            self.send({"type": "arrow", "uuid": uuid}, buffers=[buf.to_pybytes()])
+        elif command == "exec":
+            self.con.execute(sql)
+            self.send({"type": "exec", "uuid": uuid})
+        else:
+            msg = f"Unknown command {command}"
+            raise ValueError(msg)
 
         total = round((time.time() - start) * 1_000)
         if total > SLOW_QUERY_THRESHOLD:
