@@ -36,6 +36,7 @@ def install() -> None:
                     heading=heading,
                     short_option=code_bold,
                     long_option=code_bold,
+                    action=code_bold,
                     prog=code_bold,
                     prog_extra=code,
                     label=code,
