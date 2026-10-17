@@ -49,7 +49,8 @@ class Client:
             response.raise_for_status()
 
     def post(self, command: Command[CT]) -> bytes:
-        return self._session.post("/", json=command).content or b""
+        response = self._session.post("/", json=command).raise_for_status()
+        return response.content or b""
 
     def _run_benchmark(
         self, benchmark: Benchmark[CT, None], /
