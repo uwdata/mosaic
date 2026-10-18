@@ -1,0 +1,8 @@
+{
+  "name": "duckdb-server-go",
+  "version": "0.33.0",
+  "private": true,
+  "scripts": {
+    "build:benchmark": "go build -tags=duckdb_arrow -o duckdb-server-go ."
+  }
+}

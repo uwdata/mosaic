@@ -1,0 +1,8 @@
+{
+  "name": "duckdb-server-rust",
+  "version": "0.33.0",
+  "private": true,
+  "scripts": {
+    "build:benchmark": "cargo build --release"
+  }
+}
