@@ -37,7 +37,8 @@
     "typecheck": "tsc -p test/tsconfig.json",
     "server": "node bin/run-server.js",
     "test": "vitest run",
-    "prepublishOnly": "tsc --build"
+    "prepublishOnly": "tsc --build",
+    "build:benchmark":"pnpm install --ignore-scripts"
   },
   "dependencies": {
     "@duckdb/node-api": "~1.5.5-r.5"
