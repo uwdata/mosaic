@@ -17,7 +17,7 @@ from pkg.errors import create_exception_handlers
 from pkg.serde import deserialize_json
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
     from pathlib import Path
 
     from starlette.requests import Request
@@ -34,7 +34,7 @@ class AppState(TypedDict):
 
 
 @asynccontextmanager
-async def lifespan(app: Starlette) -> AsyncIterator[AppState]:
+async def lifespan(app: Starlette) -> AsyncGenerator[AppState]:
     db_path = app.state.db_path
     with Database(db_path) as db:
         logger.info("Connected to DuckDB %s", db_path)
