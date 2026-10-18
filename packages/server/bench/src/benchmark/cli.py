@@ -3,10 +3,12 @@ from __future__ import annotations
 # pyright: reportPrivateUsage=none
 import argparse as _argparse
 import sys
-from typing import TYPE_CHECKING, Any, TypeVar, final
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, final
 from typing import Literal as L
 
 import msgspec
+from typing_extensions import TypeAliasType as Type
 
 from benchmark.common import DEFAULT_SERVERS, Port, Seconds, ServerName
 
@@ -15,6 +17,10 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Sequence
 
     _ArgumentParserT = TypeVar("_ArgumentParserT", bound=_argparse.ArgumentParser)
+
+CommandName = Type("CommandName", L["build"] | None)
+CommandFn = Type("CommandFn", Callable[["CLIOptions"], Any])
+CF = TypeVar("CF", bound=CommandFn)
 
 
 class _HelpFormatter(
@@ -110,6 +116,7 @@ def subcommand(
         kwds = {}
     return action.add_parser(
         command_name,
+        usage="%(prog)s [OPTIONS]",
         description=description,
         help=description,
         formatter_class=_HelpFormatter,
@@ -134,11 +141,15 @@ class CLIOptions(msgspec.Struct, kw_only=True):
     warmup: int = 5
     timeout: Seconds = Seconds(30)
     servers: Sequence[ServerName] = DEFAULT_SERVERS
-    # TODO @dangotbanned: replace this with a dispatch to somewhere else
-    command: object = None
+    command: CommandName = None
+
+    _registry: ClassVar[dict[CommandName, CommandFn]] = {}
 
     def base_url(self, port: Port | None = None) -> str:
         return f"{self.scheme}://{self.host}:{(port or self.port)}"
+
+    def dispatch(self) -> Any:
+        return self._registry[self.command](self)
 
     @classmethod
     def parse_sys_argv(cls) -> CLIOptions:
@@ -168,12 +179,13 @@ class CLIOptions(msgspec.Struct, kw_only=True):
         parser.add_argument(
             "--warmup", type=positive_int, default=5, help="Warmup requests"
         )
+        common_servers: dict[str, Any] = {
+            "nargs": "*",
+            "choices": DEFAULT_SERVERS,
+            "default": DEFAULT_SERVERS,
+        }
         parser.add_argument(
-            "--servers",
-            nargs="*",
-            choices=DEFAULT_SERVERS,
-            default=DEFAULT_SERVERS,
-            help="One or more servers to test",
+            "--servers", **common_servers, help="One or more servers to test"
         )
         parser.add_argument(
             "--timeout",
@@ -184,11 +196,15 @@ class CLIOptions(msgspec.Struct, kw_only=True):
 
         subparsers = parser.add_subparsers(title="Commands", dest="command")
         subparsers.default = _argparse.SUPPRESS
-        _build_parser = subcommand(
+        build_parser = subcommand(
             "build", "Compile or run the build step for each server", subparsers
+        )
+        build_parser.add_argument(
+            "--servers", **common_servers, help="One or more servers to build"
         )
         if not exit_on_error:
             parser.exit_on_error = False
+            build_parser.exit_on_error = False
 
         options = parser.parse_args(args, namespace=CLIOptions())
         return options
@@ -207,3 +223,11 @@ class CLIOptions(msgspec.Struct, kw_only=True):
         table.add_row("port", str(self.port))
         table.add_row("timeout", str(self.timeout))
         console.print(table)
+
+    @classmethod
+    def register_command(cls, name: CommandName) -> Callable[[CF], CF]:
+        def decorate(function: CF, /) -> CF:
+            cls._registry[name] = function
+            return function
+
+        return decorate
