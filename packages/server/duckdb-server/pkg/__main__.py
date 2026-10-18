@@ -1,27 +1,25 @@
 from __future__ import annotations
 
-import argparse
 import logging
 import sys
 
-import duckdb
-
-from pkg.server import server
+from pkg.app import create_app
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 def serve() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=3000)
-    db_path = ":memory:"
+    from pkg.servers._uvicorn import UvicornServer
+    from pkg.servers.common import Args
 
-    logger.info(f"Using DuckDB {db_path}")
-
-    con = duckdb.connect(db_path)
-
-    server(con)
+    args = Args.parse_sys_argv().resolve()
+    if ssl := args.ssl:
+        logger.info("Using TLS certificate %s", ssl.cert)
+    else:
+        logger.warning("No keys for HTTPS found")
+    server = UvicornServer.from_args(args, create_app(args.database))
+    server.run()
 
 
 if __name__ == "__main__":
