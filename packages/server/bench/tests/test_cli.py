@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import argparse
 from typing import TYPE_CHECKING, Final
+from unittest import mock
 
 import pytest
 
+# NOTE: Import needed to bring `@CLIOptions.register_command(...)` into scope
+import benchmark.main as _side_effect  # ruff: ignore[unused-import]
 from benchmark.cli import CLIOptions
 
 if TYPE_CHECKING:
@@ -46,3 +49,27 @@ def test_positive_int() -> None:
     raises_argument_error(
         "--warmup", "False", match=r"warmup.+invalid.+positive_int.+'False'"
     )
+
+
+def test_command_dispatch_default() -> None:
+    default = parse()
+    with mock.patch("benchmark.runner.Runner", autospec=True) as runner:
+        default.dispatch()
+
+    runner.assert_called_once()
+    runner.assert_has_calls([mock.call().run_all()], any_order=True)
+
+
+def test_command_dispatch_build() -> None:
+    build = parse("build")
+    with (
+        mock.patch("subprocess.run", autospec=True) as sp_run,
+        mock.patch("benchmark.common.console"),
+    ):
+        build.dispatch()
+
+    sp_run.assert_called()
+    for fn_call in sp_run.mock_calls:
+        call_args = fn_call.args
+        assert len(call_args) == 1
+        assert "build:benchmark" in call_args[0]
