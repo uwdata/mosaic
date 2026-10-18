@@ -3,7 +3,7 @@ from __future__ import annotations
 # pyright: reportPrivateUsage=none
 import argparse as _argparse
 import sys
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, final
 from typing import Literal as L
 
 import msgspec
@@ -117,6 +117,14 @@ def subcommand(
     )
 
 
+def positive_int(arg: str, /) -> int:
+    """A `type` validator for a positive uint."""
+    if (value := int(arg)) > 1:
+        return value
+    raise TypeError
+
+
+@final
 class CLIOptions(msgspec.Struct, kw_only=True):
     scheme: L["http", "https"] = "https"
     # NOTE: localhost is slower on (at least) windows
@@ -132,8 +140,17 @@ class CLIOptions(msgspec.Struct, kw_only=True):
     def base_url(self, port: Port | None = None) -> str:
         return f"{self.scheme}://{self.host}:{(port or self.port)}"
 
+    @classmethod
+    def parse_sys_argv(cls) -> CLIOptions:
+        return cls._parse(None, exit_on_error=True)
+
+    @classmethod
+    def parse_args(cls, *args: str) -> CLIOptions:
+        # Ensures test suite uses regular exceptions and not `SystemExit`
+        return cls._parse(args, exit_on_error=False)
+
     @staticmethod
-    def parse() -> CLIOptions:
+    def _parse(args: tuple[str, ...] | None, /, *, exit_on_error: bool) -> CLIOptions:
         parser = arg_parser(
             "benchmark",
             "Benchmarks server implementations over HTTP POST, with response-size verification",
@@ -146,9 +163,11 @@ class CLIOptions(msgspec.Struct, kw_only=True):
         )
         parser.add_argument("--port", type=int, default=3000, help="Server port")
         parser.add_argument(
-            "--iterations", type=int, default=100, help="Requests per query"
+            "--iterations", type=positive_int, default=100, help="Requests per query"
         )
-        parser.add_argument("--warmup", type=int, default=5, help="Warmup requests")
+        parser.add_argument(
+            "--warmup", type=positive_int, default=5, help="Warmup requests"
+        )
         parser.add_argument(
             "--servers",
             nargs="*",
@@ -168,14 +187,11 @@ class CLIOptions(msgspec.Struct, kw_only=True):
         _build_parser = subcommand(
             "build", "Compile or run the build step for each server", subparsers
         )
+        if not exit_on_error:
+            parser.exit_on_error = False
 
-        args = parser.parse_args(namespace=CLIOptions())
-
-        if args.iterations < 1:
-            parser.error("--iterations must be >= 1")
-        if args.warmup < 1:
-            parser.error("--warmup must be >= 1")
-        return args
+        options = parser.parse_args(args, namespace=CLIOptions())
+        return options
 
     def print(self) -> None:
         from rich.table import Table

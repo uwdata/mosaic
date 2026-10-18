@@ -4,7 +4,7 @@ from __future__ import annotations
 def main() -> None:
     from benchmark.cli import CLIOptions
 
-    options = CLIOptions.parse()
+    options = CLIOptions.parse_sys_argv()
 
     from benchmark.benches import BENCHMARKS, SOURCES
     from benchmark.runner import Runner
