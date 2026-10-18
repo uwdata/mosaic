@@ -11,6 +11,7 @@ members = [
 target-version = "py311"
 extend-include = ["*.ipynb"]
 fix = true
+target-version = "py310"
 
 [tool.ruff.lint]
 preview = true
