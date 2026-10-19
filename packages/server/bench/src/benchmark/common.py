@@ -19,7 +19,9 @@ Group = Type("Group", L["tiny", "histogram / binning", "larger", "complex / real
 ServerName = Type("ServerName", L["rust", "go", "python", "node"])
 
 Requirement = Type("Requirement", L["cargo", "uv", "pnpm", "gcc"] | ServerName)
+Host = Type("Host", L["localhost", "127.0.0.1"])
 Port = NewType("Port", int)
+"""Each server is provided a unique, available port."""
 Seconds = NewType("Seconds", float)
 
 Arrow = Type("Arrow", L["arrow"])
