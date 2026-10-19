@@ -146,6 +146,16 @@ jobs:
           uv run --group dev ty check ../../../specs/python
           uv run --group dev pytest --cov-report=term-missing --color=yes --cov=vgplot
 
+      - name: Build and test benchmark
+        run: |
+          cd packages/server/bench
+
+          uv build
+          uv run pyright
+          uv run ty check
+          uv run pytest
+        
+
   rust:
     name: Test in Rust
 
