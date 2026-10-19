@@ -151,7 +151,7 @@ jobs:
       - name: Type check benchmark
         run: |
           cd packages/server/bench
-          uv run pyright --verbose
+          uv run pyright
           uv run ty check
       - name: Test benchmark
         run: uv run pytest
