@@ -10,7 +10,7 @@ from typing import Literal as L
 import msgspec
 from typing_extensions import TypeAliasType as Type
 
-from benchmark.common import DEFAULT_SERVERS, Port, Seconds, ServerName
+from benchmark.common import DEFAULT_SERVERS, Host, Port, Seconds, ServerName
 
 if TYPE_CHECKING:
     from argparse import Action, _SubParsersAction
@@ -135,8 +135,7 @@ def positive_int(arg: str, /) -> int:
 class CLIOptions(msgspec.Struct, kw_only=True):
     scheme: L["http", "https"] = "https"
     # NOTE: localhost is slower on (at least) windows
-    host: L["localhost", "127.0.0.1"] = "127.0.0.1"
-    port: Port = Port(3000)
+    host: Host = "127.0.0.1"
     iterations: int = 100
     warmup: int = 5
     timeout: Seconds = Seconds(30)
@@ -146,8 +145,8 @@ class CLIOptions(msgspec.Struct, kw_only=True):
 
     _registry: ClassVar[dict[CommandName, CommandFn]] = {}
 
-    def base_url(self, port: Port | None = None) -> str:
-        return f"{self.scheme}://{self.host}:{(port or self.port)}"
+    def base_url(self, port: Port) -> str:
+        return f"{self.scheme}://{self.host}:{port}"
 
     def dispatch(self) -> Any:
         return self._registry[self.command](self)
@@ -173,7 +172,6 @@ class CLIOptions(msgspec.Struct, kw_only=True):
             default="127.0.0.1",
             help="Server host",
         )
-        parser.add_argument("--port", type=int, default=3000, help="Server port")
         parser.add_argument(
             "--iterations", type=positive_int, default=100, help="Requests per query"
         )
@@ -227,7 +225,6 @@ class CLIOptions(msgspec.Struct, kw_only=True):
         table.add_row("iterations", str(self.iterations))
         table.add_row("warmup", str(self.warmup))
         table.add_row("host", self.host)
-        table.add_row("port", str(self.port))
         table.add_row("timeout", str(self.timeout))
         console.print(table)
 
