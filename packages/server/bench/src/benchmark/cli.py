@@ -142,6 +142,7 @@ class CLIOptions(msgspec.Struct, kw_only=True):
     timeout: Seconds = Seconds(30)
     servers: Sequence[ServerName] = DEFAULT_SERVERS
     command: CommandName = None
+    allow_retries: bool = True
 
     _registry: ClassVar[dict[CommandName, CommandFn]] = {}
 
@@ -192,6 +193,12 @@ class CLIOptions(msgspec.Struct, kw_only=True):
             type=int,
             default=30,
             help="Seconds to wait for a server before giving up",
+        )
+        parser.add_argument(
+            "--no-retries",
+            action="store_false",
+            dest="allow_retries",
+            help="Disable retries when attempting to establish a connection",
         )
 
         subparsers = parser.add_subparsers(title="Commands", dest="command")

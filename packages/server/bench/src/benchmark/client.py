@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import time
 from http import HTTPStatus
 from typing import TYPE_CHECKING
@@ -15,7 +16,7 @@ from benchmark.task import Command, Result
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator
 
-    from benchmark.common import Exec, Seconds
+    from benchmark.common import Exec, Retries, Seconds
     from benchmark.task import Benchmark
 
 _JSON_ENCODER = msgspec.json.Encoder().encode
@@ -26,10 +27,18 @@ class Client:
     """A managed session/connection, scoped to a single server."""
 
     def __init__(
-        self, base_url: str, iterations: int, warmup: int, timeout: Seconds
+        self,
+        base_url: str,
+        iterations: int,
+        warmup: int,
+        timeout: Seconds,
+        retries: Retries | None,
     ) -> None:
         self._session = niquests.Session(
-            base_url=base_url, json_encoder=_JSON_ENCODER, timeout=timeout
+            base_url=base_url,
+            json_encoder=_JSON_ENCODER,
+            timeout=timeout,
+            retries=retries.to_urllib3() if retries else 0,
         )
         self.base_url: str = base_url
         self.iterations: int = iterations
@@ -44,7 +53,16 @@ class Client:
         console.print("Closed client", style="dim")
 
     def ensure_ok(self) -> None:
-        response = self._session.post("/", json=_PING)
+        start = time.perf_counter_ns()
+        try:
+            response = self._session.post("/", json=_PING)
+            end = time.perf_counter_ns()
+        except niquests.ConnectionError:
+            end = time.perf_counter_ns()
+            seconds = elapsed_seconds_ns(start, end)
+            console.print(f"[red bold]Failed to connect in {seconds}s[/]")
+            raise
+        console.print(f"[green bold]Connected in {elapsed_seconds_ns(start, end)}s[/]")
         if response.status_code != HTTPStatus.OK:
             response.raise_for_status()
 
@@ -95,3 +113,15 @@ class Client:
             spinner="simpleDotsScrolling",
         ):
             yield self._run_benchmark(bench)
+
+
+def elapsed_seconds_ns(start_ns: int, end_ns: int, /) -> str:
+    """Calculate the delta and format the result as (fractional) seconds.
+
+    Intended for *informational* logging.
+
+    ## See Also
+    https://github.com/python/cpython/issues/59648
+    """
+    diff = end_ns - start_ns
+    return str(round(dt.timedelta(microseconds=diff / 1000).total_seconds(), 2))

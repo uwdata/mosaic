@@ -52,12 +52,12 @@ class Runner(msgspec.Struct, Generic[CT]):
         port = opts.port
         n, warmup, timeout = opts.iterations, opts.warmup, opts.timeout
         console.rule(f"Running {target.link()}")
+        retries = target.retry if opts.allow_retries else None
         with (
             Server.from_config(target, port) as server,
-            Client(opts.base_url(port), n, warmup, timeout) as client,
+            Client(opts.base_url(port), n, warmup, timeout, retries) as client,
         ):
             client.ensure_ok()
-            console.print("[green bold]Connected[/]")
             results = (
                 result.into_row()
                 for result in client.run_benchmarks(self.sources, self.benchmarks)
