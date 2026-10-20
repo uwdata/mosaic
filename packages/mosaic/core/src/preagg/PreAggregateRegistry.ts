@@ -3,7 +3,6 @@ import type { Connector, PreaggResponse } from '../connectors/Connector.js';
 import {
   AbortError,
   ConnectorError,
-  ConnectorErrorCode,
   isAbortError,
   parsePreaggResponse,
   referenceParts
@@ -31,7 +30,6 @@ interface Failure {
 
 export interface PreAggregateLimits {
   maxCachedTables: number;
-  maxPendingBuilds: number;
   maxFailures: number;
   timeoutMs: number;
   cooldownMs: number;
@@ -39,7 +37,6 @@ export interface PreAggregateLimits {
 
 const defaultLimits: Readonly<PreAggregateLimits> = Object.freeze({
   maxCachedTables: 512,
-  maxPendingBuilds: 32,
   maxFailures: 256,
   timeoutMs: 120 * 1000,
   cooldownMs: 60 * 1000
@@ -61,12 +58,6 @@ export class PreAggregateRegistry {
     this.manager = manager;
   }
 
-  get pending(): number {
-    let n = 0;
-    for (const e of this.entries.values()) if (e.build) n++;
-    return n;
-  }
-
   lookup(sql: string): TableRefNode | null {
     return this.entries.get(sql)?.table ?? null;
   }
@@ -81,9 +72,10 @@ export class PreAggregateRegistry {
     const failure = this.failures.get(sql);
     if (failure) {
       if (Date.now() < failure.retryAt) {
+        this.manager.logger().debug('Preagg throttled', sql);
         return Promise.reject(new ConnectorError(
           `Preaggregation throttled after a recent failure: ${failure.error.message}`,
-          { code: ConnectorErrorCode.Throttled, cause: failure.error }
+          { cause: failure.error }
         ));
       }
       this.failures.delete(sql);
@@ -94,9 +86,6 @@ export class PreAggregateRegistry {
       this.entries.delete(sql);
       this.entries.set(sql, entry);
       return entry.build ? entry.build.promise : Promise.resolve(entry.table!);
-    }
-    if (this.pending >= this.limits.maxPendingBuilds) {
-      return Promise.reject(new ConnectorError('Preaggregation lane is busy', { code: ConnectorErrorCode.Throttled }));
     }
 
     entry = { sql, table: null, build: null };
@@ -193,6 +182,6 @@ export class PreAggregateRegistry {
     while (this.failures.size > this.limits.maxFailures) {
       this.failures.delete(this.failures.keys().next().value!);
     }
-    this.manager.logger().debug('Preagg failure', entry.sql, error);
+    this.manager.logger().warn('Preagg failure', entry.sql, error);
   }
 }

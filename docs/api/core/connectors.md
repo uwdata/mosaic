@@ -69,9 +69,9 @@ The supported options are:
 
 The error a connector rejects with when a request fails. The optional _fields_ object may provide `code`, `status`, `reference`, and `cause`, which are exposed as instance properties:
 
-- _code_: A machine-readable failure class: the server's error-envelope code, or one the coordinator raised. The two values the coordinator acts on are exported as `ConnectorErrorCode` constants; treat any other value as a generic failure.
+- _code_: The server's machine-readable error-envelope code. The one value the coordinator acts on is exported as `ConnectorErrorCode.TableNotFound`; treat any other value as a generic failure.
 - _status_: The HTTP status code, for requests made over HTTP.
 - _reference_: The `{ catalog, schema, table }` reference of a missing managed table. Present only for `table_not_found`, where the coordinator uses it to rebuild the table.
 - _cause_: The underlying error, when the failure wraps one.
 
-The codes a server may report are `bad_request`, `unauthenticated`, `forbidden`, `table_not_found`, `unsupported_command`, `resource_exhausted`, `deadline_exceeded`, and `internal_error`. Of these the coordinator acts only on `table_not_found` (`ConnectorErrorCode.TableNotFound`), rebuilding the table named by `reference`. The coordinator itself raises `throttled` (`ConnectorErrorCode.Throttled`) when it declines to start a pre-aggregation build because too many are already pending or a recent failure for the same query is still cooling down. Other client-side failures, such as a `preagg` response it cannot parse or a build that exceeds its timeout, carry a descriptive message and no code.
+The codes a server may report are `bad_request`, `unauthenticated`, `forbidden`, `table_not_found`, `unsupported_command`, `resource_exhausted`, `deadline_exceeded`, and `internal_error`. Of these the coordinator acts only on `table_not_found`, rebuilding the table named by `reference`. Failures the client raises itself carry a descriptive message and no code: a `preagg` response it cannot parse, a build that exceeds its timeout, or a build it declines to start because a recent failure for the same query is still cooling down.

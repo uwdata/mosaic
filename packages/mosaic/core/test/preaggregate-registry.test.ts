@@ -29,7 +29,6 @@ describe('PreAggregateRegistry', () => {
       { type: 'preagg', sql: SQL_A },
       { type: 'preagg', sql: SQL_B }
     ]);
-    expect(registry.pending).toBe(2);
 
     const response = connector.complete();
     connector.complete();
@@ -37,7 +36,6 @@ describe('PreAggregateRegistry', () => {
     expect(t1).toBe(t2);
     expect(t1.table).toEqual(['memory', 'mosaic_scope_test', response.reference.table]);
     expect(t3).not.toBe(t1);
-    expect(registry.pending).toBe(0);
 
     // completing B evicted A (LRU of one); A rebuilds, B is reused
     expect(registry.lookup(SQL_A)).toBeNull();
@@ -46,7 +44,7 @@ describe('PreAggregateRegistry', () => {
 
     registry.request(SQL_A);
     registry.request(SQL_C);
-    expect(registry.pending).toBe(2);
+    expect(connector.open).toHaveLength(2);
     expect(registry.lookup(SQL_B)).toBe(t3);
     connector.complete();
     connector.complete();
@@ -95,7 +93,7 @@ describe('PreAggregateRegistry', () => {
     expect(err.message).toBe('Malformed preagg response');
     expect(err.code).toBeUndefined();
     expect(registry.lookup(SQL_A)).toBeNull();
-    await expect(registry.request(SQL_A)).rejects.toMatchObject({ code: 'throttled' });
+    await expect(registry.request(SQL_A)).rejects.toMatchObject({ cause: err });
   });
 
   it('accepts a well-formed response and ignores unknown fields', async () => {
@@ -106,21 +104,6 @@ describe('PreAggregateRegistry', () => {
     const nested = registry.request(SQL_B);
     connector.open[0].resolve({ ...good, reference: { catalog: 'lake', schema: ['ns', 'sub'], table: 't' } });
     expect((await nested).table).toEqual(['lake', 'ns', 'sub', 't']);
-  });
-
-  it('refuses new builds at the pending limit without a cooldown', async () => {
-    const { registry, connector } = setup({ maxPendingBuilds: 1 });
-    const a = registry.request(SQL_A);
-    await expect(registry.request(SQL_B)).rejects.toMatchObject({ code: 'throttled', message: 'Preaggregation lane is busy' });
-    expect(registry.request(SQL_A)).toBe(a);
-    expect(registry.pending).toBe(1);
-    expect(registry.lookup(SQL_B)).toBeNull();
-
-    connector.complete();
-    await a;
-    const b = registry.request(SQL_B);
-    connector.complete();
-    expect(await b).toBeInstanceOf(TableRefNode);
   });
 
   it.each([
@@ -135,9 +118,11 @@ describe('PreAggregateRegistry', () => {
     expect(err).toBeInstanceOf(ConnectorError);
     expect(err.code).toBe(code);
 
-    const suppressed = await registry.request(SQL_A).catch(e => e);
+    const suppressed = await registry.request(SQL_A).catch(e => e) as ConnectorError;
     expect(suppressed).toBeInstanceOf(ConnectorError);
-    expect(suppressed).toMatchObject({ code: 'throttled', cause: err });
+    expect(suppressed.message).toBe(`Preaggregation throttled after a recent failure: ${err.message}`);
+    expect(suppressed.code).toBeUndefined();
+    expect(suppressed.cause).toBe(err);
     expect(connector.preaggRequests).toHaveLength(1);
 
     await vi.advanceTimersByTimeAsync(60_000);
@@ -150,7 +135,7 @@ describe('PreAggregateRegistry', () => {
 
   it('settles every waiter at the shared deadline and ignores a late response', async () => {
     vi.useFakeTimers();
-    const { registry, connector } = setup({ timeoutMs: 1000, maxPendingBuilds: 1 });
+    const { registry, connector } = setup({ timeoutMs: 1000 });
     const a = registry.request(SQL_A);
     await vi.advanceTimersByTimeAsync(600);
     const joined = registry.request(SQL_A);
@@ -162,9 +147,8 @@ describe('PreAggregateRegistry', () => {
       expect(err.message).toBe('Preaggregation deadline exceeded');
       expect(err.code).toBeUndefined();
     }
-    expect(registry.pending).toBe(0);
-    await expect(registry.request(SQL_A)).rejects.toMatchObject({ code: 'throttled' });
-    expect(registry.request(SQL_B)).toBeInstanceOf(Promise);
+    await expect(registry.request(SQL_A)).rejects
+      .toThrow('Preaggregation throttled after a recent failure: Preaggregation deadline exceeded');
 
     connector.open[0].resolve({ reference: { catalog: 'x', schema: ['y'], table: 'z' }, createdAt: '2026-01-01T00:00:00Z' });
     await vi.advanceTimersByTimeAsync(0);
@@ -184,7 +168,6 @@ describe('PreAggregateRegistry', () => {
 
     registry.reset();
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
-    expect(registry.pending).toBe(0);
     expect(registry.lookup(SQL_B)).toBeNull();
     expect(invalidate).toHaveBeenCalledTimes(2);
     expect(registry.request(SQL_C)).toBeInstanceOf(Promise);

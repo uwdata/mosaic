@@ -3,15 +3,13 @@ import type { PreaggResponse, TableReference } from './Connector.js';
 /** Values of `ConnectorError.code` the coordinator acts on. */
 export const ConnectorErrorCode = Object.freeze({
   /** Sent by a server; `reference` names the managed table to rebuild. */
-  TableNotFound: 'table_not_found',
-  /** Raised by the client when it declines to start a preagg build: the build lane is full or a recent failure for the same query is still cooling down. */
-  Throttled: 'throttled'
+  TableNotFound: 'table_not_found'
 } as const);
 
 export type ConnectorErrorCode = typeof ConnectorErrorCode[keyof typeof ConnectorErrorCode];
 
 export class ConnectorError extends Error {
-  /** The server error envelope's code, or a client-raised `ConnectorErrorCode`. Servers report codes beyond those the coordinator acts on. */
+  /** The server error envelope's code. Servers report codes beyond those the coordinator acts on; errors the client raises itself carry none. */
   code?: string;
   status?: number;
   /** The managed table to rebuild; present only for `table_not_found`. */
