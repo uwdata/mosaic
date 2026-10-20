@@ -1,26 +1,17 @@
 import type { PreaggResponse, TableReference } from './Connector.js';
 
-/** Values of `ConnectorError.code`. */
+/** Values of `ConnectorError.code` the coordinator acts on. */
 export const ConnectorErrorCode = Object.freeze({
-  // the server error envelope's closed vocabulary
-  BadRequest: 'bad_request',
-  Unauthenticated: 'unauthenticated',
-  Forbidden: 'forbidden',
+  /** Sent by a server; `reference` names the managed table to rebuild. */
   TableNotFound: 'table_not_found',
-  UnsupportedCommand: 'unsupported_command',
-  ResourceExhausted: 'resource_exhausted',
-  DeadlineExceeded: 'deadline_exceeded',
-  InternalError: 'internal_error',
-  // raised by the client, never sent by a server
-  MalformedResponse: 'malformed_response',
-  LaneBusy: 'lane_busy',
-  Suppressed: 'suppressed'
+  /** Raised by the client when it declines to start a preagg build: the build lane is full or a recent failure for the same query is still cooling down. */
+  Throttled: 'throttled'
 } as const);
 
 export type ConnectorErrorCode = typeof ConnectorErrorCode[keyof typeof ConnectorErrorCode];
 
 export class ConnectorError extends Error {
-  /** A `ConnectorErrorCode` when known; a server may send a code this client does not recognize. */
+  /** The server error envelope's code, or a client-raised `ConnectorErrorCode`. Servers report codes beyond those the coordinator acts on. */
   code?: string;
   status?: number;
   /** The managed table to rebuild; present only for `table_not_found`. */
@@ -101,7 +92,7 @@ export function parsePreaggResponse(value: unknown): PreaggResponse {
   const { reference, createdAt, rows, bytes } = (value ?? {}) as Record<string, unknown>;
   const parsed = parseTableReference(reference);
   if (!parsed || typeof createdAt !== 'string' || Number.isNaN(Date.parse(createdAt))) {
-    throw new ConnectorError('Malformed preagg response', { code: ConnectorErrorCode.MalformedResponse });
+    throw new ConnectorError('Malformed preagg response');
   }
   const response: PreaggResponse = { reference: parsed, createdAt };
   if (typeof rows === 'number') response.rows = rows;

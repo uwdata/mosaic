@@ -307,9 +307,8 @@ export class PreAggregator {
     result.catch(err => {
       if (info.result === result) info.result = null;
       if (isAbortError(err)) return;
-      const refused = err instanceof ConnectorError
-        && (err.code === ConnectorErrorCode.LaneBusy || err.code === ConnectorErrorCode.Suppressed);
-      this.mc.logger()[refused ? 'debug' : 'warn'](err);
+      const throttled = err instanceof ConnectorError && err.code === ConnectorErrorCode.Throttled;
+      this.mc.logger()[throttled ? 'debug' : 'warn'](err);
     });
     info.result = result;
     return result;

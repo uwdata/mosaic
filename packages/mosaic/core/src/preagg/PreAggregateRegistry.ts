@@ -82,7 +82,8 @@ export class PreAggregateRegistry {
     if (failure) {
       if (Date.now() < failure.retryAt) {
         return Promise.reject(new ConnectorError(
-          `Preaggregation suppressed: ${failure.error.message}`, { code: ConnectorErrorCode.Suppressed, cause: failure.error }
+          `Preaggregation throttled after a recent failure: ${failure.error.message}`,
+          { code: ConnectorErrorCode.Throttled, cause: failure.error }
         ));
       }
       this.failures.delete(sql);
@@ -95,7 +96,7 @@ export class PreAggregateRegistry {
       return entry.build ? entry.build.promise : Promise.resolve(entry.table!);
     }
     if (this.pending >= this.limits.maxPendingBuilds) {
-      return Promise.reject(new ConnectorError('Preaggregation lane is busy', { code: ConnectorErrorCode.LaneBusy }));
+      return Promise.reject(new ConnectorError('Preaggregation lane is busy', { code: ConnectorErrorCode.Throttled }));
     }
 
     entry = { sql, table: null, build: null };
@@ -121,7 +122,7 @@ export class PreAggregateRegistry {
     promise.catch(() => {});
     const build: Build = { entry, timer: null!, promise, resolve, reject };
     build.timer = setTimeout(() => {
-      this.fail(build, new ConnectorError('Preaggregation deadline exceeded', { code: ConnectorErrorCode.DeadlineExceeded }));
+      this.fail(build, new ConnectorError('Preaggregation deadline exceeded'));
     }, this.limits.timeoutMs);
     (build.timer as { unref?: () => void }).unref?.();
     return build;
@@ -192,6 +193,6 @@ export class PreAggregateRegistry {
     while (this.failures.size > this.limits.maxFailures) {
       this.failures.delete(this.failures.keys().next().value!);
     }
-    this.manager.logger().debug('Preagg failure', error.code ?? 'transport', entry.sql);
+    this.manager.logger().debug('Preagg failure', entry.sql, error);
   }
 }
