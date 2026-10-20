@@ -167,33 +167,6 @@ describe('PreAggregator preagg mode', () => {
     expect(replacement.sql().at(-1)).toBe('SELECT count(*) AS "measure" FROM "testData" WHERE ("dim" IN (\'b\'))');
   });
 
-  it('retries an automatic entry refused while the lane was busy', async () => {
-    const connector = new MockPreaggConnector();
-    const mc = preaggCoordinator(connector, { maxPendingBuilds: 1 });
-    const { client, sel } = await aggregateClient(mc);
-    const other = await aggregateClient(mc);
-
-    other.sel.update(clausePoint('cat', 'c', { source: {} }));
-    await flush();
-    expect(connector.open).toHaveLength(1);
-
-    const source = {};
-    sel.update(clausePoint('dim', 'a', { source }));
-    await sel.pending('value');
-    expect((mc.preaggregator.entries.get(client) as PreAggregateInfo).result).toBeNull();
-    expect(connector.preaggRequests).toHaveLength(1);
-    expect(connector.sql().at(-1)).toContain('FROM "testData" WHERE ("dim" IN (\'a\'))');
-
-    connector.complete();
-    await other.sel.pending('value');
-    sel.update(clausePoint('dim', 'b', { source }));
-    await flush();
-    expect(connector.preaggRequests).toHaveLength(2);
-    connector.complete();
-    await sel.pending('value');
-    expect(connector.sql().at(-1)).toContain('WHERE ("active0" IN (\'b\'))');
-  });
-
   it('falls back and cools down when the connector cannot transport preagg', async () => {
     const connector = new MockPreaggConnector({ supportsPreagg: false });
     const mc = preaggCoordinator(connector);

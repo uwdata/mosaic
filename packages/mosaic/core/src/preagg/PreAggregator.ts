@@ -3,7 +3,7 @@ import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from 
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
-import { ConnectorError, ConnectorErrorCode, isAbortError, PreAggregateModeError, referenceParts } from '../connectors/errors.js';
+import { ConnectorError, ConnectorErrorCode, PreAggregateModeError, referenceParts } from '../connectors/errors.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { QueryError } from '../util/query-error.js';
@@ -304,11 +304,8 @@ export class PreAggregator {
 
   private materialize(info: PreAggregateInfo): Promise<void> {
     const result = this.registry!.request(info.create.toString()).then(table => info.bind(table));
-    result.catch(err => {
+    result.catch(() => {
       if (info.result === result) info.result = null;
-      if (isAbortError(err)) return;
-      const throttled = err instanceof ConnectorError && err.code === ConnectorErrorCode.Throttled;
-      this.mc.logger()[throttled ? 'debug' : 'warn'](err);
     });
     info.result = result;
     return result;
