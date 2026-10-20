@@ -69,9 +69,9 @@ The supported options are:
 
 The error a connector rejects with when a request fails. The optional _fields_ object may provide `code`, `status`, `reference`, and `cause`, which are exposed as instance properties:
 
-- _code_: A machine-readable failure class. Known values are exported as the `ConnectorErrorCode` constants, for example `ConnectorErrorCode.TableNotFound` (`"table_not_found"`); treat any other value as a generic failure.
+- _code_: A machine-readable failure class: the server's error-envelope code, or one the coordinator raised. The two values the coordinator acts on are exported as `ConnectorErrorCode` constants; treat any other value as a generic failure.
 - _status_: The HTTP status code, for requests made over HTTP.
 - _reference_: The `{ catalog, schema, table }` reference of a missing managed table. Present only for `table_not_found`, where the coordinator uses it to rebuild the table.
 - _cause_: The underlying error, when the failure wraps one.
 
-The codes a server may report are `bad_request`, `unauthenticated`, `forbidden`, `table_not_found`, `unsupported_command`, `resource_exhausted`, `deadline_exceeded`, and `internal_error`. The coordinator itself raises `malformed_response` for a `preagg` response it cannot parse, `lane_busy` when too many pre-aggregation builds are already pending, `suppressed` while a recent failure for the same query cools down, and `deadline_exceeded` when a build exceeds its timeout.
+The codes a server may report are `bad_request`, `unauthenticated`, `forbidden`, `table_not_found`, `unsupported_command`, `resource_exhausted`, `deadline_exceeded`, and `internal_error`. Of these the coordinator acts only on `table_not_found` (`ConnectorErrorCode.TableNotFound`), rebuilding the table named by `reference`. The coordinator itself raises `throttled` (`ConnectorErrorCode.Throttled`) when it declines to start a pre-aggregation build because too many are already pending or a recent failure for the same query is still cooling down. Other client-side failures, such as a `preagg` response it cannot parse or a build that exceeds its timeout, carry a descriptive message and no code.
