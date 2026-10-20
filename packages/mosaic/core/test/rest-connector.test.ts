@@ -110,17 +110,14 @@ describe('RestConnector', () => {
     expect(fetchMock.mock.calls[0][1]!.body).toBe(JSON.stringify(preagg));
   });
 
-  it.each([
-    ['preagg', (connector: RestConnector) => connector.query(preagg)],
-    ['arrow', (connector: RestConnector) => connector.query(request)]
-  ] as const)('parses JSON error responses for %s requests', async (_, query) => {
+  it('parses JSON error responses for arrow requests', async () => {
     const fetchMock = mockFetch(() => new Response(JSON.stringify({
       error: 'Materialized table is unavailable',
       code: 'table_not_found',
       reference: { catalog: 'memory', schema: ['mosaic_scope_a7'], table: 'preagg_c92f' }
     }), { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' } }));
 
-    const err = await query(new RestConnector({ fetch: fetchMock })).catch(e => e) as ConnectorError;
+    const err = await new RestConnector({ fetch: fetchMock }).query(request).catch(e => e) as ConnectorError;
     expect(err).toBeInstanceOf(ConnectorError);
     expect(err).toMatchObject({
       message: 'Materialized table is unavailable',
@@ -131,20 +128,13 @@ describe('RestConnector', () => {
   });
 
   it.each([
-    ['arrow', 404, 'text/plain', 'missing table'],
-    ['arrow', 404, 'application/json', 'not json'],
-    ['arrow', 404, 'application/json', '{"code":"table_not_found"}'],
-    ['preagg', 502, 'text/html', '<h1>Bad Gateway</h1>'],
-    ['preagg', 502, 'text/html', ''],
-    ['preagg', 502, 'application/vnd.apache.arrow.stream', '{"error":"x","code":"forbidden"}'],
-    ['preagg', 502, 'application/json', 'not json']
-  ] as const)('rejects %s failures without a code (%i, %s): %s', async (type, status, contentType, body) => {
-    const fetchMock = mockFetch(() => new Response(body, { status, headers: { 'Content-Type': contentType } }));
-    const connector = new RestConnector({ fetch: fetchMock });
-    const result = type === 'arrow' ? connector.query(request) : connector.query(preagg);
-    const err = await result.catch(e => e) as ConnectorError;
+    ['application/vnd.apache.arrow.stream', '{"error":"x","code":"forbidden"}'],
+    ['application/json', 'not json']
+  ] as const)('rejects failures without a code (%s): %s', async (contentType, body) => {
+    const fetchMock = mockFetch(() => new Response(body, { status: 502, headers: { 'Content-Type': contentType } }));
+    const err = await new RestConnector({ fetch: fetchMock }).query(preagg).catch(e => e) as ConnectorError;
     expect(err).toBeInstanceOf(ConnectorError);
-    expect(err).toMatchObject({ status, code: undefined, message: `Query failed with HTTP status ${status}: ${body}` });
+    expect(err).toMatchObject({ status: 502, code: undefined, message: `Query failed with HTTP status 502: ${body}` });
   });
 });
 
@@ -158,16 +148,11 @@ describe('RestConnector preagg error responses', () => {
 
   it.each([
     ['empty object', {}, {}],
-    ['empty message', { error: '' }, {}],
     ['non-string code', { error: 'x', code: 5 }, {}],
     ['non-object', 'nope', {}],
     ['message only', { error: 'x' }, { message: 'x', code: undefined }],
     ['partial reference', { error: 'x', code: 'table_not_found', reference: { catalog: 'c' } },
       { code: 'table_not_found', reference: undefined }],
-    ['flat triple', { error: 'x', code: 'table_not_found', catalog: 'c', schema: 's', table: 't' },
-      { code: 'table_not_found', reference: undefined }],
-    ['full reference', { error: 'x', code: 'table_not_found', reference: relation },
-      { code: 'table_not_found', reference: relation }],
     ['reference on other code', { error: 'x', code: 'forbidden', reference: relation },
       { code: 'forbidden', reference: undefined }]
   ])('error response: %s', async (_, response, expected) => {

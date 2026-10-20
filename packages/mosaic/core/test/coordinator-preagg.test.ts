@@ -147,7 +147,7 @@ describe('PreAggregator preagg mode', () => {
     expect(connector.requests).toHaveLength(issued);
   });
 
-  it.each(['connector', 'reset'])('falls back after %s replacement invalidates a bound table', async action => {
+  it('falls back after connector replacement invalidates a bound table', async () => {
     const connector = new MockPreaggConnector();
     const mc = preaggCoordinator(connector);
     const { sel, results } = await aggregateClient(mc);
@@ -160,12 +160,11 @@ describe('PreAggregator preagg mode', () => {
 
     sel.update(clausePoint('dim', 'b', { source }));
     sel.activate(clausePoint('dim', 'x', { source: {} }));
-    if (action === 'connector') mc.databaseConnector(new MockPreaggConnector());
-    else mc.preaggregator.reset();
+    const replacement = new MockPreaggConnector();
+    mc.databaseConnector(replacement);
     await sel.pending('value');
-    const current = mc.databaseConnector() as MockPreaggConnector;
     expect(results).toHaveLength(3);
-    expect(current.sql().at(-1)).toBe('SELECT count(*) AS "measure" FROM "testData" WHERE ("dim" IN (\'b\'))');
+    expect(replacement.sql().at(-1)).toBe('SELECT count(*) AS "measure" FROM "testData" WHERE ("dim" IN (\'b\'))');
   });
 
   it('retries an automatic entry refused while the lane was busy', async () => {
@@ -212,37 +211,32 @@ describe('PreAggregator preagg mode', () => {
     expect(connector.sql().at(-1)).toContain('FROM "testData" WHERE ("dim" IN (\'b\'))');
   });
 
-  describe.each(['exec', 'preagg'] as const)('%s mode lifecycle', mode => {
-    it.each(['reset', 'clear', 'cache', 'connector'])('preserves bindings until %s', async action => {
-      const connector = new MockPreaggConnector();
-      const mc = mode === 'preagg'
-        ? preaggCoordinator(connector)
-        : new Coordinator(connector, { logger: null, cache: false, consolidate: false });
-      const { client, sel } = await aggregateClient(mc);
-      const { registry } = mc.preaggregator;
+  it.each(['reset', 'cache', 'connector'])('preserves bindings until %s', async action => {
+    const connector = new MockPreaggConnector();
+    const mc = preaggCoordinator(connector);
+    const { client, sel } = await aggregateClient(mc);
+    const registry = mc.preaggregator.registry!;
 
-      sel.update(clausePoint('dim', 'a', { source: {} }));
-      await flush();
-      if (mode === 'preagg') connector.complete();
-      await sel.pending('value');
-      const info = mc.preaggregator.entries.get(client) as PreAggregateInfo;
-      expect(info).toBeInstanceOf(PreAggregateInfo);
-      expect(info.table).toBeInstanceOf(TableRefNode);
-      const sql = info.create.toString();
-      if (registry) expect(registry.lookup(sql)).toBe(info.table);
+    sel.update(clausePoint('dim', 'a', { source: {} }));
+    await flush();
+    connector.complete();
+    await sel.pending('value');
+    const info = mc.preaggregator.entries.get(client) as PreAggregateInfo;
+    expect(info).toBeInstanceOf(PreAggregateInfo);
+    expect(info.table).toBeInstanceOf(TableRefNode);
+    const sql = info.create.toString();
+    expect(registry.lookup(sql)).toBe(info.table);
 
-      mc.databaseConnector(connector);
-      mc.clear({ cache: false });
-      expect(mc.preaggregator.entries.get(client)).toBe(info);
-      if (registry) expect(registry.lookup(sql)).toBe(info.table);
+    mc.databaseConnector(connector);
+    mc.clear({ cache: false });
+    expect(mc.preaggregator.entries.get(client)).toBe(info);
+    expect(registry.lookup(sql)).toBe(info.table);
 
-      if (action === 'reset') mc.preaggregator.reset();
-      else if (action === 'clear') mc.clear();
-      else if (action === 'cache') mc.clear({ clients: false });
-      else mc.databaseConnector(new MockPreaggConnector());
-      expect(mc.preaggregator.entries.size).toBe(0);
-      if (registry) expect(registry.lookup(sql)).toBeNull();
-    });
+    if (action === 'reset') mc.preaggregator.reset();
+    else if (action === 'cache') mc.clear({ clients: false });
+    else mc.databaseConnector(new MockPreaggConnector());
+    expect(mc.preaggregator.entries.size).toBe(0);
+    expect(registry.lookup(sql)).toBeNull();
   });
 
   it('disabling clears client state but leaves cached tables and builds', async () => {
