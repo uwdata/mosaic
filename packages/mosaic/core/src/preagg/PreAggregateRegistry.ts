@@ -29,15 +29,11 @@ interface Failure {
 }
 
 export interface PreAggregateLimits {
-  maxCachedTables: number;
-  maxFailures: number;
   timeoutMs: number;
   cooldownMs: number;
 }
 
 const defaultLimits: Readonly<PreAggregateLimits> = Object.freeze({
-  maxCachedTables: 512,
-  maxFailures: 256,
   timeoutMs: 120 * 1000,
   cooldownMs: 60 * 1000
 });
@@ -63,7 +59,7 @@ export class PreAggregateRegistry {
   }
 
   invalidate(sql: string, table: TableRefNode): void {
-    // A late failure for an older build must not evict its replacement.
+    // A late failure for an older build must not drop its replacement.
     if (this.lookup(sql) === table) this.entries.delete(sql);
     this.manager.invalidate();
   }
@@ -81,14 +77,10 @@ export class PreAggregateRegistry {
       this.failures.delete(sql);
     }
 
-    let entry = this.entries.get(sql);
-    if (entry) {
-      this.entries.delete(sql);
-      this.entries.set(sql, entry);
-      return entry.build ? entry.build.promise : Promise.resolve(entry.table!);
-    }
+    const existing = this.entries.get(sql);
+    if (existing) return existing.build ? existing.build.promise : Promise.resolve(existing.table!);
 
-    entry = { sql, table: null, build: null };
+    const entry: Entry = { sql, table: null, build: null };
     this.entries.set(sql, entry);
     const build = entry.build = this.createBuild(entry);
     this.dispatch(build, this.manager.connector()!);
@@ -138,11 +130,7 @@ export class PreAggregateRegistry {
     this.settle(build);
     const { entry } = build;
     entry.table = new TableRefNode(referenceParts(validated.reference));
-    // a table evicted from this cache may be rebuilt by the server under the
-    // same name with different rows, so any completion can stale cached results
-    this.manager.invalidate();
     build.resolve(entry.table);
-    this.evict();
   }
 
   private fail(build: Build, err: unknown): void {
@@ -165,23 +153,8 @@ export class PreAggregateRegistry {
     build.entry.build = null;
   }
 
-  private evict(): void {
-    let cached = 0;
-    for (const e of this.entries.values()) if (e.table) cached++;
-    for (const e of this.entries.values()) {
-      if (cached <= this.limits.maxCachedTables) return;
-      if (e.table) {
-        this.entries.delete(e.sql);
-        cached--;
-      }
-    }
-  }
-
   private recordFailure(entry: Entry, error: ConnectorError): void {
     this.failures.set(entry.sql, { error, retryAt: Date.now() + this.limits.cooldownMs });
-    while (this.failures.size > this.limits.maxFailures) {
-      this.failures.delete(this.failures.keys().next().value!);
-    }
     this.manager.logger().warn('Preagg failure', entry.sql, error);
   }
 }

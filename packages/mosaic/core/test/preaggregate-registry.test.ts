@@ -22,8 +22,8 @@ function setup(limits: Partial<PreAggregateLimits> = {}) {
 describe('PreAggregateRegistry', () => {
   afterEach(() => vi.useRealTimers());
 
-  it('coalesces identical SQL and reuses a bounded cache of references', async () => {
-    const { registry, connector } = setup({ maxCachedTables: 1 });
+  it('coalesces identical SQL and reuses completed references', async () => {
+    const { registry, connector } = setup();
     const [p1, p2, p3] = [registry.request(SQL_A), registry.request(SQL_A), registry.request(SQL_B)];
     expect(connector.preaggRequests).toEqual([
       { type: 'preagg', sql: SQL_A },
@@ -37,40 +37,10 @@ describe('PreAggregateRegistry', () => {
     expect(t1.table).toEqual(['memory', 'mosaic_scope_test', response.reference.table]);
     expect(t3).not.toBe(t1);
 
-    // completing B evicted A (LRU of one); A rebuilds, B is reused
-    expect(registry.lookup(SQL_A)).toBeNull();
+    expect(registry.lookup(SQL_A)).toBe(t1);
     expect(registry.lookup(SQL_B)).toBe(t3);
-    expect(await registry.request(SQL_B)).toBe(t3);
-
-    registry.request(SQL_A);
-    registry.request(SQL_C);
-    expect(connector.open).toHaveLength(2);
-    expect(registry.lookup(SQL_B)).toBe(t3);
-    connector.complete();
-    connector.complete();
-    await flush();
-    expect(registry.lookup(SQL_A)).toBeNull();
-    expect(registry.lookup(SQL_B)).toBeNull();
-    expect(registry.lookup(SQL_C)).toBeInstanceOf(TableRefNode);
-  });
-
-  it('invalidates query results on every completed materialization', async () => {
-    const { registry, connector, invalidate } = setup({ maxCachedTables: 0 });
-    const a = registry.request(SQL_A);
-    connector.complete();
-    await a;
-    expect(invalidate).toHaveBeenCalledTimes(1);
-    expect(registry.lookup(SQL_A)).toBeNull();
-
-    const again = registry.request(SQL_A);
-    connector.complete();
-    await again;
-    expect(invalidate).toHaveBeenCalledTimes(2);
-
-    const failed = registry.request(SQL_B);
-    connector.fail(new Error('nope'));
-    await expect(failed).rejects.toBeInstanceOf(ConnectorError);
-    expect(invalidate).toHaveBeenCalledTimes(2);
+    expect(await registry.request(SQL_A)).toBe(t1);
+    expect(connector.preaggRequests).toHaveLength(2);
   });
 
   const good = { reference: { catalog: 'memory', schema: ['s'], table: 't' }, createdAt: '2026-09-08T20:00:00Z' };
@@ -169,7 +139,7 @@ describe('PreAggregateRegistry', () => {
     registry.reset();
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
     expect(registry.lookup(SQL_B)).toBeNull();
-    expect(invalidate).toHaveBeenCalledTimes(2);
+    expect(invalidate).toHaveBeenCalledTimes(1);
     expect(registry.request(SQL_C)).toBeInstanceOf(Promise);
 
     request.resolve({ reference: { catalog: 'x', schema: ['y'], table: 'z' }, createdAt: '2026-01-01T00:00:00Z' });
