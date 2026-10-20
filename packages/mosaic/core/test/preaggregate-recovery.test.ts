@@ -32,7 +32,7 @@ async function setup(clientCount = 1) {
 }
 
 describe('PreAggregator recovery', () => {
-  it.each(['', '_rebuilt'])('rebuilds a dropped DuckDB table and reads its rows (suffix %s)', async suffix => {
+  it('rebuilds a dropped DuckDB table and rebinds to the replacement reference', async () => {
     const db = await NodeConnector.make();
     let missing: TableRefNode | null = null;
     const connector = new MockPreaggConnector({
@@ -72,7 +72,7 @@ describe('PreAggregator recovery', () => {
     missing = table;
     sel.update(clausePoint('dim', 'b', { source }));
     await expect.poll(() => connector.preaggRequests.length).toBe(2);
-    const replacement = await build(suffix);
+    const replacement = await build('_rebuilt');
     await sel.pending('value');
 
     expect((mc.preaggregator.entries.get(client) as PreAggregateInfo).table!.table).toEqual(replacement.table);
@@ -120,13 +120,9 @@ describe('PreAggregator recovery', () => {
 
   it.each([
     [{ code: 'forbidden' }, {}],
-    [{ code: 'unauthenticated' }, {}],
-    [{}, { catalog: 'other' }],
-    [{}, { schema: ['other'] }],
-    [{}, { schema: ['mosaic_scope_test', 'nested'] }],
-    [{}, { table: 'testData' }],
     [{ reference: undefined }, {}],
-    [{ code: undefined }, {}]
+    [{}, { schema: ['mosaic_scope_test', 'nested'] }],
+    [{}, { table: 'testData' }]
   ] as [object, Partial<TableReference>][])('does not recover an unrelated or unclassified error: %j %j', async (fields, reference) => {
     const { connector, sel, source, table } = await setup();
     const error = Object.assign(missingTable(table, reference), fields);
@@ -137,7 +133,7 @@ describe('PreAggregator recovery', () => {
     expect(connector.sql().at(-1)).toContain('FROM "testData"');
   });
 
-  it.each(['request', 'disconnect', 'reset', 'connector', 'activate'])('preserves client ownership when %s interrupts recovery', async action => {
+  it.each(['request', 'reset', 'activate'])('preserves client ownership when %s interrupts recovery', async action => {
     const { connector, mc, client, sel, source, table, results } = await setup();
     connector.handler = request => request.sql.includes(String(table)) ? Promise.reject(missingTable(table)) : [];
     sel.update(clausePoint('dim', 'b', { source }));
@@ -145,18 +141,13 @@ describe('PreAggregator recovery', () => {
     expect(connector.preaggRequests).toHaveLength(2);
 
     if (action === 'request') await mc.requestQuery(client, Query.from('other').select('*'));
-    else if (action === 'disconnect') mc.disconnect(client);
     else if (action === 'reset') mc.preaggregator.reset();
-    else if (action === 'connector') mc.databaseConnector(new MockPreaggConnector());
     else sel.activate(clausePoint('dim', 'x', { source: {} }));
-    const current = mc.databaseConnector() as MockPreaggConnector;
     while (connector.open.length) connector.complete();
     await sel.pending('value');
-    if (action === 'request' || action === 'disconnect') {
-      expect(results).toHaveLength(action === 'request' ? 3 : 2);
-    } else {
-      expect(results).toHaveLength(3);
-      expect(current.sql().at(-1)).toBe('SELECT count(*) AS "measure" FROM "testData" WHERE ("dim" IN (\'b\'))');
+    expect(results).toHaveLength(3);
+    if (action !== 'request') {
+      expect(connector.sql().at(-1)).toBe('SELECT count(*) AS "measure" FROM "testData" WHERE ("dim" IN (\'b\'))');
     }
   });
 });

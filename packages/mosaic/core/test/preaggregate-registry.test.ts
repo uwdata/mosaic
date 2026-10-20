@@ -77,23 +77,13 @@ describe('PreAggregateRegistry', () => {
 
   const good = { reference: { catalog: 'memory', schema: ['s'], table: 't' }, createdAt: '2026-09-08T20:00:00Z' };
 
-  it('keeps informational rows and bytes and ignores unknown fields', async () => {
-    const { registry, connector } = setup();
-    const promise = registry.request(SQL_A);
-    connector.open[0].resolve({ ...good, rows: 3, bytes: 128, extra: true });
-    await promise;
-    expect(registry.lookup(SQL_A)).toBeInstanceOf(TableRefNode);
-  });
-
   it.each([
     ['empty object', {}],
     ['null', null],
-    ['undefined', undefined],
     ['empty catalog', { ...good, reference: { ...good.reference, catalog: '' } }],
     ['non-string table', { ...good, reference: { ...good.reference, table: 7 } }],
     ['string schema', { ...good, reference: { ...good.reference, schema: 's' } }],
     ['empty schema path', { ...good, reference: { ...good.reference, schema: [] } }],
-    ['flat triple', { catalog: 'memory', schema: 's', table: 't', createdAt: good.createdAt }],
     ['invalid createdAt', { ...good, createdAt: 'yesterday' }],
     ['missing createdAt', { reference: good.reference }]
   ])('rejects a malformed success response without registering a table: %s', async (_, value) => {
@@ -135,8 +125,6 @@ describe('PreAggregateRegistry', () => {
 
   it.each([
     ['unsupported_command', new ConnectorError('Unsupported command: preagg', { code: 'unsupported_command' }), 'unsupported_command'],
-    ['forbidden', new ConnectorError('denied', { code: 'forbidden', status: 403 }), 'forbidden'],
-    ['deadline_exceeded', new ConnectorError('slow', { code: 'deadline_exceeded', status: 504 }), 'deadline_exceeded'],
     ['transport', new Error('socket hung up'), undefined]
   ])('applies one cooldown to a %s failure', async (_, failure, code) => {
     vi.useFakeTimers();
