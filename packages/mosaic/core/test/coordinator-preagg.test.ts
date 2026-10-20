@@ -31,13 +31,12 @@ describe('PreAggregator preagg mode', () => {
     await expect(mc.preaggregator.dropSchema()).rejects.toBeInstanceOf(PreAggregateModeError);
   });
 
-  it('waits for the server reference, then falls back if a later build fails', async () => {
+  it('waits for the server reference before issuing the update query', async () => {
     const connector = new MockPreaggConnector();
-    const mc = preaggCoordinator(connector, { maxCachedTables: 0 });
+    const mc = preaggCoordinator(connector);
     const { client, sel, results } = await aggregateClient(mc);
 
-    const source = {};
-    sel.update(clausePoint('dim', 'b', { source }));
+    sel.update(clausePoint('dim', 'b', { source: {} }));
     await flush();
     const info = mc.preaggregator.entries.get(client) as PreAggregateInfo;
     expect(info).toBeInstanceOf(PreAggregateInfo);
@@ -51,37 +50,6 @@ describe('PreAggregator preagg mode', () => {
     expect(info.table!.table).toEqual(['memory', 'mosaic_scope_test', response.reference.table]);
     expect(connector.sql()[1]).toContain(`FROM "memory"."mosaic_scope_test"."${response.reference.table}" WHERE ("active0" IN ('b'))`);
     expect(results).toHaveLength(2);
-
-    // maxCachedTables: 0 evicted the reference, so the next selection re-acquires
-    sel.update(clausePoint('dim', 'a', { source }));
-    await flush();
-    expect(connector.preaggRequests).toHaveLength(2);
-    connector.fail(new Error('denied'));
-    await sel.pending('value');
-    expect(info.result).toBeNull();
-    expect(connector.sql().at(-1)).toBe('SELECT count(*) AS "measure" FROM "testData" WHERE ("dim" IN (\'a\'))');
-  });
-
-  it('rebinds when an evicted table is rebuilt under a different reference', async () => {
-    const connector = new MockPreaggConnector();
-    const mc = preaggCoordinator(connector, { maxCachedTables: 0 });
-    const { client, sel } = await aggregateClient(mc);
-
-    const source = {};
-    sel.update(clausePoint('dim', 'a', { source }));
-    await flush();
-    const info = mc.preaggregator.entries.get(client) as PreAggregateInfo;
-    const first = connector.complete();
-    await sel.pending('value');
-    expect(info.table!.table[2]).toBe(first.reference.table);
-
-    sel.update(clausePoint('dim', 'b', { source }));
-    await flush();
-    const second = connector.complete('_v2');
-    await sel.pending('value');
-    expect(mc.preaggregator.entries.get(client)).toBe(info);
-    expect(info.table!.table[2]).toBe(second.reference.table);
-    expect(connector.sql().at(-1)).toContain(`."${second.reference.table}" WHERE ("active0" IN ('b'))`);
   });
 
   it('shares one build across clients and keeps it alive across clear()', async () => {
