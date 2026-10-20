@@ -283,12 +283,15 @@ export class PreAggregator {
     return info;
   }
 
+  /**
+   * Rebuild a server-managed table that a read reported missing. Resolves
+   * true once the rebuild succeeds, false when the error is anything else,
+   * the client's entry has since been replaced, or the rebuild fails.
+   */
   async recover(client: MosaicClient, info: PreAggregateInfo, table: TableRefNode | null, error: unknown): Promise<boolean> {
-    if (!this.registry || this.entries.get(client) !== info || !table
-      || !(error instanceof ConnectorError) || error.code !== ConnectorErrorCode.TableNotFound || !error.reference
-      || referenceParts(error.reference).join('\0') !== table.table.join('\0')) {
-      return false;
-    }
+    if (!this.registry || !table) return false;
+    if (this.entries.get(client) !== info) return false;
+    if (!isMissingTableError(error, table)) return false;
 
     this.registry.invalidate(info.create.toString(), table);
     return this.materialize(info).then(() => true, () => false);
@@ -311,6 +314,14 @@ export class PreAggregator {
     info.result = result;
     return result;
   }
+}
+
+function isMissingTableError(error: unknown, table: TableRefNode): boolean {
+  if (!(error instanceof ConnectorError)) return false;
+  if (error.code !== ConnectorErrorCode.TableNotFound || !error.reference) return false;
+  const missing = referenceParts(error.reference);
+  return missing.length === table.table.length
+    && missing.every((part, i) => part === table.table[i]);
 }
 
 /**
