@@ -112,30 +112,20 @@ export class PreAggregateRegistry {
   private dispatch(build: Build, db: Connector): void {
     const request = { type: 'preagg' as const, sql: build.entry.sql };
     this.manager.logger().debug('Preagg', request);
-    new Promise<PreaggResponse>(resolve => resolve(db.query(request))).then(
-      response => this.complete(build, response),
-      err => this.fail(build, err)
-    );
+    new Promise<unknown>(resolve => resolve(db.query(request)))
+      .then(parsePreaggResponse)
+      .then(response => this.complete(build, response), err => this.fail(build, err));
   }
 
   private complete(build: Build, response: PreaggResponse): void {
-    if (build.entry.build !== build) return;
-    let validated: PreaggResponse;
-    try {
-      validated = parsePreaggResponse(response);
-    } catch (err) {
-      this.fail(build, err);
-      return;
-    }
-    this.settle(build);
+    if (!this.claim(build)) return;
     const { entry } = build;
-    entry.table = new TableRefNode(referenceParts(validated.reference));
+    entry.table = new TableRefNode(referenceParts(response.reference));
     build.resolve(entry.table);
   }
 
   private fail(build: Build, err: unknown): void {
-    if (build.entry.build !== build) return;
-    this.settle(build);
+    if (!this.claim(build)) return;
     const { entry } = build;
     this.entries.delete(entry.sql);
     if (isAbortError(err)) {
@@ -148,9 +138,11 @@ export class PreAggregateRegistry {
     build.reject(error);
   }
 
-  private settle(build: Build): void {
+  private claim(build: Build): boolean {
+    if (build.entry.build !== build) return false;
     clearTimeout(build.timer);
     build.entry.build = null;
+    return true;
   }
 
   private recordFailure(entry: Entry, error: ConnectorError): void {
