@@ -1,6 +1,6 @@
 {
   "name": "duckdb-server",
-  "version": "0.33.0",
+  "version": "0.34.0",
   "private": true,
   "scripts": {
     "dev": "uv run watchfiles --filter python --grace-period 5 --target-type command \"uv run duckdb-server\" pkg"
