@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import { columns } from './util/columns.js';
-import { add, collectColumns, column, deepClone, eq, ExprNode, FunctionNode, isColumnRef, lambda, LambdaVarNode, list, literal, rewrite, upper } from '../src/index.js';
+import { add, collectColumns, column, deepClone, eq, ExprNode, FunctionNode, isColumnRef, lambda, LambdaVarNode, list, literal, rewrite, slice, subscript, upper } from '../src/index.js';
 
 function fn(name: string, ...args: ExprNode[]) {
   return new FunctionNode(name, args);
@@ -44,6 +44,11 @@ describe('lambda', () => {
       'list_transform("lst1", lambda "x": list_transform("lst2", lambda "y": concat("x", "y")))'
     );
     expect(columns(expr)).toStrictEqual(['lst1', 'lst2']);
+  });
+
+  it('subscripts parameters without parentheses', async () => {
+    const expr = fn('list_transform', column('lst1'), lambda('x', x => subscript(slice(x, 1, 2), 1)));
+    await expect(expr).toBeValidExpr('list_transform("lst1", lambda "x": "x"[1:2][1])');
   });
 
   it('produces parameter references that are not column references', () => {
