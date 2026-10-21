@@ -8,10 +8,10 @@ export class StarNode extends ColumnNameRefNode {
   /** Replacement expressions, with the replaced column names as aliases. */
   readonly replace: SelectClauseNode[];
   /**
-   * Pairs of [current column, new name] for columns to rename. The
-   * current column may be qualified by table.
+   * Columns to rename, with the new names as aliases. The current
+   * columns may be qualified by table.
    */
-  readonly rename: [ColumnRefNode, string][];
+  readonly rename: SelectClauseNode[];
 
   /**
    * Instantiate a star (*) node with EXCLUDE, REPLACE, and RENAME
@@ -21,14 +21,14 @@ export class StarNode extends ColumnNameRefNode {
    * @param exclude Columns to exclude, optionally qualified by table.
    * @param replace Replacement expressions, with the replaced column
    *  names as aliases.
-   * @param rename Pairs of [current column, new name] for columns to
-   *  rename. The current column may be qualified by table.
+   * @param rename Columns to rename, with the new names as aliases.
+   *  The current columns may be qualified by table.
    */
   constructor(
     table?: TableRefNode,
     exclude: ColumnRefNode[] = [],
     replace: SelectClauseNode[] = [],
-    rename: [ColumnRefNode, string][] = []
+    rename: SelectClauseNode[] = []
   ) {
     super('*', table);
     this.exclude = exclude;

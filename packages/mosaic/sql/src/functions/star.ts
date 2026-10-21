@@ -41,7 +41,7 @@ export function star(
     exclude.map(asColumnRef),
     Object.entries(replace).map(([name, expr]) => new SelectClauseNode(asNode(expr), name)),
     (Array.isArray(rename) ? rename : Object.entries(rename))
-      .map(([from, to]) => [asColumnRef(from), to])
+      .map(([from, to]) => new SelectClauseNode(asColumnRef(from), to))
   );
 }
 

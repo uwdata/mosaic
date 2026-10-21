@@ -192,10 +192,13 @@ export function starExpression(
       if (!(expr instanceof StarNode)) return new ColumnNameRefNode(name);
       const replaced = expr.replace.find(c => nameEquals(c.alias, name));
       if (replaced) return replaced.expr;
-      const renamed = expr.rename.find(([, to]) => nameEquals(to, name));
-      if (renamed) return new ColumnNameRefNode(renamed[0].column);
+      const renamed = expr.rename.find(c => nameEquals(c.alias, name));
+      if (renamed) return new ColumnNameRefNode((renamed.expr as ColumnRefNode).column);
       const removed = expr.exclude.some(c => nameEquals(c.column, name) && applies(c))
-        || expr.rename.some(([from]) => nameEquals(from.column, name) && applies(from));
+        || expr.rename.some(c => {
+          const from = c.expr as ColumnRefNode;
+          return nameEquals(from.column, name) && applies(from);
+        });
       if (!removed) return new ColumnNameRefNode(name);
     }
   }

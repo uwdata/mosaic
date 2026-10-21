@@ -595,7 +595,7 @@ function starModifiers(visitor: SQLCodeGenerator, node: StarNode) {
     sql.push(`REPLACE (${list.join(', ')})`);
   }
   if (rename.length) {
-    const list = rename.map(([from, to]) => `${visitor.toString(from)} AS ${quoteIdentifier(to)}`);
+    const list = rename.map(({ expr, alias }) => `${visitor.toString(expr)} AS ${quoteIdentifier(alias)}`);
     sql.push(`RENAME (${list.join(', ')})`);
   }
   return sql.map(s => ` ${s}`).join('');
