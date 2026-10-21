@@ -3,8 +3,12 @@ import type {
   Connector,
   ConnectorQueryOptions,
   ConnectorQueryRequest,
-  ExecQueryRequest
+  ConnectorRequest,
+  ExecQueryRequest,
+  PreaggRequest,
+  PreaggResponse
 } from './Connector.js';
+import { ConnectorError, parseErrorResponse } from './errors.js';
 import { abortable, sleep } from '../util/abort.js';
 
 interface RestOptions {
@@ -33,6 +37,19 @@ interface RestOptions {
 const RETRY_STATUS = new Set([502, 503]);
 const RETRY_BASE_DELAY = 250;
 const RETRY_MAX_DELAY = 5000;
+
+function errorFromResponse(status: number, contentType: string | null, body: string): ConnectorError {
+  let cause: unknown;
+  if (/^application\/json\s*(;|$)/i.test(contentType?.trim() ?? '')) {
+    try {
+      const err = parseErrorResponse(JSON.parse(body), status);
+      if (err) return err;
+    } catch (err) {
+      cause = err;
+    }
+  }
+  return new ConnectorError(`Query failed with HTTP status ${status}: ${body}`, { status, cause });
+}
 
 /**
  * Connect to a DuckDB server over an HTTP REST interface.
@@ -83,7 +100,8 @@ export class RestConnector implements Connector {
 
   async query(query: ArrowQueryRequest, options?: ConnectorQueryOptions): Promise<ArrayBuffer>;
   async query(query: ExecQueryRequest, options?: ConnectorQueryOptions): Promise<void>;
-  async query(query: ConnectorQueryRequest, { signal }: ConnectorQueryOptions = {}): Promise<unknown> {
+  async query(query: PreaggRequest, options?: ConnectorQueryOptions): Promise<PreaggResponse>;
+  async query(query: ConnectorRequest, { signal }: ConnectorQueryOptions = {}): Promise<unknown> {
     const get = this._method === 'GET' && query.type === 'arrow'
       && Object.keys(query).every(key => key === 'type' || key === 'sql');
     const retries = query.type === 'arrow' ? this._retries : 0;
@@ -102,6 +120,7 @@ export class RestConnector implements Connector {
       } else {
         headers.set('Content-Type', 'application/json');
       }
+      if (query.type === 'preagg') headers.set('Accept', 'application/json');
 
       // native fetch throws "Illegal invocation" when called as a method of another object
       const fetchImpl = this._fetch ?? fetch;
@@ -116,7 +135,9 @@ export class RestConnector implements Connector {
           signal
         });
         if (res.ok) {
-          return query.type === 'exec' ? undefined : await res.arrayBuffer();
+          return query.type === 'exec' ? undefined
+            : query.type === 'preagg' ? await res.json()
+            : await res.arrayBuffer();
         }
       } catch (err) {
         if (attempt < retries && err instanceof TypeError) {
@@ -135,7 +156,7 @@ export class RestConnector implements Connector {
         }
       }
 
-      throw new Error(`Query failed with HTTP status ${res.status}: ${await res.text()}`);
+      throw errorFromResponse(res.status, res.headers.get('Content-Type'), await res.text());
     }
   }
 }

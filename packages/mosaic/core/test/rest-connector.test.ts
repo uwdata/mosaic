@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryManager } from '../src/QueryManager.js';
+import { ConnectorError } from '../src/connectors/errors.js';
 import { RestConnector } from '../src/connectors/rest.js';
 
 type FetchMock = ReturnType<typeof mockFetch>;
@@ -13,6 +14,11 @@ function sentHeaders(fetchMock: FetchMock, call = 0) {
 }
 
 const request = { type: 'arrow', sql: 'SELECT 1' } as const;
+const preagg = { type: 'preagg', sql: 'SELECT 1' } as const;
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+}
 
 describe('RestConnector', () => {
   afterEach(() => {
@@ -83,6 +89,83 @@ describe('RestConnector', () => {
       .rejects.toThrow('Query failed with HTTP status 400: bad sql');
   });
 
+  it('sends an Accept header only for preagg requests', async () => {
+    const fetchMock = mockFetch(() => jsonResponse({}));
+    const connector = new RestConnector({ fetch: fetchMock });
+
+    await connector.query(preagg);
+    expect(sentHeaders(fetchMock, 0).get('Accept')).toBe('application/json');
+
+    await connector.query({ type: 'exec', sql: 'CREATE TABLE t AS SELECT 1' });
+    expect(sentHeaders(fetchMock, 1).has('Accept')).toBe(false);
+
+    await connector.query(request);
+    expect(sentHeaders(fetchMock, 2).has('Accept')).toBe(false);
+  });
+
+  it('returns preagg JSON', async () => {
+    const body = { reference: { catalog: 'memory', schema: ['s'], table: 't' }, createdAt: '2026-09-08T20:00:00Z' };
+    const fetchMock = mockFetch(() => jsonResponse(body));
+    expect(await new RestConnector({ fetch: fetchMock }).query(preagg)).toEqual(body);
+    expect(fetchMock.mock.calls[0][1]!.body).toBe(JSON.stringify(preagg));
+  });
+
+  it('parses JSON error responses for arrow requests', async () => {
+    const fetchMock = mockFetch(() => new Response(JSON.stringify({
+      error: 'Materialized table is unavailable',
+      code: 'table_not_found',
+      reference: { catalog: 'memory', schema: ['mosaic_scope_a7'], table: 'preagg_c92f' }
+    }), { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' } }));
+
+    const err = await new RestConnector({ fetch: fetchMock }).query(request).catch(e => e) as ConnectorError;
+    expect(err).toBeInstanceOf(ConnectorError);
+    expect(err).toMatchObject({
+      message: 'Materialized table is unavailable',
+      code: 'table_not_found',
+      status: 404,
+      reference: { catalog: 'memory', schema: ['mosaic_scope_a7'], table: 'preagg_c92f' }
+    });
+  });
+
+  it.each([
+    ['application/vnd.apache.arrow.stream', '{"error":"x","code":"forbidden"}'],
+    ['application/json', 'not json']
+  ] as const)('rejects failures without a code (%s): %s', async (contentType, body) => {
+    const fetchMock = mockFetch(() => new Response(body, { status: 502, headers: { 'Content-Type': contentType } }));
+    const err = await new RestConnector({ fetch: fetchMock }).query(preagg).catch(e => e) as ConnectorError;
+    expect(err).toBeInstanceOf(ConnectorError);
+    expect(err).toMatchObject({ status: 502, code: undefined, message: `Query failed with HTTP status 502: ${body}` });
+  });
+});
+
+describe('RestConnector preagg error responses', () => {
+  function failWith(status: number, contentType: string, body: string) {
+    const fetchMock = mockFetch(() => new Response(body, { status, headers: { 'Content-Type': contentType } }));
+    return new RestConnector({ fetch: fetchMock }).query(preagg).catch(e => e);
+  }
+
+  const relation = { catalog: 'c', schema: ['s'], table: 't' };
+
+  it.each([
+    ['empty object', {}, {}],
+    ['non-string code', { error: 'x', code: 5 }, {}],
+    ['non-object', 'nope', {}],
+    ['message only', { error: 'x' }, { message: 'x', code: undefined }],
+    ['partial reference', { error: 'x', code: 'table_not_found', reference: { catalog: 'c' } },
+      { code: 'table_not_found', reference: undefined }],
+    ['reference on other code', { error: 'x', code: 'forbidden', reference: relation },
+      { code: 'forbidden', reference: undefined }]
+  ])('error response: %s', async (_, response, expected) => {
+    const body = JSON.stringify(response);
+    const err = await failWith(500, 'application/json; charset=utf-8', body) as ConnectorError;
+    expect(err).toBeInstanceOf(ConnectorError);
+    expect(err.status).toBe(500);
+    // a malformed error response falls back to the generic message
+    expect(err).toMatchObject(Object.keys(expected).length
+      ? expected
+      : { message: `Query failed with HTTP status 500: ${body}`, code: undefined });
+  });
+
   it('sends arrow queries as URL parameters with GET', async () => {
     const fetchMock = mockFetch();
     const headers = { 'X-Api-Key': 'secret', 'Content-Type': 'application/json' };
@@ -110,6 +193,18 @@ describe('RestConnector', () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('http://example.com/');
     expect(init).toMatchObject({ method: 'POST', body: JSON.stringify(exec) });
+    expect(sentHeaders(fetchMock).get('Content-Type')).toBe('application/json');
+  });
+
+  it('posts preagg queries when using GET', async () => {
+    const fetchMock = mockFetch(() => jsonResponse({}));
+    const connector = new RestConnector({ uri: 'http://example.com/', fetch: fetchMock, method: 'GET' });
+
+    await connector.query(preagg);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://example.com/');
+    expect(init).toMatchObject({ method: 'POST', body: JSON.stringify(preagg) });
     expect(sentHeaders(fetchMock).get('Content-Type')).toBe('application/json');
   });
 
@@ -252,11 +347,12 @@ describe('RestConnector retries', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it('does not retry exec queries', async () => {
+  it.each([
+    ['exec', (connector: RestConnector) => connector.query({ type: 'exec', sql: 'CREATE TABLE t (x INT)' })],
+    ['preagg', (connector: RestConnector) => connector.query(preagg)]
+  ] as const)('does not retry %s queries', async (_, query) => {
     const fetchMock = fetchSteps(503);
-    const connector = new RestConnector({ fetch: fetchMock, retries: 2 });
-    await expect(connector.query({ type: 'exec', sql: 'CREATE TABLE t (x INT)' }))
-      .rejects.toThrow('HTTP status 503');
+    await expect(query(new RestConnector({ fetch: fetchMock, retries: 2 }))).rejects.toThrow('HTTP status 503');
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
