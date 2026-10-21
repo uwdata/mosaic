@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
     import duckdb
 
+    from mosaic_widget._anywidget import Buffers
     from mosaic_widget.typing import Param, QueryParams, QueryResult, Spec
 
 
@@ -58,29 +59,33 @@ class MosaicWidget:
             "preagg_schema": self.preagg_schema,
         }
 
-    def _run_command(
-        self, content: QueryParams
-    ) -> tuple[QueryResult, list[Any] | None]:
+    def _custom_msg(
+        self, content: QueryParams, buffers: Buffers | None = None
+    ) -> tuple[QueryResult, Buffers | None]:
         logger.debug("content=%s", content)
         uuid = content["uuid"]
         sql = content["sql"]
         command = content["type"]
 
-        if command == "arrow":
-            result = self.con.query(sql).arrow()
-            sink = pa.BufferOutputStream()
-            with pa.ipc.new_stream(sink, result.schema) as writer:
-                for batch in result:
-                    writer.write(batch)
-            return {"type": "arrow", "uuid": uuid}, [sink.getvalue().to_pybytes()]
+        try:
+            if command == "arrow":
+                result = self.con.query(sql).to_arrow_reader()
+                sink = pa.BufferOutputStream()
+                with pa.ipc.new_stream(sink, result.schema) as writer:
+                    for batch in result:
+                        writer.write_batch(batch)
+                return {"type": "arrow", "uuid": uuid}, [sink.getvalue().to_pybytes()]
 
-        elif command == "exec":
-            self.con.execute(sql)
-            return {"type": "exec", "uuid": uuid}, None
+            elif command == "exec":
+                self.con.execute(sql)
+                return {"type": "exec", "uuid": uuid}, None
 
-        else:
-            msg = f"Unknown command {command}"
-            raise ValueError(msg)
+            else:
+                msg = f"Unknown command {command}"
+                raise ValueError(msg)
+        except Exception as e:
+            self._repr_mimebundle_.send({"error": str(e), "uuid": uuid})
+            raise
 
 
 widget = MosaicWidget()
