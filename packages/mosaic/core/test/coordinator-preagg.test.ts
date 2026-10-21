@@ -35,6 +35,7 @@ describe('PreAggregator preagg mode', () => {
     const connector = new MockPreaggConnector();
     const mc = preaggCoordinator(connector);
     const { client, sel, results } = await aggregateClient(mc);
+    const queryPending = vi.spyOn(client, 'queryPending');
 
     sel.update(clausePoint('dim', 'b', { source: {} }));
     await flush();
@@ -44,6 +45,7 @@ describe('PreAggregator preagg mode', () => {
     expect(connector.preaggRequests[0].sql).toMatch(/^SELECT .* FROM "testData" GROUP BY/);
     expect(connector.sql()).toHaveLength(1);
     expect(mc.manager.pendingResults).toHaveLength(0);
+    expect(queryPending).toHaveBeenCalledTimes(1);
 
     const response = connector.complete();
     await sel.pending('value');

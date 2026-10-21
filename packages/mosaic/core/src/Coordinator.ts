@@ -394,6 +394,8 @@ function updateSelection(
 
     if (info?.result) {
       const pending = client.pending;
+      // synchronized clients (plot marks) must hold their render for the build
+      client.queryPending();
       await info.result.catch(() => {});
       if (superseded(pending)) return;
     }
