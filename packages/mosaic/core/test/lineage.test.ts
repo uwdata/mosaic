@@ -38,6 +38,12 @@ describe('baseTable', () => {
       .select('x')
       .from('data');
     expect(`${baseTable(self)}`).toBe('"data"');
+
+    const upper = Query
+      .with({ Data: Query.select('x').from('other') })
+      .select('x')
+      .from('DATA');
+    expect(`${baseTable(upper)}`).toBe('"other"');
   });
 
   it('returns null for multiple or unsupported sources', () => {
@@ -48,6 +54,13 @@ describe('baseTable', () => {
     expect(baseTable(Query.select('x').from('data', 'other'))).toBe(null);
     expect(baseTable(Query.select('x').from(join('data', 'other')))).toBe(null);
     expect(baseTable(Query.select({ one: sql`1` }))).toBe(null);
+  });
+
+  it('matches table names case-insensitively', () => {
+    expect(baseTable(Query.unionAll(
+      Query.select('x').from('data'),
+      Query.select('x').from('DATA')
+    ))).not.toBe(null);
   });
 });
 
@@ -64,6 +77,26 @@ describe('baseExpression', () => {
       .from(Query.select({ v: add('u', 1), w: 'u' }).from('a'));
     expect(`${baseExpression(q, column('v'))}`).toBe('(("x" * 2) + 1)');
     expect(`${baseExpression(q, add('v', 'w'))}`).toBe('((("x" * 2) + 1) + ("x" * 2))');
+  });
+
+  it('resolves column names case-insensitively', () => {
+    const sub = Query.select(star(null, {
+      exclude: ['A'],
+      replace: { B: mul('b', 2) },
+      rename: { C: 'D' }
+    }), { U: mul('x', 2) }).from('data');
+    const q = (name: string) => baseExpression(Query.select(name).from(sub), column(name));
+    expect(`${q('u')}`).toBe('("x" * 2)');
+    expect(q('a')).toBe(undefined);
+    expect(`${q('b')}`).toBe('("b" * 2)');
+    expect(q('c')).toBe(undefined);
+    expect(`${q('d')}`).toBe('"C"');
+
+    const union = Query.unionAll(
+      Query.select({ X: 'a' }).from('data'),
+      Query.select({ y: 'a' }).from('data')
+    );
+    expect(`${baseExpression(Query.select('x').from(union), column('x'))}`).toBe('"a"');
   });
 
   it('passes columns through star selections', () => {

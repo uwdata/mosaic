@@ -1,5 +1,5 @@
 import { ColumnNameRefNode, FromClauseNode, JoinNode, SelectClauseNode, TableRefNode, isAggregateExpression, isPivotQuery, isSelectQuery, isSetOperation, literal, type ExprNode, type PivotQuery, type Query, type SelectQuery, type SQLNode, type SetOperation, isTableRef } from '@uwdata/mosaic-sql';
-import { isStar, isWildcard, queryScope, resolveRelation, starExpression, suffixEquals, tableEquals, type Scope } from './lineage.js';
+import { isStar, isWildcard, nameEquals, queryScope, resolveRelation, starExpression, suffixEquals, tableEquals, type Scope } from './lineage.js';
 
 /**
  * Push selected columns down to subqueries, ensuring they are included as
@@ -103,8 +103,8 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
 
   const missingSelect = (q: SelectQuery, relations: (string[] | undefined)[]): string[] => {
     if (q._select.some(c => isWildcard(c) && !isStar(c))) return [];
-    const selected = new Set(q._select.map(x => x.alias));
-    return cols.filter(c => !selected.has(c) && !starExpression(q, c, relations));
+    return cols.filter(c => !q._select.some(x => nameEquals(x.alias, c))
+      && !starExpression(q, c, relations));
   };
 
   visitQuery(query, new Map());
@@ -139,13 +139,13 @@ function appendSelect(query: SelectQuery, clauses: [string, ExprNode][]): void {
 function relationPath(node: SQLNode): string[] | undefined {
   if (node instanceof FromClauseNode) {
     const { expr, alias, columnNames } = node;
-    const implicit = isTableRef(expr) && expr.name === alias && !columnNames?.length;
+    const implicit = isTableRef(expr) && !!alias && nameEquals(expr.name, alias) && !columnNames?.length;
     return alias && !implicit ? [alias] : relationPath(expr);
   }
   return isTableRef(node) ? node.table : undefined;
 }
 
 function hasColumn(list: SQLNode[], ref: ColumnNameRefNode): boolean {
-  return list.some(x => x instanceof ColumnNameRefNode && x.name === ref.name
+  return list.some(x => x instanceof ColumnNameRefNode && nameEquals(x.name, ref.name)
     && (!x.table || !ref.table || suffixEquals(x.table.table, ref.table.table)));
 }

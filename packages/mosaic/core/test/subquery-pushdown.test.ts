@@ -18,6 +18,20 @@ describe('subqueryPushdown', () => {
     );
   });
 
+  it('matches existing columns case-insensitively', () => {
+    const q = Query
+      .select('Category', { sum: sum('value') })
+      .from('data')
+      .groupby('Category');
+    expect(pushdown(q, 'data', ['category'])).toBe(
+      'SELECT "Category", sum("value") AS "sum" FROM "data" GROUP BY "Category"'
+    );
+    const s = Query.select(star(null, { exclude: ['A'] })).from('data');
+    expect(pushdown(s, 'data', ['a'])).toBe(
+      'SELECT * EXCLUDE ("A"), "a" FROM "data"'
+    );
+  });
+
   it('does not duplicate existing columns', () => {
     const q = Query
       .select('category', 'other', { sum: sum('value') })
@@ -173,6 +187,24 @@ describe('subqueryPushdown', () => {
     );
     expect(pushdown(q(['t']), ['s1', 't'], ['a'])).toBe(
       `SELECT * EXCLUDE ("t"."a"), "s1"."t"."a" AS "a" ${from}`
+    );
+  });
+
+  it('matches star modifier qualifiers case-insensitively', () => {
+    const q = Query
+      .select(star(null, { exclude: [column('num1', 'T1')] }))
+      .from(cross_join('t1', 't2'));
+    expect(pushdown(q, 't1', ['num1'])).toBe(
+      'SELECT * EXCLUDE ("T1"."num1"), "t1"."num1" AS "num1" FROM "t1" CROSS JOIN "t2"'
+    );
+  });
+
+  it('treats an alias matching the table name case-insensitively as implicit', () => {
+    const q = Query
+      .select(star(null, { exclude: [column('a', ['s2', 't'])] }))
+      .from(cross_join(new FromClauseNode(new TableRefNode(['s1', 't']), 'T'), ['s2', 't']));
+    expect(pushdown(q, ['s1', 't'], ['a'])).toBe(
+      'SELECT * EXCLUDE ("s2"."t"."a") FROM "s1"."t" AS "T" CROSS JOIN "s2"."t"'
     );
   });
 

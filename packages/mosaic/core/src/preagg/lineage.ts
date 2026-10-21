@@ -6,7 +6,7 @@ export interface Binding {
   scope: Scope;
 }
 
-/** A map from CTE names to their bound queries. */
+/** A map from lowercased CTE names to their bound queries. */
 export type Scope = Map<string, Binding>;
 
 /**
@@ -19,7 +19,7 @@ export type Scope = Map<string, Binding>;
 export function queryScope(query: Query, outer: Scope = new Map()): Scope {
   let scope = outer;
   for (const { name, query: cte } of query._with) {
-    scope = new Map(scope).set(name, { query: cte, scope });
+    scope = new Map(scope).set(name.toLowerCase(), { query: cte, scope });
   }
   return scope;
 }
@@ -35,7 +35,7 @@ export function resolveRelation(node: SQLNode, scope: Scope): TableRefNode | Bin
   if (node instanceof FromClauseNode) return resolveRelation(node.expr, scope);
   if (isQuery(node)) return { query: node, scope };
   if (isTableRef(node)) {
-    return (node.table.length === 1 && scope.get(node.name)) || node;
+    return (node.table.length === 1 && scope.get(node.name.toLowerCase())) || node;
   }
   return null;
 }
@@ -93,12 +93,12 @@ export function baseExpression(
 
 function outputExpression(query: Query, name: string, outer: Scope): ExprNode | undefined {
   if (isSelectQuery(query)) {
-    const clause = query._select.find(c => c.alias === name);
+    const clause = query._select.find(c => nameEquals(c.alias, name));
     const expr = clause?.expr ?? starExpression(query, name);
     return selectExpression(query, expr, outer);
   }
   if (isSetOperation(query)) {
-    const index = outputNames(query)?.indexOf(name) ?? -1;
+    const index = outputNames(query)?.findIndex(n => nameEquals(n, name)) ?? -1;
     if (index >= 0) return positionalExpression(query, index, outer);
   }
 }
@@ -186,12 +186,12 @@ export function starExpression(
     const expr = clause.expr as ColumnRefNode;
     if (!applies(expr)) continue;
     if (!(expr instanceof StarNode)) return new ColumnNameRefNode(name);
-    const replaced = expr.replace.find(c => c.alias === name);
+    const replaced = expr.replace.find(c => nameEquals(c.alias, name));
     if (replaced) return replaced.expr;
-    const renamed = expr.rename.find(([, to]) => to === name);
+    const renamed = expr.rename.find(([, to]) => nameEquals(to, name));
     if (renamed) return new ColumnNameRefNode(renamed[0].column);
-    const removed = expr.exclude.some(c => c.column === name && applies(c))
-      || expr.rename.some(([from]) => from.column === name && applies(from));
+    const removed = expr.exclude.some(c => nameEquals(c.column, name) && applies(c))
+      || expr.rename.some(([from]) => nameEquals(from.column, name) && applies(from));
     if (!removed) return new ColumnNameRefNode(name);
   }
 }
@@ -201,7 +201,7 @@ export function starExpression(
 // against a qualifier of s2.t
 export function suffixEquals(a: string[], b: string[]): boolean {
   const n = Math.min(a.length, b.length);
-  return a.slice(-n).every((v, i) => v === b[b.length - n + i]);
+  return a.slice(-n).every((v, i) => nameEquals(v, b[b.length - n + i]));
 }
 
 /**
@@ -211,5 +211,10 @@ export function suffixEquals(a: string[], b: string[]): boolean {
  */
 export function tableEquals(a: TableRefNode, b: TableRefNode): boolean {
   return a.table.length === b.table.length
-    && a.table.every((v, i) => v === b.table[i]);
+    && a.table.every((v, i) => nameEquals(v, b.table[i]));
+}
+
+// DuckDB resolves identifiers case-insensitively, even when quoted
+export function nameEquals(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase();
 }
