@@ -8,9 +8,12 @@ import { isStar, isWildcard, nameEquals, queryScope, resolveRelation, starExpres
  * @param query The query to push down to.
  * @param source The source relation (base table) containing the selected columns
  * @param cols The column names to push down.
+ * @returns False if the columns could not be pushed down, in which case
+ *  the query may be left in an invalid state.
  */
-export function subqueryPushdown(query: Query, source: TableRefNode, cols: string[]): void {
+export function subqueryPushdown(query: Query, source: TableRefNode, cols: string[]): boolean {
   const memo = new Map<Query, boolean>();
+  let supported = true;
 
   const visitQuery = (q: Query, outer: Scope, append?: string[]): boolean => {
     if (memo.has(q)) return memo.get(q)!;
@@ -62,6 +65,8 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
       appendSelect(q, missingSelect(q, paths).map(c => [c, ref(c)]));
     } else if (!q._select.some(isWildcard)) {
       appendSelect(q, append.map(c => [c, ref(c)]));
+    } else if (append.length) {
+      supported = false;
     }
     if (isAggregateQuery(q)) {
       q.groupby(cols.map(ref).filter(c => !hasColumn(q._groupby, c)));
@@ -89,6 +94,7 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
 
   const padNull = (q: Query, append: string[]): void => {
     if (isSelectQuery(q)) {
+      if (append.length && q._select.some(isWildcard)) supported = false;
       appendSelect(q, append.map(c => [c, literal(null)]));
     } else if (isSetOperation(q)) {
       q.queries.forEach(sub => padNull(sub, append));
@@ -97,17 +103,24 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
 
   const missing = (q: Query, outer: Scope): string[] => {
     const scope = queryScope(q, outer);
-    if (isSelectQuery(q)) return missingSelect(q, sourcePaths(fromRelations(q, scope)));
+    if (isSelectQuery(q)) {
+      const relations = fromRelations(q, scope);
+      const paths = sourcePaths(relations);
+      return missingSelect(q, paths.length ? paths : relations.map(r => r.path));
+    }
     return isSetOperation(q) ? missing(q.queries[0], scope) : [];
   };
 
   const missingSelect = (q: SelectQuery, relations: (string[] | undefined)[]): string[] => {
-    if (q._select.some(c => isWildcard(c) && !isStar(c))) return [];
-    return cols.filter(c => !q._select.some(x => nameEquals(x.alias, c))
+    const result = cols.filter(c => !q._select.some(x => nameEquals(x.alias, c))
       && !starExpression(q, c, relations));
+    if (!q._select.some(c => isWildcard(c) && !isStar(c))) return result;
+    if (result.length && q !== query) supported = false;
+    return [];
   };
 
   visitQuery(query, new Map());
+  return supported;
 }
 
 interface Relation {

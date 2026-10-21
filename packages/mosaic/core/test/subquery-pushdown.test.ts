@@ -66,6 +66,21 @@ describe('subqueryPushdown', () => {
     expect(pushdown(q, 'data', ['a'])).toBe('SELECT COLUMNS(\'^[ab]$\') FROM "data"');
   });
 
+  it('reports failure to push down into COLUMNS subqueries', () => {
+    const q = (sub: Query) => subqueryPushdown(
+      Query.select('x').from(sub), new TableRefNode('data'), ['a']
+    );
+    expect(q(Query.select(columns('^[xy]$')).from('data'))).toBe(false);
+    expect(q(Query.select(columns('^[xy]$'), 'A').from('data'))).toBe(true);
+    expect(q(Query.unionAll(
+      Query.select(columns('^[xy]$')).from('data'),
+      Query.select('x', 'y').from('data')
+    ))).toBe(false);
+    expect(subqueryPushdown(
+      Query.select(columns('^[ab]$')).from('data'), new TableRefNode('data'), ['a']
+    )).toBe(true);
+  });
+
   it('leaves queries over other tables unchanged', () => {
     const q = Query.select('x').from('other');
     expect(pushdown(q, 'data', ['a'])).toBe('SELECT "x" FROM "other"');
@@ -242,6 +257,27 @@ describe('subqueryPushdown', () => {
     expect(pushdown(q, 'data', ['c'])).toBe(
       'SELECT "x", "c" FROM "data" UNION ALL SELECT "x", NULL AS "c" FROM "other"'
     );
+  });
+
+  it('does not pad set operation inputs that already output a column', () => {
+    const q = Query.unionAll(
+      Query.select(star('other')).from('other'),
+      Query.select(star('data')).from('data')
+    );
+    expect(pushdown(q, 'data', ['a'])).toBe(
+      'SELECT "other".* FROM "other" UNION ALL SELECT "data".* FROM "data"'
+    );
+  });
+
+  it('reports failure to append to set operation inputs with stars', () => {
+    const q = (a: Query, b: Query) => subqueryPushdown(
+      Query.unionAll(a, b), new TableRefNode('data'), ['a']
+    );
+    expect(q(Query.select('x').from('data'), Query.select('*').from('data'))).toBe(false);
+    expect(q(Query.select('x').from('data'), Query.select('*').from('other'))).toBe(false);
+    expect(q(Query.select('x').from('other'), Query.select(star('data')).from('data'))).toBe(false);
+    expect(q(Query.select('*').from('data'), Query.select('*').from('data'))).toBe(true);
+    expect(q(Query.select('x').from('data'), Query.select('y').from('other'))).toBe(true);
   });
 
   it('aligns set operation inputs by position', () => {
