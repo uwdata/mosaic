@@ -168,30 +168,32 @@ describe('QueryManager', () => {
     expect(cache.get(String(q2))).toBeUndefined();
   });
 
-  it('fences cache fills issued before invalidate()', async () => {
+  it('fences in-flight requests issued before invalidate()', async () => {
     const queryManager = new QueryManager();
     queryManager.cache(true);
     const cache = queryManager.cache();
-    let resolve!: (value: unknown) => void;
+    const resolvers: ((value: unknown) => void)[] = [];
     queryManager.connector({
       // @ts-expect-error assumes type value
-      query: () => new Promise(r => { resolve = r; })
+      query: () => new Promise(r => { resolvers.push(r); })
     });
 
-    const result = queryManager.request({ type: 'arrow', query: 'SELECT 1', cache: true });
+    const stale = queryManager.request({ type: 'arrow', query: 'SELECT 1', cache: true });
     await new Promise(r => setTimeout(r, 0));
 
     cache.set('SELECT 2', 2, 0);
     queryManager.invalidate();
     expect(cache.get('SELECT 2')).toBeUndefined();
 
-    resolve(tableToIPC(tableFromArrays({ column: [1] }), {})!);
-    expect((await result as Table).toArray()).toEqual([{ column: 1 }]);
-    expect(cache.get('SELECT 1')).toBeUndefined();
-
     const fresh = queryManager.request({ type: 'arrow', query: 'SELECT 1', cache: true });
     await new Promise(r => setTimeout(r, 0));
-    resolve(tableToIPC(tableFromArrays({ column: [2] }), {})!);
+    expect(resolvers).toHaveLength(2);
+
+    resolvers[0](tableToIPC(tableFromArrays({ column: [1] }), {})!);
+    expect((await stale as Table).toArray()).toEqual([{ column: 1 }]);
+    expect(cache.get('SELECT 1')).toBeUndefined();
+
+    resolvers[1](tableToIPC(tableFromArrays({ column: [2] }), {})!);
     const data = await fresh as Table;
     expect(data.toArray()).toEqual([{ column: 2 }]);
     expect(cache.get('SELECT 1')).toBe(data);
