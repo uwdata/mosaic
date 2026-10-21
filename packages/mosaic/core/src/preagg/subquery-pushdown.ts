@@ -61,15 +61,22 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
     if (!paths.length) return false;
     const path = relations.length > 1 && paths.length === 1 ? paths[0] : undefined;
     const ref = (c: string) => new ColumnNameRefNode(c, path && new TableRefNode(path));
+    const ambiguous = paths.length > 1;
+    const select = (names: string[]) => {
+      if (ambiguous && names.length) supported = false;
+      appendSelect(q, names.map(c => [c, ref(c)]));
+    };
     if (!append) {
-      appendSelect(q, missingSelect(q, paths).map(c => [c, ref(c)]));
+      select(missingSelect(q, paths));
     } else if (!q._select.some(isWildcard)) {
-      appendSelect(q, append.map(c => [c, ref(c)]));
+      select(append);
     } else if (append.length) {
       supported = false;
     }
     if (isAggregateQuery(q)) {
-      q.groupby(cols.map(ref).filter(c => !hasColumn(q._groupby, c)));
+      const group = cols.map(ref).filter(c => !hasColumn(q._groupby, c));
+      if (ambiguous && group.length) supported = false;
+      q.groupby(group);
     }
     return true;
   };

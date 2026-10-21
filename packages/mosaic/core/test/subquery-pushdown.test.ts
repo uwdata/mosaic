@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { Query, ScalarSubqueryNode, TableRefNode, cast, column, columns, cross_join, star, count, FromClauseNode, gt, join, least, sql, sum } from '@uwdata/mosaic-sql';
 import { subqueryPushdown } from '../src/preagg/subquery-pushdown.js';
+import { NodeConnector } from '../src/connectors/NodeConnector.js';
+import { decodeIPC } from '../src/index.js';
+
+async function columnNames(sql: string): Promise<string[]> {
+  const db = await NodeConnector.make();
+  await db.query({ type: 'exec', sql: 'CREATE TABLE t AS SELECT 1 AS k, 2 AS a, 3 AS b' });
+  const ipc = await db.query({ type: 'arrow', sql: `SELECT column_name FROM (DESCRIBE ${sql})` });
+  return decodeIPC(ipc).toArray().map(d => d.column_name);
+}
 
 function pushdown(query: Query, source: string | string[], cols: string[]) {
   subqueryPushdown(query, new TableRefNode(source), cols);
@@ -223,13 +232,33 @@ describe('subqueryPushdown', () => {
     );
   });
 
-  it('matches star modifier qualifiers against aliases', () => {
-    const q = Query
-      .select(star(null, { exclude: [column('a', 't')] }))
+  it('matches star modifier qualifiers against aliases', async () => {
+    const q = (exclude: string[]) => Query
+      .select(star(null, { exclude: exclude.map(t => column('a', t)) }))
       .from(join(new FromClauseNode(new TableRefNode('t'), 'x'), 't', { using: ['k'] }));
-    expect(pushdown(q, 't', ['a'])).toBe(
-      'SELECT * EXCLUDE ("t"."a"), "a" FROM "t" AS "x" JOIN "t" USING ("k")'
-    );
+    const from = 'FROM "t" AS "x" JOIN "t" USING ("k")';
+    const sql = pushdown(q(['t']), 't', ['a']);
+    expect(sql).toBe(`SELECT * EXCLUDE ("t"."a") ${from}`);
+    expect(await columnNames(sql)).toStrictEqual(['k', 'a', 'b', 'b']);
+    expect(pushdown(q(['x']), 't', ['a'])).toBe(`SELECT * EXCLUDE ("x"."a") ${from}`);
+  });
+
+  it('reports failure to push down ambiguous self-join columns', async () => {
+    const selfJoin = () => join(new FromClauseNode(new TableRefNode('t'), 'x'), 't', { using: ['k'] });
+    const push = (q: Query) => subqueryPushdown(q, new TableRefNode('t'), ['a']);
+    const excludeBoth = Query
+      .select(star(null, { exclude: [column('a', 'x'), column('a', 't')] }))
+      .from(selfJoin());
+    expect(push(excludeBoth)).toBe(false);
+    expect(push(Query.select({ n: count() }).from(selfJoin()))).toBe(false);
+    expect(push(Query.select('*', { n: count() }).from(selfJoin()).groupby('k'))).toBe(false);
+
+    const grouped = Query
+      .select({ a: column('a', 'x'), n: count() })
+      .from(selfJoin())
+      .groupby(column('a', 'x'));
+    expect(push(grouped)).toBe(true);
+    expect(await columnNames(`${grouped}`)).toStrictEqual(['a', 'n']);
   });
 
   it('adds columns not output by table-qualified stars', () => {

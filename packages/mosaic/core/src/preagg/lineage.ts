@@ -170,7 +170,8 @@ export function isWildcard(node: { expr: SQLNode }): boolean {
  * @param name The output column name.
  * @param relations The table paths (or aliases) of the FROM relations
  *  that may provide the column. If specified, table-qualified stars and
- *  star modifiers apply only when they reference one of these relations.
+ *  star modifiers apply only when they reference one of these relations,
+ *  and the column is output if any one of these relations supplies it.
  *  Otherwise, all table qualifiers are assumed to reference the column's
  *  relation.
  */
@@ -179,20 +180,24 @@ export function starExpression(
   name: string,
   relations?: (string[] | undefined)[]
 ): ExprNode | undefined {
-  const applies = (ref: ColumnRefNode) => !relations || !ref.table
-    || relations.some(path => path && suffixEquals(ref.table!.table, path));
+  const matchers = relations
+    ? relations.map(path => (ref: ColumnRefNode) =>
+      !ref.table || !!path && suffixEquals(ref.table.table, path))
+    : [() => true];
   for (const clause of query._select) {
     if (!isStar(clause)) continue;
     const expr = clause.expr as ColumnRefNode;
-    if (!applies(expr)) continue;
-    if (!(expr instanceof StarNode)) return new ColumnNameRefNode(name);
-    const replaced = expr.replace.find(c => nameEquals(c.alias, name));
-    if (replaced) return replaced.expr;
-    const renamed = expr.rename.find(([, to]) => nameEquals(to, name));
-    if (renamed) return new ColumnNameRefNode(renamed[0].column);
-    const removed = expr.exclude.some(c => nameEquals(c.column, name) && applies(c))
-      || expr.rename.some(([from]) => nameEquals(from.column, name) && applies(from));
-    if (!removed) return new ColumnNameRefNode(name);
+    for (const applies of matchers) {
+      if (!applies(expr)) continue;
+      if (!(expr instanceof StarNode)) return new ColumnNameRefNode(name);
+      const replaced = expr.replace.find(c => nameEquals(c.alias, name));
+      if (replaced) return replaced.expr;
+      const renamed = expr.rename.find(([, to]) => nameEquals(to, name));
+      if (renamed) return new ColumnNameRefNode(renamed[0].column);
+      const removed = expr.exclude.some(c => nameEquals(c.column, name) && applies(c))
+        || expr.rename.some(([from]) => nameEquals(from.column, name) && applies(from));
+      if (!removed) return new ColumnNameRefNode(name);
+    }
   }
 }
 
