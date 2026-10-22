@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -34,8 +35,9 @@ func run() int {
 	flag.Var(&varyHeaders, "vary", "Comma-separated request header names to append to Vary; may be repeated")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	var gatekeeper gatekeeperFlag
-	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":1,"options":{}} enables validation with defaults`)
+	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":2,"options":{}} enables validation with defaults`)
 	flag.Parse()
+	*address = normalizeAddress(*address)
 
 	ctx := context.Background()
 
@@ -49,27 +51,14 @@ func run() int {
 		return 1
 	}
 
-	// If no certificate files are specified, check for default localhost certificates
-	if *certFile == "" && *keyFile == "" {
-		// Check if localhost.pem and localhost-key.pem exist in the current directory
-		if _, err := os.Stat("localhost.pem"); err == nil {
-			if _, err = os.Stat("localhost-key.pem"); err == nil {
-				*certFile = "localhost.pem"
-				*keyFile = "localhost-key.pem"
-				logger.Info("main: found default certificates in current directory", "cert", *certFile, "key", *keyFile)
-			}
-		}
+	tlsConfig, err := configureHTTPS(*certFile, *keyFile, logger)
+	if err != nil {
+		logger.Error("main: HTTPS setup failed", "error", err)
+		return 1
 	}
 
 	validation := gatekeeper.document != nil
-	var initializeOnce sync.Once
-	var initializeErr error
-	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
-		initializeOnce.Do(func() {
-			initializeErr = initializeDatabase(ctx, execer, *extensionsStr, gatekeeper.document)
-		})
-		return initializeErr
-	})
+	connector, err := newConnector(ctx, *dbPath, *extensionsStr, gatekeeper.document)
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
 		return 1
@@ -105,21 +94,21 @@ func run() int {
 			AllowAllHeaders: true,
 			MaxAge:          30 * 24 * time.Hour,
 		}),
-		server.WithWebSocket(server.WebSocketOptions{AllowAllOrigins: true}),
 	)
 	if err != nil {
 		logger.Error("main: error creating server", "error", err)
 		return 1
 	}
-	logger.Warn("DuckDB Server permits all HTTP and WebSocket origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
+	logger.Warn("DuckDB Server permits all HTTP origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
-	config := map[string]interface{}{
+	config := map[string]any{
 		"database":             *dbPath,
 		"address":              *address,
 		"port":                 *port,
 		"connection_pool_size": *poolSize,
 		"cert_file":            *certFile,
 		"key_file":             *keyFile,
+		"https":                tlsConfig != nil,
 		"cache_control":        *cacheControl,
 		"vary":                 varyHeaders.String(),
 		"load_extensions":      *extensionsStr,
@@ -143,24 +132,30 @@ func run() int {
 	}
 	fmt.Println("-------------------- | -------- | -------------------- | --------------------")
 
-	addr := *address + ":" + *port
+	addr := net.JoinHostPort(*address, *port)
+	httpServer := &http.Server{Addr: addr, Handler: s, TLSConfig: tlsConfig, ReadHeaderTimeout: 10 * time.Second}
 
-	// Check if both certificate files are provided for HTTPS
-	if *certFile != "" && *keyFile != "" {
-		logger.Info(fmt.Sprintf("DuckDB Server listening on https://%s and wss://%s", addr, addr))
-		err = http.ListenAndServeTLS(addr, *certFile, *keyFile, s)
+	if tlsConfig != nil {
+		logger.Info(fmt.Sprintf("DuckDB Server listening on https://%s", addr))
+		err = httpServer.ListenAndServeTLS("", "")
 	} else {
-		if *certFile != "" || *keyFile != "" {
-			logger.Warn("main: both cert and key files must be provided for HTTPS. Falling back to HTTP")
-		}
-		logger.Info(fmt.Sprintf("DuckDB Server listening on http://%s and ws://%s", addr, addr))
-		err = http.ListenAndServe(addr, s)
+		logger.Info(fmt.Sprintf("DuckDB Server listening on http://%s", addr))
+		err = httpServer.ListenAndServe()
 	}
 	if err != nil {
 		logger.Error("main: error running HTTP server", "error", err)
 		return 1
 	}
 	return 0
+}
+
+func newConnector(ctx context.Context, dsn, extensionList string, document *string) (*duckdb.Connector, error) {
+	var once sync.Once
+	var initErr error
+	return duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
+		once.Do(func() { initErr = initializeDatabase(ctx, execer, extensionList, document) })
+		return initErr
+	})
 }
 
 // initializeDatabase is the CLI's trusted initialization. Extensions named by --load-extensions are installed first so

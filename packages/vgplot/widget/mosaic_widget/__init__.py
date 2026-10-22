@@ -11,8 +11,9 @@ import duckdb
 import pyarrow as pa
 import traitlets
 
-from mosaic_widget._exceptions import warn
-from mosaic_widget.frame_interop import (
+from mosaic_widget import _db
+from mosaic_widget._exceptions import PerformanceWarning, warn
+from mosaic_widget._frame_interop import (
     frame_to_duckdb_registrable,
     is_registrable_frame,
 )
@@ -40,28 +41,6 @@ class SupportsToDict(Protocol):
 def _has_to_dict(obj: Any) -> TypeIs[SupportsToDict]:
     _sentinel = object()
     return inspect.getattr_static(obj, "to_dict", _sentinel) is not _sentinel
-
-
-def _register_frame_data(spec: dict[str, Any], data: dict[str, Any]) -> dict[str, Any]:
-    """Move in-memory DataFrames out of the spec's data section into `data`.
-
-    The spec is synced to the frontend as JSON and cannot carry live frames, so
-    hand them to DuckDB registration instead.
-    """
-    spec_data = spec.get("data")
-    if not isinstance(spec_data, dict):
-        return spec
-    kept = {}
-    for name, value in spec_data.items():
-        if is_registrable_frame(value):
-            data.setdefault(name, value)
-        else:
-            kept[name] = value
-    return (
-        {**spec, "data": kept}
-        if kept
-        else {k: v for k, v in spec.items() if k != "data"}
-    )
 
 
 class MosaicWidget(anywidget.AnyWidget):
@@ -100,14 +79,17 @@ class MosaicWidget(anywidget.AnyWidget):
                 Defaults to {}. Keys are table names, values are objects to register as
                 virtual tables (similar to SQL VIEWs). Supports pandas/polars DataFrames
                 and other Arrow objects.
+
+        Important:
+            Table names in `spec["data"]` have a lower precedence than those in `data`.
         """
-        if data is None:
-            data = {}
-        frame = inspect.currentframe()
-        caller_locals = frame.f_back.f_locals if frame and frame.f_back else {}
+
+        data = data if data is not None else {}
         if spec is None:
             spec_: dict[str, Any] = {}
         elif _has_to_dict(spec):
+            frame = inspect.currentframe()
+            caller_locals = frame.f_back.f_locals if frame and frame.f_back else {}
             try:
                 spec_ = spec.to_dict(_context=caller_locals)
             except TypeError:
@@ -117,17 +99,32 @@ class MosaicWidget(anywidget.AnyWidget):
         else:
             msg = f"spec must be a dict or have a to_dict() method, got {type(spec)}"
             raise TypeError(msg)
-        spec_ = _register_frame_data(spec_, data)
-        if con is None:
-            con = duckdb.connect()
+
+        merged_data = _data | data if (_data := spec_.pop("data", None)) else data
 
         super().__init__(*args, **kwargs)
-        self.spec = spec_
-        self.con = con
         self._registered_tables: set[str] = set()
-        for name, df in data.items():
-            self.con.register(name, frame_to_duckdb_registrable(df))
-            self._registered_tables.add(name)
+        for name, value in merged_data.items():
+            if is_registrable_frame(value):
+                if isinstance(value, duckdb.DuckDBPyRelation):
+                    con = _db.connect(con, value)
+                    try:
+                        con.register(name, value)
+                    except duckdb.InvalidInputException:
+                        msg = (
+                            "Materializing 'duckdb.DuckDBPyRelation' to Arrow table for DuckDB registration.\n"
+                            "The object was created by an unreachable Connection."
+                        )
+                        warn(msg, PerformanceWarning, 3)
+                        con.register(name, value.to_arrow_table())
+                else:
+                    con = _db.connect(con)
+                    con.register(name, frame_to_duckdb_registrable(value))
+                self._registered_tables.add(name)
+            else:
+                spec_.setdefault("data", {})[name] = value
+        self.spec = spec_
+        self.con = _db.connect(con)
         self.on_msg(self._handle_custom_msg)
 
     def _handle_custom_msg(
