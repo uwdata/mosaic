@@ -7,11 +7,9 @@ export { Priority } from './QueryManager.js';
 
 // deprecated in favor of constructors
 export { restConnector } from './connectors/rest.js';
-export { socketConnector } from './connectors/socket.js';
 export { wasmConnector } from './connectors/wasm.js';
 
 export { RestConnector } from './connectors/rest.js';
-export { SocketConnector } from './connectors/socket.js';
 export { DuckDBWASMConnector } from './connectors/wasm.js';
 
 export {
