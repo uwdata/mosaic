@@ -1,0 +1,40 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Generic, NewType, TypeVar
+
+import msgspec
+
+if TYPE_CHECKING:
+    from starlette.responses import Response
+
+    from pkg.db import Database
+
+Sql = NewType("Sql", str)
+"""SQL text. 
+
+- For `arrow` and `preagg` this MUST be exactly one statement; a trailing semicolon is permitted. 
+- For `exec` it MAY contain several`;` separated statements, executed in order.
+"""
+
+R = TypeVar("R")
+
+
+class Command(
+    msgspec.Struct,
+    Generic[R],
+    tag=lambda s: s.removesuffix("Request").lower(),
+    tag_field="type",
+):
+    sql: Sql
+
+    def _query(self, db: Database, /) -> R:
+        msg = f"'{type(self).__name__}.{self._query.__name__}()' is not yet implemented"
+        raise NotImplementedError(msg)
+
+    def _into_response(self, result: R, /) -> Response:
+        msg = f"'{type(self).__name__}.{self._into_response.__name__}()' is not yet implemented"
+        raise NotImplementedError(msg)
+
+    def run(self, db: Database, /) -> Response:
+        result = self._query(db)
+        return self._into_response(result)
