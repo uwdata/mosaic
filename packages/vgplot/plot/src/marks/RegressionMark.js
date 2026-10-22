@@ -128,7 +128,7 @@ function linePoints(fit) {
   return { numRows: x.length, columns: { x, y, ...rest } };
 }
 
-function areaPoints(fit, ci, precision, width) {
+export function areaPoints(fit, ci, precision, width) {
   const len = fit.numRows;
   const { x0, x1, xm, intercept, slope, n, ssx, ssy, ...rest } = fit.columns;
   const other = Object.keys(rest);
@@ -137,7 +137,10 @@ function areaPoints(fit, ci, precision, width) {
 
   for (let i = 0; i < len; ++i) {
     const pp = precision * (x1[i] - x0[i]) / width;
-    const t_sy = qt((1 - ci) / 2, n[i] - 2) * Math.sqrt(ssy[i] / (n[i] - 2));
+    // ssy is the total sum of squares; the standard error of the fit uses
+    // the residual sum of squares, as in Observable Plot's linearRegression.
+    const sse = Math.max(0, ssy[i] - slope[i] ** 2 * ssx[i]);
+    const t_sy = qt((1 - ci) / 2, n[i] - 2) * Math.sqrt(sse / (n[i] - 2));
     range(x0[i], x1[i] - pp / 2, pp).concat(x1[i]).forEach(x => {
       const y = intercept[i] + x * slope[i];
       const ye = t_sy * Math.sqrt(1 / n[i] + (x - xm[i]) ** 2 / ssx[i]);

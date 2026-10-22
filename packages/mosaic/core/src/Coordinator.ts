@@ -1,4 +1,4 @@
-import { SocketConnector } from './connectors/socket.js';
+import { RestConnector } from './connectors/rest.js';
 import { type Connector } from './connectors/Connector.js';
 import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
 import { voidLogger } from './util/void-logger.js';
@@ -52,23 +52,26 @@ export class Coordinator {
   protected _logger: Logger = voidLogger();
 
   /**
-   * @param db Database connector. Defaults to a web socket connection.
+   * @param db Database connector. Defaults to a REST connection.
    * @param options Coordinator options.
    * @param options.logger The logger to use, defaults to `console`.
    * @param options.manager The query manager to use.
    * @param options.cache Boolean flag to enable/disable query caching, or a
    *  custom cache object.
    * @param options.ipc Arrow IPC extraction options.
+   * @param options.timeout Query timeout in milliseconds, measured from when
+   *  a query is sent to the connector. Disabled by default.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
    */
   constructor(
-    db: Connector = new SocketConnector(),
+    db: Connector = new RestConnector(),
     options: {
       logger?: Logger | null;
       manager?: QueryManager;
       cache?: boolean | Cache;
       ipc?: ExtractionOptions;
+      timeout?: number;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
     } = {}
@@ -78,12 +81,14 @@ export class Coordinator {
       manager = new QueryManager(),
       cache = true,
       ipc,
+      timeout,
       consolidate = true,
       preagg = {}
     } = options;
     this.manager = manager;
     this.manager.cache(cache);
     if (ipc) this.manager.ipc(ipc);
+    if (timeout !== undefined) this.manager.timeout(timeout);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);
     this.logger(logger);
@@ -92,7 +97,8 @@ export class Coordinator {
   }
 
   /**
-   * Clear the coordinator state.
+   * Clear the coordinator state. Pending queries are rejected, and in-flight
+   * queries other than exec queries are aborted.
    * @param options Options object.
    * @param options.clients If true, disconnect all clients.
    * @param options.cache If true, clear the query cache.
@@ -205,7 +211,7 @@ export class Coordinator {
   // -- Client Management ----
 
   /**
-   * Update client data by submitting the given query and returning the()
+   * Update client data by submitting the given query and returning the
    * data (or error) to the client.
    * @param client A Mosaic client.
    * @param query The data query.

@@ -33,3 +33,12 @@ export function float32(expr: unknown) {
 export function float64(expr: unknown) {
   return cast(expr, 'DOUBLE');
 }
+
+/**
+ * Perform a type cast that returns NULL if the cast fails.
+ * @param expr The expression to type cast.
+ * @param type The type to cast to.
+ */
+export function tryCast(expr: unknown, type: string) {
+  return new CastNode(asNode(expr), type, true);
+}
