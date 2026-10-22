@@ -14,6 +14,7 @@ import type { InitializeProps, RenderProps } from 'anywidget/types';
 import { v4 as uuidv4 } from 'uuid';
 
 type Params = Record<string, { value: unknown; predicate?: string }>;
+type UUID = string;
 
 interface Model {
   spec: Spec;
@@ -24,16 +25,22 @@ interface Model {
   /** The current params. */
 }
 
-type QueryQuery = ArrowQueryRequest | ExecQueryRequest;
-
-interface Query {
-  query: QueryQuery;
-  /** The query to send. */
+interface OpenQuery {
+  query: ArrowQueryRequest | ExecQueryRequest;
   startTime: number;
-  resolve: (value: any) => void;
-  /** The promise resolve callback. */
-  reject: (reason?: any) => void;
-  /** The promise reject callback. */
+  resolve: (value: ArrayBufferLike | Record<string, unknown>) => void;
+  reject: (reason?: string) => void;
+}
+
+/**
+ * Parse specification, and instantiate it astToDOM creates a new vgplot API context with the
+ * standard coordinator and a custom namedPlots map.
+ */
+async function instantiateSpec(spec: Spec): Promise<{
+  element: HTMLElement | SVGSVGElement;
+  params: Map<string, Param<unknown> | Selection>;
+}> {
+  return astToDOM(parseSpec(spec));
 }
 
 export default {
@@ -51,14 +58,14 @@ export default {
     }
     const logger = coordinator().logger();
 
-    const openQueries = new Map<string, Query>();
+    const openQueries = new Map<UUID, OpenQuery>();
 
     function send(
-      query: QueryQuery,
-      resolve: (value: any) => void,
-      reject: (reason?: any) => void,
+      query: OpenQuery['query'],
+      resolve: OpenQuery['resolve'],
+      reject: OpenQuery['reject'],
     ): void {
-      const uuid = uuidv4();
+      const uuid: UUID = uuidv4();
 
       openQueries.set(uuid, {
         query,
@@ -70,7 +77,9 @@ export default {
     }
 
     const connector: Connector = {
-      query(query: ArrowQueryRequest | ExecQueryRequest): Promise<any> {
+      // The overloads for `Connector` can't be satisfied
+      // oxlint-disable-next-line typescript/no-explicit-any
+      async query(query: OpenQuery['query']): Promise<any> {
         return new Promise((resolve, reject) => send(query, resolve, reject));
       },
     };
@@ -86,6 +95,7 @@ export default {
      */
     // oxlint-disable-next-line unicorn/consistent-function-scoping
     function predicateSQL(selection: Selection): string {
+      // oxlint-disable-next-line no-undefined
       const predicate = selection.predicate(undefined) ?? [];
       const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
       // oxlint-disable-next-line no-magic-numbers
@@ -133,7 +143,7 @@ export default {
     }
     // oxlint-enable max-statements
 
-    view.model.on('change:spec', () => updateSpec());
+    view.model.on('change:spec', async () => updateSpec());
 
     function configureCoordinator(): void {
       coordinator().preaggregator.schema = getPreaggSchema();
@@ -146,6 +156,7 @@ export default {
       logger.group(`query ${msg.uuid}`);
       logger.log('received message', msg, buffers);
 
+      // oxlint-disable-next-line typescript/no-non-null-assertion
       const query = openQueries.get(msg.uuid)!;
       openQueries.delete(msg.uuid);
 
@@ -185,13 +196,3 @@ export default {
     };
   },
 };
-
-/**
- * Parse specification, and instantiate it astToDOM creates a new vgplot API context with the
- * standard coordinator and a custom namedPlots map.
- */
-function instantiateSpec(
-  spec: Spec,
-): Promise<{ element: HTMLElement | SVGSVGElement; params: Map<string, Param<any> | Selection> }> {
-  return astToDOM(parseSpec(spec));
-}
