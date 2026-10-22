@@ -160,7 +160,6 @@ export default {
       const query = openQueries.get(msg.uuid)!;
       openQueries.delete(msg.uuid);
 
-      // oxlint-disable-next-line no-magic-numbers
       logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
 
       if (msg.error) {
@@ -169,10 +168,9 @@ export default {
       } else {
         switch (msg.type) {
           case 'arrow': {
-            // oxlint-disable-next-line no-magic-numbers
-            logger.log('arrow bytes', buffers[0].buffer.byteLength);
-            // oxlint-disable-next-line no-magic-numbers
-            query.resolve(buffers[0].buffer);
+            const [{ buffer }] = buffers;
+            logger.log('arrow bytes', buffer.byteLength);
+            query.resolve(buffer);
             break;
           }
           default: {
