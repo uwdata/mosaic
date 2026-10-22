@@ -107,6 +107,22 @@ Equivalent to `NOT(lo <= expression AND expression <= hi)`.
 
 Returns an expression testing if the input _expression_ matches any of the entries in the _values_ array. Maps to `expression IN (...values)`.
 
+## compareAny
+
+`compareAny(expression, op, subquery)`
+
+Returns an expression testing if the comparison _op_ holds between the input _expression_ and any row of the single-column _subquery_.
+The _op_ argument is one of `"="`, `"<>"`, `"!="`, `"<"`, `">"`, `"<="`, or `">="`.
+Maps to `expression op ANY (subquery)`.
+
+## compareAll
+
+`compareAll(expression, op, subquery)`
+
+Returns an expression testing if the comparison _op_ holds between the input _expression_ and every row of the single-column _subquery_.
+The _op_ argument is one of `"="`, `"<>"`, `"!="`, `"<"`, `">"`, `"<="`, or `">="`.
+Maps to `expression op ALL (subquery)`.
+
 ## listContains
 
 `listContains(expression, value)`
@@ -124,6 +140,21 @@ Returns an expression testing if any of the input _values_ exist in the _express
 `listHasAll(expression, values)`
 
 Returns an expression testing if all the input _values_ exist in the _expression_ list. Maps to `list_has_all(expression, values)`.
+
+## subscript
+
+`subscript(expression, index)`
+
+Returns an expression that indexes into the _expression_ list, string, struct, or map. Maps to `expression[index]`.
+String-valued _index_ arguments are interpreted as literals, for example to access struct fields; use `column` to index by a column value.
+
+## slice
+
+`slice(expression, start, end, step)`
+
+Returns an expression that slices the _expression_ list or string. Maps to `expression[start:end:step]`.
+The _start_ and _end_ indices are inclusive and 1-based. If _start_ or _end_ is `null` or `undefined`, the slice extends to the beginning or end of the input.
+The _step_ argument is optional.
 
 ## unnest
 
