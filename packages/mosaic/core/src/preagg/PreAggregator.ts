@@ -218,6 +218,10 @@ export class PreAggregator {
         client.query(filter) as SelectQuery,
         active, preaggCols, schema
       );
+      if (!_info) {
+        entries.set(client, null);
+        return null;
+      }
       const createQuery = [
         createSchema(schema),
         createTable(_info.table, _info.create, { temp: false })
@@ -338,25 +342,27 @@ function binInterval(
  * @param active Active (selected) columns.
  * @param preaggCols Pre-aggregation columns.
  * @param schema Database schema name.
- * @returns Pre-aggregation information.
+ * @returns Pre-aggregation information, or null if the active columns
+ *  can not be pushed down to the source table.
  */
 function preaggregateInfo(
   query: SelectQuery,
   active: ActiveColumnsResult,
   preaggCols: PreAggColumnsResult,
   schema: string
-): PreAggregateInfo {
+): PreAggregateInfo | null {
   query = deepClone(query);
   const { groupby, having, orderby, output, preagg, qualify, source } = preaggCols;
   const { columns = {} } = active;
   const selectClauses = query._select;
 
   // top-level select and group by changes are overwritten below
-  subqueryPushdown(
+  const pushed = subqueryPushdown(
     query,
     source,
     Object.values(columns).flatMap(c => collectColumns(c).map(c => c.column))
   );
+  if (!pushed) return null;
 
   // build materialized view construction query
   const create = Query

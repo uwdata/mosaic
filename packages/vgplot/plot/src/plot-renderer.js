@@ -24,7 +24,7 @@ const SELECT_TRANSFORMS = new Map(
     ['minY', Plot.selectMinY],
     ['nearest', Plot.pointer],
     ['nearestX', Plot.pointerX],
-    ['nearestXY', Plot.pointerY]
+    ['nearestY', Plot.pointerY]
   ])
 );
 
