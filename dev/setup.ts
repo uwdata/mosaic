@@ -1,4 +1,4 @@
-import { decodeIPC, DuckDBWASMConnector, RestConnector, SocketConnector } from '@uwdata/mosaic-core';
+import { decodeIPC, DuckDBWASMConnector, RestConnector } from '@uwdata/mosaic-core';
 import { createAPIContext } from '@uwdata/vgplot';
 
 export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
@@ -30,9 +30,6 @@ let wasm;
 export async function setDatabaseConnector(type) {
   let connector;
   switch (type) {
-    case 'socket':
-      connector = new SocketConnector();
-      break;
     case 'rest':
       connector = new RestConnector();
       break;

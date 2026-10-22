@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 
 	"github.com/duckdb/duckdb-go/v2"
@@ -20,14 +19,14 @@ func TestInitializeDatabase(t *testing.T) {
 		document *string
 	}{
 		{"unrestricted", nil},
-		{"configured", policyDocument(`{"version":1,"options":{"blocked_functions":["md5"]}}`)},
+		{"configured", new(`{"version":2,"options":{"blocked_functions":[{"catalog":"system","schema_path":["main"],"name":"md5"}]}}`)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dsn := ":memory:"
 			if tc.document == nil {
 				dsn = freshDSN(t)
 			}
-			connector := newConnector(t, dsn, "", tc.document)
+			connector := testConnector(t, dsn, "", tc.document)
 			var opts []query.OptionFunc
 			if tc.document != nil {
 				opts = append(opts, query.WithValidation())
@@ -55,13 +54,13 @@ func TestInitializeDatabase(t *testing.T) {
 }
 
 func TestInitializeDatabaseLocalArtifact(t *testing.T) {
-	installed := newConnector(t, ":memory:", "", defaultPolicy())
+	installed := testConnector(t, ":memory:", "", defaultPolicy())
 	source := scanValue(t, installed, "SELECT install_path FROM duckdb_extensions() WHERE extension_name='gatekeeper'").(string)
 	artifact, err := os.ReadFile(source)
 	require.NoError(t, err)
 	path := filepath.Join(t.TempDir(), "gatekeeper.duckdb_extension")
 	require.NoError(t, os.WriteFile(path, artifact, 0o600))
-	connector := newConnector(t, freshDSN(t), path, defaultPolicy())
+	connector := testConnector(t, freshDSN(t), path, defaultPolicy())
 	db, err := query.New(t.Context(), connector, query.WithValidation())
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
@@ -70,15 +69,17 @@ func TestInitializeDatabaseLocalArtifact(t *testing.T) {
 
 func TestInitializeDatabaseFailsClosed(t *testing.T) {
 	for _, tc := range []struct{ name, extension, document, want string }{
-		{"missing artifact", filepath.Join(t.TempDir(), "gatekeeper.duckdb_extension"), `{"version":1,"options":{}}`, "gatekeeper.duckdb_extension"},
+		{"missing artifact", filepath.Join(t.TempDir(), "gatekeeper.duckdb_extension"), `{"version":2,"options":{}}`, "gatekeeper.duckdb_extension"},
 		{"invalid document", "", `{}`, "configure Gatekeeper"},
+		{"version 1 document", "", `{"version":1,"options":{}}`, "configure Gatekeeper"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var flag gatekeeperFlag
 			require.NoError(t, flag.Set(tc.document))
-			connector := newConnector(t, ":memory:", tc.extension, flag.document)
+			connector := testConnector(t, ":memory:", tc.extension, flag.document)
 			db, err := query.New(t.Context(), connector, query.WithValidation())
 			require.ErrorContains(t, err, tc.want)
+			require.NotContains(t, err.Error(), "JSON policy v2 (0.4.0+)")
 			require.Nil(t, db)
 		})
 	}
@@ -88,7 +89,7 @@ func TestInitializeDatabaseCommunityInstall(t *testing.T) {
 	if testing.Short() {
 		t.Skip("downloads the community extension into a fresh extension directory")
 	}
-	connector := newConnector(t, freshDSN(t), "", defaultPolicy())
+	connector := testConnector(t, freshDSN(t), "", defaultPolicy())
 	db, err := query.New(t.Context(), connector, query.WithValidation())
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
@@ -111,21 +112,15 @@ func scanValue(t *testing.T, connector *duckdb.Connector, stmt string) driver.Va
 	return values[0]
 }
 
-func newConnector(t *testing.T, dsn, extensionList string, policy *string) *duckdb.Connector {
+func testConnector(t *testing.T, dsn, extensionList string, policy *string) *duckdb.Connector {
 	t.Helper()
-	var once sync.Once
-	var initErr error
-	connector, err := duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
-		once.Do(func() { initErr = initializeDatabase(t.Context(), execer, extensionList, policy) })
-		return initErr
-	})
+	connector, err := newConnector(t.Context(), dsn, extensionList, policy)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, connector.Close()) })
 	return connector
 }
 
-func policyDocument(value string) *string { return &value }
-func defaultPolicy() *string              { return policyDocument(`{"version":1,"options":{}}`) }
+func defaultPolicy() *string { return new(`{"version":2,"options":{}}`) }
 func freshDSN(t *testing.T) string {
 	t.Helper()
 	return ":memory:?extension_directory=" + url.QueryEscape(t.TempDir())
