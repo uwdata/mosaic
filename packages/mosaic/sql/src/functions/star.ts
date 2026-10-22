@@ -1,20 +1,28 @@
 import type { ExprValue } from '../types.js';
 import type { TableRefNode } from '../ast/table-ref.js';
+import type { ColumnRefNode } from '../ast/column-ref.js';
 import { ColumnsNode } from '../ast/columns.js';
 import { LambdaNode } from '../ast/lambda.js';
 import { ListNode } from '../ast/list.js';
 import { LiteralNode } from '../ast/literal.js';
 import { SelectClauseNode } from '../ast/select.js';
 import { StarNode } from '../ast/star.js';
-import { asNode, asTableRef } from '../util/ast.js';
+import { asColumnRef, asNode, asTableRef } from '../util/ast.js';
 
 export interface StarOptions {
-  /** Names of columns to exclude. */
-  exclude?: string[];
+  /**
+   * Columns to exclude, as column names or column references. Use
+   * column references to exclude table-qualified columns.
+   */
+  exclude?: (string | ColumnRefNode)[];
   /** A map from column names to replacement expressions. */
   replace?: Record<string, ExprValue>;
-  /** A map from current column names to new column names. */
-  rename?: Record<string, string>;
+  /**
+   * A map from current column names to new column names, or an array of
+   * [current column, new name] pairs. Use column references as the
+   * current column to rename table-qualified columns.
+   */
+  rename?: Record<string, string> | [string | ColumnRefNode, string][];
 }
 
 /**
@@ -30,9 +38,10 @@ export function star(
   const { exclude = [], replace = {}, rename = {} } = options;
   return new StarNode(
     asTableRef(table ?? undefined),
-    exclude,
+    exclude.map(asColumnRef),
     Object.entries(replace).map(([name, expr]) => new SelectClauseNode(asNode(expr), name)),
-    Object.entries(rename)
+    (Array.isArray(rename) ? rename : Object.entries(rename))
+      .map(([from, to]) => new SelectClauseNode(asColumnRef(from), to))
   );
 }
 
