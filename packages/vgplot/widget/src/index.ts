@@ -10,11 +10,15 @@ import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 
 import './style.css';
 import type { Spec } from '@uwdata/mosaic-spec';
-import type { InitializeProps, RenderProps } from 'anywidget/types';
+import type { InitializeProps, RenderProps, AnyModel } from 'anywidget/types';
 import { v4 as uuidv4 } from 'uuid';
 
 type Params = Record<string, { value: unknown; predicate?: string }>;
 type UUID = string;
+interface DOM {
+  element: HTMLElement | SVGSVGElement;
+  params: Map<string, Param<unknown> | Selection>;
+}
 
 interface Model {
   spec: Spec;
@@ -36,11 +40,49 @@ interface OpenQuery {
  * Parse specification, and instantiate it astToDOM creates a new vgplot API context with the
  * standard coordinator and a custom namedPlots map.
  */
-async function instantiateSpec(spec: Spec): Promise<{
-  element: HTMLElement | SVGSVGElement;
-  params: Map<string, Param<unknown> | Selection>;
-}> {
+async function instantiateSpec(spec: Spec): Promise<DOM> {
   return astToDOM(parseSpec(spec));
+}
+
+function reset(): void {
+  coordinator().clear();
+}
+
+/**
+ * Serialize a selection's resolved predicate — a single expression or an implicitly conjunctive
+ * array — to a SQL string.
+ */
+function predicateSQL(selection: Selection): string {
+  const predicate = selection.predicate() ?? [];
+  const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
+  return parts.length > 1 ? parts.map((s) => `(${s})`).join(' AND ') : (parts[0] ?? '');
+}
+
+function updateParams(model: AnyModel<Model>, domParams: DOM['params']): void {
+  let params: Params = {};
+
+  for (const [name, param] of domParams) {
+    params[name] = {
+      value: param.value,
+      ...(isSelection(param) ? { predicate: predicateSQL(param) } : {}),
+    };
+
+    param.addEventListener('value', (value) => {
+      params = Object.freeze({
+        ...params,
+        [name]: {
+          value,
+          ...(isSelection(param) ? { predicate: predicateSQL(param) } : {}),
+        },
+      });
+      model.set('params', params);
+      model.save_changes();
+    });
+  }
+
+  params = Object.freeze(params);
+  model.set('params', params);
+  model.save_changes();
 }
 
 export default {
@@ -48,16 +90,10 @@ export default {
     view.model.set('preagg_schema', coordinator().preaggregator.schema);
   },
 
+  // oxlint-disable-next-line max-statements
   render(view: RenderProps<Model>): () => void {
     view.el.classList.add('mosaic-widget');
-    function getSpec(): Spec {
-      return view.model.get('spec');
-    }
-    function getPreaggSchema(): string {
-      return view.model.get('preagg_schema');
-    }
     const logger = coordinator().logger();
-
     const openQueries = new Map<UUID, OpenQuery>();
 
     function send(
@@ -84,28 +120,10 @@ export default {
       },
     };
 
-    // oxlint-disable-next-line unicorn/consistent-function-scoping
-    function reset(): void {
-      coordinator().clear();
-    }
-
-    /**
-     * Serialize a selection's resolved predicate — a single expression or an implicitly conjunctive
-     * array — to a SQL string.
-     */
-    // oxlint-disable-next-line unicorn/consistent-function-scoping
-    function predicateSQL(selection: Selection): string {
-      // oxlint-disable-next-line no-undefined
-      const predicate = selection.predicate(undefined) ?? [];
-      const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
-      // oxlint-disable-next-line no-magic-numbers
-      return parts.length > 1 ? parts.map((s) => `(${s})`).join(' AND ') : (parts[0] ?? '');
-    }
-
     let appliedSpecJSON = '';
-    // oxlint-disable max-statements
+
     async function updateSpec(): Promise<void> {
-      const spec = getSpec();
+      const spec = view.model.get('spec');
       const specJSON = JSON.stringify(spec);
       if (specJSON === appliedSpecJSON) {
         return;
@@ -115,43 +133,18 @@ export default {
       logger.log('Setting spec:', spec);
       const dom = await instantiateSpec(spec);
       view.el.replaceChildren(dom.element);
-
-      let params: Params = {};
-
-      for (const [name, param] of dom.params) {
-        params[name] = {
-          value: param.value,
-          ...(isSelection(param) ? { predicate: predicateSQL(param) } : {}),
-        };
-
-        param.addEventListener('value', (value) => {
-          params = Object.freeze({
-            ...params,
-            [name]: {
-              value,
-              ...(isSelection(param) ? { predicate: predicateSQL(param) } : {}),
-            },
-          });
-          view.model.set('params', params);
-          view.model.save_changes();
-        });
-      }
-
-      params = Object.freeze(params);
-      view.model.set('params', params);
-      view.model.save_changes();
+      updateParams(view.model, dom.params);
     }
-    // oxlint-enable max-statements
 
     view.model.on('change:spec', async () => updateSpec());
 
     function configureCoordinator(): void {
-      coordinator().preaggregator.schema = getPreaggSchema();
+      coordinator().preaggregator.schema = view.model.get('preagg_schema');
     }
 
     view.model.on('change:preagg_schema', () => configureCoordinator());
 
-    // oxlint-disable max-statements
+    // oxlint-disable-next-line max-statements
     view.model.on('msg:custom', (msg, buffers) => {
       logger.group(`query ${msg.uuid}`);
       logger.log('received message', msg, buffers);
@@ -165,32 +158,21 @@ export default {
       if (msg.error) {
         query.reject(msg.error);
         logger.error(msg.error);
+      } else if (msg.type === 'arrow') {
+        const [{ buffer }] = buffers;
+        logger.log('arrow bytes', buffer.byteLength);
+        query.resolve(buffer);
       } else {
-        switch (msg.type) {
-          case 'arrow': {
-            const [{ buffer }] = buffers;
-            logger.log('arrow bytes', buffer.byteLength);
-            query.resolve(buffer);
-            break;
-          }
-          default: {
-            query.resolve({});
-            break;
-          }
-        }
+        query.resolve({});
       }
       logger.groupEnd();
     });
-    // oxlint-enable max-statements
 
     coordinator().databaseConnector(connector);
     configureCoordinator();
     // oxlint-disable-next-line typescript/no-floating-promises
     updateSpec();
 
-    return (): void => {
-      // Cleanup
-      reset();
-    };
+    return reset;
   },
 };
