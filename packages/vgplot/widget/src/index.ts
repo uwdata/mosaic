@@ -1,12 +1,11 @@
-import {
-  coordinator,
-  isSelection,
+import type {
   Connector,
   Selection,
   Param,
   ArrowQueryRequest,
   ExecQueryRequest,
 } from '@uwdata/mosaic-core';
+import { coordinator, isSelection } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 
 import './style.css';
@@ -27,7 +26,7 @@ interface Model {
 
 type QueryQuery = ArrowQueryRequest | ExecQueryRequest;
 
-type Query = {
+interface Query {
   query: QueryQuery;
   /** The query to send. */
   startTime: number;
@@ -35,7 +34,7 @@ type Query = {
   /** The promise resolve callback. */
   reject: (reason?: any) => void;
   /** The promise reject callback. */
-};
+}
 
 export default {
   initialize(view: InitializeProps<Model>): void {
@@ -44,11 +43,15 @@ export default {
 
   render(view: RenderProps<Model>): () => void {
     view.el.classList.add('mosaic-widget');
-    const getSpec = () => view.model.get('spec');
-    const getPreaggSchema = () => view.model.get('preagg_schema');
+    function getSpec(): Spec {
+      return view.model.get('spec');
+    }
+    function getPreaggSchema(): string {
+      return view.model.get('preagg_schema');
+    }
     const logger = coordinator().logger();
 
-    const openQueries: Map<string, Query> = new Map();
+    const openQueries = new Map<string, Query>();
 
     function send(
       query: QueryQuery,
@@ -89,12 +92,14 @@ export default {
       return parts.length > 1 ? parts.map((s) => `(${s})`).join(' AND ') : (parts[0] ?? '');
     }
 
-    let appliedSpecJSON: string;
-
+    let appliedSpecJSON = '';
+    // oxlint-disable max-statements
     async function updateSpec(): Promise<void> {
       const spec = getSpec();
       const specJSON = JSON.stringify(spec);
-      if (specJSON === appliedSpecJSON) return;
+      if (specJSON === appliedSpecJSON) {
+        return;
+      }
       appliedSpecJSON = specJSON;
       reset();
       logger.log('Setting spec:', spec);
@@ -126,6 +131,7 @@ export default {
       view.model.set('params', params);
       view.model.save_changes();
     }
+    // oxlint-enable max-statements
 
     view.model.on('change:spec', () => updateSpec());
 
@@ -135,6 +141,7 @@ export default {
 
     view.model.on('change:preagg_schema', () => configureCoordinator());
 
+    // oxlint-disable max-statements
     view.model.on('msg:custom', (msg, buffers) => {
       logger.group(`query ${msg.uuid}`);
       logger.log('received message', msg, buffers);
@@ -165,6 +172,7 @@ export default {
       }
       logger.groupEnd();
     });
+    // oxlint-enable max-statements
 
     coordinator().databaseConnector(connector);
     configureCoordinator();
@@ -172,7 +180,7 @@ export default {
     updateSpec();
 
     return (): void => {
-      // cleanup
+      // Cleanup
       reset();
     };
   },
