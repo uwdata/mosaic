@@ -1,40 +1,48 @@
-import { coordinator, isSelection } from '@uwdata/mosaic-core';
+import { coordinator, isSelection, Connector, Selection, Param, ArrowQueryRequest, ExecQueryRequest, ConnectorQueryOptions, ArrowIPCBytes } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 import './style.css';
 import { v4 as uuidv4 } from 'uuid';
+import type { Spec } from '@uwdata/mosaic-spec';
+import type { InitializeProps, RenderProps } from 'anywidget/types';
 
-/**
- * @typedef {Record<string, {value: unknown, predicate?: string}>} Params
- *
- * @typedef Model
- * @property {import('@uwdata/mosaic-spec').Spec} spec
- *  The current Mosaic specification.
- * @property {string} preagg_schema The database schema in which to store
- *  pre-aggregated materialized views (default 'mosaic').
- * @property {Params} params The current params.
- */
+type Params = Record<string, { value: unknown, predicate?: string }>;
 
-/** @type {import('anywidget/types').AnyWidget<Model>} */
+interface Model {
+  spec: Spec;
+  /** The current Mosaic specification. */
+  preagg_schema: string;
+  /**The database schema in which to store pre-aggregated materialized views (default 'mosaic'). */
+  params: Params;
+  /**The current params. */
+}
+
+type QueryQuery = ArrowQueryRequest | ExecQueryRequest;
+
+type Query = {
+  query: QueryQuery;
+  /**The query to send. */
+  startTime: number;
+  resolve: (value: any) => void;
+  /**The promise resolve callback. */
+  reject: (reason?: any) => void;
+  /**The promise reject callback. */
+};
+
 export default {
-  initialize(view) {
+  initialize(view: InitializeProps<Model>): void {
     view.model.set('preagg_schema', coordinator().preaggregator.schema);
   },
 
-  render(view) {
+  render(view: RenderProps<Model>): () => void {
     view.el.classList.add('mosaic-widget');
     const getSpec = () => view.model.get('spec');
     const getPreaggSchema = () => view.model.get('preagg_schema');
     const logger = coordinator().logger();
 
-    /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
-    const openQueries = new Map();
+    const openQueries: Map<string, Query> = new Map();
 
-    /**
-     * @param {Record<any, unknown>} query the query to send
-     * @param {(value: any) => void} resolve the promise resolve callback
-     * @param {(reason?: any) => void} reject the promise reject callback
-     */
-    function send(query, resolve, reject) {
+
+    function send(query: QueryQuery, resolve: (value: any) => void, reject: (reason?: any) => void): void {
       const uuid = uuidv4();
 
       openQueries.set(uuid, {
@@ -46,32 +54,29 @@ export default {
       view.model.send({ ...query, uuid });
     }
 
-    /** @type {import('@uwdata/mosaic-core').Connector} */
-    const connector = {
-      query(query) {
+    const connector: Connector = {
+      query(query: ArrowQueryRequest | ExecQueryRequest): Promise<any> {
         return new Promise((resolve, reject) => send(query, resolve, reject));
       },
-    };
+    }
 
-    function reset() {
+    function reset(): void {
       coordinator().clear();
     }
 
     /**
      * Serialize a selection's resolved predicate — a single expression or an
      * implicitly conjunctive array — to a SQL string.
-     * @param {import('@uwdata/mosaic-core').Selection} selection
-     * @returns {string}
      */
-    function predicateSQL(selection) {
+    function predicateSQL(selection: Selection): string {
       const predicate = selection.predicate(undefined) ?? [];
       const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
       return parts.length > 1 ? parts.map(s => `(${s})`).join(' AND ') : (parts[0] ?? '');
     }
 
-    let appliedSpecJSON;
+    let appliedSpecJSON: string;
 
-    async function updateSpec() {
+    async function updateSpec(): Promise<void> {
       const spec = getSpec();
       const specJSON = JSON.stringify(spec);
       if (specJSON === appliedSpecJSON) return;
@@ -81,8 +86,7 @@ export default {
       const dom = await instantiateSpec(spec);
       view.el.replaceChildren(dom.element);
 
-      /** @type Params */
-      let params = {};
+      let params: Params = {};
 
       for (const [name, param] of dom.params) {
         params[name] = {
@@ -110,7 +114,7 @@ export default {
 
     view.model.on('change:spec', () => updateSpec());
 
-    function configureCoordinator() {
+    function configureCoordinator(): void {
       coordinator().preaggregator.schema = getPreaggSchema();
     }
 
@@ -148,14 +152,14 @@ export default {
     configureCoordinator();
     updateSpec();
 
-    return () => {
+    return (): void => {
       // cleanup
       reset();
     };
   },
 };
 
-function instantiateSpec(spec) {
+function instantiateSpec(spec: Spec): Promise<{ element: HTMLElement | SVGSVGElement; params: Map<string, Param<any> | Selection>; }> {
   // parse specification, and instantiate it
   // astToDOM creates a new vgplot API context with the
   // standard coordinator and a custom namedPlots map
