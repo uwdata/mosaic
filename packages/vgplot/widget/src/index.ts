@@ -72,6 +72,7 @@ export default {
       },
     };
 
+    // oxlint-disable-next-line unicorn/consistent-function-scoping
     function reset(): void {
       coordinator().clear();
     }
@@ -80,6 +81,7 @@ export default {
      * Serialize a selection's resolved predicate — a single expression or an implicitly conjunctive
      * array — to a SQL string.
      */
+    // oxlint-disable-next-line unicorn/consistent-function-scoping
     function predicateSQL(selection: Selection): string {
       const predicate = selection.predicate(undefined) ?? [];
       const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
