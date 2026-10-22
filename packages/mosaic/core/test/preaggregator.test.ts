@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from '@uwdata/mosaic-sql';
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, columns, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clausePoint, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
@@ -401,6 +401,43 @@ describe('PreAggregator', () => {
         .groupby('type');
     };
     expect(await run(query2)).toStrictEqual([4.5, true]);
+  });
+
+  it('supports grouping column pushdown into positional set operation inputs', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query
+        .with({
+          r: Query.from('testData').select('dim', 'x', 'y').where(predicate),
+          s: Query.unionAll([
+            Query.from('r').select({ series: 'dim', v: 'x' }),
+            Query.from('r').select('dim', 'y')
+          ])
+        })
+        .from('s')
+        .select({ measure: sum('v') });
+    };
+    expect(await run(query)).toStrictEqual([20, true]);
+  });
+
+  it('does not support grouping column pushdown into set operations with star inputs', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query
+        .from(Query.unionAll([
+          Query.from('testData').select({ d: 'cat' }, 'cat', 'order', 'x', 'y'),
+          Query.from('testData').select('*').where(predicate)
+        ]))
+        .select({ measure: sum('x') });
+    };
+    expect(await run(query)).toStrictEqual([17, false]);
+  });
+
+  it('does not support grouping column pushdown into COLUMNS subqueries', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query
+        .from(Query.from('testData').select(columns('^[xy]$')).where(predicate))
+        .select({ measure: sum('x') });
+    };
+    expect(await run(query)).toStrictEqual([7, false]);
   });
 
   it('supports mean-centered aggregates over derived columns', async () => {
