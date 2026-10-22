@@ -58,7 +58,8 @@ The Mosaic SQL package includes operators for manipulating and comparing values:
 - Comparison operators: `eq`, `neq`, `lt`, `gt`, `lte`, `gte`
 - Range operators: `isBetween`, `isNotBetween`
 - Set operators: `isIn`
-- List operators: `listContains`, `listHasAll`, `listHasAny`
+- Subquery comparisons: `compareAny`, `compareAll`
+- List operators: `listContains`, `listHasAll`, `listHasAny`, `subscript`, `slice`
 - Null checks: `isNull`, `isNotNull`
 - Null-sensitive comparison: `isDistinct`, `isNotDistinct`
 - Arithmetic operators: `add`, `sub`, `mul`, `div`, `idiv`, `mod`, `pow`
