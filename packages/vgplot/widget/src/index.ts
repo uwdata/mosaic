@@ -1,31 +1,42 @@
-import { coordinator, isSelection, Connector, Selection, Param, ArrowQueryRequest, ExecQueryRequest, ConnectorQueryOptions, ArrowIPCBytes } from '@uwdata/mosaic-core';
+import {
+  coordinator,
+  isSelection,
+  Connector,
+  Selection,
+  Param,
+  ArrowQueryRequest,
+  ExecQueryRequest,
+  ConnectorQueryOptions,
+  ArrowIPCBytes,
+} from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
+
 import './style.css';
-import { v4 as uuidv4 } from 'uuid';
 import type { Spec } from '@uwdata/mosaic-spec';
 import type { InitializeProps, RenderProps } from 'anywidget/types';
+import { v4 as uuidv4 } from 'uuid';
 
-type Params = Record<string, { value: unknown, predicate?: string }>;
+type Params = Record<string, { value: unknown; predicate?: string }>;
 
 interface Model {
   spec: Spec;
   /** The current Mosaic specification. */
   preagg_schema: string;
-  /**The database schema in which to store pre-aggregated materialized views (default 'mosaic'). */
+  /** The database schema in which to store pre-aggregated materialized views (default 'mosaic'). */
   params: Params;
-  /**The current params. */
+  /** The current params. */
 }
 
 type QueryQuery = ArrowQueryRequest | ExecQueryRequest;
 
 type Query = {
   query: QueryQuery;
-  /**The query to send. */
+  /** The query to send. */
   startTime: number;
   resolve: (value: any) => void;
-  /**The promise resolve callback. */
+  /** The promise resolve callback. */
   reject: (reason?: any) => void;
-  /**The promise reject callback. */
+  /** The promise reject callback. */
 };
 
 export default {
@@ -41,8 +52,11 @@ export default {
 
     const openQueries: Map<string, Query> = new Map();
 
-
-    function send(query: QueryQuery, resolve: (value: any) => void, reject: (reason?: any) => void): void {
+    function send(
+      query: QueryQuery,
+      resolve: (value: any) => void,
+      reject: (reason?: any) => void,
+    ): void {
       const uuid = uuidv4();
 
       openQueries.set(uuid, {
@@ -58,20 +72,20 @@ export default {
       query(query: ArrowQueryRequest | ExecQueryRequest): Promise<any> {
         return new Promise((resolve, reject) => send(query, resolve, reject));
       },
-    }
+    };
 
     function reset(): void {
       coordinator().clear();
     }
 
     /**
-     * Serialize a selection's resolved predicate — a single expression or an
-     * implicitly conjunctive array — to a SQL string.
+     * Serialize a selection's resolved predicate — a single expression or an implicitly conjunctive
+     * array — to a SQL string.
      */
     function predicateSQL(selection: Selection): string {
       const predicate = selection.predicate(undefined) ?? [];
       const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
-      return parts.length > 1 ? parts.map(s => `(${s})`).join(' AND ') : (parts[0] ?? '');
+      return parts.length > 1 ? parts.map((s) => `(${s})`).join(' AND ') : (parts[0] ?? '');
     }
 
     let appliedSpecJSON: string;
@@ -99,9 +113,9 @@ export default {
             ...params,
             [name]: {
               value,
-              ...(isSelection(param) ? { predicate: predicateSQL(param) } : {})
-            }
-          })
+              ...(isSelection(param) ? { predicate: predicateSQL(param) } : {}),
+            },
+          });
           view.model.set('params', params);
           view.model.save_changes();
         });
@@ -159,9 +173,12 @@ export default {
   },
 };
 
-function instantiateSpec(spec: Spec): Promise<{ element: HTMLElement | SVGSVGElement; params: Map<string, Param<any> | Selection>; }> {
-  // parse specification, and instantiate it
-  // astToDOM creates a new vgplot API context with the
-  // standard coordinator and a custom namedPlots map
+/**
+ * Parse specification, and instantiate it astToDOM creates a new vgplot API context with the
+ * standard coordinator and a custom namedPlots map.
+ */
+function instantiateSpec(
+  spec: Spec,
+): Promise<{ element: HTMLElement | SVGSVGElement; params: Map<string, Param<any> | Selection> }> {
   return astToDOM(parseSpec(spec));
 }
