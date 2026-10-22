@@ -174,4 +174,92 @@ describe('filterPushdown', () => {
       'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT ("num1" / (SELECT count(*) AS "count" FROM "t1")) AS "norm" FROM "_t1" AS "t1"'
     );
   });
+
+  it('updates schema-qualified tables', async () => {
+    const q = Query.select(column('num1', main())).from(main());
+    const f = filterPushdown(q, main(), gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "main"."t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1"'
+    );
+  });
+
+  it('updates schema-qualified tables in joins', async () => {
+    const q = Query
+      .select(column('num1', main()))
+      .from(join(main(), 't2', {
+        on: eq(column('num3', main()), column('num3', 't2'))
+      }));
+    const f = filterPushdown(q, main(), gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "main"."t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1" JOIN "t2" ON ("t1"."num3" = "t2"."num3")'
+    );
+  });
+
+  it('preserves same-named sources in subqueries', async () => {
+    const sub = Query
+      .select({ v: column('num2', 't1') })
+      .from(new FromClauseNode(new TableRefNode('t2'), 't1'));
+    const q = Query
+      .select(column('num1', main()), 'v')
+      .from(main(), new FromClauseNode(sub, 's'));
+    const f = filterPushdown(q, main(), gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "main"."t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1", "v" FROM "_t1" AS "t1", (SELECT "t1"."num2" AS "v" FROM "t2" AS "t1") AS "s"'
+    );
+  });
+
+  it('updates schema-qualified tables in subqueries', async () => {
+    const sub = Query.select({ v: column('num2', main()) }).from(main());
+    const q = Query
+      .select(column('num1', main()), 'v')
+      .from(main(), new FromClauseNode(sub, 's'));
+    const f = filterPushdown(q, main(), gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "main"."t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1", "v" FROM "_t1" AS "t1", (SELECT "t1"."num2" AS "v" FROM "_t1" AS "t1") AS "s"'
+    );
+  });
+
+  it('does nothing given a table used only in a scalar subquery', async () => {
+    const sub = new ScalarSubqueryNode(Query.select({ c: count() }).from('t1'));
+    const q = Query.select({ c: sub }).from('t2');
+    const f = filterPushdown(q, 't1', gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'SELECT (SELECT count(*) AS "c" FROM "t1") AS "c" FROM "t2"'
+    );
+  });
+
+  it('skips scalar subqueries over schema-qualified tables', async () => {
+    const sub = new ScalarSubqueryNode(
+      Query.select({ count: count(column('num1', main())) }).from(main())
+    );
+    const q = Query
+      .select({ norm: div(column('num1', main()), sub) })
+      .from(main());
+    const f = filterPushdown(q, main(), gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "main"."t1" WHERE ("num2" > 2)) SELECT ("t1"."num1" / (SELECT count("main"."t1"."num1") AS "count" FROM "main"."t1")) AS "norm" FROM "_t1" AS "t1"'
+    );
+  });
+
+  it('throws given a table path that does not match the query', () => {
+    const qualified = Query.select('num1').from(main());
+    expect(() => filterPushdown(qualified, 't1', gt('num2', 2)))
+      .toThrowError('Filter pushdown table "t1" does not match "main"."t1" in the query.');
+
+    const bare = Query.select('num1').from('t1');
+    expect(() => filterPushdown(bare, main(), gt('num2', 2)))
+      .toThrowError('Filter pushdown table "main"."t1" does not match "t1" in the query.');
+
+    const bareQualifier = Query.select(column('num1', 't1')).from(main());
+    expect(() => filterPushdown(bareQualifier, 't1', gt('num2', 2)))
+      .toThrowError('Filter pushdown table "t1" does not match "main"."t1" in the query.');
+
+    const pathQualifier = Query.select(column('num1', main())).from('t1');
+    expect(() => filterPushdown(pathQualifier, main(), gt('num2', 2)))
+      .toThrowError('Filter pushdown table "main"."t1" does not match "t1" in the query.');
+  });
 });
+
+function main() {
+  return new TableRefNode(['main', 't1']);
+}
