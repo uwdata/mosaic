@@ -8,7 +8,7 @@ import { error, isArray, isObject, isString, toArray, toParamRef } from './util.
  * @param {object} [options] Code generation options.
  * @param {string} [options.baseURL] The base URL for loading data files.
  * @param {string} [options.connector] A database connector to initialize.
- *  Valid values are 'wasm', 'socket', and 'rest'.
+ *  Valid values are 'wasm' and 'rest'.
  *  If undefined, no connector code is generated.
  * @param {string} [options.namespace='vg'] The vgplot API namespace object.
  * @param {number} [options.depth=0] The starting indentation depth.
@@ -114,7 +114,7 @@ export class CodegenContext {
    * @param {*} [options.plotDefaults] Default attributes to apply to all plots.
    * @param {string} [options.baseURL] The base URL for loading data files.
    * @param {string} [options.connector] A database connector to initialize.
-   *  Valid values are 'wasm', 'socket', and 'rest'.
+   *  Valid values are 'wasm' and 'rest'.
    *  If undefined, no connector code is generated.
    * @param {string} [options.namespace='vg'] The vgplot API namespace object.
    * @param {number} [options.depth=0] The starting indentation depth.

@@ -18,27 +18,23 @@ func ExampleNew() {
 	type fields struct {
 		Project string `json:"project"`
 	}
-	authorizer := server.AuthorizerFunc[*fields](func(r *http.Request) (server.CommandAuthorizer[*fields], error) {
+	authorizer := func(r *http.Request, command server.Command[*fields]) (*query.ValidationPolicy, error) {
 		identity, ok := r.Context().Value(identityKey{}).(string)
 		if !ok {
 			return nil, server.ErrUnauthenticated
 		}
-
-		getProject := r.URL.Query().Get("project")
-		return func(ctx context.Context, command server.Command[*fields]) (*query.ValidationPolicy, error) {
-			if err := ctx.Err(); err != nil {
-				return nil, err
-			}
-			project := getProject
-			if payload := command.Payload(); payload != nil {
-				project = payload.Project
-			}
-			if identity != "reader" || project != "dashboard" || command.Type() == server.CommandExec {
-				return nil, server.ErrPermissionDenied
-			}
-			return nil, nil
-		}, nil
-	})
+		if err := r.Context().Err(); err != nil {
+			return nil, err
+		}
+		project := r.URL.Query().Get("project")
+		if payload := command.Payload(); payload != nil {
+			project = payload.Project
+		}
+		if identity != "reader" || project != "dashboard" || command.Type() == server.CommandExec {
+			return nil, server.ErrPermissionDenied
+		}
+		return nil, nil
+	}
 
 	handler, err := server.New(db, server.WithAuthorizer(authorizer))
 	if err != nil {

@@ -28,9 +28,10 @@ interface ValidatingMatchers<T> {
 }
 
 declare module 'vitest' {
-  // T = any matches Vitest's own Assertion declaration so the interfaces merge.
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-explicit-any
-  interface Assertion<T = any> extends ValidatingMatchers<T> {}
+  // The type parameters must match Vitest's own Matchers declaration so the interfaces merge.
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars
+  interface Matchers<R extends void | Promise<void> = void | Promise<void>, T = unknown>
+    extends ValidatingMatchers<T> {}
 }
 
 expect.extend({

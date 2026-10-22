@@ -3,7 +3,9 @@
   coordinator().clear();
 </script>
 
-# window-frame
+# Time-Based Moving Average
+
+Moving averages of Apple stock prices, using `range` window frames that span 15 days (black) and 3 months (red) around each date.
 
 <Example spec="/specs/yaml/window-frame.yaml" />
 

@@ -11,5 +11,9 @@
       "docs/public/specs/json/*"
     ],
     "url": "./packages/vgplot/spec/dist/mosaic-schema.json"
-  }]
+  }],
+  "jupyter.widgetScriptSources": [
+    "jsdelivr.com",
+    "unpkg.com",
+  ],
 }
