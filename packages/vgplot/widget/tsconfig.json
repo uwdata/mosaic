@@ -3,6 +3,7 @@
   "files": ["src/index.ts", "src/global.d.ts"],
   "compilerOptions": {
     "noEmit": true,
+    "strict": true
   },
   "references": [
     { "path": "../../mosaic/core" },

@@ -124,7 +124,7 @@ export default {
       logger.group(`query ${msg.uuid}`);
       logger.log('received message', msg, buffers);
 
-      const query = openQueries.get(msg.uuid);
+      const query = openQueries.get(msg.uuid)!;
       openQueries.delete(msg.uuid);
 
       logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
