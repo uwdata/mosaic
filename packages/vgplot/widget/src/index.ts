@@ -6,8 +6,6 @@ import {
   Param,
   ArrowQueryRequest,
   ExecQueryRequest,
-  ConnectorQueryOptions,
-  ArrowIPCBytes,
 } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 
@@ -85,6 +83,7 @@ export default {
     function predicateSQL(selection: Selection): string {
       const predicate = selection.predicate(undefined) ?? [];
       const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
+      // oxlint-disable-next-line no-magic-numbers
       return parts.length > 1 ? parts.map((s) => `(${s})`).join(' AND ') : (parts[0] ?? '');
     }
 
@@ -141,6 +140,7 @@ export default {
       const query = openQueries.get(msg.uuid)!;
       openQueries.delete(msg.uuid);
 
+      // oxlint-disable-next-line no-magic-numbers
       logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
 
       if (msg.error) {
@@ -149,7 +149,9 @@ export default {
       } else {
         switch (msg.type) {
           case 'arrow': {
+            // oxlint-disable-next-line no-magic-numbers
             logger.log('arrow bytes', buffers[0].buffer.byteLength);
+            // oxlint-disable-next-line no-magic-numbers
             query.resolve(buffers[0].buffer);
             break;
           }
@@ -164,6 +166,7 @@ export default {
 
     coordinator().databaseConnector(connector);
     configureCoordinator();
+    // oxlint-disable-next-line typescript/no-floating-promises
     updateSpec();
 
     return (): void => {
