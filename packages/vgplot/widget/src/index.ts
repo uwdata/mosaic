@@ -4,13 +4,14 @@ import type {
   Param,
   ArrowQueryRequest,
   ExecQueryRequest,
+  Logger,
 } from '@uwdata/mosaic-core';
 import { coordinator, isSelection } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 
 import './style.css';
 import type { Spec } from '@uwdata/mosaic-spec';
-import type { InitializeProps, RenderProps, AnyModel } from 'anywidget/types';
+import type { InitializeProps, RenderProps, AnyModel, AnyWidget } from 'anywidget/types';
 import { v4 as uuidv4 } from 'uuid';
 
 type Params = Record<string, { value: unknown; predicate?: string }>;
@@ -34,6 +35,11 @@ interface OpenQuery {
   startTime: number;
   resolve: (value: ArrayBufferLike | Record<string, unknown>) => void;
   reject: (reason?: string) => void;
+}
+interface Msg {
+  uuid: UUID;
+  type: OpenQuery['query']['type'];
+  error?: string;
 }
 
 /**
@@ -85,94 +91,103 @@ function updateParams(model: AnyModel<Model>, domParams: DOM['params']): void {
   model.save_changes();
 }
 
-export default {
-  initialize({ model }: InitializeProps<Model>): void {
-    model.set('preagg_schema', coordinator().preaggregator.schema);
-  },
+class WidgetConnector implements Connector {
+  private readonly logger: Logger;
+  private readonly openQueries: Map<UUID, OpenQuery>;
+  private readonly model: AnyModel<Model>;
 
-  // oxlint-disable-next-line max-statements
-  render({ model, el }: RenderProps<Model>): () => void {
-    el.classList.add('mosaic-widget');
-    const logger = coordinator().logger();
-    const openQueries = new Map<UUID, OpenQuery>();
+  public constructor(model: AnyModel<Model>) {
+    this.logger = coordinator().logger();
+    this.openQueries = new Map<UUID, OpenQuery>();
+    this.model = model;
+  }
 
-    function send(
-      query: OpenQuery['query'],
-      resolve: OpenQuery['resolve'],
-      reject: OpenQuery['reject'],
-    ): void {
-      const uuid: UUID = uuidv4();
+  public async query(query: ArrowQueryRequest): Promise<Uint8Array>;
+  public async query(query: ExecQueryRequest): Promise<void>;
+  public async query(query: OpenQuery['query']): Promise<unknown> {
+    return new Promise((resolve, reject) => this.send({ query, resolve, reject }));
+  }
 
-      openQueries.set(uuid, {
-        query,
-        startTime: performance.now(),
-        resolve,
-        reject,
-      });
-      model.send({ ...query, uuid });
-    }
-
-    const connector: Connector = {
-      // The overloads for `Connector` can't be satisfied
-      // oxlint-disable-next-line typescript/no-explicit-any
-      async query(query: OpenQuery['query']): Promise<any> {
-        return new Promise((resolve, reject) => send(query, resolve, reject));
-      },
-    };
-
-    let appliedSpecJSON = '';
-
-    async function updateSpec(): Promise<void> {
-      const spec = model.get('spec');
-      const specJSON = JSON.stringify(spec);
-      if (specJSON === appliedSpecJSON) {
-        return;
-      }
-      appliedSpecJSON = specJSON;
-      reset();
-      logger.log('Setting spec:', spec);
-      const dom = await instantiateSpec(spec);
-      el.replaceChildren(dom.element);
-      updateParams(model, dom.params);
-    }
-
-    model.on('change:spec', async () => updateSpec());
-
-    function configureCoordinator(): void {
-      coordinator().preaggregator.schema = model.get('preagg_schema');
-    }
-
-    model.on('change:preagg_schema', () => configureCoordinator());
-
-    // oxlint-disable-next-line max-statements
-    model.on('msg:custom', (msg, buffers) => {
-      logger.group(`query ${msg.uuid}`);
-      logger.log('received message', msg, buffers);
-
-      // oxlint-disable-next-line typescript/no-non-null-assertion
-      const query = openQueries.get(msg.uuid)!;
-      openQueries.delete(msg.uuid);
-
-      logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
-
-      if (msg.error) {
-        query.reject(msg.error);
-        logger.error(msg.error);
-      } else if (msg.type === 'arrow') {
-        const [{ buffer }] = buffers;
-        logger.log('arrow bytes', buffer.byteLength);
-        query.resolve(buffer);
-      } else {
-        query.resolve({});
-      }
-      logger.groupEnd();
+  private send({ query, resolve, reject }: Omit<OpenQuery, 'startTime'>): void {
+    const uuid: UUID = uuidv4();
+    this.openQueries.set(uuid, {
+      query,
+      startTime: performance.now(),
+      resolve,
+      reject,
     });
+    this.model.send({ ...query, uuid });
+  }
 
-    coordinator().databaseConnector(connector);
-    configureCoordinator();
-    // oxlint-disable-next-line typescript/no-floating-promises
-    updateSpec();
+  public receive(msg: Msg, buffers: DataView[]): void {
+    this.logger.log('received message', msg, buffers);
+    // oxlint-disable-next-line typescript/no-non-null-assertion
+    const query = this.openQueries.get(msg.uuid)!;
+    this.openQueries.delete(msg.uuid);
+    const elapsed = (performance.now() - query.startTime).toFixed(1);
 
-    return reset;
-  },
+    if (msg.error) {
+      query.reject(msg.error);
+      this.logger.error(msg.error);
+      throw new Error(msg.error);
+    }
+
+    this.logger.log(query.query.sql, elapsed);
+
+    if (msg.type === 'arrow') {
+      const [{ buffer }] = buffers;
+      this.logger.log('arrow bytes', buffer.byteLength);
+      query.resolve(buffer);
+    } else {
+      query.resolve({});
+    }
+  }
+}
+
+// oxlint-disable-next-line unicorn/no-anonymous-default-export
+export default (): AnyWidget<Model> => {
+  const coord = coordinator();
+  return {
+    initialize({ model }: InitializeProps<Model>): () => void {
+      model.set('preagg_schema', coord.preaggregator.schema);
+      model.on('change:preagg_schema', () => {
+        coord.preaggregator.schema = model.get('preagg_schema');
+      });
+      const connector = new WidgetConnector(model);
+      model.on('msg:custom', connector.receive.bind(connector));
+      coord.databaseConnector(connector);
+      return coord.clear.bind(coord);
+    },
+
+    async render({ model, el }: RenderProps<Model>): Promise<() => void> {
+      el.classList.add('mosaic-widget');
+
+      let appliedSpecJSON = '';
+
+      async function updateSpec(): Promise<void> {
+        const spec = model.get('spec');
+        const specJSON = JSON.stringify(spec);
+        if (specJSON === appliedSpecJSON) {
+          return;
+        }
+        appliedSpecJSON = specJSON;
+        reset();
+        const dom = await instantiateSpec(spec);
+        el.replaceChildren(dom.element);
+        updateParams(model, dom.params);
+      }
+
+      model.on('change:spec', updateSpec);
+      /* This call seems to be very expensive
+
+      - Why is the full spec converted into a string?
+      - Why is the full spec also being re-parsed and transformed?
+      - Is there anything besides `params` that is expected to change?
+      - Why are we detecting changes from within a callback for "Listen for property changes..."?
+      
+      */
+      await updateSpec();
+      return reset;
+    },
+  };
 };
