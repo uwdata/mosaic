@@ -86,13 +86,13 @@ function updateParams(model: AnyModel<Model>, domParams: DOM['params']): void {
 }
 
 export default {
-  initialize(view: InitializeProps<Model>): void {
-    view.model.set('preagg_schema', coordinator().preaggregator.schema);
+  initialize({ model }: InitializeProps<Model>): void {
+    model.set('preagg_schema', coordinator().preaggregator.schema);
   },
 
   // oxlint-disable-next-line max-statements
-  render(view: RenderProps<Model>): () => void {
-    view.el.classList.add('mosaic-widget');
+  render({ model, el }: RenderProps<Model>): () => void {
+    el.classList.add('mosaic-widget');
     const logger = coordinator().logger();
     const openQueries = new Map<UUID, OpenQuery>();
 
@@ -109,7 +109,7 @@ export default {
         resolve,
         reject,
       });
-      view.model.send({ ...query, uuid });
+      model.send({ ...query, uuid });
     }
 
     const connector: Connector = {
@@ -123,7 +123,7 @@ export default {
     let appliedSpecJSON = '';
 
     async function updateSpec(): Promise<void> {
-      const spec = view.model.get('spec');
+      const spec = model.get('spec');
       const specJSON = JSON.stringify(spec);
       if (specJSON === appliedSpecJSON) {
         return;
@@ -132,20 +132,20 @@ export default {
       reset();
       logger.log('Setting spec:', spec);
       const dom = await instantiateSpec(spec);
-      view.el.replaceChildren(dom.element);
-      updateParams(view.model, dom.params);
+      el.replaceChildren(dom.element);
+      updateParams(model, dom.params);
     }
 
-    view.model.on('change:spec', async () => updateSpec());
+    model.on('change:spec', async () => updateSpec());
 
     function configureCoordinator(): void {
-      coordinator().preaggregator.schema = view.model.get('preagg_schema');
+      coordinator().preaggregator.schema = model.get('preagg_schema');
     }
 
-    view.model.on('change:preagg_schema', () => configureCoordinator());
+    model.on('change:preagg_schema', () => configureCoordinator());
 
     // oxlint-disable-next-line max-statements
-    view.model.on('msg:custom', (msg, buffers) => {
+    model.on('msg:custom', (msg, buffers) => {
       logger.group(`query ${msg.uuid}`);
       logger.log('received message', msg, buffers);
 
