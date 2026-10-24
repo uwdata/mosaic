@@ -8,7 +8,7 @@ import msgspec
 from typing_extensions import Self
 
 from benchmark import _rich
-from benchmark.common import console
+from benchmark.common import Retries, console
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -37,6 +37,14 @@ class ServerConfig(msgspec.Struct):
     ```py
     ("pnpm", "run", "server")
     ```
+    """
+
+    retry: Retries = msgspec.field(default_factory=Retries)
+    """Permit multiple attempts to connect to this server.
+    
+    Defines an exponential backoff policy for connection errors.
+
+    Useful for servers which may require (incremental) compilation before running.
     """
 
     def is_available(self) -> bool:

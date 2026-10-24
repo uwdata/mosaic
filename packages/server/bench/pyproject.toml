@@ -39,6 +39,8 @@ pattern = "\"version\": \"(?P<version>.+?)\""
 [tool.pyright]
 extends                            = "../../../pyproject.toml"
 include                            = ["src"]
+# TODO @dangotbanned: Re-enable when CI uses 3.14 or after https://github.com/python/typeshed/issues/16361
+exclude                            = ["src/benchmark/_colorize_install.py"]
 typeCheckingMode                   = "strict"
 reportUnnecessaryTypeIgnoreComment = "error"
 reportUnknownArgumentType          = "none"
