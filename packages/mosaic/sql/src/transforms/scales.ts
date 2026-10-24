@@ -5,6 +5,7 @@ import { epoch_ms } from '../functions/datetime.js';
 import { literal } from '../functions/literal.js';
 import { abs, exp, ln, log, sign, sqrt } from '../functions/numeric.js';
 import { add, div, mul, pow, sub } from '../functions/operators.js';
+import { nullif } from '../functions/util.js';
 import { asNode } from '../util/ast.js';
 import { identity } from '../util/identity.js';
 import { DateTimeValue } from './util/time-interval.js';
@@ -59,18 +60,18 @@ function scaleLinear(): ScaleTransform<number> {
 }
 
 function scaleLog({ base = null }: {base?: number | null} = { }): ScaleTransform<number> {
-  if (base == null || base === Math.E) {
+  if (!base || base === Math.E) {
     return {
       apply: x => Math.sign(x) * Math.log(Math.abs(x)),
       invert: x => Math.sign(x) * Math.exp(Math.abs(x)),
-      sqlApply: c => (c = asNode(c), mul(sign(c), ln(abs(c)))),
+      sqlApply: c => (c = asNode(c), mul(sign(c), ln(abs(nullif(c, 0))))),
       sqlInvert: c => (c = asNode(c), mul(sign(c), exp(abs(c))))
     };
   } else if (base === 10) {
     return {
       apply: x => Math.sign(x) * Math.log10(Math.abs(x)),
       invert: x => Math.sign(x) * Math.pow(10, Math.abs(x)),
-      sqlApply: c => (c = asNode(c), mul(sign(c), log(abs(c)))),
+      sqlApply: c => (c = asNode(c), mul(sign(c), log(abs(nullif(c, 0))))),
       sqlInvert: c => (c = asNode(c), mul(sign(c), pow(10, abs(c))))
     };
   } else {
@@ -78,7 +79,7 @@ function scaleLog({ base = null }: {base?: number | null} = { }): ScaleTransform
     return {
       apply: x => Math.sign(x) * Math.log(Math.abs(x)) / Math.log(b),
       invert: x => Math.sign(x) * Math.pow(b, Math.abs(x)),
-      sqlApply: c => (c = asNode(c), mul(sign(c), div(ln(abs(c)), ln(b)))),
+      sqlApply: c => (c = asNode(c), mul(sign(c), div(ln(abs(nullif(c, 0))), ln(b)))),
       sqlInvert: c => (c = asNode(c), mul(sign(c), pow(b, abs(c))))
     };
   }

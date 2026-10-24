@@ -28,7 +28,7 @@ export { columns, star, type StarOptions } from './functions/star.js';
 export { regexp_matches, contains, prefix, suffix, lower, upper, length } from './functions/string.js';
 export { slice, subscript } from './functions/subscript.js';
 export { unnest } from './functions/unnest.js';
-export { coalesce } from './functions/util.js';
+export { coalesce, nullif } from './functions/util.js';
 export { tuple, values } from './functions/values.js';
 export { cume_dist, dense_rank, first_value, lag, last_value, lead, nth_value, ntile, percent_rank, rank, row_number } from './functions/window.js';
 export { currentRow, following, frameGroups, frameRange, frameRows, preceding } from './functions/window-frame.js';

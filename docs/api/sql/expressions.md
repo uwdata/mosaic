@@ -94,6 +94,18 @@ Named arguments can be included among the arguments of a `FunctionNode`, for exa
 new FunctionNode("struct_pack", [namedArg("x", 1), namedArg("y", column("foo"))])
 ```
 
+## nullif
+
+`nullif(a, b)`
+
+Create an AST node for a `NULLIF` function call, which returns `NULL` if _a_ and _b_ are equal and returns _a_ otherwise.
+String-valued arguments are interpreted as column references.
+A common use is to avoid division by zero:
+
+``` js
+div("total", nullif("count", 0))
+```
+
 ## positionalRef
 
 `positionalRef(index)`
