@@ -119,11 +119,13 @@ class WidgetConnector implements Connector {
   }
 
   public receive(msg: Msg, buffers: DataView[]): void {
-    this.logger.log('received message', msg, buffers);
+    const { uuid } = msg;
+    this.logger.log('received message:', uuid);
     // oxlint-disable-next-line typescript/no-non-null-assertion
     const query = this.openQueries.get(msg.uuid)!;
     this.openQueries.delete(msg.uuid);
     const elapsed = (performance.now() - query.startTime).toFixed(1);
+    this.logger.log('  took', elapsed, 'ms');
 
     if (msg.error) {
       query.reject(msg.error);
@@ -131,11 +133,9 @@ class WidgetConnector implements Connector {
       throw new Error(msg.error);
     }
 
-    this.logger.log(query.query.sql, elapsed);
-
     if (msg.type === 'arrow') {
       const [{ buffer }] = buffers;
-      this.logger.log('arrow bytes', buffer.byteLength);
+      this.logger.log('  arrow bytes:', buffer.byteLength);
       query.resolve(buffer);
     } else {
       query.resolve({});
