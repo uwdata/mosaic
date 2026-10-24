@@ -43,7 +43,7 @@ def _sentinel_backport_pre_typing_extensions_4_16() -> Any:
                     module = sys._getframe(1).f_globals.get("__name__", "__main__")
 
             # For pickling as a singleton
-            self.__module__ = module  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[invalid-assignment]
+            self.__module__ = module  # pyright: ignore[reportAttributeAccessIssue]
 
         __init_subclass__: ClassVar[None] = None
 
