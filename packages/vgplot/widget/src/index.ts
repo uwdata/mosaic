@@ -64,26 +64,25 @@ function predicateSQL(selection: Selection): string {
   return parts.length > 1 ? parts.map((s) => `(${s})`).join(' AND ') : (parts[0] ?? '');
 }
 
+/** TODO @dangotbanned: Use classes instead of deep freezing? */
 function updateParams(model: AnyModel<Model>, domParams: DOM['params']): void {
   let params: Params = {};
-
   for (const [name, param] of domParams) {
-    params[name] = {
-      value: param.value,
-      ...(isSelection(param) ? { predicate: predicateSQL(param) } : {}),
-    };
-
-    param.addEventListener('value', (value) => {
-      params = Object.freeze({
-        ...params,
-        [name]: {
-          value,
-          ...(isSelection(param) ? { predicate: predicateSQL(param) } : {}),
-        },
+    if (isSelection(param)) {
+      params[name] = { value: param.value, predicate: predicateSQL(param) };
+      param.addEventListener('value', (value) => {
+        params = Object.freeze({ ...params, [name]: { value, predicate: predicateSQL(param) } });
+        model.set('params', params);
+        model.save_changes();
       });
-      model.set('params', params);
-      model.save_changes();
-    });
+    } else {
+      params[name] = { value: param.value };
+      param.addEventListener('value', (value) => {
+        params = Object.freeze({ ...params, [name]: { value } });
+        model.set('params', params);
+        model.save_changes();
+      });
+    }
   }
 
   params = Object.freeze(params);
