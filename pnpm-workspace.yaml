@@ -1,5 +1,5 @@
 catalog:
-  "@uwdata/flechette": ^2.7.0
+  "@uwdata/flechette": ^2.7.1
 packages:
   - "packages/mosaic/*"
   - "packages/server/*"

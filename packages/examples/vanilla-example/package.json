@@ -1,7 +1,7 @@
 {
   "name": "mosaic-vanilla-example",
   "private": true,
-  "version": "0.34.0",
+  "version": "0.34.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
