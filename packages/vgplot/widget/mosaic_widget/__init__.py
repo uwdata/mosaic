@@ -154,8 +154,8 @@ class MosaicWidget(anywidget.AnyWidget):
                 msg = f"Unknown command {command}"
                 raise ValueError(msg)
         except Exception as e:
-            logger.exception("Error processing query")
             self.send({"error": str(e), "uuid": uuid})
+            raise
 
         total = round((time.time() - start) * 1_000)
         if total > SLOW_QUERY_THRESHOLD:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import narwhals as nw
@@ -9,23 +8,23 @@ import pytest
 from mosaic_widget import MosaicWidget
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pyarrow as pa
 
     from .conftest import Backend, EagerAllowed, LazyAllowed, NativeLazyFrame
 
-ROOT = Path(__file__).parent.parent.parent.parent.parent.parent
-CSV_PATH = (ROOT / "data/seattle-weather.csv").as_posix()
-
 
 @pytest.fixture(scope="module")
-def pyarrow_frame() -> nw.DataFrame[pa.Table]:
+def pyarrow_frame(data_dir: Path) -> nw.DataFrame[pa.Table]:
     # NOTE: `pyarrow` is the single source because:
     # - All other backends support it natively
     # - `read_csv` infers temporal columns by default
     # - `seattle-weather.csv` contains a `date`-typed column
     #   - but numpy-based type systems will use `datetime`
     #   - `pandas` can understand `date` iff it is backed by pyarrow
-    return nw.read_csv(CSV_PATH, backend="pyarrow")
+    path = (data_dir / "seattle-weather.csv").as_posix()
+    return nw.read_csv(path, backend="pyarrow")
 
 
 def test_frame_to_duckdb_registrable_eager(
