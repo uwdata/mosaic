@@ -1,0 +1,26 @@
+{
+  /* TODO @dangotbanned: Remove before a PR. */
+  "$schema": "node_modules/oxlint/configuration_schema.json",
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": [
+    "bin/",
+    "dev/",
+    "docs/",
+    "specs/",
+    "packages/examples/",
+    "packages/mosaic/",
+    "packages/server/",
+    "packages/vgplot/",
+  ],
+  "options": {
+    "typeAware": true,
+    "typeCheck": true
+  },
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc"
+  ]
+}

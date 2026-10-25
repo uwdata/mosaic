@@ -1,0 +1,9 @@
+{
+  /* TODO @dangotbanned: Discuss before a PR. */
+  "$schema": "../../../node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [],
+  "jsdoc": true,
+  "printWidth": 100,
+  "singleQuote": true,
+  "sortImports": true
+}

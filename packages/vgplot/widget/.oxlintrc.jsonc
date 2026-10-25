@@ -1,0 +1,66 @@
+{
+    /* TODO @dangotbanned: Discuss before a PR. */
+    "$schema": "../../../node_modules/oxlint/configuration_schema.json",
+    "categories": {
+        "correctness": "error",
+        "nursery": "error",
+        //"pedantic": "error",
+        "perf": "error",
+        "restriction": "error",
+        "style": "warn",
+        "suspicious": "error"
+    },
+    "extends": [
+        "../../../.oxlintrc.jsonc"
+    ],
+    "ignorePatterns": [
+        "**/*.js",
+        "src/widget.ts"
+    ],
+    "rules": {
+        "func-style": [
+            "error",
+            "declaration"
+        ],
+        "id-length": "off",
+        "max-lines": "off",
+        "max-statements": [
+            "warn",
+            20
+        ],
+        "no-duplicate-imports": [
+            "error",
+            {
+                "allowSeparateTypeImports": true
+            }
+        ],
+        "no-inline-comments": "off",
+        "no-magic-numbers": [
+            "error",
+            {
+                "ignore": [
+                    0,
+                    1
+                ],
+                "ignoreNumericLiteralTypes": true
+            }
+        ],
+        "no-ternary": "off",
+        "no-undef": "off",
+        "no-unused-vars": [
+            "warn",
+            {
+                "fix": {
+                    "imports": "safe-fix",
+                    "variables": "suggestion"
+                }
+            }
+        ],
+        "one-var": "off",
+        "oxc/no-async-await": "off",
+        "oxc/no-rest-spread-properties": "off",
+        "sort-imports": "off",
+        "sort-keys": "off",
+        "unicorn/filename-case": "off"
+    }
+}

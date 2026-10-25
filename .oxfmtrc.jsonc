@@ -1,0 +1,21 @@
+{
+  /* TODO @dangotbanned: Remove before a PR. */
+  "$schema": "node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [
+    "bin/",
+    "dev/",
+    "docs/",
+    "specs/",
+    "packages/examples/",
+    "packages/mosaic/",
+    "packages/server/",
+    "packages/vgplot/",
+    "**/*.json",
+    "**/*.css",
+    "**/*.toml",
+    "**/*.yaml",
+    "**/*.yml",
+    "**/*.md",
+  ],
+  "sortPackageJson": false
+}
