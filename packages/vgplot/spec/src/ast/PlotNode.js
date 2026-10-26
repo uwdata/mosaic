@@ -37,6 +37,7 @@ export class PlotNode extends ASTNode {
       ...(this.attributes || [])
     ];
     return ctx.api[PLOT](
+      // @ts-expect-error `children is possibly null
       this.children.map(c => c.instantiate(ctx)),
       attrs.map(a => a.instantiate(ctx))
     );
@@ -46,6 +47,7 @@ export class PlotNode extends ASTNode {
     const { type, children, attributes } = this;
     ctx.indent();
     const entries = [
+      // @ts-expect-error `children is possibly null
       ...children.map(c => c.codegen(ctx)),
       ...(ctx.plotDefaults?.length ? [`${ctx.tab()}...defaultAttributes`] : []),
       ...attributes.map(a => a.codegen(ctx))
@@ -57,6 +59,7 @@ export class PlotNode extends ASTNode {
 
   toJSON() {
     const { type, children, attributes } = this;
+    // @ts-expect-error `children is possibly null
     const plot = { [type]: children.map(c => c.toJSON()) };
     for (const a of attributes) {
       Object.assign(plot, a.toJSON());
