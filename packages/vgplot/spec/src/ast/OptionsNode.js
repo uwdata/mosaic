@@ -29,6 +29,7 @@ export class OptionsNode extends ASTNode {
 
   instantiate(ctx) {
     const { options } = this;
+    /**@type {Record<string,any>} */
     const opt = {};
     for (const key in options) {
       opt[key] = options[key].instantiate(ctx);
