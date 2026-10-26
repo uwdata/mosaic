@@ -1,4 +1,5 @@
 // oxlint-disable no-unused-vars no-use-before-define typescript/no-invalid-void-type
+import type { CreateQuery } from '@uwdata/mosaic-sql';
 import { createTable } from '@uwdata/mosaic-sql';
 
 import type { InstantiateContext } from '../ast-to-dom.js';
@@ -27,7 +28,9 @@ export const CSV_DATA = 'csv';
 export const JSON_DATA = 'json';
 export const SPATIAL_DATA = 'spatial';
 
-type Format = 'csv' | 'json' | 'parquet' | 'spatial' | 'table';
+type FileType = 'parquet' | 'csv' | 'json' | 'spatial';
+type LoadMethod = 'loadParquet' | 'loadCSV' | 'loadJSON' | 'loadSpatial';
+type Format = FileType | 'table';
 type ParseFn =
   | typeof parseTableData
   | typeof parseParquetData
@@ -179,8 +182,8 @@ export class TableDataNode extends QueryDataNode<'table'> {
     this.query = query?.trim();
     this.options = options;
   }
-
-  instantiateQuery(ctx: InstantiateContext): string | void {
+  //@ts-expect-error  Type 'CreateQuery' is not assignable to type 'string | void'.
+  instantiateQuery(ctx: InstantiateContext): CreateQuery | void {
     const { name, query, options } = this;
     if (query) {
       return ctx.api.createTable(name, query, options.instantiate(ctx));
@@ -200,20 +203,18 @@ export class TableDataNode extends QueryDataNode<'table'> {
   }
 }
 
-export class FileDataNode<
-  F extends 'parquet' | 'csv' | 'json' | 'spatial',
-> extends QueryDataNode<F> {
+export class FileDataNode<F extends FileType, M extends LoadMethod> extends QueryDataNode<F> {
   readonly file: string;
-  readonly method: string;
+  readonly method: M;
   readonly options: OptionsNode;
-  constructor(name: string, format: F, method: string, file: string, options: OptionsNode) {
+  constructor(name: string, format: F, method: M, file: string, options: OptionsNode) {
     super(name, format);
     this.file = file;
     this.method = method;
     this.options = options;
   }
-
-  instantiateQuery(ctx: InstantiateContext): string | void {
+  //@ts-expect-error  Type 'CreateQuery' is not assignable to type 'string | void'.
+  instantiateQuery(ctx: InstantiateContext): CreateQuery {
     const { name, method, file, options } = this;
     const url = resolveFileURL(file, ctx.baseURL);
     const opt = options?.instantiate(ctx);
@@ -233,41 +234,40 @@ export class FileDataNode<
   }
 }
 
-export class SpatialDataNode extends FileDataNode<'spatial'> {
+export class SpatialDataNode extends FileDataNode<'spatial', 'loadSpatial'> {
   constructor(name: string, file: string, options: OptionsNode) {
     super(name, SPATIAL_DATA, 'loadSpatial', file, options);
   }
 }
 
-export class ParquetDataNode extends FileDataNode<'parquet'> {
+export class ParquetDataNode extends FileDataNode<'parquet', 'loadParquet'> {
   constructor(name: string, file: string, options: OptionsNode) {
     super(name, PARQUET_DATA, 'loadParquet', file, options);
   }
 }
 
-export class CSVDataNode extends FileDataNode<'csv'> {
+export class CSVDataNode extends FileDataNode<'csv', 'loadCSV'> {
   constructor(name: string, file: string, options: OptionsNode) {
     super(name, CSV_DATA, 'loadCSV', file, options);
   }
 }
 
-export class JSONDataNode extends FileDataNode<'json'> {
+export class JSONDataNode extends FileDataNode<'json', 'loadJSON'> {
   constructor(name: string, file: string, options: OptionsNode) {
     super(name, JSON_DATA, 'loadJSON', file, options);
   }
 }
 
 export class LiteralJSONDataNode extends QueryDataNode<'json'> {
-  readonly data: object[];
+  readonly data: Record<string, unknown>[];
   readonly options: OptionsNode;
-  constructor(name: string, data: object[], options: OptionsNode) {
+  constructor(name: string, data: Record<string, unknown>[], options: OptionsNode) {
     super(name, JSON_DATA);
     this.data = data;
     this.options = options;
   }
-
-  // oxlint-disable-next-line typescript/explicit-module-boundary-types typescript/explicit-function-return-type
-  instantiateQuery(ctx: InstantiateContext) {
+  //@ts-expect-error  Type 'CreateQuery' is not assignable to type 'string | void'.
+  instantiateQuery(ctx: InstantiateContext): CreateQuery {
     const { name, data, options } = this;
     return ctx.api.loadObjects(name, data, options.instantiate(ctx));
   }
