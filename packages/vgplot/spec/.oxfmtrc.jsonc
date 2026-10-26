@@ -1,0 +1,14 @@
+{
+    /* TODO @dangotbanned: Discuss before a PR. */
+    "ignorePatterns": [
+        "src/config/",
+        "src/generated/",
+        "src/spec/",
+        "**/*.js",
+        "test/"
+    ],
+    "jsdoc": true,
+    "printWidth": 100,
+    "singleQuote": true,
+    "sortImports": true
+}
