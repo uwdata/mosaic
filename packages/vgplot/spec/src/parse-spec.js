@@ -175,6 +175,12 @@ export class ParseContext {
     return this.paramRef(name, () => new SelectionNode);
   }
 
+  /**
+   * @param {string} message
+   * @param {import("./index.js").DataDefinition} data
+   * 
+   * @returns {never}
+   */
   error(message, data) {
     error(message, data);
   }
