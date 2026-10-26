@@ -7,10 +7,10 @@ import type { ParamNode } from './ParamNode.js';
 import type { PlotAttributeNode } from './PlotAttributeNode.js';
 import type { SelectionNode } from './SelectionNode.js';
 
-type Root = ASTNode<HTMLElement | SVGSVGElement, void, SpecComponent>;
+export type RootNode = ASTNode<HTMLElement | SVGSVGElement, void, SpecComponent>;
 
 export class SpecNode extends ASTNode<unknown, void, Spec> {
-  readonly root: Root;
+  readonly root: RootNode;
   readonly meta: Spec['meta'];
   readonly config: Spec['config'];
   readonly data: Record<string, DataNode>;
@@ -25,7 +25,7 @@ export class SpecNode extends ASTNode<unknown, void, Spec> {
     throw new Error('Method not implemented.');
   }
   constructor(
-    root: Root,
+    root: RootNode,
     meta: Spec['meta'],
     config: Spec['config'],
     data: Record<string, DataNode>,
