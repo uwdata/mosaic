@@ -51,7 +51,8 @@ export function parseData(
   ctx: ParseContext,
 ): ReturnType<ParseFn> {
   const def = resolveDataSpec(spec, ctx);
-  const parse = dataFormats.get(def.type);
+  // oxlint-disable-next-line typescript/no-non-null-assertion (`def.type` has been narrowed to all that exist)
+  const parse = dataFormats.get(def.type)!;
   return parse(name, def, ctx);
 }
 
@@ -126,7 +127,7 @@ function parseSpatialData(name: string, spec, ctx: ParseContext): SpatialDataNod
   return new SpatialDataNode(name, file, parseOptions(options, ctx));
 }
 
-function resolveFileURL(file: string, baseURL: string): string {
+function resolveFileURL(file: string, baseURL: string | null | undefined): string {
   return baseURL ? new URL(file, baseURL).toString() : file;
 }
 
@@ -204,8 +205,8 @@ export class FileDataNode<
 > extends QueryDataNode<F> {
   readonly file: string;
   readonly method: string;
-  readonly options?: OptionsNode;
-  constructor(name: string, format: F, method: string, file: string, options?: OptionsNode) {
+  readonly options: OptionsNode;
+  constructor(name: string, format: F, method: string, file: string, options: OptionsNode) {
     super(name, format);
     this.file = file;
     this.method = method;
@@ -233,33 +234,33 @@ export class FileDataNode<
 }
 
 export class SpatialDataNode extends FileDataNode<'spatial'> {
-  constructor(name: string, file: string, options?: OptionsNode) {
+  constructor(name: string, file: string, options: OptionsNode) {
     super(name, SPATIAL_DATA, 'loadSpatial', file, options);
   }
 }
 
 export class ParquetDataNode extends FileDataNode<'parquet'> {
-  constructor(name: string, file: string, options?: OptionsNode) {
+  constructor(name: string, file: string, options: OptionsNode) {
     super(name, PARQUET_DATA, 'loadParquet', file, options);
   }
 }
 
 export class CSVDataNode extends FileDataNode<'csv'> {
-  constructor(name: string, file: string, options?: OptionsNode) {
+  constructor(name: string, file: string, options: OptionsNode) {
     super(name, CSV_DATA, 'loadCSV', file, options);
   }
 }
 
 export class JSONDataNode extends FileDataNode<'json'> {
-  constructor(name: string, file: string, options?: OptionsNode) {
+  constructor(name: string, file: string, options: OptionsNode) {
     super(name, JSON_DATA, 'loadJSON', file, options);
   }
 }
 
 export class LiteralJSONDataNode extends QueryDataNode<'json'> {
   readonly data: object[];
-  readonly options?: OptionsNode;
-  constructor(name: string, data: object[], options?: OptionsNode) {
+  readonly options: OptionsNode;
+  constructor(name: string, data: object[], options: OptionsNode) {
     super(name, JSON_DATA);
     this.data = data;
     this.options = options;
