@@ -56,7 +56,7 @@ export class InstantiateContext {
   /**
    * Create a new InstantiateContext instance.
    * @param {object} options Optional instantiation options.
-   * @param {string} [options.baseURL] The base URL for loading data files.
+   * @param {string | null} [options.baseURL] The base URL for loading data files.
    * @param {any[]} [options.plotDefaults] Array of default plot attributes.
    * @param {Map<string, Param>} [options.params] A map of predefined Params/Selections.
    * @param {ReturnType<typeof createAPIContext>} [options.api] The context to be used for vgplot API methods.

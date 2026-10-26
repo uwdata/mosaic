@@ -42,6 +42,7 @@ export function inputArgName(key) {
  * Emit a Python literal for a JSON value. When `ctx` is provided, `$name`
  * strings resolve to the corresponding Python identifier; otherwise they are
  * emitted verbatim (the API generator passes no ctx and only emits constants).
+ * @param {import('./ast-to-python.js').PythonCodegenContext | null} [ctx=null] 
  */
 export function literal(v, depth = 0, ctx = null) {
   if (v === null || v === undefined) return 'None';
