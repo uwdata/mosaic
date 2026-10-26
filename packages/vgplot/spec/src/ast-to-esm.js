@@ -112,7 +112,7 @@ export class CodegenContext {
    * Create a new code generator context.
    * @param {object} [options] Code generation options.
    * @param {*} [options.plotDefaults] Default attributes to apply to all plots.
-   * @param {string} [options.baseURL] The base URL for loading data files.
+   * @param {string?} [options.baseURL] The base URL for loading data files.
    * @param {string} [options.connector] A database connector to initialize.
    *  Valid values are 'wasm' and 'rest'.
    *  If undefined, no connector code is generated.
