@@ -42,6 +42,12 @@ export function isFunction(value) {
   return typeof value === 'function';
 }
 
+/**
+ * @param {string} message
+ * @param {any} data
+ * 
+ * @returns {never}
+ */
 export function error(message, data) {
   throw Object.assign(Error(message), { data });
 }
