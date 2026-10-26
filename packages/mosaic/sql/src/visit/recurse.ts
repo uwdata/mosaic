@@ -55,7 +55,7 @@ export const recurse: Record<string, string[]> = {
   [CAST]: ['expr'],
   [COLLATE]: ['expr'],
   [COLUMN_PARAM]: ['param', 'table'],
-  [COLUMN_REF]: ['table', 'replace'],
+  [COLUMN_REF]: ['table', 'exclude', 'replace', 'rename'],
   [COLUMNS]: ['selector'],
   [CREATE_QUERY]: ['name', 'query'],
   [CREATE_SCHEMA_QUERY]: ['name'],

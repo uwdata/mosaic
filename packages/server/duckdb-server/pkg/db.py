@@ -12,8 +12,7 @@ from pkg.servers.common import ENV_DB_PATH, IN_MEMORY_DB_NAME
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    from typing_extensions import Self
+    from typing import Self
 
     from pkg.protocols import Sql
 

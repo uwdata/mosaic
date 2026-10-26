@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING
 from pkg.servers import common
 
 if TYPE_CHECKING:
+    from typing import LiteralString, Self
+
     import uvicorn
-    from typing_extensions import LiteralString, Self
 
 
 class UvicornServer(common.Server):

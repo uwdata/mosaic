@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import { columns as collected } from './util/columns.js';
-import { add, collectColumns, column, columns, deepClone, greatest, isColumnRef, lambda, max, prefix, Query, rewrite, star, StarNode } from '../src/index.js';
+import { add, collectColumns, column, columns, cross_join, deepClone, greatest, isColumnRef, lambda, max, prefix, Query, rewrite, star, StarNode, walk } from '../src/index.js';
 
 describe('star', () => {
   it('generates plain and qualified stars', async () => {
@@ -25,6 +25,16 @@ describe('star', () => {
       .toBeValidQuery('SELECT "t1".* EXCLUDE ("num1", "num2") FROM "t1"');
   });
 
+  it('generates table-qualified star modifiers', async () => {
+    const s = star(null, {
+      exclude: [column('int1', 't1')],
+      rename: [[column('num1', 't2'), 'n1'], ['txt2', 't2txt']]
+    });
+    await expect(Query.select(s).from(cross_join('t1', 't2'))).toBeValidQuery(
+      'SELECT * EXCLUDE ("t1"."int1") RENAME ("t2"."num1" AS "n1", "txt2" AS "t2txt") FROM "t1" CROSS JOIN "t2"'
+    );
+  });
+
   it('is a column reference to all columns', () => {
     const s = star(null, { exclude: ['num1'] });
     expect(isColumnRef(s)).toBe(true);
@@ -46,6 +56,29 @@ describe('star', () => {
     expect(`${clone}`).toBe(`${s}`);
     const map = new Map([[num3, column('num1')]]);
     expect(`${rewrite(s, map)}`).toBe('* REPLACE (("num2" + "num1") AS "num2")');
+  });
+
+  it('visits, clones, and rewrites excluded and renamed columns', () => {
+    const int1 = column('int1', 't1');
+    const num1 = column('num1', 't2');
+    const s = star(null, { exclude: [int1], rename: [[num1, 'n1']] });
+
+    const visited: string[] = [];
+    walk(s, node => { if (isColumnRef(node)) visited.push(`${node}`); });
+    expect(visited).toStrictEqual([`${s}`, '"t1"."int1"', '"t2"."num1"']);
+
+    const clone = deepClone(s);
+    expect(clone.exclude[0]).not.toBe(int1);
+    expect(clone.rename[0].expr).not.toBe(num1);
+    expect(`${clone}`).toBe(`${s}`);
+
+    const map = new Map([[int1, column('int1', 't3')], [num1, column('num1', 't3')]]);
+    expect(`${rewrite(s, map)}`).toBe('* EXCLUDE ("t3"."int1") RENAME ("t3"."num1" AS "n1")');
+  });
+
+  it('does not collect excluded or renamed columns', () => {
+    const s = star(null, { exclude: [column('int1', 't1')], rename: [[column('num1', 't2'), 'n1']] });
+    expect(collected(s)).toStrictEqual(['*']);
   });
 });
 

@@ -143,7 +143,8 @@ class TestDataFrames:
         vg.mark("rectX", df_pyarrow)
 
         if TYPE_CHECKING:
-            from typing_extensions import assert_type
+            from typing import assert_type
+
             from vgplot._types import MarkData
 
             assert_type(mark_polars.data, MarkData)

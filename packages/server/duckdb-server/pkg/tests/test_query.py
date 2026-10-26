@@ -10,8 +10,10 @@ import pyarrow as pa
 from httpx2 import RequestError
 
 if TYPE_CHECKING:
+    from typing import LiteralString
+
     from starlette.testclient import TestClient
-    from typing_extensions import LiteralString, TypedDict
+    from typing_extensions import TypedDict
 
     class QueryParams(TypedDict, closed=True):
         query: LiteralString
