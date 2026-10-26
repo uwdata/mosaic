@@ -3,7 +3,7 @@ name = "mosaic-widget"
 description = "A Jupyter widget for Mosaic"
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
   "anywidget>=0.10.0",
   "duckdb>=1.5.4",

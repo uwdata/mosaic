@@ -8,8 +8,7 @@ from duckdb import DuckDBPyConnection
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    from typing_extensions import Self
+    from typing import Self
 
     from pkg.protocols import Sql
 

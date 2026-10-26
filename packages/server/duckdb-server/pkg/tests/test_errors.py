@@ -7,9 +7,10 @@ import msgspec
 import pytest
 
 if TYPE_CHECKING:
+    from typing import LiteralString
+
     import httpx2
     from starlette.testclient import TestClient
-    from typing_extensions import LiteralString
 
 LB, RB = "{}"
 deserialize = msgspec.json.Decoder(dict[str, str]).decode
