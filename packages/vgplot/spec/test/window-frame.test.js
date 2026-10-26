@@ -99,6 +99,7 @@ describe('Window frames', () => {
     describe(name, () => {
       it('converts to JSON unchanged', () => {
         const json = parseSpec(spec(frame)).toJSON();
+        // @ts-expect-error plot is not guaranteed on Spec
         expect(json.plot[0].y).toEqual(spec(frame).plot[0].y);
       });
 

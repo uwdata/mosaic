@@ -1,6 +1,11 @@
 import { ASTNode } from './ASTNode.js';
 import { OPTIONS } from '../constants.js';
 
+/**
+ * @param {{ [x: string]: any; }} spec
+ * @param {import("../parse-spec.js").ParseContext} ctx
+ * @param {Record<string, (key: string, import("../parse-spec.js").ParseContext) => any>} [parsers]
+ */
 export function parseOptions(spec, ctx, parsers = {}) {
   const options = {};
   for (const key in spec) {
@@ -43,6 +48,7 @@ export class OptionsNode extends ASTNode {
     return opt.length ? `{${ctx.maybeLineWrap(opt)}}` : '';
   }
 
+  // @ts-ignore
   toJSON() {
     const { options } = this;
     const opt = {};

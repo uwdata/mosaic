@@ -11,6 +11,7 @@ it('instantiates nested transforms and SQL expressions', () => {
       y: { sum: { sum: { sql: 'amount' } }, orderby: 'day' },
     }],
   });
+  // @ts-expect-error options is not a property of ASTNode
   const actual = ast.root.children[0].options.instantiate({ api: { sql, sum } }).y;
   expect(isAggregateExpression(actual)).toBe(1);
   expect(String(actual)).toBe(String(sum(sum(sql`amount`)).orderby('day')));
