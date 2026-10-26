@@ -115,8 +115,8 @@ export class ParseContext {
    * Test if a value is a param reference, if so, generates a parameter
    * definition as needed and returns a new ParamRefNode. Otherwise,
    * returns a LiteralNode for the given value.
-   * @param {*} value The value to test.
-   * @returns {ParamRefNode|LiteralNode} An AST node for the input value.
+   * @param {unknown} value The value to test.
+   * @returns {ParamRefNode|LiteralNode|null} An AST node for the input value.
    */
   maybeParam(value) {
     const name = paramRef(value);
@@ -129,12 +129,13 @@ export class ParseContext {
    * Test if a value is a param reference, if so, generates a selection
    * definition as needed and returns a new ParamRefNode. Otherwise,
    * returns a LiteralNode for the given value.
-   * @param {*} value The value to test.
+   * @param {unknown} value The value to test.
    * @returns {ParamRefNode|LiteralNode} An AST node for the input value.
    */
   maybeSelection(value) {
     const name = paramRef(value);
     return name
+      // @ts-expect-error requires overloads in `this.selectionRef` to filter out null
       ? this.selectionRef(name)
       : new LiteralNode(value);
   }
