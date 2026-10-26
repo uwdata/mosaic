@@ -9,8 +9,9 @@ import msgspec
 import platformdirs
 
 if TYPE_CHECKING:
+    from typing import Self
+
     from _typeshed import Incomplete
-    from typing_extensions import Self
 
 
 _DEFAULT_CERT: Final = Path("localhost.pem")

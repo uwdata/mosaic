@@ -5,9 +5,10 @@ from typing import TYPE_CHECKING
 from pkg.servers import common
 
 if TYPE_CHECKING:
+    from typing import Self
+
     import uvicorn
     from _typeshed import Incomplete
-    from typing_extensions import Self
 
 
 class UvicornServer(common.Server):
