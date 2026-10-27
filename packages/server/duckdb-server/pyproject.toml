@@ -11,7 +11,7 @@ dependencies = [
   "pyarrow",
   "starlette>=1.7.0",
   "uvicorn>=0.54.0",
-  "zttp>=0.0.34",
+  "zttp>=0.0.35",
 ]
 
 [project.scripts]
@@ -33,7 +33,13 @@ dev = [
   "ty",
   "pyarrow-stubs>=20.0.0.20260819",
   "httpx2>=2.13.1",
+  "covdefaults>=2.3.0",
 ]
+
+[tool.coverage]
+run.plugins = ["covdefaults"]
+
+report.exclude_lines = ["pytest.skip"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["pkg"]

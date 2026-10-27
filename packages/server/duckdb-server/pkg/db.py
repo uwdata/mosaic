@@ -35,7 +35,7 @@ class Database:
         self._con = None
 
     def __enter__(self) -> Self:
-        if self._con is not None:
+        if self._con is not None:  # pragma: no cover
             msg = f"{type(self).__name__!r} is not reentrant"
             raise TypeError(msg)
 
@@ -46,21 +46,21 @@ class Database:
     @property
     def con(self) -> DuckDBPyConnection:
         con = self._con
-        if con is None:
+        if con is None:  # pragma: no cover
             msg = f"{type(self).__name__!r} connection should not be None"
             raise TypeError(msg)
         return con
 
     def __exit__(self, *excinfo: object) -> None:
         con = self._con
-        if con is None:
+        if con is None:  # pragma: no cover
             msg = f"{type(self).__name__!r} connection should not be None"
             raise TypeError(msg)
         con.close()
         self._con = None
         logger.info("Closed DuckDB %s", self.path)
 
-    def execute(self, sql: Sql) -> None:
+    def execute(self, sql: Sql) -> None:  # pragma: no cover
         self.con.execute(sql)
 
     def get_arrow(self, sql: Sql) -> pa.Buffer:

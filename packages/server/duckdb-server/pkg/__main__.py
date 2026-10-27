@@ -8,16 +8,14 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 def serve() -> None:
-    from pkg.servers._uvicorn import UvicornServer
-    from pkg.servers.common import Args
+    from pkg.servers import Args, server
 
     args = Args.parse_sys_argv().resolve()
     if ssl := args.ssl:
         logger.info("Using TLS certificate %s", ssl.cert)
     else:
         logger.warning("No keys for HTTPS found")
-    server = UvicornServer.from_args(args, "pkg.app:create_app")
-    server.run()
+    server("uvicorn", args).run()
 
 
 if __name__ == "__main__":
