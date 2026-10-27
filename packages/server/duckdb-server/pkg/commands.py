@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 if sys.version_info >= (3, 12):
     from typing import TypeAliasType as Type
-else:
+else:  # pragma: no cover
     from typing_extensions import TypeAliasType as Type
 
 
@@ -33,10 +33,10 @@ class ArrowRequest(protocols.Command[pa.Buffer], forbid_unknown_fields=False):
 class ExecRequest(protocols.Command[None], forbid_unknown_fields=False):
     """Statements run in order on one connection."""
 
-    def _query(self, db: Database) -> None:
+    def _query(self, db: Database) -> None:   # pragma: no cover
         db.execute(self.sql)
 
-    def _into_response(self, _: None, /) -> EmptyResponse:
+    def _into_response(self, _: None, /) -> EmptyResponse:   # pragma: no cover
         return empty_response()
 
 

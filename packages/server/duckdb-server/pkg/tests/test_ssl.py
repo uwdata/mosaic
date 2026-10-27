@@ -62,8 +62,11 @@ def test_default_no_config(tmp_path: Path) -> None:
             "Test requires the current working directory to not have any credentials stored.\n"
             "Changing cwd is unsafe (https://docs.python.org/3/library/contextlib.html#contextlib.chdir)"
         )
-    parsed = Args.parse_args()
-    with patch(_STATIC_NAME_USER_CONFIG_PATH, lambda *_, **__: tmp_path / "nope"):
+    # NOTE: has coverage in CI, but complicated locally (https://github.com/uwdata/mosaic/pull/1334#discussion_r4250644901)
+    parsed = Args.parse_args()  # pragma: no cover
+    with patch(
+        _STATIC_NAME_USER_CONFIG_PATH, lambda *_, **__: tmp_path / "nope"
+    ):  # pragma: no cover
         resolved = parsed.resolve()
         assert resolved.ssl is None
 

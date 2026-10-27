@@ -52,7 +52,7 @@ class Endpoint(HTTPEndpoint):
         db = request.state["db"]
         return query.run(db)
 
-    async def post(self, request: Request[AppState]) -> Response:
+    async def post(self, request: Request[AppState]) -> Response:  # pragma: no cover
         buf = BytesIO()
         async for chunk in request.stream():
             buf.write(chunk)

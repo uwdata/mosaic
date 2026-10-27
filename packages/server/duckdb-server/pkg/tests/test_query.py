@@ -34,12 +34,13 @@ def q(sql: LiteralString, /, type: L["arrow", "exec"] = "arrow") -> QueryParams:
 def raise_for_status(response: httpx2.Response) -> httpx2.Response:
     if response.is_success:
         return response
-    body = msgspec.json.decode(response.content, type=dict[str, Any])
-    message = (
-        f"'{response.status_code} {response.reason_phrase}' for url '{response.url}'\n    {body!r}\n"
-        f"For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{response.status_code}"
-    )
-    raise RequestError(message)
+    else:  # pragma: no cover
+        body = msgspec.json.decode(response.content, type=dict[str, Any])
+        message = (
+            f"'{response.status_code} {response.reason_phrase}' for url '{response.url}'\n    {body!r}\n"
+            f"For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{response.status_code}"
+        )
+        raise RequestError(message)
 
 
 def test_query_arrow(client_session: TestClient) -> None:

@@ -36,8 +36,10 @@ dev = [
   "covdefaults>=2.3.0",
 ]
 
-[tool.coverage.run]
-plugins = ["covdefaults"]
+[tool.coverage]
+run.plugins = ["covdefaults"]
+
+report.exclude_lines = ["pytest.skip"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["pkg"]

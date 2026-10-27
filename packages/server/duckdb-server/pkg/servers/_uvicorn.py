@@ -23,11 +23,13 @@ class UvicornServer(common.Server):
     def from_args(cls, args: common.ResolvedArgs, app: Incomplete, /) -> Self:
         import uvicorn
 
-        if ssl := args.ssl:
+        # NOTE: The variation of these branches are mocked at a higher level,
+        # as the result depends on system trust stores and `.gitignore` files
+        if ssl := args.ssl:  # pragma: no cover
             http2 = True
             ssl_keyfile = ssl.key
             ssl_certfile = ssl.cert
-        else:
+        else:  # pragma: no cover
             http2 = False
             ssl_keyfile = None
             ssl_certfile = None
