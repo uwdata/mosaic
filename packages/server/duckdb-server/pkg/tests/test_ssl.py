@@ -44,9 +44,9 @@ class PEM:
 
 @pytest.mark.skipif(
     not user_config_path().exists(),
-    reason="SSL cert/key tests depend on external state",
+    reason="SSL cert/key tests depend on external state (https://github.com/uwdata/mosaic/pull/1334#discussion_r4250644901)",
 )
-def test_default_has_config() -> None:
+def test_default_has_config() -> None:  # pragma: no cover
     parsed = Args.parse_args()
     resolved = parsed.resolve()
     assert resolved.ssl is not None
