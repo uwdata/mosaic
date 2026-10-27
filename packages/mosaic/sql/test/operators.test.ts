@@ -125,6 +125,7 @@ describe('Set inclusion operators', () => {
     await expect(isInDistinct('txt1', [...set, null])).toBeValidExpr('(("txt1" IN (\'a\', \'b\', \'c\')) OR ("txt1" IS NULL))');
     await expect(isInDistinct(column('txt1'), [literal(null)])).toBeValidExpr('("txt1" IS NULL)');
     await expect(isInDistinct('txt1', [null])).toBeValidExpr('("txt1" IS NULL)');
+    await expect(isInDistinct('txt1', [])).toBeValidExpr('FALSE');
   });
   it('include IN operator with tuples', async () => {
     const test = tuple([column('num1'), column('num2')]);

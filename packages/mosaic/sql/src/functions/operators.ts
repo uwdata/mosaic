@@ -307,8 +307,9 @@ function isValueInDistinct(test: ExprNode, values: ExprValue[]) {
   const nodes = values.map(asNode)
     .filter(node => !isNullLiteral(node));
   const inOp = isIn(test, nodes);
-  return nodes.length === values.length ? inOp
-    : nodes.length === 0 ? (values.length === 0 ? literal(false) : isNull(test))
+  return values.length === 0 ? literal(false)
+    : nodes.length === values.length ? inOp
+    : nodes.length === 0 ? isNull(test)
     : or(inOp, isNull(test));
 }
 

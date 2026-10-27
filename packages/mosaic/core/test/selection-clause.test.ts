@@ -72,6 +72,7 @@ describe('clausePoints', () => {
   });
 
   it('produces a false predicate for an empty array', () => {
+    expect(String(clausePoints(['a'], [], { source }).predicate)).toBe('FALSE');
     expect(String(clausePoints(['a', 'b'], [], { source }).predicate)).toBe('FALSE');
   });
 
