@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final
 
 from benchmark.common import DEFAULT_SERVERS, SERVER_DIR, ServerName, console
-from benchmark.server import ServerConfig
+from benchmark.server import Retries, ServerConfig
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -20,6 +20,7 @@ _TARGETS: Final = (
         SERVER_DIR / "duckdb-server-rust",
         depends=("cargo",),
         run=("cargo", "run", "--release", "--"),
+        retry=Retries(connect=5, backoff_factor=10.0),
     ),
     ServerConfig(
         "node",
@@ -32,6 +33,7 @@ _TARGETS: Final = (
         SERVER_DIR / "duckdb-server-go",
         depends=("go", "gcc"),
         run=("go", "run", "-tags=duckdb_arrow", "."),
+        retry=Retries(connect=5, backoff_factor=10.0),
     ),
 )
 

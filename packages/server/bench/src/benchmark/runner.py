@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import socket
 from typing import TYPE_CHECKING, Generic
 from typing import Literal as L
 
@@ -10,15 +11,15 @@ from typing_extensions import TypeAliasType as Type
 
 from benchmark import _rich
 from benchmark.client import Client
-from benchmark.common import CT, EXPORT_DIR, GROUP_MEMBERS, console
+from benchmark.common import CT, EXPORT_DIR, GROUP_MEMBERS, Port, console
 from benchmark.server import Server
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Sequence
+    from collections.abc import Callable, Collection, Sequence
     from pathlib import Path
 
     from benchmark.cli import CLIOptions
-    from benchmark.common import Exec
+    from benchmark.common import Exec, Host
     from benchmark.server import ServerConfig
     from benchmark.task import Benchmark, Command
 
@@ -47,17 +48,16 @@ class Runner(msgspec.Struct, Generic[CT]):
                 }
             )
 
-    def run(self, target: ServerConfig) -> pl.LazyFrame:
+    def run(self, target: ServerConfig, port: Port) -> pl.LazyFrame:
         opts = self.options
-        port = opts.port
         n, warmup, timeout = opts.iterations, opts.warmup, opts.timeout
         console.rule(f"Running {target.link()}")
+        retries = target.retry if opts.allow_retries else None
         with (
             Server.from_config(target, port) as server,
-            Client(opts.base_url(port), n, warmup, timeout) as client,
+            Client(opts.base_url(port), n, warmup, timeout, retries) as client,
         ):
             client.ensure_ok()
-            console.print("[green bold]Connected[/]")
             results = (
                 result.into_row()
                 for result in client.run_benchmarks(self.sources, self.benchmarks)
@@ -68,7 +68,10 @@ class Runner(msgspec.Struct, Generic[CT]):
             )
 
     def run_all(self) -> ResultSummary:
-        results_lazy = pl.union(self.run(target) for target in self.targets)
+        find_port = free_tcp_port_factory()
+        results_lazy = pl.union(
+            self.run(target, find_port()) for target in self.targets
+        )
         summaries = self._summarize_results(results_lazy)
         _report_results(summaries)
         return summaries
@@ -132,3 +135,35 @@ def _mkdir_gitignore(path: Path) -> Path:
     note = "# This directory contains machine-specific benchmark results\n# and should not be checked into version control."
     ignore.write_text(f"{note}\n*\n", "utf-8", newline="\n")
     return path
+
+
+def free_tcp_port_factory(
+    *,
+    family: socket.AddressFamily = socket.AF_INET,
+    kind: socket.SocketKind = socket.SOCK_STREAM,
+    host: Host = "127.0.0.1",
+) -> Callable[[], Port]:
+    """Return a factory that guarantees each port is unique and available.
+
+    Adapted from [anyio.pytest_plugin.FreePortFactory][1].
+
+    [1]: https://github.com/agronholm/anyio/blob/6219807568bd7c32f2c08f923c7d93f95c836127/src/anyio/pytest_plugin.py#L330-L393
+    """
+    generated = set[Port]()
+
+    def find_port() -> Port:
+        while True:
+            port = Port(0)
+            with socket.socket(family, kind) as sock:
+                try:
+                    sock.bind((host, port))
+                except OSError:
+                    ...
+                else:
+                    if not port:
+                        port = sock.getsockname()[1]
+                        if port not in generated:
+                            generated.add(port)
+                            return Port(port)
+
+    return find_port

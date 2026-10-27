@@ -3,6 +3,7 @@
   "version": "0.34.2",
   "private": true,
   "scripts": {
-    "dev": "uv run watchfiles --filter python --grace-period 5 --target-type command \"uv run duckdb-server\" pkg"
+    "dev": "uv run watchfiles --filter python --grace-period 5 --target-type command \"uv run duckdb-server\" pkg",
+    "build:benchmark": "uv sync --inexact --compile-bytecode"
   }
 }
