@@ -33,10 +33,10 @@ class ArrowRequest(protocols.Command[pa.Buffer], forbid_unknown_fields=False):
 class ExecRequest(protocols.Command[None], forbid_unknown_fields=False):
     """Statements run in order on one connection."""
 
-    def _query(self, db: Database) -> None:   # pragma: no cover
+    def _query(self, db: Database) -> None:  # pragma: no cover
         db.execute(self.sql)
 
-    def _into_response(self, _: None, /) -> EmptyResponse:   # pragma: no cover
+    def _into_response(self, _: None, /) -> EmptyResponse:  # pragma: no cover
         return empty_response()
 
 

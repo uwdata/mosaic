@@ -12,7 +12,7 @@ __all__ = ("Args", "ResolvedArgs", "Server", "Url", "server")
 
 
 def server(name: L["uvicorn"], args: Args | ResolvedArgs, /) -> UvicornServer:
-    if isinstance(args, Args):   # pragma: no cover
+    if isinstance(args, Args):  # pragma: no cover
         args = args.resolve()
     from pkg.app import create_app
 

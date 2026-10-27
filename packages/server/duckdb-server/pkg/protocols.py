@@ -48,7 +48,7 @@ if sys.version_info >= (3, 12):
     [PEP 688]: https://peps.python.org/pep-0688/
     """
 
-else:   # pragma: no cover
+else:  # pragma: no cover
     import functools
 
     import pyarrow as pa

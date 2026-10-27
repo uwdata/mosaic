@@ -19,5 +19,5 @@ class ArrowResponse(starlette.responses.Response):
 EmptyResponse = NewType("EmptyResponse", starlette.responses.Response)
 
 
-def empty_response() -> EmptyResponse:   # pragma: no cover
+def empty_response() -> EmptyResponse:  # pragma: no cover
     return EmptyResponse(starlette.responses.Response())
