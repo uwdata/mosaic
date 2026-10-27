@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Final, Literal, Protocol, final
+from typing import TYPE_CHECKING, Final, Literal, NewType, Protocol, final
 
 import msgspec
 import platformdirs
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from typing import Self
 
     from _typeshed import Incomplete
@@ -16,6 +18,8 @@ if TYPE_CHECKING:
 
 _DEFAULT_CERT: Final = Path("localhost.pem")
 _DEFAULT_KEY: Final = Path("localhost-key.pem")
+
+Url = NewType("Url", str)
 
 
 def user_config_path() -> Path:
@@ -46,6 +50,10 @@ class SSL(msgspec.Struct):
 class ResolvedArgs(_BaseArgs):
     ssl: SSL | None = None
 
+    def base_url(self) -> Url:
+        scheme = "https" if self.ssl else "http"
+        return Url(f"{scheme}://{self.address}:{self.port}")
+
 
 def file_exists(path: Path, /) -> bool:
     return path.is_file() and path.exists()
@@ -60,7 +68,7 @@ class Args(_BaseArgs):
 
     def resolve(self) -> ResolvedArgs:
         db, host, port, level = self.database, self.address, self.port, self.log_level
-        if self.no_http2:
+        if self.no_http2:  # pragma: no cover
             return ResolvedArgs(db, host, port, level)
         cert, key = self.ssl_cert, self.ssl_key
         if file_exists(cert) and file_exists(key):
@@ -69,7 +77,7 @@ class Args(_BaseArgs):
         config = user_config_path()
         is_cert_default = cert == _DEFAULT_CERT
         is_key_default = key == _DEFAULT_KEY
-        if is_cert_default and is_key_default:
+        if is_cert_default and is_key_default:  # pragma: no cover
             cert, key = config / cert, config / key
             if file_exists(cert) and file_exists(key):
                 return ResolvedArgs(db, host, port, level, ssl=SSL(cert, key))
@@ -81,12 +89,12 @@ class Args(_BaseArgs):
         elif not (is_cert_default or is_key_default):
             msg = "both --cert and --key must exist"
             raise TypeError(msg)
-        else:
+        else:  # pragma: no cover
             msg_0 = f"Unhandled case ({is_cert_default=}, {is_key_default=})\n{cert=}\n{key=}"
             raise NotImplementedError(msg_0)
 
     @classmethod
-    def parse_sys_argv(cls) -> Args:
+    def parse_sys_argv(cls) -> Args:  # pragma: no cover
         return cls._parse(None)
 
     @classmethod
@@ -131,3 +139,5 @@ class Server(Protocol):
     @classmethod
     def from_args(cls, args: ResolvedArgs, app: Incomplete, /) -> Self: ...
     def run(self) -> None: ...
+    @contextlib.contextmanager
+    def run_in_thread(self) -> Generator[None]: ...

@@ -123,7 +123,7 @@ jobs:
 
           uv build
           uv run --group dev ty check
-          uv run --group dev pytest --cov-report=term-missing --color=yes --cov=pkg
+          uv run --group dev pytest --color=yes --cov=pkg
 
       - name: Build and test widget
         run: |
