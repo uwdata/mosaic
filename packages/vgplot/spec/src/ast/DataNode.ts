@@ -193,6 +193,8 @@ export class TableDataNode extends QueryDataNode<'table'> {
   codegenQuery(ctx: CodegenContext): string | void {
     const { name, query, options } = this;
     if (query) {
+      //@ts-expect-error Argument of type 'CodegenContext' is not assignable to parameter of type 'InstantiateContext'.
+      //Looks like a real bug
       return `\`${createTable(name, query, options.instantiate(ctx))}\``;
     }
   }
