@@ -5,7 +5,6 @@ packages:
   - "packages/server/*"
   - "packages/vgplot/*"
   - "packages/examples/*"
-  - "specs/ts"
 allowBuilds:
   esbuild: false
   nx: false

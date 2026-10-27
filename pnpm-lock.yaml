@@ -424,12 +424,6 @@ importers:
         specifier: ^0.28.2
         version: 0.28.2
 
-  specs/ts:
-    dependencies:
-      '@uwdata/mosaic-spec':
-        specifier: workspace:^
-        version: link:../../packages/vgplot/spec
-
 packages:
 
   '@11ty/gray-matter@2.1.0':
