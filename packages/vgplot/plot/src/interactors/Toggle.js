@@ -75,6 +75,7 @@ export class Toggle {
         if ((evt.shiftKey || evt.metaKey) && state?.length) {
           value = state.filter(s => neq(s, point));
           if (value.length === state.length) value.push(point);
+          if (value.length === 0) value = null;
         } else if (state?.length === 1 && !neq(state[0], point)) {
           value = null;
         } else {

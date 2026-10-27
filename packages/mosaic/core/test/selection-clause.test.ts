@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clauseList } from '../src/index.js';
+import { clauseList, clausePoints } from '../src/index.js';
 
 describe('clauseList', () => {
   const source = {};
@@ -44,5 +44,39 @@ describe('clauseList', () => {
   it('produces a null predicate for an empty array (clears selection)', () => {
     // an empty list must clear the selection, not filter out every row
     expect(clauseList('tags', [], { source }).predicate).toBe(null);
+  });
+});
+
+describe('clausePoints', () => {
+  const source = {};
+
+  it('uses IN for a single field', () => {
+    const clause = clausePoints(['a'], [[1], [2], [null]], { source });
+    expect(String(clause.predicate)).toBe(
+      '(("a" IN (1, 2)) OR ("a" IS NULL))'
+    );
+  });
+
+  it('uses tuple IN for multiple fields', () => {
+    const clause = clausePoints(['lat', 'lon'], [[12, -5], [90, -110]], { source });
+    expect(String(clause.predicate)).toBe(
+      '(("lat", "lon") IN ((12, -5), (90, -110)))'
+    );
+  });
+
+  it('tests tuples with null values separately', () => {
+    const clause = clausePoints(['a', 'b'], [[1, 'x'], [null, 'y']], { source });
+    expect(String(clause.predicate)).toBe(
+      '((("a", "b") IN ((1, \'x\'))) OR (("a" IS NULL) AND ("b" = \'y\')))'
+    );
+  });
+
+  it('produces a false predicate for an empty array', () => {
+    expect(String(clausePoints(['a'], [], { source }).predicate)).toBe('FALSE');
+    expect(String(clausePoints(['a', 'b'], [], { source }).predicate)).toBe('FALSE');
+  });
+
+  it('produces a null predicate for null values', () => {
+    expect(clausePoints(['a', 'b'], null, { source }).predicate).toBe(null);
   });
 });
