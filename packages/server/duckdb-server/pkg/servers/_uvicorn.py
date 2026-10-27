@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import contextlib
+import threading
+import time
 from typing import TYPE_CHECKING
 
 from pkg.servers import common
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from typing import Self
 
     import uvicorn
@@ -42,3 +46,20 @@ class UvicornServer(common.Server):
 
     def run(self) -> None:
         self._server.run()
+
+    @contextlib.contextmanager
+    def run_in_thread(self) -> Generator[None]:
+        # https://github.com/Kludex/uvicorn/discussions/1103?sort=top#discussioncomment-941726
+        thread = threading.Thread(target=self.run)
+        server = self._server
+        # NOTE: Monkeypatching doesn't need to be undone,
+        # because `should_exit` prevents a `uvicorn.Server` from being reused.
+        server.capture_signals = contextlib.nullcontext  # ty: ignore[invalid-assignment] # pyright: ignore[reportAttributeAccessIssue]
+        thread.start()
+        try:
+            while not server.started:
+                time.sleep(0.001)
+            yield
+        finally:
+            server.should_exit = True
+            thread.join()

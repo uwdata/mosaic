@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Final, Literal, Protocol, final
+from typing import TYPE_CHECKING, Final, Literal, NewType, Protocol, final
 
 import msgspec
 import platformdirs
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from typing import Self
 
     from _typeshed import Incomplete
@@ -16,6 +18,8 @@ if TYPE_CHECKING:
 
 _DEFAULT_CERT: Final = Path("localhost.pem")
 _DEFAULT_KEY: Final = Path("localhost-key.pem")
+
+Url = NewType("Url", str)
 
 
 def user_config_path() -> Path:
@@ -45,6 +49,10 @@ class SSL(msgspec.Struct):
 @final
 class ResolvedArgs(_BaseArgs):
     ssl: SSL | None = None
+
+    def base_url(self) -> Url:
+        scheme = "https" if self.ssl else "http"
+        return Url(f"{scheme}://{self.address}:{self.port}")
 
 
 def file_exists(path: Path, /) -> bool:
@@ -131,3 +139,5 @@ class Server(Protocol):
     @classmethod
     def from_args(cls, args: ResolvedArgs, app: Incomplete, /) -> Self: ...
     def run(self) -> None: ...
+    @contextlib.contextmanager
+    def run_in_thread(self) -> Generator[None]: ...

@@ -50,3 +50,15 @@ def test_query_arrow(client_session: TestClient) -> None:
         table = reader.read_all()
     expected = pa.table({"a": [1]}, schema=pa.schema({"a": pa.int32()}))
     assert table.equals(expected)
+
+
+# TODO @dangotbanned: Confirm buffer was used
+# - Might be easiest to enable coverage/pytest-cov?
+def test_buffer(real_server_session: httpx2.Client) -> None:
+    response = real_server_session.get("/", params=q("SELECT 2 AS b"))
+    raise_for_status(response)
+    content = response.read()
+    with pa.ipc.open_stream(content) as reader:
+        table = reader.read_all()
+    expected = pa.table({"b": [2]}, schema=pa.schema({"b": pa.int32()}))
+    assert table.equals(expected)
