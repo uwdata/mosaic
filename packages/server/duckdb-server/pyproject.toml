@@ -33,7 +33,11 @@ dev = [
   "ty",
   "pyarrow-stubs>=20.0.0.20260819",
   "httpx2>=2.13.1",
+  "covdefaults>=2.3.0",
 ]
+
+[tool.coverage.run]
+plugins = ["covdefaults"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["pkg"]
