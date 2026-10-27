@@ -15,6 +15,7 @@ export class ColumnParamRefNode extends ASTNode<ColumnRefNode, string, ParamRef>
   }
 
   instantiate(ctx: InstantiateContext): ColumnRefNode {
+    //@ts-expect-error Type 'undefined' is not assignable to type 'string | ParamLike'.
     return ctx.api.column(this.param.instantiate(ctx));
   }
 
