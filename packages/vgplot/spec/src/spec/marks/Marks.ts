@@ -1,34 +1,9 @@
 import { AggregateExpression, SQLExpression } from '../Expression.js';
 import { ParamRef } from '../Param.js';
 import { PlotMarkData } from '../PlotFrom.js';
-import { CurveName, FrameAnchor, Interval, Reducer, ScaleName } from '../PlotTypes.js';
+import { CurveName, FrameAnchor, Interval, Reducer, ScaleName, ChannelName } from '../PlotTypes.js';
 import { Transform } from '../Transform.js';
-
-/** The set of known channel names. */
-export type ChannelName =
-  | ScaleName
-  | 'ariaLabel'
-  | 'fill'
-  | 'fillOpacity'
-  | 'fontSize'
-  | 'geometry'
-  | 'height'
-  | 'href'
-  | 'path'
-  | 'rotate'
-  | 'src'
-  | 'stroke'
-  | 'strokeOpacity'
-  | 'strokeWidth'
-  | 'text'
-  | 'title'
-  | 'weight'
-  | 'width'
-  | 'x1'
-  | 'x2'
-  | 'y1'
-  | 'y2'
-  | 'z';
+export type { ChannelName } from '../PlotTypes.js';
 
 type ChannelScale = ScaleName | 'auto' | boolean | null;
 
@@ -429,7 +404,7 @@ export interface MarkOptions {
    * Additional named channels, for example to include in a tooltip.
    * Consists of (channel name, data field name) key-value pairs.
    */
-  channels?: Record<string, string>;
+  channels?: Record<ChannelName, string>;
 
   /**
    * How to clip the mark; one of:
