@@ -14,11 +14,8 @@ __all__ = ("Args", "ResolvedArgs", "Server", "Url", "server")
 def server(name: L["uvicorn"], args: Args | ResolvedArgs, /) -> UvicornServer:
     if isinstance(args, Args):  # pragma: no cover
         args = args.resolve()
-    from pkg.app import create_app
-
-    app = create_app(args.database)
     if name != "uvicorn":
         raise NotImplementedError(name)
     from pkg.servers._uvicorn import UvicornServer
 
-    return UvicornServer.from_args(args, app)
+    return UvicornServer.from_args(args, "pkg.app:create_app")
