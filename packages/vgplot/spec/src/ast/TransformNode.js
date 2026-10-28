@@ -14,6 +14,7 @@ function toArray(value, ctx) {
 export function maybeTransform(value, ctx) {
   if (isObject(value)) {
     return value[SQL]
+      // @ts-expect-error condition doesn't narrow to `{sql: string}`
       ? parseExpression(value, ctx)
       : parseTransform(value, ctx);
   }
