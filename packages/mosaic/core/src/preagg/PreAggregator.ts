@@ -1,5 +1,5 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
-import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../clause/index.js';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, isInDistinct, int32, literal, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
+import type { BinMethod, ClauseDimension, ClauseSource, CompositeMetadata, IntervalDimension, IntervalMetadata, SelectionClause } from '../clause/index.js';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
@@ -47,7 +47,8 @@ interface PreAggregateInfoOptions {
  *
  * Compatible client queries must consist of only groupby dimensions and
  * supported aggregate functions. Compatible selections must contain an active
- * clause that exposes metadata for an interval or point value predicate.
+ * clause that exposes metadata for an interval, point, or composite
+ * value predicate.
  *
  * Materialized views are written to a dedicated schema (namespace) that
  * can be set using the *schema* constructor option. This schema acts as a
@@ -267,31 +268,23 @@ function activeColumns(clause: SelectionClause): ActiveColumnsResult {
       );
       return rewrite(clause.predicate, map)!;
     };
-  } else if (meta.type === 'interval') {
-    // apply pixel-level binning, bail if a scale type is unsupported
-    const { scales, bin, pixelSize = 1 } = meta as IntervalMetadata;
-    const bins = scales?.map((s: ScaleOptions) => binInterval(s, pixelSize, bin));
-    if (bins?.every(b => b != null)) {
-      fields.forEach((f, i) => { columns[`active${i}`] = bins[i](f); });
-      if (bins.length === 1) {
-        // single interval selection
-        // selection clause predicate has type BetweenOpNode
-        predicate = (clause?: SelectionClause) => {
-          if (!clause?.predicate) return [];
-          const v = clause.value as number[];
-          return isBetween('active0', v.map(bins[0]));
-        };
-      } else {
-        // multiple interval selection
-        // selection clause predicate has type AndNode<BetweenOpNode>
-        predicate = (clause?: SelectionClause) => {
-          if (!clause?.predicate) return [];
-          const v = clause.value as number[][];
-          return and(
-            fields.map((_, i) => isBetween(`active${i}`, v[i].map(bins[i])))
-          );
-        };
-      }
+  } else if (meta.type === 'interval' || meta.type === 'composite') {
+    const dims = meta.type === 'interval'
+      ? intervalDimensions(meta as IntervalMetadata)
+      : (meta as CompositeMetadata).dims;
+    const bindings = dims?.length === fields.length
+      ? dims.map((d, i) => bindDimension(d, `active${i}`))
+      : undefined;
+    if (bindings?.every(b => b != null)) {
+      fields.forEach((f, i) => { columns[`active${i}`] = bindings[i].column(f); });
+      predicate = (clause?: SelectionClause) => {
+        if (!clause?.predicate) return [];
+        // clauseInterval values are a single [lo, hi] extent, not a list
+        const v = clause.value as unknown[];
+        const values = meta.type === 'interval' && !Array.isArray(v[0]) ? [v] : v;
+        const preds = bindings.flatMap((b, i) => values[i] == null ? [] : b.predicate(values[i]));
+        return preds.length === 1 ? preds[0] : and(preds);
+      };
     }
   }
 
@@ -299,6 +292,48 @@ function activeColumns(clause: SelectionClause): ActiveColumnsResult {
     return { source, columns, predicate };
   } else {
     return { source: null, columns: undefined, predicate };
+  }
+}
+
+interface DimensionBinding {
+  column: (field: ExprNode) => ExprNode;
+  predicate: (value: unknown) => ExprNode;
+}
+
+/**
+ * Expand interval clause metadata into per-field interval dimensions.
+ * @param meta The interval clause metadata.
+ */
+function intervalDimensions(
+  { scales, bin, pixelSize }: IntervalMetadata
+): IntervalDimension[] | undefined {
+  return scales?.map(scale => ({ type: 'interval', scale, bin, pixelSize }));
+}
+
+/**
+ * Determine the active column and predicate generator for a single
+ * selection dimension, or undefined if the dimension is not indexable.
+ * @param dim The selection dimension metadata.
+ * @param name The active column name.
+ */
+function bindDimension(
+  dim: ClauseDimension,
+  name: string
+): DimensionBinding | undefined {
+  if (dim.type === 'point') {
+    return {
+      column: field => field,
+      predicate: value => isInDistinct(name, (value as unknown[]).map(v => literal(v)))
+    };
+  } else if (dim.type === 'interval' && dim.scale) {
+    // apply pixel-level binning, bail if a scale type is unsupported
+    const bin = binInterval(dim.scale, dim.pixelSize ?? 1, dim.bin);
+    if (bin) {
+      return {
+        column: bin,
+        predicate: value => isBetween(name, (value as ExprValue[]).map(bin))
+      };
+    }
   }
 }
 
@@ -318,10 +353,16 @@ function binInterval(
   pixelSize: number,
   bin?: BinMethod
 ): ((value: ExprValue) => ExprNode) | undefined {
-  const { type, domain, range, apply, sqlApply } = scaleTransform(scale)!;
-  if (!apply) return; // unsupported scale type
+  let transform;
+  try {
+    transform = scaleTransform<number>(scale);
+  } catch {
+    return; // unsupported scale type
+  }
+  const { type, domain, range, apply, sqlApply } = transform;
+  if (!apply || (type !== 'identity' && !(domain && range))) return;
   const binFn = BIN[`${bin}`.toLowerCase()] || floor;
-  const dom = domain!.map(x => Number(x));
+  const dom = domain ? domain.map(x => Number(x)) : [0];
   const lo = apply(Math.min(...dom));
   const hi = apply(Math.max(...dom));
   const s = (type === 'identity'

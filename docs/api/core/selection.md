@@ -119,7 +119,9 @@ Update the selection with a new selection _clause_. A _clause_ is an object cons
 - a set of _clients_ associated with the clause, indicating the clients that should be skipped in the case of cross-filtering,
 - a query _predicate_ (e.g, the range predicate `column BETWEEN 0 AND 1`),
 - a corresponding _value_ (e.g., the range array `[0,1]`), and
-- an optional _schema_ providing clause metadata.
+- an optional _meta_ object providing clause metadata.
+
+Clause metadata describes the selection type (such as `point`, `interval`, `match`, or `composite`) and can enable optimizations. Pre-aggregation supports `point`, `interval`, and `composite` clauses. A `composite` clause constrains each field independently by either an interval or a set of point values, as listed in its `dims` array; a dimension with a null value does not filter its field. For example, a 2D brush may select a continuous interval along one axis and a set of discrete values along the other.
 
 Upon update, any prior clause with the same _source_ is removed and the new, most recent clause (called the _active_ clause) is added.
 
