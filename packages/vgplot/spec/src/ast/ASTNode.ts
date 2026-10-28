@@ -1,4 +1,4 @@
-// oxlint-disable typescript/no-explicit-any typescript/no-invalid-void-type
+// oxlint-disable typescript/no-explicit-any typescript/no-invalid-void-type typescript/no-empty-object-type
 import type { InstantiateContext } from '../ast-to-dom.js';
 import type { CodegenContext } from '../ast-to-esm.js';
 
@@ -10,7 +10,8 @@ export type JSONValue =
   | JSONValue[]
   | {
       [key: string]: JSONValue;
-    };
+    }
+  | {};
 
 /** Abstract base class for Mosaic spec AST nodes. */
 // oxlint-disable-next-line typescript/no-explicit-any

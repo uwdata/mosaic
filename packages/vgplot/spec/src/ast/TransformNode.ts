@@ -7,6 +7,7 @@ import type { ParseContext } from '../parse-spec.js';
 import type { SQLExpression } from '../spec/Expression.js';
 import type { Bin, Transform } from '../spec/Transform.js';
 import { isObject } from '../util.js';
+import type { JSONValue } from './ASTNode.js';
 import { ASTNode } from './ASTNode.js';
 import type { ExpressionNode } from './ExpressionNode.js';
 import { parseExpression } from './ExpressionNode.js';
@@ -18,7 +19,7 @@ import type { WindowFrameNode } from './WindowFrameNode.js';
 import { parseWindowFrame } from './WindowFrameNode.js';
 
 type ParsedTransform = BinTransformNode | TransformNode | undefined;
-type Arg = ExpressionNode | ParsedTransform | ParamRefNode | LiteralNode | null;
+type Arg = ExpressionNode | ParsedTransform | ParamRefNode | LiteralNode<JSONValue> | null;
 
 type NotBin = Exclude<Transform, Bin>;
 type NotBinName = Exclude<TransformName, 'bin'>;

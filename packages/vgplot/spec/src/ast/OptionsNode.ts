@@ -3,6 +3,7 @@ import type { InstantiateContext } from '../ast-to-dom.js';
 import type { CodegenContext } from '../ast-to-esm.js';
 import { OPTIONS } from '../constants.js';
 import type { ParseContext } from '../parse-spec.js';
+import type { JSONValue } from './ASTNode.js';
 import { ASTNode } from './ASTNode.js';
 import type { LiteralNode } from './LiteralNode.js';
 import type { ParamRefNode } from './ParamRefNode.js';
@@ -10,7 +11,7 @@ import type { IncludeNode } from './SelectionNode.js';
 
 // oxlint-disable-next-line typescript/no-explicit-any
 type Spec = Record<string, any>;
-type Node = ParamRefNode | LiteralNode | IncludeNode;
+type Node = ParamRefNode | LiteralNode<JSONValue> | IncludeNode;
 type Instantiate = ReturnType<Node['instantiate']>;
 
 export function parseOptions(spec: Spec, ctx: ParseContext): OptionsNode {
@@ -27,7 +28,7 @@ export function parseOptions(spec: Spec, ctx: ParseContext): OptionsNode {
  * - Some cases can work with (very complex) type manipulation
  * - Others seem too dynamic to model https://github.com/uwdata/mosaic/blob/09e0607b16d8bfd5ae3583a154877c18a0871e97/packages/vgplot/spec/src/ast/SelectionNode.js#L6-L15
  */
-export class OptionsNode extends ASTNode<Instantiate, string, Spec> {
+export class OptionsNode extends ASTNode<Record<string, Instantiate>, string, Spec> {
   readonly options: Record<string, Node>;
   constructor(options: Record<string, Node>) {
     super(OPTIONS);
