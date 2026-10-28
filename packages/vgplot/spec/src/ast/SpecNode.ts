@@ -2,7 +2,7 @@
 import { SPEC } from '../constants.js';
 import type { Spec, SpecComponent, SpecHead } from '../spec/Spec.js';
 import { ASTNode } from './ASTNode.js';
-import type { DataNode } from './DataNode.js';
+import type { ParsedData } from './DataNode.js';
 import type { ParamNode } from './ParamNode.js';
 import type { PlotAttributeNode } from './PlotAttributeNode.js';
 import type { SelectionNode } from './SelectionNode.js';
@@ -13,7 +13,7 @@ export class SpecNode extends ASTNode<unknown, void, Spec> {
   readonly root: RootNode;
   readonly meta: Spec['meta'];
   readonly config: Spec['config'];
-  readonly data: Record<string, DataNode>;
+  readonly data: Record<string, ParsedData>;
   readonly params: Record<string, SelectionNode | ParamNode>;
   readonly plotDefaults: PlotAttributeNode[];
   // oxlint-disable-next-line typescript/explicit-member-accessibility class-methods-use-this typescript/explicit-module-boundary-types typescript/explicit-function-return-type
@@ -28,7 +28,7 @@ export class SpecNode extends ASTNode<unknown, void, Spec> {
     root: RootNode,
     meta: Spec['meta'],
     config: Spec['config'],
-    data: Record<string, DataNode>,
+    data: Record<string, ParsedData>,
     params: Record<string, SelectionNode | ParamNode>,
     plotDefaults: PlotAttributeNode[],
   ) {
