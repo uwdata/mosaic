@@ -11,6 +11,7 @@ import { SpecNode } from './ast/SpecNode.js';
 import { componentMap } from './config/components.js';
 import { inputNames } from './config/inputs.js';
 import { plotNames } from './config/plots.js';
+import type { TransformName } from './config/transforms.js';
 import { transformNames } from './config/transforms.js';
 import type { Spec, SpecComponent } from './spec/index.js';
 import { error, paramRef } from './util.js';
@@ -44,7 +45,7 @@ export function parseSpec(
   spec: Spec,
   options: {
     components?: ComponentsMap;
-    transforms?: Set<string>;
+    transforms?: Set<TransformName>;
     inputs?: Set<string>;
     plot?: PlotNames;
     params?: [string, SelectionNode | ParamNode][];
@@ -57,7 +58,7 @@ export function parseSpec(
 
 export class ParseContext {
   components: ComponentsMap;
-  transforms: Set<string>;
+  transforms: Set<TransformName>;
   inputs: Set<string>;
   plot: PlotNames;
   params: Map<string, SelectionNode | ParamNode>;
@@ -85,7 +86,7 @@ export class ParseContext {
     datasets = [],
   }: {
     components?: ComponentsMap;
-    transforms?: Set<string>;
+    transforms?: Set<TransformName>;
     inputs?: Set<string>;
     plot?: PlotNames;
     params?: [string, SelectionNode | ParamNode][];
