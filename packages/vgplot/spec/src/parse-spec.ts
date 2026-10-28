@@ -1,3 +1,4 @@
+import type { JSONValue } from './ast/ASTNode.js';
 import { parseData } from './ast/DataNode.js';
 import type { ParsedData } from './ast/DataNode.js';
 import { LiteralNode } from './ast/LiteralNode.js';
@@ -151,7 +152,7 @@ export class ParseContext {
    * @param value The value to test.
    * @returns An AST node for the input value.
    */
-  maybeParam(value: unknown): ParamRefNode | LiteralNode | null {
+  maybeParam<T extends JSONValue>(value: T): ParamRefNode | LiteralNode<T> | null {
     const name = paramRef(value);
     return name ? this.paramRef(name) : new LiteralNode(value);
   }
@@ -163,7 +164,7 @@ export class ParseContext {
    * @param value The value to test.
    * @returns An AST node for the input value.
    */
-  maybeSelection(value: unknown): ParamRefNode | LiteralNode {
+  maybeSelection<T extends JSONValue>(value: T): ParamRefNode | LiteralNode<T> {
     const name = paramRef(value);
     return name
       ? // @ts-expect-error requires overloads in `this.selectionRef` to filter out null

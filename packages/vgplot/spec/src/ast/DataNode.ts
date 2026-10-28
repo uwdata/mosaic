@@ -278,7 +278,6 @@ export class LiteralJSONDataNode extends QueryDataNode<'json'> {
     const d = `[\n    ${data.map((d) => JSON.stringify(d)).join(',\n    ')}\n  ]`;
     return `${ctx.ns()}loadObjects("${name}", ${d}${opt})`;
   }
-  // @ts-expect-error
   toJSON(): { type: 'json'; data: object[] } {
     const { format, data, options } = this;
     return { type: format, data, ...options.toJSON() };

@@ -11,7 +11,7 @@ import { ColumnParamRefNode } from './ColumnParamRefNode.js';
 import type { LiteralNode } from './LiteralNode.js';
 import type { ParamRefNode } from './ParamRefNode.js';
 
-type Params = (ColumnParamRefNode | ParamRefNode | LiteralNode | null)[];
+type Params = (ColumnParamRefNode | ParamRefNode | LiteralNode<string> | null)[];
 
 // oxlint-disable-next-line prefer-named-capture-group
 const tokenRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\${1,2}\w+)/g;
