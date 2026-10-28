@@ -1,5 +1,5 @@
-// oxlint-disable typescript/no-explicit-any
 import { parseData } from './ast/DataNode.js';
+import type { ParsedData } from './ast/DataNode.js';
 import { LiteralNode } from './ast/LiteralNode.js';
 import { parseParam, ParamNode } from './ast/ParamNode.js';
 import { ParamRefNode } from './ast/ParamRefNode.js';
@@ -47,8 +47,8 @@ export function parseSpec(
     transforms?: Set<string>;
     inputs?: Set<string>;
     plot?: PlotNames;
-    params?: any[];
-    datasets?: any[];
+    params?: [string, SelectionNode | ParamNode][];
+    datasets?: [string, ParsedData][];
   } = {},
 ): SpecNode {
   // oxlint-disable-next-line no-use-before-define
@@ -60,8 +60,8 @@ export class ParseContext {
   transforms: Set<string>;
   inputs: Set<string>;
   plot: PlotNames;
-  params: Map<unknown, unknown>;
-  datasets: Map<unknown, unknown>;
+  params: Map<string, SelectionNode | ParamNode>;
+  datasets: Map<string, ParsedData>;
   plotDefaults: PlotAttributeNode[];
   /**
    * Create a new parser context.
@@ -88,8 +88,8 @@ export class ParseContext {
     transforms?: Set<string>;
     inputs?: Set<string>;
     plot?: PlotNames;
-    params?: any[];
-    datasets?: any[];
+    params?: [string, SelectionNode | ParamNode][];
+    datasets?: [string, ParsedData][];
   } = {}) {
     this.components = components;
     this.transforms = transforms;
