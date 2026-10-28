@@ -15,6 +15,7 @@ export class ParamRefNode extends ASTNode {
   }
 
   instantiate(ctx: InstantiateContext): Param<unknown> | undefined {
+    // @ts-expect-error `Selection` is not assignable to `Param`
     return ctx.activeParams?.get(this.name);
   }
 

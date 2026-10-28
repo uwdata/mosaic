@@ -5,7 +5,7 @@ import type { SpecNode } from './ast/SpecNode.js';
 import { resolveExtensions } from './config/extensions.js';
 import { error } from './util.js';
 
-type APIContext = ReturnType<typeof createAPIContext>
+type APIContext = ReturnType<typeof createAPIContext>;
 
 /**
  * Generate a running web application (DOM content) for a Mosaic spec AST.
@@ -63,14 +63,14 @@ export async function astToDOM(
 interface InstantiateContextOptions {
   api: APIContext;
   baseURL: string | null;
-  params: Map<string, Param<unknown>>;
+  params: Map<string, Param<unknown> | Selection>;
   // oxlint-disable-next-line typescript/no-explicit-any
   plotDefaults: any[];
 }
 
 export class InstantiateContext {
   coordinator: Coordinator;
-  activeParams: Map<string, Param<unknown>>;
+  activeParams: Map<string, Param<unknown> | Selection>;
   api: APIContext;
   plotDefaults: unknown[];
   baseURL: string | null;
