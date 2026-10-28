@@ -18,7 +18,7 @@ import type { ParamRefNode } from './ParamRefNode.js';
 import type { WindowFrameNode } from './WindowFrameNode.js';
 import { parseWindowFrame } from './WindowFrameNode.js';
 
-type ParsedTransform = BinTransformNode | TransformNode | undefined;
+export type ParsedTransform = BinTransformNode | TransformNode | undefined;
 type Arg = ExpressionNode | ParsedTransform | ParamRefNode | LiteralNode<JSONValue> | null;
 
 type NotBin = Exclude<Transform, Bin>;
