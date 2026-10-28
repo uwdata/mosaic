@@ -4,6 +4,7 @@ import type { CodegenContext } from '../ast-to-esm.js';
 import type { TransformName } from '../config/transforms.js';
 import { SQL, TRANSFORM } from '../constants.js';
 import type { ParseContext } from '../parse-spec.js';
+import type { SQLExpression } from '../spec/Expression.js';
 import type { Bin, Transform } from '../spec/Transform.js';
 import { isObject } from '../util.js';
 import { ASTNode } from './ASTNode.js';
@@ -40,15 +41,16 @@ function toArray(value: unknown, ctx: ParseContext): Arg[] {
     : [value].flat().map((v) => maybeTransform(v, ctx) || ctx.maybeParam(v));
 }
 
+function isSQLExpression(value: object): value is SQLExpression {
+  return SQL in value;
+}
+
 export function maybeTransform(
   value: unknown,
   ctx: ParseContext,
 ): ExpressionNode | ParsedTransform {
   if (isObject(value)) {
-    return value[SQL]
-      ? // @ts-expect-error condition doesn't narrow to `{sql: string}`
-        parseExpression(value, ctx)
-      : parseTransform(value, ctx);
+    return isSQLExpression(value) ? parseExpression(value, ctx) : parseTransform(value, ctx);
   }
 }
 
