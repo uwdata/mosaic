@@ -22,6 +22,11 @@ export function parseOptions(spec: Spec, ctx: ParseContext): OptionsNode {
   return new OptionsNode(options);
 }
 
+/* TODO: @dangotbanned: `OptionsNode` is a pretty large soundness hole
+ * but is depended on by too many (currently untyped) things to fix right now.
+ * - Some cases can work with (very complex) type manipulation
+ * - Others seem too dynamic to model https://github.com/uwdata/mosaic/blob/09e0607b16d8bfd5ae3583a154877c18a0871e97/packages/vgplot/spec/src/ast/SelectionNode.js#L6-L15
+ */
 export class OptionsNode extends ASTNode<Instantiate, string, Spec> {
   readonly options: Record<string, Node>;
   constructor(options: Record<string, Node>) {
