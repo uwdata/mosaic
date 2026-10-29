@@ -236,6 +236,15 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1
 
+  bin:
+    dependencies:
+      '@uwdata/mosaic-spec':
+        specifier: workspace:^
+        version: link:../packages/vgplot/spec
+      '@uwdata/vgplot':
+        specifier: workspace:^
+        version: link:../packages/vgplot/vgplot
+
   packages/examples/svelte-example:
     dependencies:
       '@uwdata/mosaic-core':
