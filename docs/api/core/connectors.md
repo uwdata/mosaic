@@ -6,12 +6,14 @@ A connector instance should expose a `query(query, options)` method that returns
 The _query_ argument is an object with the following properties:
 
 - _sql_: The SQL query to evaluate.
-- _type_: The query format type, either `"exec"` (no return value) or `"arrow"`. This property is required; servers reject a request without it.
+- _type_: The query format type, either `"exec"` (no return value), `"arrow"`, or `"preagg"`. This property is required; servers reject a request without it.
 - Any additional connector-specific options.
 
 The optional _options_ argument is an object with a _signal_ property: an [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that aborts when the coordinator no longer needs the result, because the coordinator was [cleared](./coordinator#clear) or the query exceeded the coordinator [_timeout_](./coordinator#constructor). A connector can use the signal to stop work early. The coordinator rejects the request either way, so connectors that ignore the signal still work.
 
 For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `ArrowIPCBytes` value, which is an `ArrayBuffer`, a `Uint8Array`, or an array of `Uint8Array` chunks; the coordinator decodes them to an Arrow table.
+
+A `"preagg"` request asks the connector to materialize the given SELECT query and resolves to `{ reference, createdAt }`, where `reference` is `{ catalog, schema, table }` with `schema` a namespace path (outermost first), plus optional informational `rows` and `bytes` when the server reports them. The coordinator queries `TableRefNode([catalog, ...schema, table])`.
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
@@ -46,6 +48,8 @@ A data server on a different origin must allow these requests in its CORS prefli
 
 When the coordinator aborts a request, the connector aborts its HTTP request, though the data server may still finish running the query.
 
+Failed requests reject with a [`ConnectorError`](#connectorerror) carrying the HTTP `status`. A JSON error envelope from the server also supplies `code` and, for `table_not_found`, `reference`.
+
 ## wasmConnector
 
 `wasmConnector(options)`
@@ -58,3 +62,16 @@ The supported options are:
 - _duckdb_: An existing DuckDB-WASM instance to query. If unspecified, a new instance is created.
 - _connection_: An existing connection to a DuckDB-WASM instance to use. If unspecified, a new connection is created.
 - _log_: A Boolean flag (default `false`) that indicates if DuckDB-WASM logs should be written to the browser console. This option is ignored when an existing _duckdb_ instance option is provided.
+
+## ConnectorError
+
+`new ConnectorError(message, fields)`
+
+The error a connector rejects with when a request fails. The optional _fields_ object may provide `code`, `status`, `reference`, and `cause`, which are exposed as instance properties:
+
+- _code_: The server's machine-readable error-envelope code. The one value the coordinator acts on is exported as `ConnectorErrorCode.TableNotFound`; treat any other value as a generic failure.
+- _status_: The HTTP status code, for requests made over HTTP.
+- _reference_: The `{ catalog, schema, table }` reference of a missing managed table. Present only for `table_not_found`, where the coordinator uses it to rebuild the table.
+- _cause_: The underlying error, when the failure wraps one.
+
+The codes a server may report are `bad_request`, `unauthenticated`, `forbidden`, `table_not_found`, `unsupported_command`, `resource_exhausted`, `deadline_exceeded`, and `internal_error`. Of these the coordinator acts only on `table_not_found`, rebuilding the table named by `reference`. Failures the client raises itself carry a descriptive message and no code: a `preagg` response it cannot parse, a build that exceeds its timeout, or a build it declines to start because a recent failure for the same query is still cooling down.
