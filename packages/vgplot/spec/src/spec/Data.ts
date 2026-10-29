@@ -1,3 +1,5 @@
+export type JSONValue = string | number | boolean | { [key: string]: JSONValue } | JSONValue[];
+
 export interface DataBaseOptions {
   /**
    * A list of column names to extract upon load.
@@ -32,7 +34,7 @@ export type DataQuery = string;
 /**
  * An inline array of data objects to treat as JSON data.
  */
-export type DataArray = object[];
+export type DataArray = Record<string, JSONValue>[];
 
 /**
  * A data definition that loads an external data file.
@@ -169,7 +171,7 @@ export interface DataJSONObjects extends DataBaseOptions {
   /**
    * An array of inline objects in JSON-style format.
    */
-  data: object[];
+  data: Record<string, JSONValue>[];
 }
 
 export type DataDefinition =
