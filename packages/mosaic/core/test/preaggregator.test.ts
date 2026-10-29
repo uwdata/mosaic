@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import type { CreateQuery, ExprNode, FilterExpr } from '@uwdata/mosaic-sql';
+import type { CreateQuery, ExprNode, FilterExpr, ScaleOptions } from '@uwdata/mosaic-sql';
 import { Query, add, argmax, argmin, avg, columns, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
-import { clausePoint, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
+import { clauseComposite, clauseInterval, clauseIntervals, clausePoint, type CompositeMetadata, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
 import { NodeConnector } from '../src/connectors/NodeConnector.js';
@@ -450,5 +450,109 @@ describe('PreAggregator', () => {
         .select({ measure: variance('v') });
     };
     expect(await run(query)).toStrictEqual([0.5, true]);
+  });
+});
+
+describe('PreAggregator selection clauses', () => {
+  const linear = (domain: [number, number]): ScaleOptions => (
+    { type: 'linear', domain, range: [0, 100] }
+  );
+
+  it('supports interval clauses', async () => {
+    const clause = clauseIntervals(['x', 'y'], [[1, 3], [7, 9]], {
+      source: {},
+      scales: [linear([0, 10]), linear([0, 10])]
+    });
+    const { value, info } = await runQuery(sum('x'), clause);
+    expect([value, !!info]).toStrictEqual([6, true]);
+  });
+
+  it('supports single interval clauses', async () => {
+    const clause = clauseInterval('x', [1, 3], { source: {}, scale: linear([0, 10]) });
+    const { value, info } = await runQuery(sum('x'), clause);
+    expect([value, !!info]).toStrictEqual([6, true]);
+  });
+
+  it('supports single-field composite interval clauses', async () => {
+    const clause = clauseComposite([
+      { type: 'interval', field: 'x', value: [1, 3], scale: linear([0, 10]) }
+    ], { source: {} });
+    const { value, info } = await runQuery(sum('x'), clause);
+    expect([value, !!info]).toStrictEqual([6, true]);
+  });
+
+  it('supports interval clauses with identity scales', async () => {
+    const clause = clauseInterval('x', [1, 3], { source: {}, scale: { type: 'identity' } });
+    const { value, info } = await runQuery(sum('x'), clause);
+    expect([value, !!info]).toStrictEqual([6, true]);
+  });
+
+  it('supports interval clauses with identity scales and a domain', async () => {
+    const scale: ScaleOptions = { type: 'identity', domain: [0, 10] };
+    const clause = clauseInterval('x', [1, 3], { source: {}, scale });
+    const { value, info } = await runQuery(sum('x'), clause);
+    expect([value, !!info]).toStrictEqual([6, true]);
+  });
+
+  it('does not support interval clauses with missing domain or range', async () => {
+    const clause = clauseInterval('x', [1, 3], { source: {}, scale: { type: 'linear' } });
+    const { value, info } = await runQuery(sum('x'), clause);
+    expect([value, !!info]).toStrictEqual([6, false]);
+  });
+
+  it('supports composite interval and point clauses', async () => {
+    const clause = clauseComposite([
+      { type: 'interval', field: 'x', value: [1, 3], scale: linear([0, 10]) },
+      { type: 'point', field: 'dim', value: ['b'] }
+    ], { source: {} });
+    const { value, info } = await runQuery(sum('x'), clause);
+    expect([value, !!info]).toStrictEqual([3, true]);
+  });
+
+  it('supports composite clauses with null dimensions', async () => {
+    const clause = clauseComposite([
+      { type: 'interval', field: 'x', value: null, scale: linear([0, 10]) },
+      { type: 'point', field: 'dim', value: ['b'] }
+    ], { source: {} });
+    const { value, info } = await runQuery(sum('x'), clause);
+    expect([value, !!info]).toStrictEqual([7, true]);
+  });
+
+  it('supports composite clauses with null point values', async () => {
+    const clause = clauseComposite([
+      { type: 'point', field: 'dim', value: ['b'] },
+      { type: 'point', field: 'x', value: [null, 4] }
+    ], { source: {} });
+    const { value, info } = await runQuery(count(), clause);
+    expect([Number(value), !!info]).toStrictEqual([2, true]);
+  });
+
+  it('supports composite clauses with empty point values', async () => {
+    const clause = clauseComposite([
+      { type: 'interval', field: 'x', value: [1, 3], scale: linear([0, 10]) },
+      { type: 'point', field: 'dim', value: [] }
+    ], { source: {} });
+    const { value, info } = await runQuery(count(), clause);
+    expect([Number(value), !!info]).toStrictEqual([0, true]);
+  });
+
+  it('does not support composite clauses with unsupported scales', async () => {
+    const band = { type: 'band', domain: [1, 3] } as unknown as ScaleOptions;
+    const clause = clauseComposite([
+      { type: 'interval', field: 'order', value: [1, 2], scale: band },
+      { type: 'point', field: 'x', value: [3, 4] }
+    ], { source: {} });
+    const { value, info } = await runQuery(sum('x'), clause);
+    expect([value, !!info]).toStrictEqual([7, false]);
+  });
+
+  it('does not support composite clauses with mismatched dimensions', async () => {
+    const clause = clauseComposite([
+      { type: 'point', field: 'dim', value: ['b'] },
+      { type: 'point', field: 'x', value: [3, 4] }
+    ], { source: {} });
+    clause.meta = { type: 'composite', dims: [{ type: 'point' }] } as CompositeMetadata;
+    const { value, info } = await runQuery(sum('x'), clause);
+    expect([value, !!info]).toStrictEqual([7, false]);
   });
 });
