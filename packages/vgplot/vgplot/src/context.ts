@@ -1,6 +1,6 @@
-import { coordinator as _coordinator, Coordinator } from "@uwdata/mosaic-core";
-import { NamedPlots } from "./plot/named-plots.js";
-import * as vgplot from "./api.js";
+import { coordinator as _coordinator, Coordinator } from '@uwdata/mosaic-core';
+import { NamedPlots } from './plot/named-plots.js';
+import * as vgplot from './api.js';
 
 type VgPlot = typeof vgplot;
 type Extensions = Record<string, unknown>;
