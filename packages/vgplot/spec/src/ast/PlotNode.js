@@ -27,7 +27,7 @@ export function parsePlot(spec, ctx) {
 
 export class PlotNode extends ParentNode {
   constructor(children, attributes) {
-    super(PLOT,children);
+    super(PLOT, children);
     this.attributes = attributes;
   }
 
