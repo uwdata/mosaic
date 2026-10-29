@@ -1,7 +1,8 @@
 // oxlint-disable no-unused-vars
 import { SPEC } from '../constants.js';
 import type { Spec, SpecComponent, SpecHead } from '../spec/Spec.js';
-import { ASTNode } from './ASTNode.js';
+import type { ASTNode } from './ASTNode.js';
+import { ParentNode } from './ASTNode.js';
 import type { DataNode } from './DataNode.js';
 import type { ParamNode } from './ParamNode.js';
 import type { PlotAttributeNode } from './PlotAttributeNode.js';
@@ -9,36 +10,24 @@ import type { SelectionNode } from './SelectionNode.js';
 
 export type RootNode = ASTNode<HTMLElement | SVGSVGElement, void, SpecComponent>;
 
-export class SpecNode extends ASTNode<unknown, void, Spec> {
-  readonly root: RootNode;
-  readonly meta: Spec['meta'];
-  readonly config: Spec['config'];
-  readonly data: Record<string, DataNode>;
-  readonly params: Record<string, SelectionNode | ParamNode>;
-  readonly plotDefaults: PlotAttributeNode[];
-  // oxlint-disable-next-line typescript/explicit-member-accessibility class-methods-use-this typescript/explicit-module-boundary-types typescript/explicit-function-return-type
-  instantiate(_ctx) {
+export class SpecNode extends ParentNode<unknown, Spec> {
+  // oxlint-disable-next-line class-methods-use-this
+  instantiate(_ctx: unknown): never {
     throw new Error('Method not implemented.');
   }
-  // oxlint-disable-next-line typescript/explicit-member-accessibility class-methods-use-this typescript/explicit-module-boundary-types typescript/explicit-function-return-type
-  codegen(_ctx) {
+  // oxlint-disable-next-line class-methods-use-this
+  codegen(_ctx: unknown): never {
     throw new Error('Method not implemented.');
   }
   constructor(
-    root: RootNode,
-    meta: Spec['meta'],
-    config: Spec['config'],
-    data: Record<string, DataNode>,
-    params: Record<string, SelectionNode | ParamNode>,
-    plotDefaults: PlotAttributeNode[],
+    readonly root: RootNode,
+    readonly meta: Spec['meta'],
+    readonly config: Spec['config'],
+    readonly data: Record<string, DataNode>,
+    readonly params: Record<string, SelectionNode | ParamNode>,
+    readonly plotDefaults: PlotAttributeNode[],
   ) {
     super(SPEC, [root]);
-    this.root = root;
-    this.meta = meta;
-    this.config = config;
-    this.data = data;
-    this.params = params;
-    this.plotDefaults = plotDefaults;
   }
 
   // oxlint-disable-next-line max-statements
