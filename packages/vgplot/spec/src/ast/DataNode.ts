@@ -15,9 +15,9 @@ import type {
   DataSpatial,
   DataJSON,
   DataJSONObjects,
+  JSONValue,
 } from '../spec/Data.js';
 import { isArray, isString } from '../util.js';
-import type { JSONValue } from './ASTNode.js';
 import { ASTNode } from './ASTNode.js';
 import type { OptionsNode } from './OptionsNode.js';
 import { parseOptions } from './OptionsNode.js';
@@ -259,9 +259,9 @@ export class JSONDataNode extends FileDataNode<'json', 'loadJSON'> {
 }
 
 export class LiteralJSONDataNode extends QueryDataNode<'json'> {
-  readonly data: Record<string, unknown>[];
+  readonly data: DataJSONObjects['data'];
   readonly options: OptionsNode;
-  constructor(name: string, data: Record<string, unknown>[], options: OptionsNode) {
+  constructor(name: string, data: DataJSONObjects['data'], options: OptionsNode) {
     super(name, JSON_DATA);
     this.data = data;
     this.options = options;
@@ -279,8 +279,8 @@ export class LiteralJSONDataNode extends QueryDataNode<'json'> {
     const d = `[\n    ${data.map((d) => JSON.stringify(d)).join(',\n    ')}\n  ]`;
     return `${ctx.ns()}loadObjects("${name}", ${d}${opt})`;
   }
-  // @ts-expect-error
-  toJSON(): { type: 'json'; data: object[] } {
+
+  toJSON(): Record<string, JSONValue> {
     const { format, data, options } = this;
     return { type: format, data, ...options.toJSON() };
   }
