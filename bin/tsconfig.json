@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "outDir": "dist"
+    },
+    "extends": "../tsconfig.base.json",
+    "files": [
+        "prepare-examples.js"
+    ],
+    "references": [
+        {
+            "path": "../packages/vgplot/spec"
+        },
+        {
+            "path": "../packages/vgplot/vgplot"
+        }
+    ]
+}
