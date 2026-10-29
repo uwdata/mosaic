@@ -46,9 +46,9 @@ export class OptionsNode extends ASTNode {
     return opt.length ? `{${ctx.maybeLineWrap(opt)}}` : '';
   }
 
-  // @ts-ignore
   toJSON() {
     const { options } = this;
+    /**@type {Record<string, any>} */
     const opt = {};
     for (const key in options) {
       opt[key] = options[key].toJSON();
