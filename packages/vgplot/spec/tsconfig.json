@@ -4,7 +4,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "strict": true,
-    "noImplicitAny":false
+    "noImplicitAny": false
   },
   "references": [
     { "path": "../../mosaic/core" },

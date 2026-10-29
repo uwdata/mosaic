@@ -5,7 +5,7 @@ import type { SpecNode } from './ast/SpecNode.js';
 import { resolveExtensions } from './config/extensions.js';
 import { error } from './util.js';
 
-type APIContext = ReturnType<typeof createAPIContext>
+type APIContext = ReturnType<typeof createAPIContext>;
 
 /**
  * Generate a running web application (DOM content) for a Mosaic spec AST.
