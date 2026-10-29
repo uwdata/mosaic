@@ -36,9 +36,7 @@ let hadFailure = false;
 const specToTS = spec => {
   return `import { Spec } from '@uwdata/mosaic-spec';
 
-export const spec : Spec = ${JSON.stringify(spec, 
-// @ts-expect-error Argument of type 'number' is not assignable to parameter of type '(string | number)[]'.
-0, 2)};
+export const spec : Spec = ${JSON.stringify(spec, null, 2)};
 `;
 }
 
@@ -63,8 +61,7 @@ const files = await Promise.allSettled((await readdir(specDir))
         // write JSON spec to tests
         writeFile(
           resolve(jsonTestDir, `${base}.json`),
-          // @ts-expect-error Argument of type 'number' is not assignable to parameter of type '(string | number)[]'.
-          JSON.stringify(ast.toJSON(), 0, 2)
+          JSON.stringify(ast.toJSON(), null, 2)
         ),
         // write TS JSON spec to tests
         writeFile(
@@ -76,8 +73,7 @@ const files = await Promise.allSettled((await readdir(specDir))
         // write JSON spec to docs
         writeFile(
           resolve(jsonDocsDir, `${base}.json`),
-          // @ts-expect-error Argument of type 'number' is not assignable to parameter of type '(string | number)[]'.
-          JSON.stringify(spec, 0, 2)
+          JSON.stringify(spec, null, 2)
         ),
         // write ESM DSL spec to docs
         writeFile(resolve(esmDocsDir, `${base}.js`), code),
@@ -105,8 +101,7 @@ console.log(JSON.stringify(
   files
     .filter(x => x.status === 'fulfilled')
     .map(x => x.value),
-  // @ts-expect-error Argument of type 'number' is not assignable to parameter of type '(string | number)[]'.
-  0, 2
+  null, 2
 ));
 
 // output unsuccessful example errors
