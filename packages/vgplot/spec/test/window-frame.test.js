@@ -72,19 +72,19 @@ const cases = [
     name: 'interval mixed with a number',
     frame: { range: [{ days: 6 }, 0] },
     esm: 'vg.frameRange([vg.days(6), 0])',
-    sql: 'RANGE BETWEEN INTERVAL 6 DAYS PRECEDING AND CURRENT ROW'
+    sql: "RANGE BETWEEN INTERVAL '6 DAYS' PRECEDING AND CURRENT ROW"
   },
   {
     name: 'number mixed with an interval',
     frame: { range: [0, { days: 6 }] },
     esm: 'vg.frameRange([0, vg.days(6)])',
-    sql: 'RANGE BETWEEN CURRENT ROW AND INTERVAL 6 DAYS FOLLOWING'
+    sql: "RANGE BETWEEN CURRENT ROW AND INTERVAL '6 DAYS' FOLLOWING"
   },
   {
     name: 'intervals only',
     frame: { range: [{ days: 6 }, { days: 0 }] },
     esm: 'vg.frameRange([vg.days(6), vg.days(0)])',
-    sql: 'RANGE BETWEEN INTERVAL 6 DAYS PRECEDING AND INTERVAL 0 DAYS FOLLOWING'
+    sql: "RANGE BETWEEN INTERVAL '6 DAYS' PRECEDING AND INTERVAL '0 DAYS' FOLLOWING"
   },
   {
     // no `sql`: only the spec side of an exclude clause is covered here
