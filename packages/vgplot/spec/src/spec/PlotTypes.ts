@@ -517,3 +517,29 @@ export type CurveName =
   | 'step'
   | 'step-after'
   | 'step-before';
+
+/** The set of known channel names. */
+export type ChannelName =
+  | ScaleName
+  | 'ariaLabel'
+  | 'fill'
+  | 'fillOpacity'
+  | 'fontSize'
+  | 'geometry'
+  | 'height'
+  | 'href'
+  | 'path'
+  | 'rotate'
+  | 'src'
+  | 'stroke'
+  | 'strokeOpacity'
+  | 'strokeWidth'
+  | 'text'
+  | 'title'
+  | 'weight'
+  | 'width'
+  | 'x1'
+  | 'x2'
+  | 'y1'
+  | 'y2'
+  | 'z';

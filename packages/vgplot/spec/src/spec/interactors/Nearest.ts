@@ -1,4 +1,5 @@
 import { ParamRef } from '../Param.js';
+import type { ChannelName } from '../PlotTypes.js';
 
 /** Options for nearest interactors. */
 export interface NearestOptions {
@@ -15,7 +16,7 @@ export interface NearestOptions {
    * settings: a `nearestX` interactor selects the `['x']` channels, while
    * a `nearest` interactor selects the `['x', 'y']` channels.
    */
-  channels?: string[];
+  channels?: ChannelName[];
   /**
    * The fields (database column names) to use in generated selection clause
    * predicates. If unspecified, the fields backing the selected *channels*
