@@ -7,6 +7,7 @@ from typing import Literal as L  # ruff: ignore[camelcase-imported-as-acronym]
 import httpx2
 import msgspec
 import pyarrow as pa
+import pytest
 from httpx2 import RequestError
 
 if TYPE_CHECKING:
@@ -43,6 +44,7 @@ def raise_for_status(response: httpx2.Response) -> httpx2.Response:
         raise RequestError(message)
 
 
+@pytest.mark.smoke
 def test_query_arrow(client_session: TestClient) -> None:
     response = client_session.get("/", params=q("SELECT 1 AS a"))
     raise_for_status(response)
