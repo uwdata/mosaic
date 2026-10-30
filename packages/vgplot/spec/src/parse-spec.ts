@@ -26,6 +26,25 @@ type ComponentsMap = Map<string, (arg0: RootComponent, arg1: ParseContext) => Ro
 type RootComponent = SpecComponent & { $schema?: string };
 
 /**
+ * Optional parse options object.
+ *
+ * @property components Map of component names to parse functions.
+ * @property transforms The names of allowed transform functions.
+ * @property inputs The names of supported input widgets.
+ * @property plot The names of supported plot elements.
+ * @property params An array of [name, node] pairs of pre-parsed Param or Selection AST nodes.
+ * @property datasets An array of [name, node] pairs of pre-parsed dataset definition AST nodes.
+ */
+interface ParseOptions {
+  components?: ComponentsMap;
+  transforms?: Set<string>;
+  inputs?: Set<string>;
+  plot?: PlotNames;
+  params?: any[];
+  datasets?: any[];
+}
+
+/**
  * Parse a Mosaic specification to an AST (abstract syntax tree).
  *
  * @param spec The input specification.
@@ -38,19 +57,9 @@ type RootComponent = SpecComponent & { $schema?: string };
  *   nodes.
  * @param [options.datasets] An array of [name, node] pairs of pre-parsed dataset definition AST
  *   nodes.
- * @returns {SpecNode} The top-level AST spec node.
+ * @returns The top-level AST spec node.
  */
-export function parseSpec(
-  spec: Spec,
-  options: {
-    components?: ComponentsMap;
-    transforms?: Set<string>;
-    inputs?: Set<string>;
-    plot?: PlotNames;
-    params?: any[];
-    datasets?: any[];
-  } = {},
-): SpecNode {
+export function parseSpec(spec: Spec, options: ParseOptions = {}): SpecNode {
   // oxlint-disable-next-line no-use-before-define
   return new ParseContext(options).parse(spec);
 }
@@ -63,19 +72,7 @@ export class ParseContext {
   params: Map<unknown, unknown>;
   datasets: Map<unknown, unknown>;
   plotDefaults: PlotAttributeNode[];
-  /**
-   * Create a new parser context.
-   *
-   * @param [options]
-   * @param [options.components] Map of component names to parse functions.
-   * @param [options.transforms] The names of allowed transform functions.
-   * @param [options.inputs] The names of supported input widgets.
-   * @param [options.plot] The names of supported plot elements.
-   * @param [options.params] An array of [name, node] pairs of pre-parsed Param or Selection AST
-   *   nodes.
-   * @param [options.datasets] An array of [name, node] pairs of pre-parsed dataset definition AST
-   *   nodes.
-   */
+  /** Create a new parser context. */
   constructor({
     components = componentMap(),
     transforms = transformNames(),
@@ -83,14 +80,7 @@ export class ParseContext {
     plot = plotNames(),
     params = [],
     datasets = [],
-  }: {
-    components?: ComponentsMap;
-    transforms?: Set<string>;
-    inputs?: Set<string>;
-    plot?: PlotNames;
-    params?: any[];
-    datasets?: any[];
-  } = {}) {
+  }: ParseOptions = {}) {
     this.components = components;
     this.transforms = transforms;
     this.inputs = inputs;
