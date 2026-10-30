@@ -1,4 +1,4 @@
-import type { Coordinator, Param, Selection } from '@uwdata/mosaic-core';
+import type { Coordinator, Param, QueryType, Selection } from '@uwdata/mosaic-core';
 import { createAPIContext, loadExtension } from '@uwdata/vgplot';
 
 import type { SpecNode } from './ast/SpecNode.js';
@@ -26,7 +26,7 @@ export async function astToDOM(
   // oxlint-disable-next-line no-use-before-define
   const ctx = new InstantiateContext({ plotDefaults, ...options });
 
-  const queries: string[] = [];
+  const queries: QueryType[] = [];
 
   // Process database extensions
   const exts = resolveExtensions(ast);
