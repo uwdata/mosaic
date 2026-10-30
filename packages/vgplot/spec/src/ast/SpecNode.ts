@@ -1,6 +1,8 @@
-// oxlint-disable no-unused-vars
 import { SPEC } from '../constants.js';
+import type { HConcat } from '../spec/HConcat.js';
+import type { Plot } from '../spec/Plot.js';
 import type { Spec, SpecComponent, SpecHead } from '../spec/Spec.js';
+import type { VConcat } from '../spec/VConcat.js';
 import type { ASTNode } from './ASTNode.js';
 import { ParentNode } from './ASTNode.js';
 import type { DataNode } from './DataNode.js';
@@ -8,14 +10,20 @@ import type { ParamNode } from './ParamNode.js';
 import type { PlotAttributeNode } from './PlotAttributeNode.js';
 import type { SelectionNode } from './SelectionNode.js';
 
-export type RootNode = ASTNode<HTMLElement | SVGSVGElement, void, SpecComponent>;
+type HasChildren = Plot | HConcat | VConcat;
+type NoChildren = Exclude<SpecComponent, HasChildren>;
+type DomElement = HTMLElement | SVGSVGElement;
+
+export type RootNode =
+  | ParentNode<DomElement, HasChildren>
+  | ASTNode<DomElement, string, NoChildren>;
 
 export class SpecNode extends ParentNode<unknown, Spec> {
-  // oxlint-disable-next-line class-methods-use-this
+  // oxlint-disable-next-line class-methods-use-this no-unused-vars
   instantiate(_ctx: unknown): never {
     throw new Error('Method not implemented.');
   }
-  // oxlint-disable-next-line class-methods-use-this
+  // oxlint-disable-next-line class-methods-use-this no-unused-vars
   codegen(_ctx: unknown): never {
     throw new Error('Method not implemented.');
   }
