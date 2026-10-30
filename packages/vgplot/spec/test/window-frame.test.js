@@ -99,9 +99,9 @@ describe('Window frames', () => {
     describe(name, () => {
       it('converts to JSON unchanged', () => {
         const json = parseSpec(spec(frame)).toJSON();
-        assert("plot" in json)
+        assert('plot' in json)
         const plot = json.plot[0];
-        assert("y" in plot)
+        assert('y' in plot)
         expect(plot.y).toEqual(spec(frame).plot[0].y);
       });
 
