@@ -1,4 +1,4 @@
-// oxlint-disable no-unused-vars no-use-before-define typescript/no-invalid-void-type
+// oxlint-disable no-unused-vars no-use-before-define
 import type { CreateQuery } from '@uwdata/mosaic-sql';
 import { createTable } from '@uwdata/mosaic-sql';
 
@@ -142,7 +142,7 @@ function codegenOptions(options: OptionsNode, ctx: CodegenContext): string {
 export abstract class DataNode<
   F extends Format = Format,
   J extends JSONValue = JSONValue,
-> extends ASTNode<string | void, string | void, J> {
+> extends ASTNode<CreateQuery, J> {
   readonly name: string;
   readonly format: F;
   constructor(name: string, format: F) {
@@ -154,23 +154,17 @@ export abstract class DataNode<
 
 export abstract class QueryDataNode<F extends Format> extends DataNode<F> {
   /** Instantiate a table creation query. */
-  abstract instantiateQuery(ctx: InstantiateContext): string | void;
+  abstract instantiateQuery(ctx: InstantiateContext): CreateQuery;
 
   /** Code generate a table creation query. */
-  abstract codegenQuery(ctx: CodegenContext): string | void;
+  abstract codegenQuery(ctx: CodegenContext): string;
 
-  instantiate(ctx: InstantiateContext): string | void {
-    const query = this.instantiateQuery(ctx);
-    if (query) {
-      return query;
-    }
+  instantiate(ctx: InstantiateContext): CreateQuery {
+    return this.instantiateQuery(ctx);
   }
 
-  codegen(ctx: CodegenContext): string | void {
-    const query = this.codegenQuery(ctx);
-    if (query) {
-      return query;
-    }
+  codegen(ctx: CodegenContext): string {
+    return this.codegenQuery(ctx);
   }
 }
 
@@ -179,22 +173,18 @@ export class TableDataNode extends QueryDataNode<'table'> {
   readonly options: OptionsNode;
   constructor(name: string, query: string, options: OptionsNode) {
     super(name, TABLE_DATA);
-    this.query = query?.trim();
+    this.query = query.trim();
     this.options = options;
   }
-  //@ts-expect-error  Type 'CreateQuery' is not assignable to type 'string | void'.
-  instantiateQuery(ctx: InstantiateContext): CreateQuery | void {
+
+  instantiateQuery(ctx: InstantiateContext): CreateQuery {
     const { name, query, options } = this;
-    if (query) {
-      return ctx.api.createTable(name, query, options.instantiate(ctx));
-    }
+    return ctx.api.createTable(name, query, options.instantiate(ctx));
   }
 
-  codegenQuery(ctx: CodegenContext): string | void {
+  codegenQuery(ctx: CodegenContext): string {
     const { name, query, options } = this;
-    if (query) {
-      return `\`${createTable(name, query, options.instantiate(ctx))}\``;
-    }
+    return `\`${createTable(name, query, options.instantiate(ctx))}\``;
   }
 
   toJSON(): { type: 'table'; query: string } {
@@ -213,7 +203,7 @@ export class FileDataNode<F extends FileType, M extends LoadMethod> extends Quer
     this.method = method;
     this.options = options;
   }
-  //@ts-expect-error  Type 'CreateQuery' is not assignable to type 'string | void'.
+
   instantiateQuery(ctx: InstantiateContext): CreateQuery {
     const { name, method, file, options } = this;
     const url = resolveFileURL(file, ctx.baseURL);
@@ -266,7 +256,7 @@ export class LiteralJSONDataNode extends QueryDataNode<'json'> {
     this.data = data;
     this.options = options;
   }
-  //@ts-expect-error  Type 'CreateQuery' is not assignable to type 'string | void'.
+
   instantiateQuery(ctx: InstantiateContext): CreateQuery {
     const { name, data, options } = this;
     return ctx.api.loadObjects(name, data, options.instantiate(ctx));

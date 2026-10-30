@@ -14,9 +14,7 @@ type HasChildren = Plot | HConcat | VConcat;
 type NoChildren = Exclude<SpecComponent, HasChildren>;
 type DomElement = HTMLElement | SVGSVGElement;
 
-export type RootNode =
-  | ParentNode<DomElement, HasChildren>
-  | ASTNode<DomElement, string, NoChildren>;
+export type RootNode = ParentNode<DomElement, HasChildren> | ASTNode<DomElement, NoChildren>;
 
 export class SpecNode extends ParentNode<unknown, Spec> {
   // oxlint-disable-next-line class-methods-use-this no-unused-vars
