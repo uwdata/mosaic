@@ -12,9 +12,9 @@ it('instantiates nested transforms and SQL expressions', () => {
     }],
   });
   const root = ast.root;
-  assert("children" in root)
+  assert('children' in root)
   const child = root.children[0]
-  assert("options" in child)
+  assert('options' in child)
   const options = child.options
   assert.instanceOf(options, OptionsNode)
   const actual = options.instantiate({ api: { sql, sum } }).y;
