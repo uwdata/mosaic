@@ -130,6 +130,10 @@
   connectorMenu.addEventListener('change', setConnector);
   exampleMenu.addEventListener('change', reload);
   sourceMenu.addEventListener('change', reload);
+  window.addEventListener('popstate', () => {
+    initFromURL();
+    setConnector();
+  });
   qlogToggle.addEventListener('input', setQueryLog);
   cacheToggle.addEventListener('input', setCache);
   consolidateToggle.addEventListener('input', setConsolidate);
@@ -151,13 +155,61 @@
     cacheBytes.textContent = `${(bytes / 1048576).toFixed(1)} MiB`;
   }, 500);
 
+  initFromURL();
   setQueryLog();
   setCache();
   setConsolidate();
   setPreAggregate();
   setConnector();
 
+  function initFromURL() {
+    const params = new URLSearchParams(location.search);
+    let spec = params.get('spec');
+    const connector = params.get('connector');
+
+    if (!spec && !connector && location.search) {
+      const raw = location.search.slice(1);
+      if (raw && !raw.includes('=')) {
+        spec = raw;
+      }
+    }
+
+    if (connector) {
+      connectorMenu.value = connector;
+    }
+
+    if (spec) {
+      const exists = Array.from(exampleMenu.options).some(opt => opt.value === spec);
+      if (!exists) {
+        const opt = document.createElement('option');
+        opt.value = spec;
+        opt.textContent = spec;
+        exampleMenu.appendChild(opt);
+      }
+      exampleMenu.value = spec;
+    }
+  }
+
+  function updateURL() {
+    const url = new URL(window.location.href);
+    const spec = exampleMenu.value;
+    const connector = connectorMenu.value;
+
+    if (spec && spec !== 'none') {
+      url.searchParams.set('spec', spec);
+    } else {
+      url.searchParams.delete('spec');
+    }
+
+    if (connector) {
+      url.searchParams.set('connector', connector);
+    }
+
+    history.replaceState(null, '', url);
+  }
+
   async function setConnector() {
+    updateURL();
     await setDatabaseConnector(connectorMenu.value);
     reload();
   }
@@ -179,6 +231,7 @@
   }
 
   function reload() {
+    updateURL();
     load(exampleMenu.value, sourceMenu.value);
   }
 
@@ -186,25 +239,20 @@
     view.replaceChildren();
 
     let dir = '../specs/yaml';
-    if (name === 'none' && location.search) {
-      // get example name from query string
-      name = location.search.slice(1);
-      if (name.startsWith('dev:')) {
-        // route to local spec for testing / exploration
-        name = name.slice(4);
-        dir = './specs';
-      }
+    let file = name;
+    if (file.startsWith('dev:')) {
+      file = file.slice(4);
+      dir = './specs';
     }
-    if (name !== 'none') {
+
+    if (file !== 'none') {
       const spec = yaml.parse(
-        await fetch(`${dir}/${name}.yaml`).then(res => res.text())
+        await fetch(`${dir}/${file}.yaml`).then(res => res.text())
       );
 
-      // options for output generation
       const baseURL = location.origin + '/';
       const options = connectorMenu.value === 'wasm' ? { baseURL } : {};
 
-      // parse and load spec
       const ast = parseSpec(spec);
       const el = await (source === 'esm' ? loadESM : loadDOM)(ast, options);
       view.replaceChildren(el);
