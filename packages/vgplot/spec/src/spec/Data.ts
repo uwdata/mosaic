@@ -1,4 +1,4 @@
-export type JSONValue = string | number | boolean | { [key: string]: JSONValue } | JSONValue[];
+export type JSONValue = string | number | boolean | null | { [key: string]: JSONValue } | JSONValue[];
 
 export interface DataBaseOptions {
   /**
