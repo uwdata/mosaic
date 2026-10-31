@@ -1,4 +1,4 @@
-// oxlint-disable typescript/no-explicit-any
+import type { ParsedData } from './ast/DataNode.js';
 import { parseData } from './ast/DataNode.js';
 import { LiteralNode } from './ast/LiteralNode.js';
 import { parseParam, ParamNode } from './ast/ParamNode.js';
@@ -40,28 +40,8 @@ interface ParseOptions {
   transforms?: Set<string>;
   inputs?: Set<string>;
   plot?: PlotNames;
-  params?: any[];
-  datasets?: any[];
-}
-
-/**
- * Parse a Mosaic specification to an AST (abstract syntax tree).
- *
- * @param spec The input specification.
- * @param [options] Optional parse options object.
- * @param [options.components] Map of component names to parse functions.
- * @param [options.transforms] The names of allowed transform functions.
- * @param [options.inputs] The names of supported input widgets.
- * @param [options.plot] The names of supported plot elements.
- * @param [options.params] An array of [name, node] pairs of pre-parsed Param or Selection AST
- *   nodes.
- * @param [options.datasets] An array of [name, node] pairs of pre-parsed dataset definition AST
- *   nodes.
- * @returns The top-level AST spec node.
- */
-export function parseSpec(spec: Spec, options: ParseOptions = {}): SpecNode {
-  // oxlint-disable-next-line no-use-before-define
-  return new ParseContext(options).parse(spec);
+  params?: [string, SelectionNode | ParamNode][];
+  datasets?: [string, ParsedData][];
 }
 
 export class ParseContext {
@@ -69,8 +49,8 @@ export class ParseContext {
   transforms: Set<string>;
   inputs: Set<string>;
   plot: PlotNames;
-  params: Map<unknown, unknown>;
-  datasets: Map<unknown, unknown>;
+  params: Map<string, SelectionNode | ParamNode>;
+  datasets: Map<string, ParsedData>;
   plotDefaults: PlotAttributeNode[];
   /** Create a new parser context. */
   constructor({
@@ -112,10 +92,8 @@ export class ParseContext {
 
     return new SpecNode(
       this.parseComponent(root),
-      // oxlint-disable-next-line no-undefined
-      meta ? { ...meta } : undefined,
-      // oxlint-disable-next-line no-undefined
-      config ? { ...config } : undefined,
+      meta,
+      config,
       Object.fromEntries(this.datasets),
       Object.fromEntries(this.params),
       this.plotDefaults,
@@ -124,9 +102,7 @@ export class ParseContext {
 
   parseComponent(spec: RootComponent): RootNode {
     for (const [key, parse] of this.components) {
-      const value = spec[key];
-      // oxlint-disable-next-line no-eq-null unicorn/no-null
-      if (value != null) {
+      if (key in spec) {
         return parse(spec, this);
       }
     }
@@ -195,7 +171,6 @@ export class ParseContext {
    *   selection references (true).
    * @returns A node referring to the param or selection.
    */
-  // oxlint-disable-next-line typescript/no-inferrable-types
   selectionRef(name: string, strict: boolean = false): ParamRefNode | null {
     const p = this.params.get(name);
     if (strict && p && !(p instanceof SelectionNode)) {
@@ -209,4 +184,23 @@ export class ParseContext {
   error(message: string, data: unknown): never {
     error(message, data);
   }
+}
+
+/**
+ * Parse a Mosaic specification to an AST (abstract syntax tree).
+ *
+ * @param spec The input specification.
+ * @param [options] Optional parse options object.
+ * @param [options.components] Map of component names to parse functions.
+ * @param [options.transforms] The names of allowed transform functions.
+ * @param [options.inputs] The names of supported input widgets.
+ * @param [options.plot] The names of supported plot elements.
+ * @param [options.params] An array of [name, node] pairs of pre-parsed Param or Selection AST
+ *   nodes.
+ * @param [options.datasets] An array of [name, node] pairs of pre-parsed dataset definition AST
+ *   nodes.
+ * @returns The top-level AST spec node.
+ */
+export function parseSpec(spec: Spec, options: ParseOptions = {}): SpecNode {
+  return new ParseContext(options).parse(spec);
 }
