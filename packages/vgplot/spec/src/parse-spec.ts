@@ -12,7 +12,7 @@ import { componentMap } from './config/components.js';
 import { inputNames } from './config/inputs.js';
 import { plotNames } from './config/plots.js';
 import { transformNames } from './config/transforms.js';
-import type { Spec, SpecComponent } from './spec/index.js';
+import type { JSONValue, Spec, SpecComponent } from './spec/index.js';
 import { error, paramRef } from './util.js';
 
 interface PlotNames {
@@ -116,7 +116,7 @@ export class ParseContext {
    * @param value The value to test.
    * @returns An AST node for the input value.
    */
-  maybeParam(value: unknown): ParamRefNode | LiteralNode | null {
+  maybeParam(value: string): ParamRefNode | LiteralNode<string> {
     const name = paramRef(value);
     return name ? this.paramRef(name) : new LiteralNode(value);
   }
@@ -128,12 +128,9 @@ export class ParseContext {
    * @param value The value to test.
    * @returns An AST node for the input value.
    */
-  maybeSelection(value: unknown): ParamRefNode | LiteralNode {
+  maybeSelection<T extends JSONValue>(value: T): ParamRefNode | LiteralNode<T> {
     const name = paramRef(value);
-    return name
-      ? // @ts-expect-error requires overloads in `this.selectionRef` to filter out null
-        this.selectionRef(name)
-      : new LiteralNode(value);
+    return name ? this.selectionRef(name) : new LiteralNode(value);
   }
 
   /**
@@ -147,12 +144,8 @@ export class ParseContext {
   paramRef(
     name: string,
     makeNode: () => ParamNode | SelectionNode = () => new ParamNode(),
-  ): ParamRefNode | null {
+  ): ParamRefNode {
     const { params } = this;
-    if (!name) {
-      // oxlint-disable-next-line unicorn/no-null
-      return null;
-    }
     let p = params.get(name);
     if (!p) {
       p = makeNode();
@@ -171,6 +164,8 @@ export class ParseContext {
    *   selection references (true).
    * @returns A node referring to the param or selection.
    */
+  selectionRef(name: string): ParamRefNode;
+  selectionRef(name: string, strict: true): ParamRefNode | null;
   selectionRef(name: string, strict: boolean = false): ParamRefNode | null {
     const p = this.params.get(name);
     if (strict && p && !(p instanceof SelectionNode)) {
