@@ -5,7 +5,7 @@ import type { Spec, SpecComponent, SpecHead } from '../spec/Spec.js';
 import type { VConcat } from '../spec/VConcat.js';
 import type { ASTNode } from './ASTNode.js';
 import { ParentNode } from './ASTNode.js';
-import type { DataNode } from './DataNode.js';
+import type { ParsedData } from './DataNode.js';
 import type { ParamNode } from './ParamNode.js';
 import type { PlotAttributeNode } from './PlotAttributeNode.js';
 import type { SelectionNode } from './SelectionNode.js';
@@ -29,7 +29,7 @@ export class SpecNode extends ParentNode<unknown, Spec> {
     readonly root: RootNode,
     readonly meta: Spec['meta'],
     readonly config: Spec['config'],
-    readonly data: Record<string, DataNode>,
+    readonly data: Record<string, ParsedData>,
     readonly params: Record<string, SelectionNode | ParamNode>,
     readonly plotDefaults: PlotAttributeNode[],
   ) {

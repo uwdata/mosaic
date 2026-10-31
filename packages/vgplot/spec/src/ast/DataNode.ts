@@ -38,6 +38,7 @@ type ParseFn =
   | typeof parseJSONData
   | typeof parseSpatialData;
 type DataTyped = DataCSV | DataJSON | DataParquet | DataSpatial | DataTable;
+export type ParsedData = ReturnType<ParseFn>;
 
 const dataFormats = new Map<Format, ParseFn>([
   [TABLE_DATA, parseTableData],
@@ -48,11 +49,7 @@ const dataFormats = new Map<Format, ParseFn>([
 ]);
 
 /** Parse a data definition spec. */
-export function parseData(
-  name: string,
-  spec: DataDefinition,
-  ctx: ParseContext,
-): ReturnType<ParseFn> {
+export function parseData(name: string, spec: DataDefinition, ctx: ParseContext): ParsedData {
   const def = resolveDataSpec(spec, ctx);
   // oxlint-disable-next-line typescript/no-non-null-assertion (`def.type` has been narrowed to all that exist)
   const parse = dataFormats.get(def.type)!;
