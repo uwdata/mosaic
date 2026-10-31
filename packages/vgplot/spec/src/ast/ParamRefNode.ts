@@ -1,4 +1,4 @@
-import type { Param } from '@uwdata/mosaic-core';
+import type * as mc from '@uwdata/mosaic-core';
 
 import type { InstantiateContext } from '../ast-to-dom.js';
 import type { CodegenContext } from '../ast-to-esm.js';
@@ -12,7 +12,7 @@ export class ParamRefNode extends ASTNode {
     super(PARAMREF);
   }
 
-  instantiate(ctx: InstantiateContext): Param<unknown> {
+  instantiate(ctx: InstantiateContext): mc.Param<unknown> {
     const param = ctx.activeParams.get(this.name);
     return param ?? error(`${this.name} is not an active param`, param);
   }

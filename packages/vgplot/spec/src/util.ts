@@ -65,12 +65,8 @@ const re =
   /^(?:[-+]\d{2})?\d{4}(?:-\d{2}(?:-\d{2})?)?(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?(?:Z|[-+]\d{2}:?\d{2})?)?$/;
 
 // Adapted from https://github.com/mbostock/isoformat/
-export function isoparse<T>(string: string, fallback: T): T | Date {
-  // oxlint-disable-next-line no-param-reassign no-implicit-coercion
-  if (!re.test((string += ''))) {
-    return fallback;
-  }
-  return new Date(string);
+export function isISO8601(string: string): boolean {
+  return Boolean(string && re.test(string));
 }
 
 export function camelCaseToSnake(name: string): string {
