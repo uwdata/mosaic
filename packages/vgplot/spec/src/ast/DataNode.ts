@@ -51,7 +51,8 @@ const dataFormats = new Map<Format, ParseFn>([
 /** Parse a data definition spec. */
 export function parseData(name: string, spec: DataDefinition, ctx: ParseContext): ParsedData {
   const def = resolveDataSpec(spec, ctx);
-  // oxlint-disable-next-line typescript/no-non-null-assertion (`def.type` has been narrowed to all that exist)
+  // (`def.type` has been narrowed to all that exist)
+  // oxlint-disable-next-line typescript/no-non-null-assertion
   const parse = dataFormats.get(def.type)!;
   return parse(name, def, ctx);
 }
