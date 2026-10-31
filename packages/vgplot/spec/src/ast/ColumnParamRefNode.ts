@@ -8,10 +8,8 @@ import { ASTNode } from './ASTNode.js';
 import type { ParamRefNode } from './ParamRefNode.js';
 
 export class ColumnParamRefNode extends ASTNode<ColumnRefNode, ParamRef> {
-  readonly param: ParamRefNode;
-  constructor(param: ParamRefNode) {
+  constructor(readonly param: ParamRefNode) {
     super(COLUMPARAMREF);
-    this.param = param;
   }
 
   instantiate(ctx: InstantiateContext): ColumnRefNode {
