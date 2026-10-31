@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, assert } from 'vitest';
 import { InstantiateContext, astToESM, parseSpec } from '../src/index.js';
 
 // A window transform's frame (`rows`, `range`, `groups`) is a pair of offsets
@@ -99,7 +99,10 @@ describe('Window frames', () => {
     describe(name, () => {
       it('converts to JSON unchanged', () => {
         const json = parseSpec(spec(frame)).toJSON();
-        expect(json.plot[0].y).toEqual(spec(frame).plot[0].y);
+        assert('plot' in json)
+        const plot = json.plot[0];
+        assert('y' in plot)
+        expect(plot.y).toEqual(spec(frame).plot[0].y);
       });
 
       it('round trips JSON parsing', () => {

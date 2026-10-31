@@ -1,4 +1,4 @@
-import { ASTNode } from './ASTNode.js';
+import { ParentNode } from './ASTNode.js';
 import { HCONCAT } from '../constants.js';
 
 export function parseHConcat(spec, ctx) {
@@ -6,7 +6,7 @@ export function parseHConcat(spec, ctx) {
   return new HConcatNode(children);
 }
 
-export class HConcatNode extends ASTNode {
+export class HConcatNode extends ParentNode {
 
   constructor(children) {
     super(HCONCAT, children);

@@ -1,6 +1,10 @@
 import { ASTNode } from './ASTNode.js';
 import { OPTIONS } from '../constants.js';
 
+/**
+ * @param {{ [x: string]: any; }} spec
+ * @param {import("../parse-spec.js").ParseContext} ctx
+ */
 export function parseOptions(spec, ctx) {
   const options = {};
   for (const key in spec) {
@@ -25,6 +29,7 @@ export class OptionsNode extends ASTNode {
 
   instantiate(ctx) {
     const { options } = this;
+    /**@type {Record<string,any>} */
     const opt = {};
     for (const key in options) {
       opt[key] = options[key].instantiate(ctx);
@@ -43,6 +48,7 @@ export class OptionsNode extends ASTNode {
 
   toJSON() {
     const { options } = this;
+    /**@type {Record<string, any>} */
     const opt = {};
     for (const key in options) {
       opt[key] = options[key].toJSON();

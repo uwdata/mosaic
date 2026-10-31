@@ -17,6 +17,7 @@ async function xScaleType(columnType, ...attributes) {
     ...attributes
   );
   await clientsReady(el);
+  // @ts-expect-error Property 'scale' does not exist on type 'ChildNode'.
   return el.firstChild.scale('x').type;
 }
 
