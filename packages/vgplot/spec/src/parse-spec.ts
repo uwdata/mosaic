@@ -116,7 +116,7 @@ export class ParseContext {
    * @param value The value to test.
    * @returns An AST node for the input value.
    */
-  maybeParam(value: string): ParamRefNode | LiteralNode<string> {
+  maybeParam<T extends JSONValue>(value: T): ParamRefNode | LiteralNode<T> {
     const name = paramRef(value);
     return name ? this.paramRef(name) : new LiteralNode(value);
   }
