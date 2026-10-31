@@ -17,7 +17,8 @@ it('instantiates nested transforms and SQL expressions', () => {
   assert('options' in child)
   const options = child.options
   assert.instanceOf(options, OptionsNode)
-  const actual = options.instantiate({ api: { sql, sum } }).y;
+  const actual = options.instantiate(new InstantiateContext()).y;
+  assert(isNode(actual))
   expect(isAggregateExpression(actual)).toBe(1);
   expect(String(actual)).toBe(String(sum(sum(sql`amount`)).orderby('day')));
 });
