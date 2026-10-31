@@ -1,6 +1,6 @@
 import { expect, it, assert} from 'vitest';
-import { cpcEstimate, cpcSketch, isAggregateExpression, kllQuantile, kllSketch, sql, sum } from '@uwdata/mosaic-sql';
-import { OptionsNode, parseSpec} from '../src/index.js';
+import { cpcEstimate, cpcSketch, isAggregateExpression, kllQuantile, kllSketch, sql, sum, isNode } from '@uwdata/mosaic-sql';
+import { InstantiateContext, OptionsNode, parseSpec} from '../src/index.js';
 
 it('instantiates nested transforms and SQL expressions', () => {
   const ast = parseSpec({
@@ -17,7 +17,8 @@ it('instantiates nested transforms and SQL expressions', () => {
   assert('options' in child)
   const options = child.options
   assert.instanceOf(options, OptionsNode)
-  const actual = options.instantiate({ api: { sql, sum } }).y;
+  const actual = options.instantiate(new InstantiateContext()).y;
+  assert(isNode(actual))
   expect(isAggregateExpression(actual)).toBe(1);
   expect(String(actual)).toBe(String(sum(sum(sql`amount`)).orderby('day')));
 });
