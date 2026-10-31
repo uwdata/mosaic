@@ -2,9 +2,9 @@ import type * as mc from '@uwdata/mosaic-core';
 
 import type { InstantiateContext } from '../ast-to-dom.js';
 import type { CodegenContext } from '../ast-to-esm.js';
-import { PARAM, VALUE, SELECT } from '../constants.js';
+import { PARAM, VALUE } from '../constants.js';
 import type { ParseContext } from '../parse-spec.js';
-import type { ParamDate, ParamDefinition, ParamLiteral } from '../spec/Param.js';
+import type { Param, ParamDate, ParamDefinition, ParamLiteral, Selection } from '../spec/Param.js';
 import { isArray, isISO8601, isObject } from '../util.js';
 import { ASTNode } from './ASTNode.js';
 import { LiteralNode } from './LiteralNode.js';
@@ -91,6 +91,10 @@ class ParamDateNode extends ParamNode<Date, ParamDate> {
   }
 }
 
+function isSelection(value: Param | ParamDate | Selection): value is Selection {
+  return typeof value.select !== 'undefined' && value.select !== VALUE;
+}
+
 export function parseParam(
   spec: ParamDefinition,
   ctx: ParseContext,
@@ -102,7 +106,7 @@ export function parseParam(
   if (!isObject(param)) {
     return new ParamValueNode(new LiteralNode(param));
   }
-  if (SELECT in param && param.select !== VALUE) {
+  if (isSelection(param)) {
     return parseSelection(param, ctx);
   }
   if ('date' in param) {

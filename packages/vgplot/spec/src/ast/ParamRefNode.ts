@@ -12,7 +12,7 @@ export class ParamRefNode extends ASTNode {
     super(PARAMREF);
   }
 
-  instantiate(ctx: InstantiateContext): mc.Param<unknown> {
+  instantiate(ctx: InstantiateContext): mc.Param<unknown> | mc.Selection {
     const param = ctx.activeParams.get(this.name);
     return param ?? error(`${this.name} is not an active param`, param);
   }
