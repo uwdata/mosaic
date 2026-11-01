@@ -19,4 +19,8 @@ export class LiteralNode<T extends JSONValue> extends ASTNode<T, T> {
   toJSON(): T {
     return this.value;
   }
+
+  static null(): LiteralNode<null> {
+    return new LiteralNode(null);
+  }
 }
