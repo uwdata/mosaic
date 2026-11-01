@@ -76,3 +76,7 @@ export function camelCaseToSnake(name: string): string {
   // oxlint-disable-next-line prefer-named-capture-group
   return name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
 }
+
+export function mapTuple<T1, T2, R>(tuple: [T1, T2], fn: (v: T1 | T2) => R): [R, R] {
+  return tuple.map(fn) as [R, R];
+}
