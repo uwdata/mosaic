@@ -161,6 +161,11 @@ jobs:
           cache-workspaces: |-
             ./packages/server/duckdb-server-rust
 
+      # rust-cache prunes files but not directories outside cargo profile dirs, so it restores
+      # an empty duckdb-sources tree that makes the libduckdb-sys build script fail with ENOTEMPTY.
+      - name: Remove stale DuckDB sources
+        run: rm -rf ./packages/server/duckdb-server-rust/target/duckdb-sources
+
       - name: Format
         run: cargo fmt --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml -- --check
       - name: Clippy
