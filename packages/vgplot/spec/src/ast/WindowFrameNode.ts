@@ -74,8 +74,7 @@ export function parseWindowFrame(spec: WindowOptions, ctx: ParseContext): Window
   }
 
   const extent = mapTuple(value, (v) =>
-    isObject(v) ? parseTransform(v, ctx) : new LiteralNode(v),
+    isObject(v) ? (parseTransform(v, ctx) ?? LiteralNode.null()) : new LiteralNode(v),
   );
-  //@ts-expect-error 'undefined' is not assignable to type 'FrameValue'.
   return new WindowFrameNode(type, extent, spec.exclude);
 }
