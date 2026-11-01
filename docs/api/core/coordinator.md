@@ -22,7 +22,16 @@ Create a new Mosaic Coordinator to manage all database communication for clients
 * _ipc_: Arrow IPC extraction options used when decoding `"arrow"` query results. If unspecified, date and timestamp values are extracted as JavaScript `Date` objects. Setting new options on the query manager clears the query cache.
 * _timeout_: The query timeout in milliseconds (default none). A query that does not complete in time is rejected with a `TimeoutError`, and its connector request is aborted. The clock starts when the query is sent to the connector, not while it waits in the queue. The timeout applies to every query, including `exec` queries that load data or build pre-aggregated tables, so choose a value above the slowest of these. A timed-out `exec` query can still take effect in the database, and later queries wait until the connector stops or completes it.
 * _consolidate_ Boolean flag to enable/disable query consolidation (default `true`).
-* _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _schema_ option (default `'mosaic'`) indicates the database schema in which materialized view tables should be created for pre-aggregated data.
+* _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _schema_ option (default `'mosaic'`) indicates the database schema in which materialized view tables should be created for pre-aggregated data. The _useSketches_ flag (default `false`) enables pre-aggregation of distinct count and quantile aggregates by approximating them with mergeable sketches, as described below. The _enabled_, _schema_, and _useSketches_ settings can also be changed later via properties of `coordinator.preaggregator`.
+
+### Sketch aggregates
+
+Exact distinct counts and quantiles can not be computed by merging partial results, so by default queries containing `count(DISTINCT ...)`, `median`, or `quantile` aggregates are not pre-aggregated. When _useSketches_ is `true`, Mosaic instead approximates these aggregates using mergeable sketches from the DuckDB [`datasketches` community extension](https://duckdb.org/community_extensions/extensions/datasketches), which it installs and loads as needed. Pre-aggregated tables store one sketch per bin, and selection updates merge the sketches of the selected bins.
+
+* `count(DISTINCT x)` and `approx_count_distinct(x)` use a [HyperLogLog sketch](https://datasketches.apache.org/docs/HLL/HllSketches.html) (`lg_k = 12`, about 1.6% relative standard error), rounded to the nearest integer. Input values are hashed, so any column type is supported.
+* `median(x)`, `quantile(x, p)`, `quantile_cont(x, p)`, `quantile_disc(x, p)` and `approx_quantile(x, p)` use a [KLL sketch](https://datasketches.apache.org/docs/KLL/KLLSketch.html) (`k = 200`, about 1.65% normalized rank error). The quantile probability _p_ must be a single number literal. Results are values from the input data (no interpolation), so for example the median of `[3, 4]` is `3` rather than `3.5`. KLL sketches support numeric inputs only; for other types (such as dates) the pre-aggregated table can not be created, so Mosaic logs an error and falls back to standard queries.
+
+Queries that use sketch aggregates directly, such as [`hllSketch`](../sql/aggregate-functions#hllsketch) or [`kllSketch`](../sql/aggregate-functions#kllsketch), are pre-aggregated regardless of the _useSketches_ setting.
 
 ## Query cache
 

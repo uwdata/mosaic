@@ -3,7 +3,7 @@ import type { AggregateNode, ColumnRefNode, ExprNode, TableRefNode } from '@uwda
 import type { MosaicClient } from '../MosaicClient.js';
 import { resolvePositional } from '../util/positional.js';
 import { baseExpression, baseTable } from './lineage.js';
-import { sufficientStatistics } from './sufficient-statistics.js';
+import { isSketchAggregate, sufficientStatistics } from './sufficient-statistics.js';
 
 // result of determining columns for preaggregation optimization
 export interface PreAggColumnsResult {
@@ -21,16 +21,23 @@ export interface PreAggColumnsResult {
   qualify: ExprNode[];
   // The base table of the client query
   source: TableRefNode;
+  // Flag indicating if the preaggregate table contains sketch columns
+  sketches: boolean;
 }
 
 /**
  * Determine pre-aggregation columns for a given Mosaic client.
  * @param client The Mosaic client.
+ * @param useSketches Flag indicating if distinct count and quantile
+ *  aggregates should be approximated using mergeable sketches.
  * @returns An object with necessary column data to generate pre-aggregated
  *  columns, or null if the client can't be optimized or the client query
  *  contains an invalid or unsupported expression.
  */
-export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null {
+export function preaggColumns(
+  client: MosaicClient,
+  useSketches: boolean = false
+): PreAggColumnsResult | null {
   if (!client.filterStable) return null;
   const q = client.query();
 
@@ -60,7 +67,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
 
     // iterate over select clauses and analyze expressions
     for (const { alias, expr } of select) {
-      const result = analyzeExpression(expr, aggrs, preagg, avg);
+      const result = analyzeExpression(expr, aggrs, preagg, avg, useSketches);
       if (result) {
         // rewrite original select clause to use preaggregates
         output[alias] = result;
@@ -74,15 +81,15 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
 
     // analyze any orderby expressions
     const orderby = q._orderby
-      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg, useSketches) ?? expr);
 
     // analyze any having expressions
     const having = q._having
-      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg, useSketches) ?? expr);
 
     // analyze any qualify expressions
     const qualify = q._qualify
-      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg, useSketches) ?? expr);
 
     // bail if query has no aggregates
     if (!aggrs.size) return null;
@@ -107,7 +114,8 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
       output,
       having,
       qualify,
-      source
+      source,
+      sketches: Object.values(preagg).some(isSketchAggregate)
     };
   } catch {
     // bail if unsupported aggregate was encountered
@@ -125,7 +133,8 @@ function analyzeExpression(
   expr: ExprNode,
   aggrs: Map<AggregateNode, ExprNode>,
   preagg: Record<string, ExprNode>,
-  avg: (ref: ColumnRefNode) => ExprNode
+  avg: (ref: ColumnRefNode) => ExprNode,
+  useSketches: boolean
 ) {
   // bail if there is an aggregate we can't analyze
   // a value > 1 indicates an aggregate in verbatim text
@@ -134,12 +143,9 @@ function analyzeExpression(
   const nodes = collectAggregates(expr!);
   if (nodes.length) {
     for (const node of nodes) {
-      // bail if distinct aggregate
-      if (node.isDistinct) throw new Error();
-
       // bail if aggregate function is unsupported
       // otherwise add output aggregate to rewrite map
-      const agg = sufficientStatistics(node, preagg, avg);
+      const agg = sufficientStatistics(node, preagg, avg, useSketches);
       if (!agg) throw new Error();
       aggrs.set(node, agg);
     }

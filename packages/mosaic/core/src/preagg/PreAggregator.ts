@@ -1,4 +1,4 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, isInDistinct, int32, literal, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, isInDistinct, int32, literal, loadExtension, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
 import type { BinMethod, ClauseDimension, ClauseSource, CompositeMetadata, IntervalDimension, IntervalMetadata, SelectionClause } from '../clause/index.js';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
@@ -20,6 +20,12 @@ export interface PreAggregateOptions {
   schema?: string;
   /** Flag to enable or disable the pre-aggregation. This flag can be updated later via the `enabled` property. */
   enabled?: boolean;
+  /**
+   * Flag to approximate distinct count and quantile aggregates using mergeable
+   * sketches from the DuckDB `datasketches` extension (default false). This
+   * flag can be updated later via the `useSketches` property.
+   */
+  useSketches?: boolean;
 }
 
 type ActivePredicate = (clause?: SelectionClause) => MaybeArray<ExprNode>;
@@ -63,6 +69,7 @@ export class PreAggregator {
   private mc: Coordinator;
   private _schema: string;
   private _enabled: boolean;
+  private _useSketches: boolean;
 
   /**
    * Create a new manager of materialized views of pre-aggregated data.
@@ -71,13 +78,15 @@ export class PreAggregator {
    */
   constructor(coordinator: Coordinator, {
     schema = 'mosaic',
-    enabled = true
+    enabled = true,
+    useSketches = false
   }: PreAggregateOptions = {}) {
     this.entries = new Map();
     this.active = null;
     this.mc = coordinator;
     this._schema = schema;
     this._enabled = enabled;
+    this._useSketches = useSketches;
   }
 
   /**
@@ -100,6 +109,29 @@ export class PreAggregator {
    */
   get enabled(): boolean {
     return this._enabled;
+  }
+
+  /**
+   * Set the sketch approximation state of this manager. If true, distinct
+   * count and quantile aggregates are approximated using mergeable sketches
+   * from the DuckDB `datasketches` community extension, enabling
+   * pre-aggregation for these otherwise unsupported aggregates. Upon changes,
+   * any local state is cleared.
+   * @param state The sketch approximation state to set.
+   */
+  set useSketches(state: boolean) {
+    if (this._useSketches !== state) {
+      this.clear();
+      this._useSketches = state;
+    }
+  }
+
+  /**
+   * Get the sketch approximation state of this manager.
+   * @returns The current sketch approximation state.
+   */
+  get useSketches(): boolean {
+    return this._useSketches;
   }
 
   /**
@@ -203,7 +235,7 @@ export class PreAggregator {
     }
 
     // get non-active materialized view columns
-    const preaggCols = preaggColumns(client);
+    const preaggCols = preaggColumns(client, this.useSketches);
 
     let info: PreAggregateInfo | typeof Skip | null;
     if (!preaggCols) {
@@ -224,6 +256,7 @@ export class PreAggregator {
         return null;
       }
       const createQuery = [
+        ...(preaggCols.sketches ? [loadExtension('datasketches', 'community')] : []),
         createSchema(schema),
         createTable(_info.table, _info.create, { temp: false })
       ];
