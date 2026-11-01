@@ -124,20 +124,16 @@ export class TransformNode extends ASTNode<SQLExpr, NotBin> {
 
     //@ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.
     let expr = ctx.api[name](...args.map((a) => a.instantiate(ctx)));
-    if (distinct) {
-      // @ts-expect-error bad narrowing
+    if (distinct && 'distinct' in expr) {
       expr = expr.distinct();
     }
-    if (orderby.length) {
-      // @ts-expect-error bad narrowing
+    if (orderby.length && 'orderby' in expr) {
       expr = expr.orderby(orderby.map((v) => v.instantiate(ctx)));
     }
-    if (partitionby.length) {
-      // @ts-expect-error bad narrowing
+    if (partitionby.length && 'partitionby' in expr) {
       expr = expr.partitionby(partitionby.map((v) => v.instantiate(ctx)));
     }
-    if (frame) {
-      // @ts-expect-error bad narrowing
+    if (frame && 'frame' in expr) {
       expr = expr.frame(frame.instantiate(ctx));
     }
     return expr;
