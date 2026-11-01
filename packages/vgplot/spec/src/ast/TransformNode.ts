@@ -60,16 +60,16 @@ function simplify<T>(array: T[]): T | T[] | '' {
 export function parseTransform(
   spec: Transform | IntervalTransform,
   ctx: ParseContext,
-  allowBin:false
-): TransformNode | undefined
+  allowBin: false,
+): TransformNode | undefined;
 export function parseTransform(
   spec: Transform | IntervalTransform,
   ctx: ParseContext,
-): BinTransformNode | TransformNode | undefined
+): BinTransformNode | TransformNode | undefined;
 export function parseTransform(
   spec: Transform | IntervalTransform,
   ctx: ParseContext,
-  allowBin:boolean = true
+  allowBin: boolean = true,
 ): BinTransformNode | TransformNode | undefined {
   // oxlint-disable-next-line no-undefined
   let name: TransformName | undefined = undefined;
