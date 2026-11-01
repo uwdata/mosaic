@@ -10,10 +10,16 @@ import { isArray, isObject, mapTuple } from '../util.js';
 import { ASTNode } from './ASTNode.js';
 import { LiteralNode } from './LiteralNode.js';
 import type { ParamRefNode } from './ParamRefNode.js';
-import type { ParsedTransformNode } from './TransformNode.js';
+import type { TransformNode } from './TransformNode.js';
 import { parseTransform } from './TransformNode.js';
 
-type FrameValue = ParsedTransformNode | LiteralNode<number | null>;
+/**
+ * Excludes `BinTransformNode` as the inferred typing for `@uwdata/mosaic-plot/bin` suggests it is
+ * incompatible.
+ *
+ * Unclear if that is intentional
+ */
+type FrameValue = TransformNode | LiteralNode<number | null>;
 type FrameExtent = ParamRefNode | [FrameValue, FrameValue];
 type FrameExclude = WindowOptions['exclude'];
 
@@ -33,7 +39,6 @@ export class WindowFrameNode extends ASTNode<
     const { type, extent, exclude } = this;
     return new sql.WindowFrameNode(
       type,
-      //@ts-expect-error Type '{ (mark: any, channel: any): { [x: string]: BinTransformNode; }; [Transform]: boolean; }' is not assignable to type 'FrameValue'
       isArray(extent) ? mapTuple(extent, (v) => v.instantiate(ctx)) : extent.instantiate(ctx),
       exclude?.toUpperCase() as sql.FrameExclude,
     );
@@ -74,7 +79,7 @@ export function parseWindowFrame(spec: WindowOptions, ctx: ParseContext): Window
   }
 
   const extent = mapTuple(value, (v) =>
-    isObject(v) ? (parseTransform(v, ctx) ?? LiteralNode.null()) : new LiteralNode(v),
+    isObject(v) ? (parseTransform(v, ctx, false) ?? LiteralNode.null()) : new LiteralNode(v),
   );
   return new WindowFrameNode(type, extent, spec.exclude);
 }
