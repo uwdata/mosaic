@@ -80,3 +80,17 @@ export function camelCaseToSnake(name: string): string {
 export function mapTuple<T1, T2, R>(tuple: [T1, T2], fn: (v: T1 | T2) => R): [R, R] {
   return tuple.map(fn) as [R, R];
 }
+
+// oxlint-disable typescript/no-explicit-any
+/**
+ * Rewrap a {@link Set} or {@link Map} so it can be used as a typeguard.
+ *
+ * @returns A predicate function
+ */
+export function makeIsIn<T extends string>(
+  collection: ReadonlySet<T> | ReadonlyMap<T, unknown>,
+): (value: any) => value is T {
+  return (value: any): value is T => collection.has(value);
+}
+
+// oxlint-enable typescript/no-explicit-any

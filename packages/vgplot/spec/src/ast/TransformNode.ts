@@ -9,8 +9,14 @@ import { SQL, TRANSFORM } from '../constants.js';
 import type { ParseContext } from '../parse-spec.js';
 import type { SQLExpression } from '../spec/Expression.js';
 import type { IntervalTransform } from '../spec/Interval.js';
-import type { Bin, Transform, TransformField } from '../spec/Transform.js';
-import { isObject } from '../util.js';
+import type {
+  AggregateTransform,
+  Bin,
+  Transform,
+  TransformField,
+  WindowTransform,
+} from '../spec/Transform.js';
+import { isObject, makeIsIn } from '../util.js';
 import { ASTNode } from './ASTNode.js';
 import type { ExpressionNode } from './ExpressionNode.js';
 import { parseExpression } from './ExpressionNode.js';
@@ -27,6 +33,7 @@ type Arg = ExpressionNode | ParsedTransformNode | ParamRefNode | LiteralNode<any
 
 type NotBin = Exclude<Transform, Bin>;
 type NotBinName = Exclude<TransformName, 'bin'>;
+type TransformAny = Transform | IntervalTransform;
 
 type SQLFunction = InstantiateContext['api'][NotBinName];
 type SQLExpr = ReturnType<SQLFunction>;
@@ -38,8 +45,20 @@ interface TransformOptions {
   frame: WindowFrameNode | null;
 }
 
+/**
+ * Return true if an object's keys intersect with {@link AggregateTransform} or
+ * {@link WindowTransform} options.
+ */
+const hasWindowOptions = (() => {
+  const predicate = makeIsIn(
+    new Set(['distinct', 'orderby', 'partitionby', 'rows', 'range', 'groups'] as const),
+  );
+  return (spec: object): spec is AggregateTransform | WindowTransform =>
+    typeof Object.keys(spec).find(predicate) !== 'undefined';
+})();
+
 export function maybeTransform(
-  value: SQLExpression | Transform | IntervalTransform,
+  value: SQLExpression | TransformAny,
   ctx: ParseContext,
 ): ExpressionNode | ParsedTransformNode | undefined {
   if (isObject(value)) {
@@ -47,7 +66,7 @@ export function maybeTransform(
   }
 }
 
-function toArray(value: TransformField | [TransformField], ctx: ParseContext): Arg[] {
+function toArray(value: TransformField | TransformField[], ctx: ParseContext): Arg[] {
   // @ts-expect-error my brain is melting
   return [value ?? []].flat().map((v) => maybeTransform(v, ctx) ?? ctx.maybeParam(v));
 }
@@ -57,32 +76,25 @@ function simplify<T>(array: T[]): T | T[] | '' {
   return array.length === 0 ? '' : array.length === 1 ? array[0] : array;
 }
 
+// oxlint-disable no-undefined unicorn/no-null
 export function parseTransform(
-  spec: Transform | IntervalTransform,
+  spec: TransformAny,
   ctx: ParseContext,
   allowBin: false,
 ): TransformNode | undefined;
 export function parseTransform(
-  spec: Transform | IntervalTransform,
+  spec: TransformAny,
   ctx: ParseContext,
 ): BinTransformNode | TransformNode | undefined;
 export function parseTransform(
-  spec: Transform | IntervalTransform,
+  spec: TransformAny,
   ctx: ParseContext,
   allowBin: boolean = true,
 ): BinTransformNode | TransformNode | undefined {
-  // oxlint-disable-next-line no-undefined
-  let name: TransformName | undefined = undefined;
-  for (const key in spec) {
-    if (ctx.transforms.has(key as TransformName)) {
-      name = key as TransformName;
-    }
-  }
-
+  const name = Object.keys(spec).find(makeIsIn(ctx.transforms as Set<TransformName>));
   if (!name) {
     return; // Return undefined to signal no transform!
   }
-
   if (name === 'bin') {
     if (!allowBin) {
       ctx.error('bin transforms are not valid in this context', spec);
@@ -93,21 +105,36 @@ export function parseTransform(
       return new BinTransformNode(name, arg, parseOptions(options, ctx));
     }
     ctx.error('bin-possible', spec);
-  } else {
-    const args = name === 'count' && !spec[name] ? [] : toArray(spec[name], ctx);
-    const options = {
-      // @ts-expect-error bad narrowing
-      distinct: spec.distinct,
-      // @ts-expect-error bad narrowing
-      orderby: toArray(spec.orderby, ctx),
-      // @ts-expect-error bad narrowing
-      partitionby: toArray(spec.partitionby, ctx),
-      // @ts-expect-error bad narrowing
-      frame: parseWindowFrame(spec, ctx),
-    };
-    return new TransformNode(name, args, options);
   }
+  const args = name === 'count' && !spec[name] ? [] : toArray(spec[name], ctx);
+  return new TransformNode(name, args, parseWindowOptions(spec, ctx));
 }
+
+function parseWindowOptions(spec: TransformAny, ctx: ParseContext): TransformOptions {
+  const options: TransformOptions = {
+    distinct: undefined,
+    orderby: [],
+    partitionby: [],
+    frame: null,
+  };
+  if (!hasWindowOptions(spec)) {
+    return options;
+  }
+  if ('distinct' in spec) {
+    options.distinct = spec.distinct;
+  }
+  const { orderby, partitionby } = spec;
+  if (orderby) {
+    options.orderby = toArray(orderby, ctx);
+  }
+  if (partitionby) {
+    options.partitionby = toArray(partitionby, ctx);
+  }
+  options.frame = parseWindowFrame(spec, ctx);
+  return options;
+}
+
+// oxlint-enable no-undefined unicorn/no-null
 
 export class TransformNode extends ASTNode<SQLExpr, NotBin> {
   constructor(
