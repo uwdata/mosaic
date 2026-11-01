@@ -60,6 +60,16 @@ function simplify<T>(array: T[]): T | T[] | '' {
 export function parseTransform(
   spec: Transform | IntervalTransform,
   ctx: ParseContext,
+  allowBin:false
+): TransformNode | undefined
+export function parseTransform(
+  spec: Transform | IntervalTransform,
+  ctx: ParseContext,
+): BinTransformNode | TransformNode | undefined
+export function parseTransform(
+  spec: Transform | IntervalTransform,
+  ctx: ParseContext,
+  allowBin:boolean = true
 ): BinTransformNode | TransformNode | undefined {
   // oxlint-disable-next-line no-undefined
   let name: TransformName | undefined = undefined;
@@ -74,6 +84,9 @@ export function parseTransform(
   }
 
   if (name === 'bin') {
+    if (!allowBin) {
+      ctx.error('bin transforms are not valid in this context', spec);
+    }
     if ('bin' in spec) {
       const { bin, ...options } = spec;
       const [arg] = toArray(bin, ctx);
