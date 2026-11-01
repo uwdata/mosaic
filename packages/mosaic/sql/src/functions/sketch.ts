@@ -36,6 +36,43 @@ export function hllEstimate(sketch: ExprValue) {
 }
 
 /**
+ * Compute a Compressed Probabilistic Counting (CPC) sketch aggregate for
+ * approximate distinct counting. CPC sketches are smaller and faster to merge
+ * than HLL sketches of similar accuracy. If the input expression is itself a
+ * CPC sketch, use `cpcUnion` to merge sketches instead.
+ * Requires the DuckDB `datasketches` community extension.
+ * @param expr The expression to sketch.
+ * @param lgK The log2 of the sketch size parameter (default 11).
+ * @returns A SQL aggregate function call.
+ */
+export function cpcSketch(expr: ExprValue, lgK: number = 11) {
+  return aggFn('datasketch_cpc', lgK, expr);
+}
+
+/**
+ * Compute a merged Compressed Probabilistic Counting (CPC) sketch from
+ * input CPC sketches.
+ * Requires the DuckDB `datasketches` community extension.
+ * @param sketch The CPC sketches to merge.
+ * @param lgK The log2 of the sketch size parameter (default 11).
+ * @returns A SQL aggregate function call.
+ */
+export function cpcUnion(sketch: ExprValue, lgK: number = 11) {
+  return aggFn('datasketch_cpc_union', lgK, sketch);
+}
+
+/**
+ * Return the estimated distinct count of a Compressed Probabilistic
+ * Counting (CPC) sketch.
+ * Requires the DuckDB `datasketches` community extension.
+ * @param sketch The CPC sketch.
+ * @returns A SQL function call.
+ */
+export function cpcEstimate(sketch: ExprValue) {
+  return fn('datasketch_cpc_estimate', sketch);
+}
+
+/**
  * Compute a KLL sketch aggregate for approximate quantile estimation.
  * If the input expression is a KLL sketch, the sketches are merged.
  * Requires the DuckDB `datasketches` community extension.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr, ScaleOptions } from '@uwdata/mosaic-sql';
-import { Query, add, argmax, argmin, avg, columns, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch, literal, loadExtension, loadObjects, max, median, min, mul, neq, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, columns, corr, count, covarPop, covariance, cpcEstimate, cpcSketch, cte, desc, eq, filterPushdown, geomean, gt, hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch, literal, loadExtension, loadObjects, max, median, min, mul, neq, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clauseComposite, clauseInterval, clauseIntervals, clausePoint, type CompositeMetadata, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo, PreAggregateOptions } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
@@ -574,10 +574,10 @@ describe('PreAggregator sketches', () => {
    * selection on dim = 'b'. Also queries the pre-aggregated table directly,
    * as standard queries are used as a fallback if pre-aggregation fails.
    * @param measure The aggregate measure or query function for the client.
-   * @param useSketches The sketch approximation flag.
+   * @param useSketches The sketch approximation setting.
    * @returns The client measure value and the pre-aggregated measure value.
    */
-  async function runSketch(measure: RunMeasure, useSketches = false) {
+  async function runSketch(measure: RunMeasure, useSketches: PreAggregateOptions['useSketches'] = false) {
     const clause = point();
     const { value, info, mc } = await runQuery(measure, clause, { useSketches }, sketchLoadQuery);
     const preagg = info
@@ -604,6 +604,12 @@ describe('PreAggregator sketches', () => {
     const [value, preagg] = await runSketch(query);
     expect(value).toBeCloseTo(2, 5);
     expect(preagg).toBeCloseTo(2, 5);
+  });
+
+  it('merges cpc sketch aggregates', async () => {
+    const [value, preagg] = await runSketch(cpcEstimate(cpcSketch('x')));
+    expect(value).toBeCloseTo(2, 3);
+    expect(preagg).toBeCloseTo(2, 3);
   });
 
   it('merges kll sketch aggregates', async () => {
@@ -634,6 +640,40 @@ describe('PreAggregator sketches', () => {
     expect(await runSketch(median('x'))).toStrictEqual([3.5, undefined]);
   });
 
+  it('approximates only selected aggregate types', async () => {
+    const distinct = { distinct: true };
+    expect(await runSketch(count('x').distinct(), distinct)).toStrictEqual([2, 2]);
+    expect(await runSketch(median('x'), distinct)).toStrictEqual([3.5, undefined]);
+    const quantiles = { quantile: true };
+    expect(await runSketch(count('x').distinct(), quantiles)).toStrictEqual([2, undefined]);
+    expect(await runSketch(median('x'), quantiles)).toStrictEqual([3, 3]);
+    const both = { distinct: true, quantile: true };
+    expect(await runSketch(add(count('x').distinct(), median('x')), both)).toStrictEqual([5, 5]);
+    expect(await runSketch(add(count('x').distinct(), median('x')), distinct)).toStrictEqual([5.5, undefined]);
+  });
+
+  it('normalizes the useSketches setting', async () => {
+    const mc = await setup(loadQuery, { useSketches: true });
+    const pre = mc.preaggregator;
+    expect(pre.useSketches).toStrictEqual({ distinct: true, quantile: true });
+    pre.useSketches = { quantile: true };
+    expect(pre.useSketches).toStrictEqual({ distinct: false, quantile: true });
+    pre.useSketches = false;
+    expect(pre.useSketches).toStrictEqual({ distinct: false, quantile: false });
+    expect(Object.isFrozen(pre.useSketches)).toBe(true);
+  });
+
+  it('clears state when the useSketches setting changes', async () => {
+    const mc = await setup(loadQuery);
+    const pre = mc.preaggregator;
+    const client = new TestClient(null);
+    pre.entries.set(client, null);
+    pre.useSketches = { distinct: false };
+    expect(pre.entries.size).toBe(1);
+    pre.useSketches = { distinct: true };
+    expect(pre.entries.size).toBe(0);
+  });
+
   it('does not approximate quantiles with non-literal probabilities', async () => {
     expect(await runSketch(quantile('x', sql`0.5`), true)).toStrictEqual([3, undefined]);
     expect(await runSketch(median('x').distinct(), true)).toStrictEqual([3.5, undefined]);
@@ -653,14 +693,15 @@ describe('PreAggregator sketches', () => {
       .select({ dim: 'dim', a: count('x').distinct(), b: median('x') })
       .groupby('dim'));
     expect(preaggColumns(client)).toBeNull();
-    const cols = preaggColumns(client, true)!;
+    expect(preaggColumns(client, { distinct: true })).toBeNull();
+    const cols = preaggColumns(client, { distinct: true, quantile: true })!;
     expect(cols.sketches).toBe(true);
     expect(Object.values(cols.preagg).map(String)).toStrictEqual([
       '"dim"',
-      'datasketch_hll(12, hash("x")) FILTER (WHERE ("x" IS NOT NULL))',
+      'datasketch_cpc(11, hash("x")) FILTER (WHERE ("x" IS NOT NULL))',
       'datasketch_kll(200, "x")'
     ]);
-    expect(String(cols.output.a)).toMatch(/^coalesce\(round\(datasketch_hll_estimate\(datasketch_hll_union\(12, "pre_[0-9a-f]+"\)\)\), 0\)$/);
+    expect(String(cols.output.a)).toMatch(/^coalesce\(round\(datasketch_cpc_estimate\(datasketch_cpc_union\(11, "pre_[0-9a-f]+"\)\)\), 0\)$/);
     expect(String(cols.output.b)).toMatch(/^datasketch_kll_quantile\(datasketch_kll\(200, "pre_[0-9a-f]+"\), 0.5, TRUE\)$/);
   });
 });

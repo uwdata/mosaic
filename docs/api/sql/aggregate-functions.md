@@ -274,6 +274,28 @@ Sketch aggregates compute compact, mergeable summaries for approximate distinct 
 They require the DuckDB [`datasketches` community extension](https://duckdb.org/community_extensions/extensions/datasketches), which can be loaded using [`loadExtension("datasketches", "community")`](./data-loading#loadextension).
 As sketches can be merged, queries using sketch aggregates support [pre-aggregation](../core/coordinator#sketch-aggregates).
 
+## cpcSketch
+
+`cpcSketch(expression, lgK)`
+
+Create an aggregate function that builds a [Compressed Probabilistic Counting (CPC) sketch](https://datasketches.apache.org/docs/CPC/CpcSketches.html) of the input _expression_ for approximate distinct counting.
+CPC sketches are smaller and faster to merge than [HyperLogLog sketches](#hllsketch) of similar accuracy, and are the recommended choice for distinct counts.
+The optional _lgK_ argument (default `11`) is the log2 of the sketch size parameter; larger values improve accuracy at the cost of larger sketches.
+Use [`cpcEstimate`](#cpcestimate) to extract a distinct count, for example `cpcEstimate(cpcSketch("x"))`.
+
+## cpcUnion
+
+`cpcUnion(sketch, lgK)`
+
+Create an aggregate function that merges CPC sketches produced by [`cpcSketch`](#cpcsketch).
+The optional _lgK_ argument (default `11`) is the log2 of the size parameter of the merged sketch.
+
+## cpcEstimate
+
+`cpcEstimate(sketch)`
+
+Create a function that returns the estimated distinct count of a CPC _sketch_.
+
 ## hllSketch
 
 `hllSketch(expression, lgK)`

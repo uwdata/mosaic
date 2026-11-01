@@ -8,6 +8,7 @@ import { resolvePositional } from '../util/positional.js';
 import { QueryError } from '../util/query-error.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 import { subqueryPushdown } from './subquery-pushdown.js';
+import type { SketchOptions } from './sufficient-statistics.js';
 
 /**
  * Dummy preaggregate info object that indicates a view should be skipped
@@ -21,11 +22,13 @@ export interface PreAggregateOptions {
   /** Flag to enable or disable the pre-aggregation. This flag can be updated later via the `enabled` property. */
   enabled?: boolean;
   /**
-   * Flag to approximate distinct count and quantile aggregates using mergeable
-   * sketches from the DuckDB `datasketches` extension (default false). This
-   * flag can be updated later via the `useSketches` property.
+   * Approximate distinct count and quantile aggregates using mergeable
+   * sketches from the DuckDB `datasketches` extension (default false). Use
+   * `true` to enable both, or an object with `distinct` and `quantile` flags
+   * to enable them individually (unspecified flags default to false). This
+   * setting can be updated later via the `useSketches` property.
    */
-  useSketches?: boolean;
+  useSketches?: boolean | SketchOptions;
 }
 
 type ActivePredicate = (clause?: SelectionClause) => MaybeArray<ExprNode>;
@@ -69,7 +72,7 @@ export class PreAggregator {
   private mc: Coordinator;
   private _schema: string;
   private _enabled: boolean;
-  private _useSketches: boolean;
+  private _useSketches: Required<SketchOptions>;
 
   /**
    * Create a new manager of materialized views of pre-aggregated data.
@@ -86,7 +89,7 @@ export class PreAggregator {
     this.mc = coordinator;
     this._schema = schema;
     this._enabled = enabled;
-    this._useSketches = useSketches;
+    this._useSketches = sketchOptions(useSketches);
   }
 
   /**
@@ -112,25 +115,30 @@ export class PreAggregator {
   }
 
   /**
-   * Set the sketch approximation state of this manager. If true, distinct
+   * Set the sketch approximation state of this manager. Selected distinct
    * count and quantile aggregates are approximated using mergeable sketches
    * from the DuckDB `datasketches` community extension, enabling
-   * pre-aggregation for these otherwise unsupported aggregates. Upon changes,
-   * any local state is cleared.
+   * pre-aggregation for these otherwise unsupported aggregates. Use `true`
+   * or `false` to enable or disable both, or an object with `distinct` and
+   * `quantile` flags (unspecified flags default to false). Upon changes, any
+   * local state is cleared.
    * @param state The sketch approximation state to set.
    */
-  set useSketches(state: boolean) {
-    if (this._useSketches !== state) {
+  set useSketches(state: boolean | SketchOptions) {
+    const next = sketchOptions(state);
+    const prev = this._useSketches;
+    if (prev.distinct !== next.distinct || prev.quantile !== next.quantile) {
       this.clear();
-      this._useSketches = state;
+      this._useSketches = next;
     }
   }
 
   /**
    * Get the sketch approximation state of this manager.
-   * @returns The current sketch approximation state.
+   * @returns The current sketch approximation state, with a flag for
+   *  each sketchable aggregate type.
    */
-  get useSketches(): boolean {
+  get useSketches(): Readonly<Required<SketchOptions>> {
     return this._useSketches;
   }
 
@@ -272,6 +280,16 @@ export class PreAggregator {
     entries.set(client, info);
     return info;
   }
+}
+
+/**
+ * Normalize a sketch approximation setting to per-aggregate flags.
+ * @param state A boolean flag for all aggregates, or per-aggregate flags.
+ */
+function sketchOptions(state: boolean | SketchOptions): Required<SketchOptions> {
+  return Object.freeze(typeof state === 'boolean'
+    ? { distinct: state, quantile: state }
+    : { distinct: !!state?.distinct, quantile: !!state?.quantile });
 }
 
 /**

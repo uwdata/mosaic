@@ -1,6 +1,14 @@
 import type { ColumnRefNode, ExprNode } from '@uwdata/mosaic-sql';
-import { AggregateNode, FunctionNode, LiteralNode, and, argmax, argmin, asNode, coalesce, count, div, exp, hllEstimate, hllSketch, hllUnion, isNotNull, kllQuantile, kllSketch, ln, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, round, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
+import { AggregateNode, FunctionNode, LiteralNode, and, argmax, argmin, asNode, coalesce, count, cpcEstimate, cpcSketch, cpcUnion, div, exp, isNotNull, kllQuantile, kllSketch, ln, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, round, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
 import { fnv_hash } from '../util/hash.js';
+
+/** Selects which aggregates to approximate using mergeable sketches. */
+export interface SketchOptions {
+  /** Approximate distinct counts using CPC sketches. */
+  distinct?: boolean;
+  /** Approximate median and quantiles using KLL sketches. */
+  quantile?: boolean;
+}
 
 /**
  * Determine sufficient statistics to preaggregate the given node. This
@@ -10,8 +18,7 @@ import { fnv_hash } from '../util/hash.js';
  * @param preagg Map of column names to
  *  expressions to include in the preaggregation table.
  * @param avg Global average query generator.
- * @param useSketches Flag indicating if distinct count and quantile
- *  aggregates should be approximated using mergeable sketches.
+ * @param sketches Selects aggregates to approximate using mergeable sketches.
  * @returns Output aggregate expression that uses preaggregated
  *  sufficient statistics to service updates.
  */
@@ -19,12 +26,10 @@ export function sufficientStatistics(
   node: AggregateNode,
   preagg: Record<string, ExprNode>,
   avg: (field: ColumnRefNode) => ExprNode,
-  useSketches: boolean = false
+  sketches: SketchOptions = {}
 ): ExprNode | null {
-  if (useSketches) {
-    const expr = sketchStatistics(node, preagg);
-    if (expr) return expr;
-  }
+  const expr = sketchStatistics(node, preagg, sketches);
+  if (expr) return expr;
 
   // bail if distinct aggregate
   if (node.isDistinct) return null;
@@ -122,22 +127,26 @@ export function sufficientStatistics(
  * @param node An aggregate function.
  * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
+ * @param sketches Selects aggregates to approximate using mergeable sketches.
  * @returns Output aggregate expression over pre-aggregated sketches, or
  *  null if the aggregate does not have a sketch approximation.
  */
 function sketchStatistics(
   node: AggregateNode,
-  preagg: Record<string, ExprNode>
+  preagg: Record<string, ExprNode>,
+  { distinct, quantile }: SketchOptions
 ): ExprNode | null {
-  switch (node.name) {
-    case 'count':
-      return node.isDistinct && node.args.length === 1
-        ? sketchCountDistinctExpr(preagg, node)
-        : null;
-    case 'approx_count_distinct':
-      return sketchCountDistinctExpr(preagg, node);
+  if (distinct) {
+    switch (node.name) {
+      case 'count':
+        return node.isDistinct && node.args.length === 1
+          ? sketchCountDistinctExpr(preagg, node)
+          : null;
+      case 'approx_count_distinct':
+        return sketchCountDistinctExpr(preagg, node);
+    }
   }
-  if (node.isDistinct) return null;
+  if (!quantile || node.isDistinct) return null;
   switch (node.name) {
     case 'median':
       return sketchQuantileExpr(preagg, node, 0.5);
@@ -613,7 +622,7 @@ function sketchMergeExpr(preagg: Record<string, ExprNode>, node: AggregateNode):
 
 /**
  * Generate an expression for approximate distinct counts over data
- * dimensions, using HyperLogLog sketches. Input values are hashed so that
+ * dimensions, using CPC sketches. Input values are hashed so that
  * any input type can be sketched. As a side effect, this method adds a
  * column to the input *preagg* object to track a sketch per-partition.
  * @param preagg A map of columns (such as
@@ -623,9 +632,9 @@ function sketchMergeExpr(preagg: Record<string, ExprNode>, node: AggregateNode):
  */
 function sketchCountDistinctExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
   const x = node.args[0];
-  const hll = hllSketch(new FunctionNode('hash', [x])).where(isNotNull(x));
-  const name = addStat(preagg, hll, node);
-  return coalesce(round(hllEstimate(hllUnion(name))), 0);
+  const cpc = cpcSketch(new FunctionNode('hash', [x])).where(isNotNull(x));
+  const name = addStat(preagg, cpc, node);
+  return coalesce(round(cpcEstimate(cpcUnion(name))), 0);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch, loadExtension } from '../src/index.js';
+import { cpcEstimate, cpcSketch, cpcUnion, hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch, loadExtension } from '../src/index.js';
 
 describe('Sketch functions', () => {
   it('include hll sketches', () => {
@@ -9,6 +9,14 @@ describe('Sketch functions', () => {
     expect(String(hllUnion('s', 16))).toBe('datasketch_hll_union(16, "s")');
     expect(String(hllEstimate(hllSketch('num1'))))
       .toBe('datasketch_hll_estimate(datasketch_hll(12, "num1"))');
+  });
+
+  it('include cpc sketches', () => {
+    expect(String(cpcSketch('num1'))).toBe('datasketch_cpc(11, "num1")');
+    expect(String(cpcSketch('num1', 12))).toBe('datasketch_cpc(12, "num1")');
+    expect(String(cpcUnion('s'))).toBe('datasketch_cpc_union(11, "s")');
+    expect(String(cpcEstimate(cpcUnion('s'))))
+      .toBe('datasketch_cpc_estimate(datasketch_cpc_union(11, "s"))');
   });
 
   it('include kll sketches', () => {
@@ -21,6 +29,8 @@ describe('Sketch functions', () => {
   it('are aggregate functions', () => {
     expect(hllSketch('num1').type).toBe('AGGREGATE');
     expect(hllUnion('s').type).toBe('AGGREGATE');
+    expect(cpcSketch('num1').type).toBe('AGGREGATE');
+    expect(cpcUnion('s').type).toBe('AGGREGATE');
     expect(kllSketch('num1').type).toBe('AGGREGATE');
   });
 });
