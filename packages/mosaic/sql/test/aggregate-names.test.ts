@@ -20,7 +20,9 @@ const omitted = new Set([
   'rank',
   'rank_dense',
   'row_number',
-  // internal optimizer variant of sum, not user-facing
+  // internal engine functions, not user-facing
+  'combine_aggr',
+  'decimal_average',
   'sum_no_overflow'
 ]);
 

@@ -1,7 +1,29 @@
 import { expect, describe, it } from 'vitest';
-import { binDate, binHistogram, scaleTransform } from '../src/index.js';
+import { bin1d, binDate, binHistogram, scaleTransform } from '../src/index.js';
+import { queryFixture } from './util/validate.js';
 
 describe('Binning transforms', () => {
+  describe('bin1d', () => {
+    it('scales values to bin units', async () => {
+      await expect(bin1d('num1', 0, 50, 100))
+        .toBeValidExpr('((("num1")::DOUBLE - 0) * (2)::DOUBLE)');
+
+      await expect(bin1d('num1', 0, 50, 100, true))
+        .toBeValidExpr('((50 - ("num1")::DOUBLE) * (2)::DOUBLE)');
+    });
+
+    it('maps an empty range to a constant bin', async () => {
+      const expr = bin1d('v', 5, 5, 100);
+      await expect(bin1d('num1', 5, 5, 100))
+        .toBeValidExpr('((("num1")::DOUBLE - 5) * (0)::DOUBLE)');
+
+      const rows = await queryFixture(
+        `SELECT floor(${expr})::INTEGER AS b FROM (VALUES (5), (-1e12), (1e12), (NULL)) AS t(v)`
+      );
+      expect(rows.map(r => r.b)).toEqual([0, 0, 0, null]);
+    });
+  });
+
   describe('binHistogram', () => {
     it('creates linear bins', async () => {
       await expect(binHistogram('num1', [0, 100], { steps: 10 }))

@@ -175,6 +175,7 @@ export const aggregateNames = [
   'last',
   'list',
   'listagg',
+  'lttb',
   'mad',
   'max',
   'max_by',
@@ -206,6 +207,7 @@ export const aggregateNames = [
   'sum',
   'sumkahan',
   'variance',
+  'variant_group_object',
   'var_pop',
   'var_samp',
   'weighted_avg'
