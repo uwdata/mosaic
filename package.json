@@ -25,7 +25,7 @@
     "lint:fix": "lerna run lint -- --fix",
     "typecheck": "tsc --build && lerna run typecheck",
     "test": "lerna run schema && pnpm run typecheck && vitest run && pnpm -F mosaic-widget test",
-    "server": "cd packages/server/duckdb-server && pnpm run dev",
+    "server": "cd packages/server/duckdb-server && uv run duckdb-server --reload",
     "server:rust": "cd packages/server/duckdb-server-rust && cargo run",
     "server:go": "cd packages/server/duckdb-server-go && go run -tags=duckdb_arrow .",
     "server:node": "nodemon packages/server/duckdb/bin/run-server.js",
