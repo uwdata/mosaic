@@ -203,9 +203,9 @@ export class TransformNode extends ASTNode<SQLExpr, NotBin> {
     const { name, args, options } = this;
     const { distinct, orderby, partitionby, frame } = options;
 
-    //@ts-expect-error idek anymore
-    const json: NotBin = { [name]: simplify(args.map((v) => v.toJSON())) };
+    const json = { [name]: simplify(args.map((v) => v.toJSON())) } as NotBin;
 
+    // Fixing the errors below requires splitting `TransformNode` into multiple classes
     if (distinct) {
       //@ts-expect-error `distinct` only exists on `AggregateTransform`
       json.distinct = true;
