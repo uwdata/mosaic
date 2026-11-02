@@ -53,7 +53,6 @@ export class ExpressionNode extends ASTNode<FragmentNode, SQLExpression> {
     const { spans, params } = this;
     const tag = ctx.api[SQL];
     const args = params.map((e) => e.instantiate(ctx));
-    //@ts-expect-error Property 'raw' is missing in type 'string[]' but required in type 'TemplateStringsArray'.
     return tag(spans, ...args);
   }
 
