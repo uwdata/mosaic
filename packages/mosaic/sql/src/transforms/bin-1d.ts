@@ -24,5 +24,5 @@ export function bin1d(
 ) {
   const diff = reverse ? sub(hi, float64(x)) : sub(float64(x), lo);
   const scale = hi === lo ? 0 : bins / (hi - lo);
-  return scale ? mul(diff, float64(scale)) : diff;
+  return mul(diff, float64(scale));
 }

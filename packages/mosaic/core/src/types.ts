@@ -28,6 +28,7 @@ export interface QueryEntry {
 
 /** String indicating a JavaScript data type. */
 export type JSType =
+  | 'null'
   | 'number'
   | 'date'
   | 'boolean'
