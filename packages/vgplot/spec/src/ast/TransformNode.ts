@@ -66,9 +66,18 @@ export function maybeTransform(
   }
 }
 
-function toArray(value: TransformField | TransformField[], ctx: ParseContext): Arg[] {
-  // @ts-expect-error my brain is melting
-  return [value ?? []].flat().map((v) => maybeTransform(v, ctx) ?? ctx.maybeParam(v));
+function parseArgs(value: TransformField | TransformField[], ctx: ParseContext): Arg[] {
+  return [value ?? []].flat().map((v) => {
+    if (typeof v === 'string') {
+      return ctx.maybeParam(v);
+    }
+    if (isObject(v)) {
+      return SQL in v
+        ? parseExpression(v, ctx)
+        : (parseTransform(v, ctx) ?? ctx.error(`Invalid transform argument ${v}`, value));
+    }
+    return ctx.maybeParam(v);
+  });
 }
 
 function simplify<T>(array: T[]): T | T[] | '' {
@@ -101,12 +110,12 @@ export function parseTransform(
     }
     if ('bin' in spec) {
       const { bin, ...options } = spec;
-      const [arg] = toArray(bin, ctx);
+      const [arg] = parseArgs(bin, ctx);
       return new BinTransformNode(name, arg, parseOptions(options, ctx));
     }
     ctx.error('bin-possible', spec);
   }
-  const args = name === 'count' && !spec[name] ? [] : toArray(spec[name], ctx);
+  const args = name === 'count' && !spec[name] ? [] : parseArgs(spec[name], ctx);
   return new TransformNode(name, args, parseWindowOptions(spec, ctx));
 }
 
@@ -125,10 +134,10 @@ function parseWindowOptions(spec: TransformAny, ctx: ParseContext): TransformOpt
   }
   const { orderby, partitionby } = spec;
   if (orderby) {
-    options.orderby = toArray(orderby, ctx);
+    options.orderby = parseArgs(orderby, ctx);
   }
   if (partitionby) {
-    options.partitionby = toArray(partitionby, ctx);
+    options.partitionby = parseArgs(partitionby, ctx);
   }
   options.frame = parseWindowFrame(spec, ctx);
   return options;
