@@ -11,4 +11,4 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - "@uwdata/flechette"
   - "@uwdata/wk-geojson"
-  - "@duckdb/duckdb-wasm@1.33.1-dev113.0"
+  - "@duckdb/duckdb-wasm@1.33.1-dev113.0 || 1.33.1-dev114.0"

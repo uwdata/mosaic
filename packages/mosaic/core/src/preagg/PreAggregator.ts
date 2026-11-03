@@ -266,7 +266,6 @@ export class PreAggregator {
         return null;
       }
       const createQuery = [
-        ...(preaggCols.sketches ? ['LOAD datasketches'] : []),
         createSchema(schema),
         createTable(_info.table, _info.create, { temp: false })
       ];

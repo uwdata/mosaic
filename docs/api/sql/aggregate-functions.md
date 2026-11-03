@@ -271,7 +271,7 @@ Create an aggregate function that returns a list of the input _expression_ value
 ## Sketch Aggregates
 
 Sketch aggregates compute compact, mergeable summaries for approximate distinct counts and quantiles.
-They require the DuckDB [`datasketches` extension](https://query.farm/products/extensions/datasketches/). See [sketch aggregates](../core/coordinator#sketch-aggregates) for how to install it.
+They require the DuckDB [`datasketches` extension](https://query.farm/products/extensions/datasketches/). See [sketch aggregates](../core/coordinator#sketch-aggregates) for how to load it.
 As sketches can be merged, queries using sketch aggregates support [pre-aggregation](../core/coordinator#sketch-aggregates).
 
 ## cpcSketch

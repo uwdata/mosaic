@@ -38,9 +38,7 @@ export async function setDatabaseConnector(type) {
       break;
     case 'wasm':
       if (!wasm) {
-        wasm = new DuckDBWASMConnector({
-          config: { filesystem: { forceFullHTTPReads: true } }
-        });
+        wasm = new DuckDBWASMConnector();
         await installDatasketches(wasm);
       }
       connector = wasm;
@@ -57,11 +55,11 @@ async function installDatasketches(connector) {
     for (const sql of [
       'SET allow_extension_repositories = \'allowed\'',
       'CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX \'https://duckdb-extensions.query.farm\'',
-      'INSTALL datasketches FROM query_farm'
+      'LOAD datasketches FROM query_farm'
     ]) {
       await connector.query({ type: 'exec', sql });
     }
   } catch (error) {
-    console.warn('Could not install datasketches', error);
+    console.warn('Could not load datasketches', error);
   }
 }
