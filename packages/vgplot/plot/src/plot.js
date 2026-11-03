@@ -10,6 +10,11 @@ const DEFAULT_ATTRIBUTES = {
   marginBottom: 30
 };
 
+/** 
+ * @typedef Interactor
+ * @property {(svg: Awaited<ReturnType<typeof plotRenderer>>) => Promise<void> | void} init;
+ */
+
 export class Plot {
   /**
    * @param {HTMLElement} [element]
@@ -18,6 +23,7 @@ export class Plot {
     /** @type {Record<string, any>} */
     this.attributes = { ...DEFAULT_ATTRIBUTES };
     this.listeners = null;
+    /** @type {Interactor[]} */
     this.interactors = [];
     /** @type {{ legend: import('./legend.js').Legend, include: boolean }[]} */
     this.legends = [];
@@ -171,6 +177,10 @@ export class Plot {
     return this.markset || (this.markset = new Set(this.marks));
   }
 
+  /**
+   * @param {Interactor} sel
+   * @returns {this}
+   */
   addInteractor(sel) {
     this.interactors.push(sel);
     return this;

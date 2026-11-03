@@ -30,6 +30,10 @@ const SELECT_TRANSFORMS = new Map(
 
 // construct Plot output
 // see https://github.com/observablehq/plot
+/**
+ * @param {import('./plot.js').Plot} plot
+ * @returns {Promise<(SVGSVGElement | HTMLElement) & Plot.Plot>}
+ */
 export async function plotRenderer(plot) {
   const spec = { marks: [] };
   const symbols = [];

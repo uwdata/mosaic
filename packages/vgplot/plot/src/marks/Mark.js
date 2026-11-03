@@ -32,6 +32,13 @@ const valueEntry = (channel, value) => ({ channel, value });
 export const isDataArray = source => Array.isArray(source);
 
 /**
+ * @typedef PlotMarkSpec
+ * @property type: any
+ * @property data: any
+ * @property options: Record<string, any>
+ */
+
+/**
  * The minimal mark surface consumed by interactors, allowing marks
  * and lightweight stand-ins to be used interchangeably.
  * @typedef {object} InteractorMark
@@ -238,7 +245,7 @@ export class Mark extends MosaicClient {
 
   /**
    * Generate an array of Plot mark specifications.
-   * @returns {object[]}
+   * @returns {PlotMarkSpec[]}
    */
   plotSpecs() {
     const { type, data, detail, channels } = this;
@@ -304,9 +311,14 @@ export function markQuery(channels, table, skip = []) {
 }
 
 
-/**
- * Generate an array of Plot mark specifications.
- * @returns {object[]}
+
+/** Generate an array of Plot mark specifications.
+ * @param {any} type
+ * @param {Set<any>} detail
+ * @param {any[]} channels
+ * @param {DataColumns} data
+ * @param {Record<string, any>} [options={}]
+ * @returns {PlotMarkSpec[]}
  */
 export function markPlotSpec(type, detail, channels, data, options = {}) {
   // @ts-ignore
