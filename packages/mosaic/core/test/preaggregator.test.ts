@@ -1,17 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr, ScaleOptions } from '@uwdata/mosaic-sql';
-import { Query, add, argmax, argmin, avg, columns, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, columns, corr, count, covarPop, covariance, cpcEstimate, cpcSketch, cte, desc, eq, filterPushdown, geomean, gt, hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch, literal, loadObjects, max, median, min, mul, neq, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clauseComposite, clauseInterval, clauseIntervals, clausePoint, type CompositeMetadata, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
-import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
+import type { PreAggregateInfo, PreAggregateOptions } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
 import { NodeConnector } from '../src/connectors/NodeConnector.js';
 import { TestClient } from './util/test-client.js';
 
-async function setup(loadQuery: CreateQuery) {
+async function setup(loadQuery: CreateQuery | string, preagg?: PreAggregateOptions) {
   const mc = new Coordinator(await NodeConnector.make(), {
     logger: null,
     cache: false,
-    consolidate: false
+    consolidate: false,
+    preagg
   });
   await mc.exec(loadQuery);
   return mc;
@@ -32,11 +33,18 @@ const loadQuery = loadObjects('testData', [
  * Query the test dataset with the given measure, filtered by the clause.
  * @param measure The aggregate measure or query function for the client.
  * @param clause The selection clause to apply.
+ * @param preagg Pre-aggregation options.
+ * @param load Data loading query.
  * @returns The measure value, the pre-aggregation entry (if any),
  *  and the coordinator.
  */
-async function runQuery(measure: RunMeasure, clause: SelectionClause) {
-  const mc = await setup(loadQuery);
+async function runQuery(
+  measure: RunMeasure,
+  clause: SelectionClause,
+  preagg?: PreAggregateOptions,
+  load: CreateQuery | string = loadQuery
+) {
+  const mc = await setup(load, preagg);
   const sel = Selection.single({ cross: true });
 
   return new Promise<{ value: number, info?: PreAggregateInfo, mc: Coordinator }>((resolve, reject) => {
@@ -554,5 +562,156 @@ describe('PreAggregator selection clauses', () => {
     clause.meta = { type: 'composite', dims: [{ type: 'point' }] } as CompositeMetadata;
     const { value, info } = await runQuery(sum('x'), clause);
     expect([value, !!info]).toStrictEqual([7, false]);
+  });
+});
+
+describe('PreAggregator sketches', () => {
+  const sketchLoadQuery = `
+    SET allow_extension_repositories = 'allowed';
+    CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX 'https://duckdb-extensions.query.farm';
+    INSTALL datasketches FROM query_farm;
+    LOAD datasketches FROM query_farm;
+    ${loadQuery}`;
+  const point = () => clausePoint('dim', 'b', { source: {} });
+
+  /**
+   * Query the test dataset with the given measure, filtered by a point
+   * selection on dim = 'b'. Also queries the pre-aggregated table directly,
+   * as standard queries are used as a fallback if pre-aggregation fails.
+   * @param measure The aggregate measure or query function for the client.
+   * @param useSketches The sketch approximation setting.
+   * @returns The client measure value and the pre-aggregated measure value.
+   */
+  async function runSketch(measure: RunMeasure, useSketches: PreAggregateOptions['useSketches'] = false) {
+    const clause = point();
+    const { value, info, mc } = await runQuery(measure, clause, { useSketches }, sketchLoadQuery);
+    const preagg = info
+      ? (await mc.query(info.query(clause))).toArray()[0].measure
+      : undefined;
+    return [value, preagg];
+  }
+
+  it('merges hll sketch aggregates', async () => {
+    const [value, preagg] = await runSketch(hllEstimate(hllSketch('x')));
+    expect(value).toBeCloseTo(2, 5);
+    expect(preagg).toBeCloseTo(2, 5);
+  });
+
+  it('merges hll union aggregates', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      const sketches = Query.from('testData')
+        .select({ dim: 'dim', s: hllSketch('x') })
+        .groupby('dim');
+      return Query.from(sketches)
+        .select({ measure: hllEstimate(hllUnion('s')) })
+        .where(predicate);
+    };
+    const [value, preagg] = await runSketch(query);
+    expect(value).toBeCloseTo(2, 5);
+    expect(preagg).toBeCloseTo(2, 5);
+  });
+
+  it('merges cpc sketch aggregates', async () => {
+    const [value, preagg] = await runSketch(cpcEstimate(cpcSketch('x')));
+    expect(value).toBeCloseTo(2, 3);
+    expect(preagg).toBeCloseTo(2, 3);
+  });
+
+  it('merges kll sketch aggregates', async () => {
+    expect(await runSketch(kllQuantile(kllSketch('x'), 0.5))).toStrictEqual([3, 3]);
+    expect(await runSketch(kllQuantile(kllSketch('x'), 1))).toStrictEqual([4, 4]);
+  });
+
+  it('merges filtered sketch aggregates', async () => {
+    const measure = kllQuantile(kllSketch('x').where(gt('x', 3)), 0);
+    expect(await runSketch(measure)).toStrictEqual([4, 4]);
+  });
+
+  it('approximates distinct counts with sketches', async () => {
+    expect(await runSketch(count('x').distinct(), true)).toStrictEqual([2, 2]);
+    expect(await runSketch(count('y').distinct().where(gt('y', 6)), true)).toStrictEqual([1, 1]);
+    expect(await runSketch(count('x').distinct().where(gt('x', 4)), true)).toStrictEqual([0, 0]);
+  });
+
+  it('approximates quantiles with sketches', async () => {
+    expect(await runSketch(median('x'), true)).toStrictEqual([3, 3]);
+    expect(await runSketch(quantile('x', 0), true)).toStrictEqual([3, 3]);
+    expect(await runSketch(quantile('x', 1), true)).toStrictEqual([4, 4]);
+    expect(await runSketch(add(quantile('x', 0), median('y')), true)).toStrictEqual([9, 9]);
+  });
+
+  it('does not approximate distinct counts or quantiles by default', async () => {
+    expect(await runSketch(count('x').distinct())).toStrictEqual([2, undefined]);
+    expect(await runSketch(median('x'))).toStrictEqual([3.5, undefined]);
+  });
+
+  it('approximates only selected aggregate types', async () => {
+    const distinct = { distinct: true };
+    expect(await runSketch(count('x').distinct(), distinct)).toStrictEqual([2, 2]);
+    expect(await runSketch(median('x'), distinct)).toStrictEqual([3.5, undefined]);
+    const quantiles = { quantile: true };
+    expect(await runSketch(count('x').distinct(), quantiles)).toStrictEqual([2, undefined]);
+    expect(await runSketch(median('x'), quantiles)).toStrictEqual([3, 3]);
+    const both = { distinct: true, quantile: true };
+    expect(await runSketch(add(count('x').distinct(), median('x')), both)).toStrictEqual([5, 5]);
+    expect(await runSketch(add(count('x').distinct(), median('x')), distinct)).toStrictEqual([5.5, undefined]);
+  });
+
+  it('normalizes the useSketches setting', async () => {
+    const mc = await setup(loadQuery, { useSketches: true });
+    const pre = mc.preaggregator;
+    expect(pre.useSketches).toStrictEqual({ distinct: true, quantile: true });
+    pre.useSketches = { quantile: true };
+    expect(pre.useSketches).toStrictEqual({ distinct: false, quantile: true });
+    pre.useSketches = false;
+    expect(pre.useSketches).toStrictEqual({ distinct: false, quantile: false });
+    expect(Object.isFrozen(pre.useSketches)).toBe(true);
+  });
+
+  it('clears state when the useSketches setting changes', async () => {
+    const mc = await setup(loadQuery);
+    const pre = mc.preaggregator;
+    const client = new TestClient(null);
+    pre.entries.set(client, null);
+    pre.useSketches = { distinct: false };
+    expect(pre.entries.size).toBe(1);
+    pre.useSketches = { distinct: true };
+    expect(pre.entries.size).toBe(0);
+  });
+
+  it('does not approximate quantiles with non-literal probabilities', async () => {
+    expect(await runSketch(quantile('x', sql`0.5`), true)).toStrictEqual([3, undefined]);
+    expect(await runSketch(median('x').distinct(), true)).toStrictEqual([3.5, undefined]);
+  });
+
+  it('ignores NaN values in quantile sketches', async () => {
+    const nan = sql`CASE WHEN "x" = 4 THEN 'NaN'::DOUBLE END`;
+    expect(await runSketch(median(nan), { quantile: true })).toStrictEqual([null, null]);
+  });
+
+  it('merges sketches across interval bins', async () => {
+    const scale: ScaleOptions = { type: 'linear', domain: [0, 10], range: [0, 100] };
+    const clause = clauseInterval('x', [1, 3], { source: {}, scale });
+    const { value, info, mc } = await runQuery(count('y').distinct(), clause, { useSketches: true }, sketchLoadQuery);
+    const preagg = (await mc.query(info!.query(clause))).toArray()[0].measure;
+    expect([value, preagg]).toStrictEqual([3, 3]);
+  });
+
+  it('includes sketch columns only when needed', () => {
+    const client = new TestClient(Query
+      .from('testData')
+      .select({ dim: 'dim', a: count('x').distinct(), b: median('x') })
+      .groupby('dim'));
+    expect(preaggColumns(client)).toBeNull();
+    expect(preaggColumns(client, { distinct: true })).toBeNull();
+    const cols = preaggColumns(client, { distinct: true, quantile: true })!;
+    expect(cols.sketches).toBe(true);
+    expect(Object.values(cols.preagg).map(String)).toStrictEqual([
+      '"dim"',
+      'datasketch_cpc(11, hash("x")) FILTER (WHERE ("x" IS NOT NULL))',
+      'datasketch_kll(200, "x") FILTER (WHERE (NOT isnan("x")))'
+    ]);
+    expect(String(cols.output.a)).toMatch(/^coalesce\(round\(datasketch_cpc_estimate\(datasketch_cpc_union\(11, "pre_[0-9a-f]+"\)\)\), 0\)$/);
+    expect(String(cols.output.b)).toMatch(/^datasketch_kll_quantile\(datasketch_kll\(200, "pre_[0-9a-f]+"\), 0.5, TRUE\)$/);
   });
 });

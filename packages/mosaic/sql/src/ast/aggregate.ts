@@ -117,7 +117,8 @@ export function isAggregateFunction(name: string) {
 
 /**
  * An array of known aggregate function names.
- * From https://duckdb.org/docs/sql/functions/aggregates.html.
+ * From https://duckdb.org/docs/sql/functions/aggregates.html, plus
+ * aggregates of the `datasketches` extension.
  */
 export const aggregateNames = [
   'any_value',
@@ -148,6 +149,16 @@ export const aggregateNames = [
   'count_star',
   'covar_pop',
   'covar_samp',
+  'datasketch_cpc',
+  'datasketch_cpc_union',
+  'datasketch_frequent_items',
+  'datasketch_hll',
+  'datasketch_hll_union',
+  'datasketch_kll',
+  'datasketch_quantiles',
+  'datasketch_req',
+  'datasketch_tdigest',
+  'datasketch_theta',
   'entropy',
   'favg',
   'first',

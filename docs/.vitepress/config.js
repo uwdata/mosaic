@@ -187,7 +187,8 @@ export default defineConfig({
             { text: 'Protein Design', link: '/examples/protein-design' },
             { text: 'Pan & Zoom', link: '/examples/pan-zoom' },
             { text: 'Scatter Plot Matrix', link: '/examples/splom' },
-            { text: 'Seattle Weather', link: '/examples/weather' }
+            { text: 'Seattle Weather', link: '/examples/weather' },
+            { text: 'Sketch Aggregates', link: '/examples/sketch-aggregates' }
           ]
         },
         {
