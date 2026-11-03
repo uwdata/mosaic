@@ -1,5 +1,5 @@
 import type { ColumnRefNode, ExprNode } from '@uwdata/mosaic-sql';
-import { AggregateNode, FunctionNode, LiteralNode, and, argmax, argmin, asNode, coalesce, count, cpcEstimate, cpcSketch, cpcUnion, div, exp, isNotNull, kllQuantile, kllSketch, ln, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, round, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
+import { AggregateNode, FunctionNode, LiteralNode, and, argmax, argmin, asNode, coalesce, count, cpcEstimate, cpcSketch, cpcUnion, div, exp, isNaN, isNotNull, kllQuantile, kllSketch, ln, max, min, mul, not, pow, regrAvgX, regrAvgY, regrCount, round, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
 import { fnv_hash } from '../util/hash.js';
 
 /** Selects which aggregates to approximate using mergeable sketches. */
@@ -648,6 +648,7 @@ function sketchCountDistinctExpr(preagg: Record<string, ExprNode>, node: Aggrega
  * @returns An aggregate expression over pre-aggregated dimensions.
  */
 function sketchQuantileExpr(preagg: Record<string, ExprNode>, node: AggregateNode, p: number): ExprNode {
-  const name = addStat(preagg, kllSketch(node.args[0]), node);
+  const x = node.args[0];
+  const name = addStat(preagg, kllSketch(x).where(not(isNaN(x))), node);
   return kllQuantile(kllSketch(name), p);
 }

@@ -684,6 +684,10 @@ describe('PreAggregator sketches', () => {
     expect(await runSketch(median('x').distinct(), true)).toStrictEqual([3.5, undefined]);
   });
 
+  it('ignores NaN values in quantile sketches', async () => {
+    const nan = sql`CASE WHEN "x" = 4 THEN 'NaN'::DOUBLE END`;
+    expect(await runSketch(median(nan), { quantile: true })).toStrictEqual([null, null]);
+  });
 
   it('merges sketches across interval bins', async () => {
     const scale: ScaleOptions = { type: 'linear', domain: [0, 10], range: [0, 100] };
@@ -705,7 +709,7 @@ describe('PreAggregator sketches', () => {
     expect(Object.values(cols.preagg).map(String)).toStrictEqual([
       '"dim"',
       'datasketch_cpc(11, hash("x")) FILTER (WHERE ("x" IS NOT NULL))',
-      'datasketch_kll(200, "x")'
+      'datasketch_kll(200, "x") FILTER (WHERE (NOT isnan("x")))'
     ]);
     expect(String(cols.output.a)).toMatch(/^coalesce\(round\(datasketch_cpc_estimate\(datasketch_cpc_union\(11, "pre_[0-9a-f]+"\)\)\), 0\)$/);
     expect(String(cols.output.b)).toMatch(/^datasketch_kll_quantile\(datasketch_kll\(200, "pre_[0-9a-f]+"\), 0.5, TRUE\)$/);
