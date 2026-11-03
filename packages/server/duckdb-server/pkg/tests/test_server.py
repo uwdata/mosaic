@@ -12,6 +12,8 @@ from pkg.servers.common import ENV_DB_PATH, IN_MEMORY_DB_NAME
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from starlette.testclient import TestClient
+
 
 def test_database_from_env_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(ENV_DB_PATH, raising=False)
@@ -49,3 +51,16 @@ def test_run_startup_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(SystemExit) as excinfo:
         uvicorn_server.run()
     assert excinfo.value.code == 3
+
+
+def test_cors_preflight(client_session: TestClient) -> None:
+    response = client_session.options(
+        "/",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "*"
