@@ -32,6 +32,7 @@ describe('plotRenderer', () => {
       plotSpecs: () => [{ type: 'dot', data, options }]
     };
 
+    //@ts-expect-error missing the following properties from type 'Mark': type, reqs, source, channels, and 35 more
     await plotRenderer({ attributes: {}, marks: [mark], interactors: [] });
 
     expect(mocks.pointerY).toHaveBeenCalledWith({ x: 'x', y: 'y' });
