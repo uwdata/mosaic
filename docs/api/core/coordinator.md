@@ -41,7 +41,7 @@ CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX 'https://duckdb
 INSTALL datasketches FROM query_farm;
 ```
 
-You only need to install the extension once per machine. Later sessions load the installed extension, so they do not need to enable `allow_extension_repositories` again.
+You only need to install the extension once per machine. Later sessions load the installed extension, so they do not need to enable `allow_extension_repositories` again. DuckDB-WASM does not keep installed extensions, so run these statements in each DuckDB-WASM session.
 
 Sketches trade exactness for faster selection updates, which pays off only for larger data. Selection update cost for sketches grows with the number of sketches merged (selected bins × groups), whereas exact queries grow with the number of filtered rows. In our benchmarks, DuckDB's exact `count(DISTINCT)` stayed under 100 ms up to 50 million rows, so distinct count sketches help mainly beyond roughly 10 million rows (fewer with single-threaded DuckDB-WASM) and when a selection merges fewer than a few thousand sketches. Exact quantiles are much more expensive (around 100 ms per median at 10 million rows), so quantile sketches pay off from roughly 1 million rows. Use `{ quantile: true }` to enable only quantile sketches when exact distinct counts are fast enough. Building quantile sketches for many bins × groups can use a lot of memory (several GB for 20,000 groups on a 14-thread machine); increase the interactor _pixelSize_ to reduce the number of bins.
 
