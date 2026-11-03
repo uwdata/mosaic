@@ -79,7 +79,7 @@ try {
   const deadline = Date.now() + 30_000;
   while (true) {
     controller.signal.throwIfAborted();
-    if (startupError) throw new Error(`Cannot start ${executable}: ${startupError.message}. Install ClickHouse with server support first.`);
+    if (startupError) throw new Error(`Cannot start ${executable}: ${startupError.message}. Install ClickHouse with server support first, or set CLICKHOUSE_BIN to its path.`);
     if (stopped) throw new Error('ClickHouse exited during startup.');
     try {
       await query('SELECT 1');

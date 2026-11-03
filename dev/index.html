@@ -117,6 +117,7 @@
 <script type="module">
   import yaml from '../node_modules/yaml/browser/index.js';
   import { astToDOM, astToESM, clear, parseSpec, setDatabaseConnector, vg } from './setup.ts';
+  import { devClickHouseConnector } from './clickhouse/connector.ts';
   import { clickhouseDatabase, clickhouseExamples } from './clickhouse/examples.mjs';
 
   const view = document.querySelector('#view');
@@ -243,7 +244,7 @@
           spec.data = Object.fromEntries(
             Object.keys(spec.data ?? {}).map(table => [table, { type: 'table' }])
           );
-          api.coordinator().databaseConnector().database = clickhouseDatabase(name);
+          api.coordinator().databaseConnector(devClickHouseConnector(clickhouseDatabase(name)));
         }
 
         // options for output generation

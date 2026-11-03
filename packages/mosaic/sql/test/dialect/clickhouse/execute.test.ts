@@ -66,7 +66,6 @@ import {
   star,
   sum,
   suffix,
-  timezone,
   tryCast,
   unnest,
 } from '../../../src/index.js';
@@ -112,6 +111,15 @@ describe.skipIf(!enabled)('ClickHouse execution', { timeout: 15_000 }, () => {
       shiftedRight: 3,
       castValue: 42
     }]);
+  });
+
+  it('round-trips string literals with backslashes', async () => {
+    const result = await query(Query.select({
+      trailing: literal('a\\'),
+      escape: literal('it\'s \\n'),
+      regexp: regexp_matches(literal('a\\b'), literal(/\\/))
+    }));
+    expect(result).toEqual([{ trailing: 'a\\', escape: 'it\'s \\n', regexp: 1 }]);
   });
 
   it('executes string and list predicates', async () => {
@@ -532,15 +540,21 @@ describe.skipIf(!enabled)('ClickHouse execution', { timeout: 15_000 }, () => {
     const result = await query(Query.select({
       bucket: dateBin(literal(date), 'hour'),
       epoch: epoch_ms(literal(date)),
-      localTime: timezone('America/Los_Angeles', literal(date)),
       month: dateMonth(literal(date))
     }));
     expect(result).toEqual([{
       bucket: '2024-01-02 03:00:00.000',
       epoch: +date,
-      localTime: '2024-01-01 19:04:05.678',
       month: '2012-01-01'
     }]);
+  });
+
+  it('computes epoch_ms of dates as UTC regardless of session time zone', async () => {
+    const q = Query.select({ epoch: epoch_ms(cast(literal('2024-01-01'), 'DATE')) });
+    const result = await queryClickHouseLocal(
+      `${q.toString(gen)} SETTINGS session_timezone = 'America/New_York'`
+    );
+    expect(result).toEqual([{ epoch: 1704067200000 }]);
   });
 
   it('executes star REPLACE and qualified stars', async () => {

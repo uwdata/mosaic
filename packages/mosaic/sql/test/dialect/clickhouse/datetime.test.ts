@@ -15,7 +15,7 @@ describe('ClickHouse datetime overrides', () => {
 
   it('rewrites epoch_ms', () => {
     expect(epoch_ms(column('ts')).toString(gen))
-      .toBe('toUnixTimestamp64Milli(toDateTime64("ts", 3))');
+      .toBe('toUnixTimestamp64Milli(toDateTime64("ts", 3, \'UTC\'))');
   });
 
   it('rewrites time_bucket', () => {
@@ -23,9 +23,9 @@ describe('ClickHouse datetime overrides', () => {
       .toBe('toDateTime64(toStartOfInterval("ts", INTERVAL 5 minute), 3)');
   });
 
-  it('rewrites timezone', () => {
-    expect(timezone('UTC', column('ts')).toString(gen))
-      .toBe('toTimeZone("ts", \'UTC\')');
+  it('rejects timezone', () => {
+    expect(() => timezone('UTC', column('ts')).toString(gen))
+      .toThrow(/timezone is not supported/);
   });
 
   it('rewrites make_date', () => {

@@ -1,11 +1,17 @@
 import { expect, describe, it } from 'vitest';
 import {
-  clickHouseCodeGenerator, column, contains, prefix, regexp_matches, suffix
+  clickHouseCodeGenerator, column, contains, literal, prefix, regexp_matches, suffix
 } from '../../../src/index.js';
 
 const gen = clickHouseCodeGenerator;
 
 describe('ClickHouse string overrides', () => {
+  it('escapes backslashes in string literals', () => {
+    expect(literal('a\\').toString(gen)).toBe("'a\\\\'");
+    expect(literal('it\'s \\n').toString(gen)).toBe("'it''s \\\\n'");
+    expect(literal(/\d+/).toString(gen)).toBe("'\\\\d+'");
+  });
+
   it('rewrites contains', () => {
     expect(contains(column('s'), 'foo').toString(gen))
       .toBe('(position("s", \'foo\') > 0)');

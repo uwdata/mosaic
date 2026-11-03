@@ -1,35 +1,22 @@
-import type { ArrowQueryRequest, Connector, ConnectorQueryRequest, ExecQueryRequest } from '@uwdata/mosaic-core';
+import { ClickHouseConnector } from '@uwdata/mosaic-core';
 
-export class ClickHouseConnector implements Connector {
-  constructor(public database = 'default') {}
+const unreachable = 'Cannot reach ClickHouse. Start it with pnpm server:clickhouse.';
 
-  query(query: ArrowQueryRequest): Promise<ArrayBuffer>;
-  query(query: ExecQueryRequest): Promise<void>;
-  async query({ type, sql }: ConnectorQueryRequest): Promise<ArrayBuffer | void> {
-    const params = new URLSearchParams({
-      database: this.database,
-      output_format_arrow_compression_method: 'none',
-      wait_end_of_query: '1'
-    });
-    if (type === 'arrow') params.set('default_format', 'ArrowStream');
-    let response: Response;
-    try {
-      response = await fetch(`/clickhouse/?${params}`, {
-        method: 'POST',
-        body: sql
-      });
-    } catch {
-      throw new Error('Cannot reach ClickHouse. Start it with pnpm server:clickhouse.');
-    }
-    if (!response.ok) {
-      const message = await response.text();
-      // Vite proxy failures have an empty body, unlike ClickHouse query errors.
-      if ([500, 502, 504].includes(response.status) && !message.trim()) {
-        throw new Error('Cannot reach ClickHouse. Start it with pnpm server:clickhouse.');
-      }
-      throw new Error(`ClickHouse query failed (${response.status}): ${message}`);
-    }
-    if (type === 'arrow') return response.arrayBuffer();
-    await response.text();
+export function devClickHouseConnector(database?: string) {
+  return new ClickHouseConnector({ uri: '/clickhouse/', database, fetch: devFetch });
+}
+
+async function devFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  let res: Response;
+  try {
+    res = await fetch(input, init);
+  } catch (err) {
+    if (init?.signal?.aborted) throw err;
+    throw new Error(unreachable, { cause: err });
   }
+  // Vite proxy failures have an empty body, unlike ClickHouse query errors.
+  if ([500, 502, 504].includes(res.status) && !(await res.clone().text()).trim()) {
+    throw new Error(unreachable);
+  }
+  return res;
 }

@@ -1,7 +1,7 @@
 import { Coordinator, decodeIPC, DuckDBWASMConnector, RestConnector } from '@uwdata/mosaic-core';
 import { clickHouseCodeGenerator, duckDBCodeGenerator } from '@uwdata/mosaic-sql';
 import { createAPIContext } from '@uwdata/vgplot';
-import { ClickHouseConnector } from './clickhouse/connector.js';
+import { devClickHouseConnector } from './clickhouse/connector.js';
 
 export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
 export let vg = createAPIContext();
@@ -42,7 +42,7 @@ export function setDatabaseConnector(type) {
       connector = new RestConnector({ uri: 'https://localhost:3000/' });
       break;
     case 'clickhouse':
-      connector = new ClickHouseConnector();
+      connector = devClickHouseConnector();
       break;
     case 'wasm':
       connector = wasm || (wasm = new DuckDBWASMConnector({

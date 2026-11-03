@@ -28,15 +28,13 @@ See the `scripts` in [`package.json`](package.json) for other available commands
 
 ### ClickHouse demo
 
-Install ClickHouse using the [official installation instructions](https://clickhouse.com/docs/install), or use [Homebrew on macOS](https://formulae.brew.sh/cask/clickhouse):
+Install ClickHouse using the [official installation instructions](https://clickhouse.com/docs/install), or use [Homebrew on macOS](https://formulae.brew.sh/formula/clickhouse):
 
 ``` sh
-brew install --cask clickhouse
+brew install clickhouse
 ```
 
-The browser demo requires `server` support; check that `clickhouse server --help` works with your installation. The SQL execution tests require `local` support. This setup has been tested with ClickHouse 26.5 on Linux; the Homebrew installation has not been validated for the browser demo.
-
-If ClickHouse is not on your `PATH`, set `CLICKHOUSE_BIN` to its executable's absolute path.
+The browser demo requires `server` support; check that `clickhouse server --help` works with your installation. The SQL execution tests require `local` support.
 
 In one terminal, run `pnpm server:clickhouse`. In another, run `pnpm dev` and open `/dev/index.html` at the URL Vite prints. Choose **ClickHouse**, then an enabled example.
 

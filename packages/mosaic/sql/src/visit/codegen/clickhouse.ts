@@ -53,6 +53,12 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
     return `fromUnixTimestamp64Milli(${timestamp})`;
   }
 
+  literalToSQL(value: unknown): string {
+    if (value instanceof RegExp) value = value.source;
+    // CH string literals treat backslash as an escape character.
+    return super.literalToSQL(typeof value === 'string' ? value.replaceAll('\\', '\\\\') : value);
+  }
+
   visitCast(node: CastNode): string {
     const { expr, cast, isTry } = node;
     return isTry
@@ -310,16 +316,15 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
       // DATETIME
       case 'epoch_ms': {
         const [expr] = args;
-        return `toUnixTimestamp64Milli(toDateTime64(${this.toString(expr)}, 3))`;
+        return `toUnixTimestamp64Milli(toDateTime64(${this.toString(expr)}, 3, 'UTC'))`;
       }
       case 'time_bucket': {
         const [interval, expr] = args;
         return `toDateTime64(toStartOfInterval(${this.toString(expr)}, ${this.toString(interval)}), 3)`;
       }
-      case 'timezone': {
-        const [tz, ts] = args;
-        return `toTimeZone(${this.toString(ts)}, ${this.toString(tz)})`;
-      }
+      // DuckDB's result depends on TIMESTAMP vs TIMESTAMPTZ input; CH has no such distinction.
+      case 'timezone':
+        throw new Error('timezone is not supported.');
       case 'make_date': return `makeDate(${this.mapToString(args).join(', ')})`;
 
       // LIST
