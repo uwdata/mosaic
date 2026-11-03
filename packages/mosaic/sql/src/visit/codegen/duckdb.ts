@@ -10,6 +10,7 @@ import {
   LambdaVarNode,
   NamedArgNode,
   PivotQuery,
+  PositionalRefNode,
   QuantifiedOpNode,
   SampleClauseNode,
   SliceNode,
@@ -18,7 +19,7 @@ import {
   WindowFunctionNode,
   isQuery
 } from '../../ast/index.js';
-import { COLUMN_PARAM, COLUMN_REF, FUNCTION, LIST, SLICE, SUBSCRIPT } from '../../constants.js';
+import { COLUMN_PARAM, COLUMN_REF, FUNCTION, LAMBDA_VAR, LIST, POSITIONAL_REF, SLICE, SUBSCRIPT } from '../../constants.js';
 import { quoteIdentifier } from '../../util/string.js';
 import { SQLDialectCodeGenerator } from './dialect.js';
 import type { SQLCodeGenerator } from './sql.js';
@@ -125,6 +126,10 @@ export class DuckDBCodeGenerator extends SQLDialectCodeGenerator {
     return this.visitQuery(node, sql);
   }
 
+  visitPositionalRef(node: PositionalRefNode): string {
+    return `#${node.index}`;
+  }
+
   visitQuantified(node: QuantifiedOpNode): string {
     const { op, expr, quantifier, subquery } = node;
     return `(${this.toString(expr)} ${op} ${quantifier} ${this.toString(subquery)})`;
@@ -176,6 +181,8 @@ export class DuckDBCodeGenerator extends SQLDialectCodeGenerator {
 
   jsType(type: string): JSType {
     switch (type) {
+      case '"NULL"':
+        return 'null';
       case 'BIGINT':
       case 'HUGEINT':
       case 'INTEGER':
@@ -225,7 +232,7 @@ export class DuckDBCodeGenerator extends SQLDialectCodeGenerator {
   }
 }
 
-const SUBSCRIPTABLE = new Set([COLUMN_PARAM, COLUMN_REF, FUNCTION, LIST, SLICE, SUBSCRIPT]);
+const SUBSCRIPTABLE = new Set([COLUMN_PARAM, COLUMN_REF, FUNCTION, LAMBDA_VAR, LIST, POSITIONAL_REF, SLICE, SUBSCRIPT]);
 
 function subscriptTarget(visitor: SQLCodeGenerator, expr: ExprNode) {
   const s = visitor.toString(expr);

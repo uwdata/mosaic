@@ -460,14 +460,14 @@ function starModifiers(visitor: SQLCodeGenerator, node: StarNode) {
   const { exclude, replace, rename } = node;
   const sql: string[] = [];
   if (exclude.length) {
-    sql.push(`EXCLUDE (${exclude.map(v => quoteIdentifier(v)).join(', ')})`);
+    sql.push(`EXCLUDE (${visitor.mapToString(exclude).join(', ')})`);
   }
   if (replace.length) {
     const list = replace.map(({ expr, alias }) => `${visitor.toString(expr)} AS ${quoteIdentifier(alias)}`);
     sql.push(`REPLACE (${list.join(', ')})`);
   }
   if (rename.length) {
-    const list = rename.map(([from, to]) => `${quoteIdentifier(from)} AS ${quoteIdentifier(to)}`);
+    const list = rename.map(({ expr, alias }) => `${visitor.toString(expr)} AS ${quoteIdentifier(alias)}`);
     sql.push(`RENAME (${list.join(', ')})`);
   }
   return sql.map(s => ` ${s}`).join('');

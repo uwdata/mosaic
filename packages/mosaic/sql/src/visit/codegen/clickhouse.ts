@@ -14,6 +14,7 @@ import {
   LiteralNode,
   NamedArgNode,
   PivotQuery,
+  PositionalRefNode,
   QuantifiedOpNode,
   Query,
   SampleClauseNode,
@@ -142,6 +143,10 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
   }
 
   visitNamedArg(node: NamedArgNode): never {
+    throw new Error(`${node.type} is not supported.`);
+  }
+
+  visitPositionalRef(node: PositionalRefNode): never {
     throw new Error(`${node.type} is not supported.`);
   }
 

@@ -61,6 +61,7 @@ export type MaybeArray<T> = T | T[];
 
 /** String indicating a JavaScript data type. */
 export type JSType =
+  | 'null'
   | 'number'
   | 'date'
   | 'boolean'

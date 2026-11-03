@@ -1,5 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import { scaleTransform } from '../src/index.js';
+import { queryFixture } from './util/validate.js';
 
 function transformExp(base: number) {
   return base === 10 ? (x: number) => Math.pow(10, x)
@@ -60,6 +61,37 @@ describe('scaleTransform', () => {
         expect(s.invert(v)).toBeCloseTo(i(v), 9);
         expect(s.invert(s.apply(v))).toBeCloseTo(v, 9);
       }
+    }
+  });
+
+  it('supports log scale SQL', async () => {
+    const cases: [number | undefined, string][] = [
+      [undefined, '(sign("num1") * ln(abs(nullif("num1", 0))))'],
+      [Math.E, '(sign("num1") * ln(abs(nullif("num1", 0))))'],
+      [10, '(sign("num1") * log(abs(nullif("num1", 0))))'],
+      [2, '(sign("num1") * (ln(abs(nullif("num1", 0))) / ln(2)))']
+    ];
+    for (const [base, sql] of cases) {
+      const s = scaleTransform<number>({ type: 'log', base });
+      await expect(s.sqlApply('num1')).toBeValidExpr(sql);
+    }
+  });
+
+  it('maps zero to null in log scale SQL', async () => {
+    const values = [-100, -5, 0, 5, 100];
+    for (const b of [2, Math.E, 10]) {
+      const s = scaleTransform<number>({ type: 'log', base: b });
+      const f = wrap(transformLog(b));
+      const rows = await queryFixture(
+        `SELECT ${s.sqlApply('v')} AS y FROM (VALUES ${values.map(v => `(${v}::DOUBLE)`).join(', ')}) AS t(v)`
+      );
+      values.forEach((v, i) => {
+        if (v === 0) {
+          expect(rows[i].y).toBeNull();
+        } else {
+          expect(rows[i].y).toBeCloseTo(f(v), 9);
+        }
+      });
     }
   });
 

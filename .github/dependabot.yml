@@ -11,6 +11,9 @@ updates:
 
   - package-ecosystem: npm
     directory: "/"
+    ignore:
+      - dependency-name: "ts-json-schema-generator"
+        versions: ["3.0.0--canary.*"]
     schedule:
       interval: monthly
     groups:

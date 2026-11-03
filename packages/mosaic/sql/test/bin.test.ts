@@ -1,7 +1,29 @@
 import { expect, describe, it } from 'vitest';
-import { binDate, binHistogram, scaleTransform } from '../src/index.js';
+import { bin1d, binDate, binHistogram, scaleTransform } from '../src/index.js';
+import { queryFixture } from './util/validate.js';
 
 describe('Binning transforms', () => {
+  describe('bin1d', () => {
+    it('scales values to bin units', async () => {
+      await expect(bin1d('num1', 0, 50, 100))
+        .toBeValidExpr('((("num1")::DOUBLE - 0) * (2)::DOUBLE)');
+
+      await expect(bin1d('num1', 0, 50, 100, true))
+        .toBeValidExpr('((50 - ("num1")::DOUBLE) * (2)::DOUBLE)');
+    });
+
+    it('maps an empty range to a constant bin', async () => {
+      const expr = bin1d('v', 5, 5, 100);
+      await expect(bin1d('num1', 5, 5, 100))
+        .toBeValidExpr('((("num1")::DOUBLE - 5) * (0)::DOUBLE)');
+
+      const rows = await queryFixture(
+        `SELECT floor(${expr})::INTEGER AS b FROM (VALUES (5), (-1e12), (1e12), (NULL)) AS t(v)`
+      );
+      expect(rows.map(r => r.b)).toEqual([0, 0, 0, null]);
+    });
+  });
+
   describe('binHistogram', () => {
     it('creates linear bins', async () => {
       await expect(binHistogram('num1', [0, 100], { steps: 10 }))
@@ -23,11 +45,11 @@ describe('Binning transforms', () => {
     it('creates non-linear bins', async () => {
       const log10 = scaleTransform<number>({ type: 'log', base: 10 })!;
       await expect(binHistogram('num1', [1, 1000], { steps: 5 }, log10))
-        .toBeValidExpr('(sign(floor((sign("num1") * log(abs("num1"))))) * (10 ** abs(floor((sign("num1") * log(abs("num1")))))))');
+        .toBeValidExpr('(sign(floor((sign("num1") * log(abs(nullif("num1", 0)))))) * (10 ** abs(floor((sign("num1") * log(abs(nullif("num1", 0))))))))');
 
       const log2 = scaleTransform<number>({ type: 'log', base: 2 })!;
       await expect(binHistogram('num1', [1, 64], { steps: 10 }, log2))
-        .toBeValidExpr('(sign(floor((sign("num1") * (ln(abs("num1")) / ln(2))))) * (2 ** abs(floor((sign("num1") * (ln(abs("num1")) / ln(2)))))))');
+        .toBeValidExpr('(sign(floor((sign("num1") * (ln(abs(nullif("num1", 0))) / ln(2))))) * (2 ** abs(floor((sign("num1") * (ln(abs(nullif("num1", 0))) / ln(2)))))))');
     });
 
     it('handles degenerate span', async () => {

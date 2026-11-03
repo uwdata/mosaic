@@ -1,5 +1,5 @@
 catalog:
-  "@uwdata/flechette": ^2.7.0
+  "@uwdata/flechette": ^2.7.1
 packages:
   - "packages/mosaic/*"
   - "packages/server/*"
@@ -11,3 +11,4 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - "@uwdata/flechette"
   - "@uwdata/wk-geojson"
+  - "@duckdb/duckdb-wasm@1.33.1-dev113.0"

@@ -30,6 +30,7 @@ import type {
   OrderByNode,
   ParamNode,
   PivotQuery,
+  PositionalRefNode,
   QuantifiedOpNode,
   DescribeQuery,
   SelectQuery,
@@ -86,6 +87,7 @@ import {
   ORDER_BY,
   PARAM,
   PIVOT_QUERY,
+  POSITIONAL_REF,
   QUANTIFIED_OPERATOR,
   SAMPLE_CLAUSE,
   SCALAR_SUBQUERY,
@@ -172,6 +174,7 @@ export abstract class SQLCodeGenerator {
       case ORDER_BY: return this.visitOrderBy;
       case PARAM: return this.visitParam;
       case PIVOT_QUERY: return this.visitPivotQuery;
+      case POSITIONAL_REF: return this.visitPositionalRef;
       case QUANTIFIED_OPERATOR: return this.visitQuantified;
       case SAMPLE_CLAUSE: return this.visitSampleClause;
       case SCALAR_SUBQUERY: return this.visitScalarSubquery;
@@ -240,6 +243,7 @@ export abstract class SQLCodeGenerator {
   abstract visitOrderBy(node: OrderByNode): string;
   abstract visitParam(node: ParamNode): string;
   abstract visitPivotQuery(node: PivotQuery): string;
+  abstract visitPositionalRef(node: PositionalRefNode): string;
   abstract visitQuantified(node: QuantifiedOpNode): string;
   abstract visitSampleClause(node: SampleClauseNode): string;
   abstract visitScalarSubquery(node: ScalarSubqueryNode): string;

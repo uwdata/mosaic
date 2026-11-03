@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-import functools
 import sys
 from typing import TYPE_CHECKING, Generic, NewType, TypeVar
 
 import msgspec
-import pyarrow as pa
 
 if TYPE_CHECKING:
     from starlette.responses import Response
-    from typing_extensions import Buffer
 
     from pkg.db import Database
 
@@ -32,11 +29,11 @@ class Command(
     sql: Sql
 
     def _query(self, db: Database, /) -> R:
-        msg = f"'{type(self).__name__}.{self._query.__name__}()' is not yet implemented"
+        msg = f"'{type(self).__name__}.{self._query.__name__}()' is not yet implemented"  # pragma: no cover
         raise NotImplementedError(msg)
 
     def _into_response(self, result: R, /) -> Response:
-        msg = f"'{type(self).__name__}.{self._into_response.__name__}()' is not yet implemented"
+        msg = f"'{type(self).__name__}.{self._into_response.__name__}()' is not yet implemented"  # pragma: no cover
         raise NotImplementedError(msg)
 
     def run(self, db: Database, /) -> Response:
@@ -51,7 +48,11 @@ if sys.version_info >= (3, 12):
     [PEP 688]: https://peps.python.org/pep-0688/
     """
 
-else:
+else:  # pragma: no cover
+    import functools
+
+    import pyarrow as pa
+    from typing_extensions import Buffer
 
     @functools.singledispatch
     def readonly_buffer(obj: Buffer, /) -> memoryview:

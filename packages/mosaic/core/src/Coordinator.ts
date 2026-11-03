@@ -59,6 +59,8 @@ export class Coordinator {
    * @param options.cache Boolean flag to enable/disable query caching, or a
    *  custom cache object.
    * @param options.ipc Arrow IPC extraction options.
+   * @param options.timeout Query timeout in milliseconds, measured from when
+   *  a query is sent to the connector. Disabled by default.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
    * @param options.codegen SQL dialect visitor for the backend.
@@ -70,6 +72,7 @@ export class Coordinator {
       manager?: QueryManager;
       cache?: boolean | Cache;
       ipc?: ExtractionOptions;
+      timeout?: number;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
       codegen?: SQLCodeGenerator;
@@ -80,6 +83,7 @@ export class Coordinator {
       manager = new QueryManager(),
       cache = true,
       ipc,
+      timeout,
       consolidate = true,
       preagg = {},
       codegen
@@ -87,6 +91,7 @@ export class Coordinator {
     this.manager = manager;
     this.manager.cache(cache);
     if (ipc) this.manager.ipc(ipc);
+    if (timeout !== undefined) this.manager.timeout(timeout);
     this.manager.consolidate(consolidate);
     if (codegen) this.manager.codegen(codegen);
     this.databaseConnector(db);
@@ -96,7 +101,8 @@ export class Coordinator {
   }
 
   /**
-   * Clear the coordinator state.
+   * Clear the coordinator state. Pending queries are rejected, and in-flight
+   * queries other than exec queries are aborted.
    * @param options Options object.
    * @param options.clients If true, disconnect all clients.
    * @param options.cache If true, clear the query cache.

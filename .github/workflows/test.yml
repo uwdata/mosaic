@@ -139,7 +139,7 @@ jobs:
 
           uv build
           uv run --group dev ty check
-          uv run --group dev pytest --cov-report=term-missing --color=yes --cov=pkg
+          uv run --group dev pytest --color=yes --cov=pkg
 
       - name: Build and test widget
         run: |
@@ -176,6 +176,11 @@ jobs:
           cache: true
           cache-workspaces: |-
             ./packages/server/duckdb-server-rust
+
+      # rust-cache prunes files but not directories outside cargo profile dirs, so it restores
+      # an empty duckdb-sources tree that makes the libduckdb-sys build script fail with ENOTEMPTY.
+      - name: Remove stale DuckDB sources
+        run: rm -rf ./packages/server/duckdb-server-rust/target/duckdb-sources
 
       - name: Format
         run: cargo fmt --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml -- --check
