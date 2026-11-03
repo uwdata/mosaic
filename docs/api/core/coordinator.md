@@ -26,10 +26,22 @@ Create a new Mosaic Coordinator to manage all database communication for clients
 
 ### Sketch aggregates
 
-Exact distinct counts and quantiles can not be computed by merging partial results, so by default queries containing `count(DISTINCT ...)`, `median`, or `quantile` aggregates are not pre-aggregated. When enabled via _useSketches_, Mosaic instead approximates these aggregates using mergeable sketches from the DuckDB [`datasketches` community extension](https://duckdb.org/community_extensions/extensions/datasketches), which it installs and loads as needed. Pre-aggregated tables store one sketch per bin, and selection updates merge the sketches of the selected bins.
+Exact distinct counts and quantiles can not be computed by merging partial results, so by default queries containing `count(DISTINCT ...)`, `median`, or `quantile` aggregates are not pre-aggregated. When enabled via _useSketches_, Mosaic instead approximates these aggregates using mergeable sketches from the DuckDB [`datasketches` extension](https://query.farm/products/extensions/datasketches/). Pre-aggregated tables store one sketch per bin, and selection updates merge the sketches of the selected bins.
 
 * Distinct counts (the _distinct_ flag): `count(DISTINCT x)` and `approx_count_distinct(x)` use a [Compressed Probabilistic Counting (CPC) sketch](https://datasketches.apache.org/docs/CPC/CpcSketches.html) (`lg_k = 11`, about 1.5% relative standard error), rounded to the nearest integer. Input values are hashed, so any column type is supported. CPC sketches have similar accuracy to HyperLogLog (HLL) sketches with `lg_k = 12`, but in benchmarks they were 2.5–20× smaller and merged 5–10× faster.
 * Quantiles (the _quantile_ flag): `median(x)`, `quantile(x, p)`, `quantile_cont(x, p)`, `quantile_disc(x, p)` and `approx_quantile(x, p)` use a [KLL sketch](https://datasketches.apache.org/docs/KLL/KLLSketch.html) (`k = 200`, about 1.65% normalized rank error). The quantile probability _p_ must be a single number literal. Results are values from the input data (no interpolation), so for example the median of `[3, 4]` is `3` rather than `3.5`. KLL sketches support numeric inputs only; for other types (such as dates) the pre-aggregated table can not be created, so Mosaic logs an error and falls back to standard queries.
+
+Mosaic loads the extension (`LOAD datasketches`) before it creates a pre-aggregated table with sketches, but it does not install the extension. If the extension is not installed, the pre-aggregated table can not be created, so Mosaic logs an error and falls back to standard queries.
+
+Before you enable _useSketches_, install the extension from the Query.Farm repository. Adding a repository requires the [`allow_extension_repositories`](https://duckdb.org/docs/2.0/extensions/extension_repositories#enabling-custom-repositories) setting:
+
+```sql
+SET allow_extension_repositories = 'allowed';
+CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX 'https://duckdb-extensions.query.farm';
+INSTALL datasketches FROM query_farm;
+```
+
+You only need to install the extension once per machine. Later sessions load the installed extension, so they do not need to enable `allow_extension_repositories` again.
 
 Sketches trade exactness for faster selection updates, which pays off only for larger data. Selection update cost for sketches grows with the number of sketches merged (selected bins × groups), whereas exact queries grow with the number of filtered rows. In our benchmarks, DuckDB's exact `count(DISTINCT)` stayed under 100 ms up to 50 million rows, so distinct count sketches help mainly beyond roughly 10 million rows (fewer with single-threaded DuckDB-WASM) and when a selection merges fewer than a few thousand sketches. Exact quantiles are much more expensive (around 100 ms per median at 10 million rows), so quantile sketches pay off from roughly 1 million rows. Use `{ quantile: true }` to enable only quantile sketches when exact distinct counts are fast enough. Building quantile sketches for many bins × groups can use a lot of memory (several GB for 20,000 groups on a 14-thread machine); increase the interactor _pixelSize_ to reduce the number of bins.
 

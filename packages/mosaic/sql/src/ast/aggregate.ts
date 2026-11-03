@@ -118,7 +118,7 @@ export function isAggregateFunction(name: string) {
 /**
  * An array of known aggregate function names.
  * From https://duckdb.org/docs/sql/functions/aggregates.html, plus
- * aggregates of the `datasketches` community extension.
+ * aggregates of the `datasketches` extension.
  */
 export const aggregateNames = [
   'any_value',

@@ -19,7 +19,7 @@ Create a `CREATE SCHEMA` query. Set _strict_ to `true` to omit `IF NOT EXISTS`.
 
 `loadExtension(extensionName, repository)`
 
-Generates a query to install and load a named DuckDB extension. For example, `vg.loadExtension("spatial")` will load the [`spatial` extension](https://duckdb.org/docs/extensions/spatial.html). The optional _repository_ argument indicates the repository to install from, such as `"community"` for [community extensions](https://duckdb.org/community_extensions/): `vg.loadExtension("datasketches", "community")`.
+Generates a query to install and load a named DuckDB extension. For example, `vg.loadExtension("spatial")` will load the [`spatial` extension](https://duckdb.org/docs/extensions/spatial.html). The optional _repository_ argument indicates the repository to install from, such as `"community"` for [community extensions](https://duckdb.org/community_extensions/).
 
 ## loadCSV
 

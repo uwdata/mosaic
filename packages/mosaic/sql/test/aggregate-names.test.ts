@@ -36,7 +36,7 @@ const macroBacked = new Set([
   'weighted_avg'
 ]);
 
-// Aggregates provided by the datasketches community extension,
+// Aggregates provided by the datasketches extension,
 // which the fixture DuckDB does not load.
 const extensionBacked = new Set([
   'datasketch_cpc',

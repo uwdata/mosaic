@@ -1,4 +1,4 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, isInDistinct, int32, literal, loadExtension, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, isInDistinct, int32, literal, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
 import type { BinMethod, ClauseDimension, ClauseSource, CompositeMetadata, IntervalDimension, IntervalMetadata, SelectionClause } from '../clause/index.js';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
@@ -23,7 +23,8 @@ export interface PreAggregateOptions {
   enabled?: boolean;
   /**
    * Approximate distinct count and quantile aggregates using mergeable
-   * sketches from the DuckDB `datasketches` extension (default false). Use
+   * sketches from the DuckDB `datasketches` extension (default false). The
+   * extension must be installed; this manager only loads it. Use
    * `true` to enable both, or an object with `distinct` and `quantile` flags
    * to enable them individually (unspecified flags default to false). This
    * setting can be updated later via the `useSketches` property.
@@ -117,8 +118,9 @@ export class PreAggregator {
   /**
    * Set the sketch approximation state of this manager. Selected distinct
    * count and quantile aggregates are approximated using mergeable sketches
-   * from the DuckDB `datasketches` community extension, enabling
-   * pre-aggregation for these otherwise unsupported aggregates. Use `true`
+   * from the DuckDB `datasketches` extension, enabling pre-aggregation for
+   * these otherwise unsupported aggregates. The extension must be installed;
+   * this manager only loads it. Use `true`
    * or `false` to enable or disable both, or an object with `distinct` and
    * `quantile` flags (unspecified flags default to false). Upon changes, any
    * local state is cleared.
@@ -264,7 +266,7 @@ export class PreAggregator {
         return null;
       }
       const createQuery = [
-        ...(preaggCols.sketches ? [loadExtension('datasketches', 'community')] : []),
+        ...(preaggCols.sketches ? ['LOAD datasketches'] : []),
         createSchema(schema),
         createTable(_info.table, _info.create, { temp: false })
       ];

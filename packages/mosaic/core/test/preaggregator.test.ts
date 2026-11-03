@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr, ScaleOptions } from '@uwdata/mosaic-sql';
-import { Query, add, argmax, argmin, avg, columns, corr, count, covarPop, covariance, cpcEstimate, cpcSketch, cte, desc, eq, filterPushdown, geomean, gt, hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch, literal, loadExtension, loadObjects, max, median, min, mul, neq, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, columns, corr, count, covarPop, covariance, cpcEstimate, cpcSketch, cte, desc, eq, filterPushdown, geomean, gt, hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch, literal, loadObjects, max, median, min, mul, neq, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clauseComposite, clauseInterval, clauseIntervals, clausePoint, type CompositeMetadata, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo, PreAggregateOptions } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
@@ -566,7 +566,12 @@ describe('PreAggregator selection clauses', () => {
 });
 
 describe('PreAggregator sketches', () => {
-  const sketchLoadQuery = `${loadExtension('datasketches', 'community')}; ${loadQuery}`;
+  const sketchLoadQuery = `
+    SET allow_extension_repositories = 'allowed';
+    CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX 'https://duckdb-extensions.query.farm';
+    INSTALL datasketches FROM query_farm;
+    LOAD datasketches FROM query_farm;
+    ${loadQuery}`;
   const point = () => clausePoint('dim', 'b', { source: {} });
 
   /**
@@ -679,10 +684,11 @@ describe('PreAggregator sketches', () => {
     expect(await runSketch(median('x').distinct(), true)).toStrictEqual([3.5, undefined]);
   });
 
+
   it('merges sketches across interval bins', async () => {
     const scale: ScaleOptions = { type: 'linear', domain: [0, 10], range: [0, 100] };
     const clause = clauseInterval('x', [1, 3], { source: {}, scale });
-    const { value, info, mc } = await runQuery(count('y').distinct(), clause, { useSketches: true });
+    const { value, info, mc } = await runQuery(count('y').distinct(), clause, { useSketches: true }, sketchLoadQuery);
     const preagg = (await mc.query(info!.query(clause))).toArray()[0].measure;
     expect([value, preagg]).toStrictEqual([3, 3]);
   });
