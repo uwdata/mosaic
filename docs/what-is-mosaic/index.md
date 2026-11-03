@@ -42,7 +42,7 @@ Next let's visualize over 200,000 flight records. The first histogram shows flig
 
 <Example spec="/specs/yaml/crossfilter.yaml" />
 
-When the selection changes we need to filter the data and recount the number of records in each bin. The Mosaic coordinator analyzes these queries and automatically optimizes updates by building tables (["materialized views"](https://en.wikipedia.org/wiki/Materialized_view)) of pre-aggregated data in the database, binned at the level of input pixels for the currently active view. See the [_preagg_ option](/api/core/coordinator#constructor) for details.
+When the selection changes we need to filter the data and recount the number of records in each bin. The Mosaic coordinator analyzes these queries and automatically optimizes updates by building tables (["materialized views"](https://en.wikipedia.org/wiki/Materialized_view)) of pre-aggregated data in the database, binned at the level of input pixels for the currently active view. For distinct counts and quantiles, which can not be merged exactly, the coordinator can optionally use approximate [sketches](/api/core/coordinator#sketch-aggregates). See the [_preagg_ option](/api/core/coordinator#constructor) for details.
 
 The coordinator also merges queries into a single query when they are issued in the same animation frame and differ only in their selected columns, such as the column statistics that several views request from the same table.
 
