@@ -10,17 +10,11 @@ import type { RootNode } from './ast/SpecNode.js';
 import { SpecNode } from './ast/SpecNode.js';
 import { componentMap } from './config/components.js';
 import { inputNames } from './config/inputs.js';
+import type { PlotNames } from './config/plots.js';
 import { plotNames } from './config/plots.js';
 import { transformNames } from './config/transforms.js';
 import type { JSONValue, Spec, SpecComponent } from './spec/index.js';
 import { error, paramRef } from './util.js';
-
-interface PlotNames {
-  attributes: Set<string>;
-  interactors: Set<string>;
-  legends: Set<string>;
-  marks: Set<string>;
-}
 
 type ComponentsMap = Map<string, (arg0: RootComponent, arg1: ParseContext) => RootNode>;
 type RootComponent = SpecComponent & { $schema?: string };
