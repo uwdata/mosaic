@@ -3,16 +3,20 @@ import {
   BinaryOpNode,
   CastNode,
   CollateNode,
+  ColumnNameRefNode,
   ColumnRefNode,
   ColumnsNode,
   CreateQuery,
   CreateSchemaQuery,
+  type ExprNode,
   FunctionNode,
   JoinNode,
   LambdaNode,
   LambdaVarNode,
+  ListNode,
   LiteralNode,
   NamedArgNode,
+  OrderByNode,
   PivotQuery,
   PositionalRefNode,
   QuantifiedOpNode,
@@ -30,11 +34,15 @@ import {
   WindowFrameNode,
   WindowFunctionNode,
   isColumnRef,
+  isQuery,
 } from '../../ast/index.js';
 import { LITERAL } from '../../constants.js';
 import { quoteIdentifier } from '../../util/string.js';
+import { sql } from '../../functions/sql-template-tag.js';
+import { rewrite } from '../rewrite.js';
 import { walk } from '../walk.js';
 import { SQLDialectCodeGenerator, isStarRef } from './dialect.js';
+import type { SQLCodeGenerator } from './sql.js';
 import type { ColumnDescription, JSType } from '../../types.js';
 
 /**
@@ -366,26 +374,34 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
     // referenced bare in GROUP BY / ORDER BY / HAVING. Rename each aliased
     // projection to a fresh placeholder so no inner alias collides with a
     // source column, then rename back in an outer SELECT so callers still
-    // see the original names.
-    if (!hasAliasCollision(node)) return super.visitSelectQuery(node);
+    // see the original names. Zipped UNNESTs always take this path, as their
+    // lists could otherwise resolve to same-named aliases.
+    const select = zipUnnests(this, node);
+    if (!select && !hasAliasCollision(node)) return super.visitSelectQuery(node);
     if (node._select.some(sel => isStarRef(sel.expr))) {
       throw new Error(
-        'Star projections cannot be combined with aliases that shadow source columns.'
+        'Star projections cannot be combined with shadowing aliases or multiple UNNESTs.'
       );
     }
 
     const inner = node.clone();
     inner._select = [];
+    const placeholders = new Map<string, string>();
     const projections: string[] = [];
-    for (let i = 0; i < node._select.length; i++) {
-      const { expr, alias } = node._select[i];
+    (select ?? node._select).forEach(({ expr, alias }, i) => {
       const placeholder = `__clickhouse_alias_${i}`;
       inner._select.push(new SelectClauseNode(expr, placeholder));
+      placeholders.set(alias, placeholder);
       projections.push(
         `${quoteIdentifier(placeholder)} AS ${quoteIdentifier(alias)}`
       );
-    }
-    return `SELECT ${projections.join(', ')} FROM (${super.visitSelectQuery(inner)})`;
+    });
+    inner._orderby = node._orderby.map(item => orderByPlaceholder(item, placeholders));
+    // CH drops ORDER BY keys after the GROUP BY keys, despite arrayJoin rows.
+    const settings = select && node._groupby.length && node._orderby.length
+      ? ' SETTINGS optimize_truncate_order_by_after_group_by_keys = 0'
+      : '';
+    return `SELECT ${projections.join(', ')} FROM (${super.visitSelectQuery(inner)}${settings})`;
   }
 
   visitJoinClause(node: JoinNode): string {
@@ -498,6 +514,63 @@ function hasAliasCollision(node: SelectQuery): boolean {
     if (foundCollision) break;
   }
   return foundCollision;
+}
+
+// DuckDB binds only a bare ORDER BY name, not one in an expression, to an alias.
+function orderByPlaceholder(item: ExprNode, placeholders: Map<string, string>): ExprNode {
+  const expr = item instanceof OrderByNode ? item.expr : item;
+  const placeholder = isColumnRef(expr) && !expr.table && placeholders.get(expr.column);
+  if (!placeholder) return item;
+  const ref = new ColumnNameRefNode(placeholder);
+  return item instanceof OrderByNode ? new OrderByNode(ref, item.desc, item.nullsFirst) : ref;
+}
+
+const ZIPPED_UNNEST = '__clickhouse_unnest';
+
+// DuckDB expands multiple UNNESTs in parallel; CH takes their cross product.
+// arrayZipUnaligned pads like DuckDB but rejects nested element types.
+function zipUnnests(visitor: SQLCodeGenerator, node: SelectQuery): SelectClauseNode[] | undefined {
+  const unnests = collectUnnests(node._select.map(sel => sel.expr));
+  const keys = unnests.map(u => visitor.toString(u.expr));
+  const distinct = [...new Set(keys)];
+  if (distinct.length < 2) return;
+  const { _where, _groupby, _having, _qualify, _orderby } = node;
+  if (collectUnnests([..._where, ..._groupby, ..._having, ..._qualify, ..._orderby]).length) {
+    throw new Error('UNNEST outside the select list cannot be combined with multiple UNNESTs.');
+  }
+  if (unnests.some(u => u.recursive || u.maxDepth > 0)) {
+    throw new Error('Recursive UNNEST is not supported.');
+  }
+
+  const lists = distinct.map(key => unnests[keys.indexOf(key)].expr);
+  const [first] = lists;
+  const aligned = first instanceof ListNode && lists.every(list =>
+    list instanceof ListNode && list.values.length === first.values.length);
+  const zip = new FunctionNode(aligned ? 'arrayZip' : 'arrayZipUnaligned', lists);
+  const map = new Map<ExprNode, ExprNode>(unnests.map((u, i) => {
+    const index = distinct.indexOf(keys[i]);
+    return [u, new FunctionNode('tupleElement', [
+      i === 0
+        ? sql`arrayJoin(${zip}) AS ${quoteIdentifier(ZIPPED_UNNEST)}`
+        : new ColumnNameRefNode(ZIPPED_UNNEST),
+      new LiteralNode(index + 1)
+    ])];
+  }));
+  return node._select.map(sel => new SelectClauseNode(rewrite(sel.expr, map)!, sel.alias));
+}
+
+function collectUnnests(exprs: ExprNode[]): UnnestNode[] {
+  const unnests = new Set<UnnestNode>();
+  for (const expr of exprs) {
+    walk(expr, n => {
+      if (isQuery(n)) return 1;
+      if (n instanceof UnnestNode) {
+        unnests.add(n);
+        return 1;
+      }
+    });
+  }
+  return [...unnests];
 }
 
 export const clickHouseCodeGenerator = /* @__PURE__ */ new ClickHouseCodeGenerator();

@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   Query,
+  add,
   all,
   WindowFunctionNode,
   WindowNode,
@@ -42,6 +43,7 @@ import {
   log,
   m4,
   mad,
+  max,
   min,
   mode,
   mul,
@@ -151,6 +153,23 @@ describe.skipIf(!enabled)('ClickHouse execution', { timeout: 15_000 }, () => {
       value: unnest(list([1, 2, 3]))
     }));
     expect(result).toEqual([{ value: 1 }, { value: 2 }, { value: 3 }]);
+  });
+
+  it('zips multiple unnests, padding shorter lists with null', async () => {
+    const result = await query(Query
+      .select({ xs: unnest('xs'), ys: unnest('ys') })
+      .from(sql`(SELECT [1, 2] AS xs, [10, 20, 30] AS ys)`));
+    expect(result).toEqual([
+      { xs: 1, ys: 10 }, { xs: 2, ys: 20 }, { xs: null, ys: 30 }
+    ]);
+  });
+
+  it('zips unnests of nested lists', async () => {
+    const result = await query(Query.select({
+      a: unnest(list([list([1]), list([2])])),
+      b: unnest(list([3, 4]))
+    }));
+    expect(result).toEqual([{ a: [1], b: 3 }, { a: [2], b: 4 }]);
   });
 
   it('executes filtered and distinct aggregates', async () => {
@@ -405,6 +424,19 @@ describe.skipIf(!enabled)('ClickHouse execution', { timeout: 15_000 }, () => {
     ));
   });
 
+  it('orders zipped unnests after keys covering the group by', async () => {
+    const source = sql`values('g String, x Int32, y Int32', ('a', 1, 5), ('a', 13, 7), ('b', 0, 2), ('b', 12, 9))`;
+    const result = await query(Query
+      .from(source)
+      .select({ x: unnest(list([min('x'), max('x')])), y: unnest(list([min('y'), max('y')])) }, 'g')
+      .groupby('g')
+      .orderby('g', desc('x')));
+    expect(result).toEqual([
+      { x: 13, y: 7, g: 'a' }, { x: 1, y: 5, g: 'a' },
+      { x: 12, y: 9, g: 'b' }, { x: 0, y: 2, g: 'b' }
+    ]);
+  });
+
   it('preserves ordering and limits through alias collision rewrites', async () => {
     const source = sql`values('x Int32', 3, 1, 2)`;
     const result = await query(Query
@@ -414,6 +446,15 @@ describe.skipIf(!enabled)('ClickHouse execution', { timeout: 15_000 }, () => {
       .orderby(desc('x'))
       .limit(2));
     expect(result).toEqual([{ x: 3 }, { x: 2 }]);
+  });
+
+  it('orders by aliases that shadow grouped source columns', async () => {
+    const source = sql`values('x Int32', 3, 1, 2, 5)`;
+    const q = Query.select({ x: mul(min('x'), -1) }).from(source).groupby('x');
+    expect(await query(q.clone().orderby('x')))
+      .toEqual([{ x: -5 }, { x: -3 }, { x: -2 }, { x: -1 }]);
+    expect(await query(q.clone().orderby(add('x', 0))))
+      .toEqual([{ x: -1 }, { x: -2 }, { x: -3 }, { x: -5 }]);
   });
 
   it('executes alias collision rewrites in having clauses', async () => {

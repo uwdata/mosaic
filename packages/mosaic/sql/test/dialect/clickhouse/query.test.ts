@@ -1,5 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import {
+  abs,
   all,
   argmax,
   asof_join,
@@ -97,6 +98,20 @@ describe('ClickHouse select-alias collision overrides', () => {
       + 'FROM (SELECT argMax("power", "time_stamp") AS "__clickhouse_alias_0", '
       + 'min("time_stamp") AS "__clickhouse_alias_1" '
       + 'FROM "t" GROUP BY "time_stamp")'
+    );
+  });
+
+  it('maps only bare ORDER BY aliases to placeholders', () => {
+    const q = Query
+      .select({ k: mul(-1, 'k'), n: count() })
+      .from('t')
+      .groupby('k')
+      .orderby('k', desc('n'), column('k', 't'), abs('k'));
+    expect(q.toString(gen)).toBe(
+      'SELECT "__clickhouse_alias_0" AS "k", "__clickhouse_alias_1" AS "n" '
+      + 'FROM (SELECT (-1 * "k") AS "__clickhouse_alias_0", count(*) AS "__clickhouse_alias_1" '
+      + 'FROM "t" GROUP BY "k" '
+      + 'ORDER BY "__clickhouse_alias_0", "__clickhouse_alias_1" DESC, "t"."k", abs("k"))'
     );
   });
 
