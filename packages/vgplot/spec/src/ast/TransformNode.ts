@@ -12,6 +12,11 @@ import type { IntervalTransform } from '../spec/Interval.js';
 import type {
   AggregateTransform,
   Bin,
+  CpcSketch,
+  CpcUnion,
+  HllSketch,
+  HllUnion,
+  KllSketch,
   Transform,
   TransformField,
   WindowTransform,
@@ -45,6 +50,8 @@ interface TransformOptions {
   frame: WindowFrameNode | null;
 }
 
+type SketchAggregate = CpcSketch | CpcUnion | HllSketch | HllUnion | KllSketch;
+
 /**
  * Return true if an object's keys intersect with {@link AggregateTransform} or
  * {@link WindowTransform} options.
@@ -53,7 +60,7 @@ const hasWindowOptions = (() => {
   const predicate = makeIsIn(
     new Set(['distinct', 'orderby', 'partitionby', 'rows', 'range', 'groups'] as const),
   );
-  return (spec: object): spec is AggregateTransform | WindowTransform =>
+  return (spec: object): spec is Exclude<AggregateTransform, SketchAggregate> | WindowTransform =>
     typeof Object.keys(spec).find(predicate) !== 'undefined';
 })();
 

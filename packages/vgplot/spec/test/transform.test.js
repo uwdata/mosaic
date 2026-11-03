@@ -43,6 +43,7 @@ it('instantiates sketch transforms', () => {
   assert(isNode(y))
   expect(isAggregateExpression(y)).toBe(1);
   expect(String(y)).toBe(String(cpcEstimate(cpcSketch('customer'))));
+  assert(isNode(y2))
   expect(isAggregateExpression(y2)).toBe(1);
   expect(String(y2)).toBe(String(kllQuantile(kllSketch('amount', 100), 0.5)));
 });
