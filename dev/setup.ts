@@ -37,13 +37,29 @@ export async function setDatabaseConnector(type) {
       connector = new RestConnector({ uri: 'https://localhost:3000/' });
       break;
     case 'wasm':
-      connector = wasm || (wasm = new DuckDBWASMConnector({
-        config: { filesystem: { forceFullHTTPReads: true } }
-      }));
+      if (!wasm) {
+        wasm = new DuckDBWASMConnector();
+        await installDatasketches(wasm);
+      }
+      connector = wasm;
       break;
     default:
       throw new Error(`Unrecognized connector type: ${type}`);
   }
   console.log('Database Connector', type);
   coordinator.databaseConnector(connector);
+}
+
+async function installDatasketches(connector) {
+  try {
+    for (const sql of [
+      'SET allow_extension_repositories = \'allowed\'',
+      'CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX \'https://duckdb-extensions.query.farm\'',
+      'LOAD datasketches FROM query_farm'
+    ]) {
+      await connector.query({ type: 'exec', sql });
+    }
+  } catch (error) {
+    console.warn('Could not load datasketches', error);
+  }
 }
