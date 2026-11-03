@@ -33,7 +33,13 @@ it('instantiates sketch transforms', () => {
     }],
   });
   const api = { cpcEstimate, cpcSketch, kllQuantile, kllSketch };
-  const { y, y2 } = ast.root.children[0].options.instantiate({ api });
+  const root = ast.root;
+  assert('children' in root)
+  const child = root.children[0]
+  assert('options' in child)
+  const options = child.options
+  assert.instanceOf(options, OptionsNode)
+  const { y, y2 } = options.instantiate({ api });
   expect(isAggregateExpression(y)).toBe(1);
   expect(String(y)).toBe(String(cpcEstimate(cpcSketch('customer'))));
   expect(isAggregateExpression(y2)).toBe(1);
