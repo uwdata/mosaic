@@ -35,14 +35,17 @@ Consider some time-series data with 50,000 sample points, visualized as an area 
 
 <Example spec="/specs/yaml/overview-detail.yaml" />
 
-Interaction with the top chart populates a Mosaic _selection_ with the queried data range. Mosaic's _coordinator_ manages access to the database, handles selection updates, and also caches results.
-But there's more: we don't need to draw all 50,000 points! After all, the chart itself is less than 700 pixels wide. [vgplot](/vgplot/), a Mosaic-based grammar of graphics, includes `area` and `line` marks that automatically apply optimizations to reduce the data to only a few sample points per-pixel, while preserving a perceptually faithful visualization.
+Interaction with the top chart populates a Mosaic _selection_ with the queried data range. Mosaic's _coordinator_ manages access to the database, handles selection updates, and also [caches results](/api/core/coordinator#query-cache).
+
+But there's more: we don't need to draw all 50,000 points! After all, the chart itself is less than 700 pixels wide. [vgplot](/vgplot/), a Mosaic-based grammar of graphics, includes `area` and `line` marks that automatically apply optimizations ([M4](https://www.vldb.org/pvldb/vol7/p797-jugel.pdf)) to reduce the data to only a few sample points per-pixel, while preserving a perceptually faithful visualization.
 
 Next let's visualize over 200,000 flight records. The first histogram shows flight arrival delays, the second shows hour of departure. Selecting intervals in one chart will cross-filter the other. _Try selecting highly delayed flights. Note how much more likely they are to leave later in the day._
 
 <Example spec="/specs/yaml/crossfilter.yaml" />
 
-When the selection changes we need to filter the data and recount the number of records in each bin. The Mosaic coordinator analyzes these queries and automatically optimizes updates by building tables (["materialized views"](https://en.wikipedia.org/wiki/Materialized_view)) of pre-aggregated data in the database, binned at the level of input pixels for the currently active view.
+When the selection changes we need to filter the data and recount the number of records in each bin. The Mosaic coordinator analyzes these queries and automatically optimizes updates by building tables (["materialized views"](https://en.wikipedia.org/wiki/Materialized_view)) of pre-aggregated data in the database, binned at the level of input pixels for the currently active view. For distinct counts and quantiles, which can not be merged exactly, the coordinator can optionally use approximate [sketches](/api/core/coordinator#sketch-aggregates). See the [_preagg_ option](/api/core/coordinator#constructor) for details.
+
+The coordinator also merges queries into a single query when they are issued in the same animation frame and differ only in their selected columns, such as the column statistics that several views request from the same table.
 
 While 200,000 points will stress many web-based visualization tools, Mosaic doesn't break a sweat. Now go ahead and try this with [10 million records](/examples/flights-10m)!
 
