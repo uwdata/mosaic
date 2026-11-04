@@ -209,6 +209,9 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
     }
 
     const key = node.name.toLowerCase();
+    if (key.startsWith('datasketch_')) {
+      throw new Error(`${node.name} is not supported.`);
+    }
 
     // REGRESSION aggregates
     if (key.startsWith('regr_')) {
@@ -312,6 +315,9 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
 
   visitFunction(node: FunctionNode): string {
     const { name, args } = node;
+    if (name.toLowerCase().startsWith('datasketch_')) {
+      throw new Error(`${name} is not supported.`);
+    }
     switch (name.toLowerCase()) {
       // DATETIME
       case 'epoch_ms': {

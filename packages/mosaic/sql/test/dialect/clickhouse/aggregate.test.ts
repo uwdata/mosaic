@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { argmax, argmin, arrayAgg, asc, clickHouseCodeGenerator, column, count, desc, first, geomean, last, mad, mode, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSlope, regrSXX, regrSXY, regrSYY, stringAgg, sum } from '../../../src/index.js';
+import { argmax, argmin, arrayAgg, asc, clickHouseCodeGenerator, column, count, cpcEstimate, cpcSketch, desc, first, geomean, kllQuantile, kllSketch, last, mad, mode, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSlope, regrSXX, regrSXY, regrSYY, stringAgg, sum } from '../../../src/index.js';
 
 const gen = clickHouseCodeGenerator;
 
@@ -43,6 +43,15 @@ describe('ClickHouse aggregate overrides', () => {
   it('throws on last', () => {
     expect(() => last('foo').toString(gen))
       .toThrow(/last.* is not supported in ClickHouse/);
+  });
+
+  it('throws on datasketches functions', () => {
+    expect(() => cpcSketch('foo').toString(gen))
+      .toThrow(/datasketch_cpc is not supported/);
+    expect(() => kllQuantile(kllSketch('foo'), 0.5).toString(gen))
+      .toThrow(/datasketch_kll_quantile is not supported/);
+    expect(() => cpcEstimate(column('s')).toString(gen))
+      .toThrow(/datasketch_cpc_estimate is not supported/);
   });
 
   it('rewrites quantile', () => {
