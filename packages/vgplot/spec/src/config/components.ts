@@ -18,7 +18,8 @@ export type ComponentName = (typeof NAMES)[number]
  * Map of specification keys to component parsers.
  */
 export function componentMap(overrides: [ComponentName, ComponentParser][] = []): Map<ComponentName, ComponentParser> {
-  return new Map([
+  // TODO @dangotbanned: Revisit typing `ComponentMap` once all nodes are typed
+  return new Map<any, any>([
     [ PLOT, parsePlot ],
     [ LEGEND, parseLegend ],
     [ INPUT, parseInput ],
