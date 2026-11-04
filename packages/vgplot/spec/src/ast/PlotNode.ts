@@ -5,36 +5,44 @@ import { parseAttribute } from './PlotAttributeNode.js';
 import { parseInteractor } from './PlotInteractorNode.js';
 import { parseLegend } from './PlotLegendNode.js';
 import { parseMark } from './PlotMarkNode.js';
+import type { PlotInteractorNode } from './PlotInteractorNode.js';
+import type { PlotLegendNode } from './PlotLegendNode.js';
+import type { PlotMarkNode } from './PlotMarkNode.js';
+import type { PlotAttributeNode } from './PlotAttributeNode.js';
+import type { ParseContext } from '../parse-spec.js';
+import type { InstantiateContext } from '../ast-to-dom.js';
+import type { CodegenContext } from '../ast-to-esm.js';
+import type { Plot } from '../spec/Plot.js';
+import type { PlotMark } from '../spec/PlotMark.js';
 
-export function parseTopLevelMark(spec, ctx) {
-  return parsePlot({ plot: [ spec ] }, ctx);
+export function parseTopLevelMark(spec: PlotMark, ctx: ParseContext): PlotNode {
+  return parsePlot({ plot: [spec] }, ctx);
 }
 
-export function parsePlot(spec, ctx) {
+export function parsePlot(spec: Plot, ctx: ParseContext): PlotNode {
   const { [PLOT]: entries, ...attrs } = spec;
   const attributes = Object.entries(attrs)
     .map(([key, value]) => parseAttribute(key, value, ctx));
 
   const children = entries.map(spec => {
-    return isString(spec.mark) ? parseMark(spec, ctx)
-      : isString(spec.legend) ? parseLegend(spec, ctx)
-      : isString(spec.select) ? parseInteractor(spec, ctx)
-      : ctx.error('Invalid plot entry.', spec);
+    return 'mark' in spec ? parseMark(spec, ctx)
+      : 'legend' in spec ? parseLegend(spec, ctx)
+        : isString(spec.select) ? parseInteractor(spec, ctx)
+          : ctx.error('Invalid plot entry.', spec);
   });
 
   return new PlotNode(children, attributes);
 }
 
-export class PlotNode extends ParentNode {
-  constructor(children, attributes) {
+export class PlotNode extends ParentNode<HTMLElement, Plot> {
+  constructor(readonly children: (PlotMarkNode | PlotLegendNode | PlotInteractorNode)[], readonly attributes: PlotAttributeNode[] = []) {
     super(PLOT, children);
-    this.attributes = attributes;
   }
 
-  instantiate(ctx) {
+  instantiate(ctx: InstantiateContext): HTMLElement {
     const attrs = [
-      ...(ctx.plotDefaults || []),
-      ...(this.attributes || [])
+      ...(ctx.plotDefaults),
+      ...(this.attributes)
     ];
     return ctx.api[PLOT](
       this.children.map(c => c.instantiate(ctx)),
@@ -42,7 +50,7 @@ export class PlotNode extends ParentNode {
     );
   }
 
-  codegen(ctx) {
+  codegen(ctx: CodegenContext): string {
     const { type, children, attributes } = this;
     ctx.indent();
     const entries = [
@@ -55,9 +63,9 @@ export class PlotNode extends ParentNode {
     return `${ctx.tab()}${ctx.ns()}${type}(\n${entries}\n${ctx.tab()})`;
   }
 
-  toJSON() {
-    const { type, children, attributes } = this;
-    const plot = { [type]: children.map(c => c.toJSON()) };
+  toJSON(): Plot {
+    const { children, attributes } = this;
+    const plot = { plot: children.map(c => c.toJSON()) };
     for (const a of attributes) {
       Object.assign(plot, a.toJSON());
     }
