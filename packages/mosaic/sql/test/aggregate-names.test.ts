@@ -36,6 +36,21 @@ const macroBacked = new Set([
   'weighted_avg'
 ]);
 
+// Aggregates provided by the datasketches extension,
+// which the fixture DuckDB does not load.
+const extensionBacked = new Set([
+  'datasketch_cpc',
+  'datasketch_cpc_union',
+  'datasketch_frequent_items',
+  'datasketch_hll',
+  'datasketch_hll_union',
+  'datasketch_kll',
+  'datasketch_quantiles',
+  'datasketch_req',
+  'datasketch_tdigest',
+  'datasketch_theta'
+]);
+
 describe('aggregateNames', () => {
   it('matches the aggregates in the fixture DuckDB', async () => {
     const rows = await queryFixture(`
@@ -55,12 +70,12 @@ describe('aggregateNames', () => {
     ).toEqual([]);
 
     const removed = aggregateNames
-      .filter(name => !duckdb.has(name) && !macroBacked.has(name))
+      .filter(name => !duckdb.has(name) && !macroBacked.has(name) && !extensionBacked.has(name))
       .sort();
     expect(
       removed,
       'aggregateNames entries no longer DuckDB aggregates; remove these ' +
-      `(or add them to the macroBacked set above): ${JSON.stringify(removed)}`
+      `(or add them to the macroBacked or extensionBacked sets above): ${JSON.stringify(removed)}`
     ).toEqual([]);
   });
 });

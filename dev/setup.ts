@@ -32,7 +32,7 @@ export function clear(api = vg) {
 
 let wasm;
 
-export function setDatabaseConnector(type) {
+export async function setDatabaseConnector(type) {
   let connector;
   switch (type) {
     case 'rest':
@@ -45,9 +45,11 @@ export function setDatabaseConnector(type) {
       connector = devClickHouseConnector();
       break;
     case 'wasm':
-      connector = wasm || (wasm = new DuckDBWASMConnector({
-        config: { filesystem: { forceFullHTTPReads: true } }
-      }));
+      if (!wasm) {
+        wasm = new DuckDBWASMConnector();
+        await installDatasketches(wasm);
+      }
+      connector = wasm;
       break;
     default:
       throw new Error(`Unrecognized connector type: ${type}`);
@@ -61,4 +63,18 @@ export function setDatabaseConnector(type) {
   vg = createAPIContext({ coordinator });
   namedPlots = vg.context.namedPlots;
   Object.assign(self, { vg });
+}
+
+async function installDatasketches(connector) {
+  try {
+    for (const sql of [
+      'SET allow_extension_repositories = \'allowed\'',
+      'CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX \'https://duckdb-extensions.query.farm\'',
+      'LOAD datasketches FROM query_farm'
+    ]) {
+      await connector.query({ type: 'exec', sql });
+    }
+  } catch (error) {
+    console.warn('Could not load datasketches', error);
+  }
 }

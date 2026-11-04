@@ -311,8 +311,8 @@ importers:
   packages/mosaic/core:
     dependencies:
       '@duckdb/duckdb-wasm':
-        specifier: 1.33.1-dev113.0
-        version: 1.33.1-dev113.0
+        specifier: 1.33.1-dev114.0
+        version: 1.33.1-dev114.0
       '@uwdata/flechette':
         specifier: 'catalog:'
         version: 2.7.1
@@ -626,8 +626,8 @@ packages:
       search-insights:
         optional: true
 
-  '@duckdb/duckdb-wasm@1.33.1-dev113.0':
-    resolution: {integrity: sha512-S+6Tmmcmsj5zy5sxhJW30znnsvmyz7/NWomCFmQfwEHE9yj+ewGzU1PLE8hEh7vab5s9CFC+T8Zu2ehfApBuLg==}
+  '@duckdb/duckdb-wasm@1.33.1-dev114.0':
+    resolution: {integrity: sha512-0sk+bv9iY7GuDQ0n0BlXBO6FucZ8PPVzGswOJh6kXoGuPe0SJRc49oyn+PNcz2JNE2XmD+Wi60fRUjTloHn6bw==}
 
   '@duckdb/node-api@2.0.0-r.1':
     resolution: {integrity: sha512-SA4oG7X9UNpSJsr99b7rbJxSs7n5KqMEGV1kC04TxdsYHjGH6w4kGEOiC/yXzvgWr6Jd1WRQD9RUPTX6qGdEwg==}
@@ -5187,7 +5187,7 @@ snapshots:
     transitivePeerDependencies:
       - '@algolia/client-search'
 
-  '@duckdb/duckdb-wasm@1.33.1-dev113.0':
+  '@duckdb/duckdb-wasm@1.33.1-dev114.0':
     dependencies:
       apache-arrow: 17.0.0
       qs: 6.15.0
