@@ -5,22 +5,22 @@ const gen = clickHouseCodeGenerator;
 
 describe('ClickHouse aggregate overrides', () => {
   it('rewrites arg_max', () => {
-    expect(argmax('foo', 'bar').toString(gen)).toBe('argMax("foo", "bar")');
+    expect(argmax('foo', 'bar').toString(gen)).toBe('argMaxOrNull("foo", "bar")');
   });
 
   it('rewrites arg_min', () => {
-    expect(argmin('foo', 'bar').toString(gen)).toBe('argMin("foo", "bar")');
+    expect(argmin('foo', 'bar').toString(gen)).toBe('argMinOrNull("foo", "bar")');
   });
 
   it('rewrites aggregate filters', () => {
     expect(sum('foo').where(column('t')).toString(gen))
-      .toBe('sumIf("foo", "t")');
+      .toBe('sumIfOrNull("foo", "t")');
     expect(count().where(column('t')).toString(gen))
       .toBe('countIf("t")');
     expect(argmax('foo', 'bar').where(column('t')).toString(gen))
-      .toBe('argMaxIf("foo", "bar", "t")');
+      .toBe('argMaxIfOrNull("foo", "bar", "t")');
     expect(quantile('foo', 0.25).where(column('t')).toString(gen))
-      .toBe('quantileExactLowIf(0.25)("foo", "t")');
+      .toBe('quantileExactLowIfOrNull(0.25)("foo", "t")');
   });
 
   it('combines distinct and filter aggregate combinators', () => {
@@ -55,7 +55,7 @@ describe('ClickHouse aggregate overrides', () => {
   });
 
   it('rewrites quantile', () => {
-    expect(quantile('foo', 0.25).toString(gen)).toBe('quantileExactLow(0.25)("foo")');
+    expect(quantile('foo', 0.25).toString(gen)).toBe('quantileExactLowOrNull(0.25)("foo")');
   });
 
   it('rewrites mode', () => {
@@ -63,7 +63,7 @@ describe('ClickHouse aggregate overrides', () => {
   });
 
   it('rewrites geomean', () => {
-    expect(geomean('foo').toString(gen)).toBe('exp(avg(ln("foo")))');
+    expect(geomean('foo').toString(gen)).toBe('exp(avgOrNull(ln("foo")))');
   });
 
   it('rewrites product', () => {
@@ -79,7 +79,7 @@ describe('ClickHouse aggregate overrides', () => {
     expect(mode('foo').where(column('t')).toString(gen))
       .toBe('topKIf(1)("foo", "t")[1]');
     expect(geomean('foo').where(column('t')).toString(gen))
-      .toBe('exp(avgIf(ln("foo"), "t"))');
+      .toBe('exp(avgIfOrNull(ln("foo"), "t"))');
     expect(product('foo').where(column('t')).toString(gen))
       .toBe('if(empty(groupArrayIf("foo", "t")), NULL, arrayProduct(groupArrayIf("foo", "t")))');
     expect(product('foo').distinct().where(column('t')).toString(gen))

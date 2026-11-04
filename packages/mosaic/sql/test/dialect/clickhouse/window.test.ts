@@ -22,7 +22,7 @@ describe('ClickHouse window overrides', () => {
   it('renders window functions', () => {
     expect(row_number().toString(gen)).toBe('row_number() OVER ()');
     expect(first_value('value').toString(gen))
-      .toBe('first_value("value") OVER ()');
+      .toBe('first_value("value") RESPECT NULLS OVER ()');
     const ignoreNulls = new WindowFunctionNode(
       'first_value',
       [column('value')],
@@ -52,9 +52,9 @@ describe('ClickHouse window overrides', () => {
 
   it('renders rows and range frames', () => {
     expect(sum('value').frame(frameRows([null, 0])).toString(gen))
-      .toBe('sum("value") OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)');
+      .toBe('sumOrNull("value") OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)');
     expect(sum('value').orderby('value').frame(frameRange([1, 0])).toString(gen))
-      .toBe('sum("value") OVER (ORDER BY "value" RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)');
+      .toBe('sumOrNull("value") OVER (ORDER BY "value" RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)');
   });
 
   it('rejects groups frames', () => {

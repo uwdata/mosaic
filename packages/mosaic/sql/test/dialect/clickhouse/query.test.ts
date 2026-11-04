@@ -95,8 +95,8 @@ describe('ClickHouse select-alias collision overrides', () => {
       .groupby(column('time_stamp'));
     expect(q.toString(gen)).toBe(
       'SELECT "__clickhouse_alias_0" AS "power", "__clickhouse_alias_1" AS "time_stamp" '
-      + 'FROM (SELECT argMax("power", "time_stamp") AS "__clickhouse_alias_0", '
-      + 'min("time_stamp") AS "__clickhouse_alias_1" '
+      + 'FROM (SELECT argMaxOrNull("power", "time_stamp") AS "__clickhouse_alias_0", '
+      + 'minOrNull("time_stamp") AS "__clickhouse_alias_1" '
       + 'FROM "t" GROUP BY "time_stamp")'
     );
   });

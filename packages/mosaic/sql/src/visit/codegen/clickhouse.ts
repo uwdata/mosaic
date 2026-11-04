@@ -190,7 +190,8 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
     args: string[] = this.mapToString(node.args ?? []),
     params: string[] = []
   ): string {
-    const suffix = `${node.isDistinct ? 'Distinct' : ''}${node.filter ? 'If' : ''}`;
+    const orNull = NOT_NULL_ON_EMPTY.has(name.toLowerCase()) ? '' : 'OrNull';
+    const suffix = `${node.isDistinct ? 'Distinct' : ''}${node.filter ? 'If' : ''}${orNull}`;
     const values = [...args];
     if (!values.length && name.toLowerCase() === 'count' && !node.filter) {
       values.push('*');
@@ -447,7 +448,10 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
     if (key === 'nth_value' || (['lag', 'lead'].includes(key) && nullDefault)) {
       values[0] = `toNullable(${values[0]})`;
     }
-    return `${name}(${values.join(', ')})${ignoreNulls ? ' IGNORE NULLS' : ''}`;
+    const call = `${name}(${values.join(', ')})`;
+    if (ignoreNulls) return `${call} IGNORE NULLS`;
+    if (key === 'first_value' || key === 'last_value') return `${call} RESPECT NULLS`;
+    return call;
   }
 
   jsType(type: string): JSType {
@@ -507,6 +511,8 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
     }));
   }
 }
+
+const NOT_NULL_ON_EMPTY = new Set(['count', 'uniq', 'entropy', 'grouparray', 'topk', 'array_agg']);
 
 function hasAliasCollision(node: SelectQuery): boolean {
   const aliases = new Set(node._select

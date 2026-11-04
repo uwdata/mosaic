@@ -8,6 +8,7 @@ import {
   argmax,
   argmin,
   asof_join,
+  avg,
   bitAnd,
   bitLeft,
   bitNot,
@@ -25,6 +26,7 @@ import {
   div,
   epoch_ms,
   eq,
+  first_value,
   frameRows,
   geomean,
   gt,
@@ -34,6 +36,7 @@ import {
   isNaN,
   join,
   lag,
+  last_value,
   lead,
   list,
   listContains,
@@ -223,6 +226,27 @@ describe.skipIf(!enabled)('ClickHouse execution', { timeout: 15_000 }, () => {
     }]);
   });
 
+  it('returns null from empty aggregates, except counts', async () => {
+    const source = sql`values('x Int32, k Int32', (1, 1), (2, 2))`;
+    const keep = gt('x', 1);
+    const result = await query(Query
+      .select('k', {
+        sum: sum('x').where(keep),
+        min: min('x').where(keep),
+        avg: avg('x').where(keep),
+        argmax: argmax('x', 'k').where(keep),
+        median: quantile('x', 0.5).where(keep),
+        count: count('x').where(keep)
+      })
+      .from(source)
+      .groupby('k')
+      .orderby('k'));
+    expect(result).toEqual([
+      { k: 1, sum: null, min: null, avg: null, argmax: null, median: null, count: 0 },
+      { k: 2, sum: 2, min: 2, avg: 2, argmax: 2, median: 2, count: 1 }
+    ]);
+  });
+
   it('executes geometric means', async () => {
     const source = sql`values('x Float64', 1, 4)`;
     const [{ value }] = await query(Query
@@ -336,6 +360,23 @@ describe.skipIf(!enabled)('ClickHouse execution', { timeout: 15_000 }, () => {
       { i: 1, first: 2 },
       { i: 2, first: 2 },
       { i: 3, first: 2 }
+    ]);
+  });
+
+  it('respects nulls in first_value and last_value', async () => {
+    const source = sql`values('i Int32, x Nullable(Int32)', (1, NULL), (2, 2), (3, NULL))`;
+    const frame = frameRows([0, 1]);
+    const result = await query(Query
+      .select('i', {
+        first: first_value('x').orderby('i').frame(frame),
+        last: last_value('x').orderby('i').frame(frame)
+      })
+      .from(source)
+      .orderby('i'));
+    expect(result).toEqual([
+      { i: 1, first: null, last: 2 },
+      { i: 2, first: 2, last: null },
+      { i: 3, first: null, last: null }
     ]);
   });
 
