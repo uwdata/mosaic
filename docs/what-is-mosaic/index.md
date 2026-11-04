@@ -37,7 +37,7 @@ Consider some time-series data with 50,000 sample points, visualized as an area 
 
 Interaction with the top chart populates a Mosaic _selection_ with the queried data range. Mosaic's _coordinator_ manages access to the database, handles selection updates, and also [caches results](/api/core/coordinator#query-cache).
 
-But there's more: we don't need to draw all 50,000 points! After all, the chart itself is less than 700 pixels wide. [vgplot](/vgplot/), a Mosaic-based grammar of graphics, includes `area` and `line` marks that automatically apply optimizations ([M4](https://www.vldb.org/pvldb/vol7/p797-jugel.pdf), [M4 notebook](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization), [DashQL](https://arxiv.org/abs/2306.03714)) to reduce the data to only a few sample points per-pixel, while preserving a perceptually faithful visualization.
+But there's more: we don't need to draw all 50,000 points! After all, the chart itself is less than 700 pixels wide. [vgplot](/vgplot/), a Mosaic-based grammar of graphics, includes `area` and `line` marks that automatically apply optimizations ([M4](https://www.vldb.org/pvldb/vol7/p797-jugel.pdf)) to reduce the data to only a few sample points per-pixel, while preserving a perceptually faithful visualization.
 
 Next let's visualize over 200,000 flight records. The first histogram shows flight arrival delays, the second shows hour of departure. Selecting intervals in one chart will cross-filter the other. _Try selecting highly delayed flights. Note how much more likely they are to leave later in the day._
 
