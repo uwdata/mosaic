@@ -31,6 +31,14 @@ describe('PreAggregator preagg mode', () => {
     await expect(mc.preaggregator.dropSchema()).rejects.toBeInstanceOf(PreAggregateModeError);
   });
 
+  it('passes limits to the registry and keeps defaults for unset fields', () => {
+    const mc = new Coordinator(new MockPreaggConnector(), {
+      logger: null,
+      preagg: { mode: 'preagg', limits: { timeoutMs: 5 } }
+    });
+    expect(mc.preaggregator.registry!.limits).toEqual({ timeoutMs: 5, cooldownMs: 60_000 });
+  });
+
   it('waits for the server reference before issuing the update query', async () => {
     const connector = new MockPreaggConnector();
     const mc = preaggCoordinator(connector);

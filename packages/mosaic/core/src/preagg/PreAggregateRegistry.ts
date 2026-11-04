@@ -29,7 +29,9 @@ interface Failure {
 }
 
 export interface PreAggregateLimits {
+  /** How long to wait for a `preagg` response before giving up on the build (default 120 s). */
   timeoutMs: number;
+  /** How long after a failed build the same SQL is refused before it may be rebuilt (default 60 s). */
   cooldownMs: number;
 }
 
@@ -48,10 +50,14 @@ export class PreAggregateRegistry {
   private manager: Pick<QueryManager, 'connector' | 'logger' | 'invalidate'>;
   private entries = new Map<string, Entry>();
   private failures = new Map<string, Failure>();
-  limits: Readonly<PreAggregateLimits> = defaultLimits;
+  limits: Readonly<PreAggregateLimits>;
 
-  constructor(manager: Pick<QueryManager, 'connector' | 'logger' | 'invalidate'>) {
+  constructor(
+    manager: Pick<QueryManager, 'connector' | 'logger' | 'invalidate'>,
+    limits: Partial<PreAggregateLimits> = {}
+  ) {
     this.manager = manager;
+    this.limits = Object.freeze({ ...defaultLimits, ...limits });
   }
 
   lookup(sql: string): TableRefNode | null {

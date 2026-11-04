@@ -8,7 +8,7 @@ import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { QueryError } from '../util/query-error.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
-import { PreAggregateRegistry } from './PreAggregateRegistry.js';
+import { PreAggregateRegistry, type PreAggregateLimits } from './PreAggregateRegistry.js';
 import { subqueryPushdown } from './subquery-pushdown.js';
 import type { SketchOptions } from './sufficient-statistics.js';
 
@@ -39,6 +39,14 @@ export interface PreAggregateOptions {
    * @deprecated 'exec' mode will be removed once 'preagg' becomes the default; new code should set 'preagg'.
    */
   mode?: PreAggregateMode;
+  /**
+   * Time limits for 'preagg' mode builds: `timeoutMs` (default 120000) bounds
+   * how long a selection update waits for a `preagg` response before falling
+   * back to a standard query, and `cooldownMs` (default 60000) is how long a
+   * failed build's SQL is refused before it may be rebuilt. Ignored in
+   * 'exec' mode, where the coordinator `timeout` option applies instead.
+   */
+  limits?: Partial<PreAggregateLimits>;
 }
 
 type ActivePredicate = (clause?: SelectionClause) => MaybeArray<ExprNode>;
@@ -97,7 +105,8 @@ export class PreAggregator {
     schema = 'mosaic',
     enabled = true,
     useSketches = false,
-    mode = 'exec'
+    mode = 'exec',
+    limits
   }: PreAggregateOptions = {}) {
     this.entries = new Map();
     this.active = null;
@@ -106,7 +115,7 @@ export class PreAggregator {
     this._enabled = enabled;
     this._useSketches = sketchOptions(useSketches);
     this.mode = mode;
-    this.registry = mode === 'preagg' ? new PreAggregateRegistry(coordinator.manager) : null;
+    this.registry = mode === 'preagg' ? new PreAggregateRegistry(coordinator.manager, limits) : null;
   }
 
   /**

@@ -14,8 +14,7 @@ function setup(limits: Partial<PreAggregateLimits> = {}) {
   const manager = new QueryManager();
   manager.connector(connector);
   const invalidate = vi.spyOn(manager, 'invalidate');
-  const registry = new PreAggregateRegistry(manager);
-  registry.limits = { ...registry.limits, ...limits };
+  const registry = new PreAggregateRegistry(manager, limits);
   return { registry, connector, invalidate };
 }
 
