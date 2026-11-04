@@ -1,15 +1,15 @@
-/** @import { SpecNode } from '../ast/SpecNode.js' */
 import { SPATIAL_DATA } from '../ast/DataNode.js';
+import type { SpecNode } from '../ast/SpecNode.js';
 import { toArray } from '../util.js';
 
 /**
  * Construct a set of database extensions to load.
  * Automatically adds the spatial extension if a
  * dataset with format "spatial" is loaded.
- * @param {SpecNode} ast Mosaic AST root node.
- * @returns {Set<string>} A set of extension names.
+ * @param ast Mosaic AST root node.
+ * @returns A set of extension names.
  */
-export function resolveExtensions(ast) {
+export function resolveExtensions(ast: SpecNode): Set<string> {
   const spec = ast.config?.extensions;
   const exts = new Set(spec ? toArray(spec) : []);
 
