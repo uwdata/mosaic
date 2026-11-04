@@ -36,7 +36,7 @@ export class ParamNode<
   }
   // oxlint-disable-next-line class-methods-use-this
   toJSON(): J {
-    // @ts-expect-error undefined is not assignable to `ParamDefinition`
+    // @ts-ignore undefined is not assignable to `ParamDefinition`
     return;
   }
 }

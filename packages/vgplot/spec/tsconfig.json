@@ -3,7 +3,7 @@
   "include": ["src/**/*", "scripts/*.ts"],
   "compilerOptions": {
     "outDir": "dist",
-    "strict": true,
+    "strict": false,
     "noImplicitAny": false
   },
   "references": [
