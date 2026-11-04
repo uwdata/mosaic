@@ -145,6 +145,9 @@ export class PreAggregateRegistry {
     return true;
   }
 
+  // Nothing retries on its own: request() rejects this SQL until retryAt, and
+  // the first selection update after that issues a fresh build. Each failure
+  // restarts the cooldown, so attempts are paced rather than capped.
   private recordFailure(entry: Entry, error: ConnectorError): void {
     this.failures.set(entry.sql, { error, retryAt: Date.now() + this.limits.cooldownMs });
     this.manager.logger().warn('Preagg failure', entry.sql, error);

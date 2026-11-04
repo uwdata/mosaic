@@ -35,7 +35,7 @@ export interface PreAggregateOptions {
    */
   useSketches?: boolean | SketchOptions;
   /**
-   * 'exec' (default) issues CREATE statements; 'preagg' sends preagg commands and the server assigns the table.
+   * 'exec' (default) issues CREATE statements; 'preagg' sends preagg commands and the connector or its server assigns the table.
    * @deprecated 'exec' mode will be removed once 'preagg' becomes the default; new code should set 'preagg'.
    */
   mode?: PreAggregateMode;
@@ -169,7 +169,7 @@ export class PreAggregator {
    */
   set schema(schema: string) {
     if (this.mode === 'preagg') {
-      this.mc.logger().warn('preagg.schema is ignored in preagg mode; the server assigns the schema.');
+      this.mc.logger().warn('preagg.schema is ignored in preagg mode; the connector or its server assigns the schema.');
       return;
     }
     if (this._schema !== schema) {
@@ -198,7 +198,7 @@ export class PreAggregator {
   dropSchema(): Promise<unknown> {
     if (this.mode === 'preagg') {
       return Promise.reject(new PreAggregateModeError(
-        'dropSchema() is unavailable in preagg mode; the server owns materialized tables.'
+        'dropSchema() is unavailable in preagg mode; the connector or its server owns materialized tables.'
       ));
     }
     this.clear();
@@ -217,9 +217,10 @@ export class PreAggregator {
   }
 
   /**
-   * Clear local state and, in preagg mode, forget all server-assigned table
-   * references and clear the query cache. Call before changing credentials
-   * or authorization scope on the connector.
+   * Calls `clear()` and additionally, in preagg mode, abandons in-progress
+   * builds, forgets all server-assigned table references, and clears the
+   * query cache. Call before changing credentials or authorization scope
+   * on the connector.
    */
   reset(): void {
     this.resetGeneration += 1;

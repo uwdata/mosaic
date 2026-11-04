@@ -2,7 +2,10 @@ import type { PreaggResponse, TableReference } from './Connector.js';
 
 /** Values of `ConnectorError.code` the coordinator acts on. */
 export const ConnectorErrorCode = Object.freeze({
-  /** Sent by a server; `reference` names the managed table to rebuild. */
+  /**
+   * A server-managed pre-aggregated table no longer exists. The error's
+   * `reference` property names it so the coordinator can rebuild it.
+   */
   TableNotFound: 'table_not_found'
 } as const);
 
@@ -11,6 +14,7 @@ export type ConnectorErrorCode = typeof ConnectorErrorCode[keyof typeof Connecto
 export class ConnectorError extends Error {
   /** The server error envelope's code. Servers report codes beyond those the coordinator acts on; errors the client raises itself carry none. */
   code?: string;
+  /** The HTTP status code, for requests made over HTTP. */
   status?: number;
   /** The managed table to rebuild; present only for `table_not_found`. */
   reference?: TableReference;
@@ -39,6 +43,12 @@ export class PreAggregateModeError extends Error {
   }
 }
 
+/**
+ * Raised when the client abandons a request it issued, such as a pending
+ * materialization dropped by `PreAggregator.reset()`. Shares its `name` with
+ * the `DOMException` a cancelled `fetch` rejects with, so `isAbortError`
+ * recognizes both.
+ */
 export class AbortError extends Error {
   constructor(message = 'The operation was aborted', options?: ErrorOptions) {
     super(message, options);
@@ -46,7 +56,7 @@ export class AbortError extends Error {
   }
 }
 
-/** Also matches the `DOMException` a cancelled fetch rejects with, which is not an `AbortError` instance. */
+/** Matches by `name`, since the `DOMException` a cancelled `fetch` rejects with is not an `AbortError` instance. */
 export function isAbortError(value: unknown): boolean {
   return value instanceof Error && value.name === 'AbortError';
 }
@@ -69,6 +79,12 @@ export function parseErrorResponse(value: unknown, status?: number): ConnectorEr
   return new ConnectorError(error, fields);
 }
 
+/**
+ * Parse a protocol `TableReference`. Every part is required: a non-empty
+ * `catalog`, a `schema` path of one or more non-empty components, and a
+ * non-empty `table`. Nothing is defaulted; a partial reference yields null
+ * rather than a guess at the server's current catalog or schema.
+ */
 function parseTableReference(value: unknown): TableReference | null {
   const { catalog, schema, table } = (value ?? {}) as Record<string, unknown>;
   if (
@@ -81,7 +97,7 @@ function parseTableReference(value: unknown): TableReference | null {
   return { catalog, schema: schema as string[], table };
 }
 
-/** Quote a reference as `TableRefNode([catalog, ...schema, table])` input. */
+/** Flatten a reference into the `[catalog, ...schema, table]` name parts a `TableRefNode` takes. */
 export function referenceParts(reference: TableReference): string[] {
   return [reference.catalog, ...reference.schema, reference.table];
 }

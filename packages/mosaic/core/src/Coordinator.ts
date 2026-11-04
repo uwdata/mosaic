@@ -389,6 +389,9 @@ function updateSelection(
       return;
     }
 
+    // after each await below, a newer update for this client or its
+    // disconnection makes this one moot; updateClient assigns a fresh
+    // client.pending per update, so compare against the one captured before
     const superseded = (pending: Promise<unknown>) => client.pending !== pending
       || !mc.filterGroups.get(selection)?.clients.has(client);
 
@@ -396,10 +399,13 @@ function updateSelection(
       const pending = client.pending;
       // synchronized clients (plot marks) must hold their render for the build
       client.queryPending();
+      // wait for the materialized table; a failed build nulls info.result,
+      // which the check below turns into a standard query
       await info.result.catch(() => {});
       if (superseded(pending)) return;
     }
 
+    // a reset() during the wait bumps the generation and invalidates info
     if (info?.result && preaggregator.resetGeneration === resetGeneration) {
       // generate and issue preaggregate update query
       const query = info.query(active);
@@ -408,6 +414,8 @@ function updateSelection(
       const result = await pending;
       if (!(result instanceof QueryError)) return;
       if (superseded(pending)) return;
+      // in preagg mode the server may have dropped the table; recover()
+      // rebuilds it when the error names that table, then we retry once
       const recovered = await preaggregator.recover(client, info, table, result.cause);
       if (superseded(pending)) return;
       if (recovered && preaggregator.entries.get(client) === info) {

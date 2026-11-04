@@ -13,7 +13,7 @@ The optional _options_ argument is an object with a _signal_ property: an [`Abor
 
 For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `ArrowIPCBytes` value, which is an `ArrayBuffer`, a `Uint8Array`, or an array of `Uint8Array` chunks; the coordinator decodes them to an Arrow table.
 
-A `"preagg"` request asks the connector to materialize the given SELECT query and resolves to `{ reference, createdAt }`, where `reference` is `{ catalog, schema, table }` with `schema` a namespace path (outermost first), plus optional informational `rows` and `bytes` when the server reports them. The coordinator queries `TableRefNode([catalog, ...schema, table])`.
+A `"preagg"` request asks the connector to materialize the given SELECT query and resolves to `{ reference, createdAt }`, where `reference` is `{ catalog, schema, table }` with `schema` a namespace path (outermost first), plus optional informational `rows` and `bytes` when the server reports them. The coordinator queries `TableRefNode([catalog, ...schema, table])`. All built-in connectors accept these requests: `restConnector` forwards them to its data server, which must support the command, while `wasmConnector` and `NodeConnector` serve them in-process by creating a temporary table that lasts for the connection.
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
@@ -67,11 +67,11 @@ The supported options are:
 
 `new ConnectorError(message, fields)`
 
-The error a connector rejects with when a request fails. The optional _fields_ object may provide `code`, `status`, `reference`, and `cause`, which are exposed as instance properties:
+The error a connector raises when a request fails. The optional _fields_ object may provide `code`, `status`, `reference`, and `cause`, which are exposed as instance properties:
 
-- _code_: The server's machine-readable error-envelope code. The one value the coordinator acts on is exported as `ConnectorErrorCode.TableNotFound`; treat any other value as a generic failure.
+- _code_: The machine-readable code from the server's error response, if it sent one. The coordinator recognizes only `table_not_found`, exported as `ConnectorErrorCode.TableNotFound`, and treats every other code as a generic failure.
 - _status_: The HTTP status code, for requests made over HTTP.
 - _reference_: The `{ catalog, schema, table }` reference of a missing managed table. Present only for `table_not_found`, where the coordinator uses it to rebuild the table.
 - _cause_: The underlying error, when the failure wraps one.
 
-The codes a server may report are `bad_request`, `unauthenticated`, `forbidden`, `table_not_found`, `unsupported_command`, `resource_exhausted`, `deadline_exceeded`, and `internal_error`. Of these the coordinator acts only on `table_not_found`, rebuilding the table named by `reference`. Failures the client raises itself carry a descriptive message and no code: a `preagg` response it cannot parse, a build that exceeds its timeout, or a build it declines to start because a recent failure for the same query is still cooling down.
+The codes a server may report are `bad_request`, `unauthenticated`, `forbidden`, `table_not_found`, `unsupported_command`, `resource_exhausted`, `deadline_exceeded`, and `internal_error`. Failures the client raises itself carry a descriptive message and no code: a `preagg` response it cannot parse, a build that exceeds its timeout, or a build it declines to start because a recent failure for the same query is still cooling down.
