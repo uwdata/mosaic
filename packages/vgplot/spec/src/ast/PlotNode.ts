@@ -15,9 +15,6 @@ import type { CodegenContext } from '../ast-to-esm.js';
 import type { Plot } from '../spec/Plot.js';
 import type { PlotMark } from '../spec/PlotMark.js';
 
-export function parseTopLevelMark(spec: PlotMark, ctx: ParseContext): PlotNode {
-  return parsePlot({ plot: [spec] }, ctx);
-}
 
 export function parsePlot(spec: Plot, ctx: ParseContext): PlotNode {
   const { [PLOT]: entries, ...attrs } = spec;
