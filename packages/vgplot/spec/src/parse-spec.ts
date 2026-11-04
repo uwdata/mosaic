@@ -9,6 +9,7 @@ import { SelectionNode } from './ast/SelectionNode.js';
 import type { RootNode } from './ast/SpecNode.js';
 import { SpecNode } from './ast/SpecNode.js';
 import { componentMap } from './config/components.js';
+import type { ComponentName } from './config/components.js';
 import { inputNames } from './config/inputs.js';
 import type { PlotNames } from './config/plots.js';
 import { plotNames } from './config/plots.js';
@@ -16,8 +17,10 @@ import { transformNames } from './config/transforms.js';
 import type { JSONValue, Spec, SpecComponent } from './spec/index.js';
 import { error, paramRef } from './util.js';
 
-type ComponentsMap = Map<string, (arg0: RootComponent, arg1: ParseContext) => RootNode>;
+
 type RootComponent = SpecComponent & { $schema?: string };
+export type ComponentParser = (spec: RootComponent, ctx: ParseContext) => RootNode
+export type ComponentsMap = Map<ComponentName, ComponentParser>;
 
 /**
  * Optional parse options object.
