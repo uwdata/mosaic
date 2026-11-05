@@ -20,7 +20,7 @@ const PYTHON_GEN_DIR = path.resolve(path.join(SPEC_DIR, '..', 'vgplot-python/vgp
 const EXCLUDE_ATTRS = new Set(['margins']);
 
 const HEADER =
-  '# DO NOT EDIT. Generated from the Mosaic JSON schema by bin/generate-python-api.js.\n' +
+  '# DO NOT EDIT. Generated from the Mosaic JSON schema by packages/vgplot/spec/scripts/generate-python-api.ts.\n' +
   '# Regenerate with: pnpm run generate:python-api\n';
 
 /** Python identifier for a schema (camelCase) name, keyword-safe. */
@@ -250,13 +250,12 @@ function generateEncodings(defs) {
     out.join('\n').replace(/\n{3,}/g, '\n\n\n'),
   );
 
-  // Shared artifact for ast-to-python.js: the transform keys that have a
+  // Shared artifact for ast-to-python.ts: the transform keys that have a
   // Generated Python function, so the spec emitter needs no hand-kept list.
   writeFileSync(
-    path.join(SPEC_GEN_DIR, 'transform-keys.js'),
-    '// DO NOT EDIT. Generated from the Mosaic JSON schema by bin/generate-python-api.js.\n' +
-      '// Regenerate with: pnpm run generate:python-api\n\n' +
-      '/** Transform keys with a generated vgplot Python API function. */\n' +
+    path.join(SPEC_GEN_DIR, 'transform-keys.ts'),
+    HEADER.replaceAll("# ", "// ") +
+      '\n/** Transform keys with a generated vgplot Python API function. */\n' +
       'export const TRANSFORM_KEYS = new Set([\n' +
       transforms.map(({ key }) => `  '${key}',`).join('\n') +
       '\n]);\n',
