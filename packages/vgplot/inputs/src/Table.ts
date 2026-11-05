@@ -1,109 +1,114 @@
-/**
- * @import { Param, Selection } from '@uwdata/mosaic-core'
- * @import { FilterExpr, TableRefNode } from '@uwdata/mosaic-sql'
+import type { Selection, FieldInfo } from "@uwdata/mosaic-core";
+import type * as mc from "@uwdata/mosaic-core";
+import type * as msql from "@uwdata/mosaic-sql";
+import {
+  clausePoints,
+  isParam,
+  isSelection,
+  queryFieldInfo,
+  toDataColumns,
+} from "@uwdata/mosaic-core";
+import { Query, asTableRef, desc } from "@uwdata/mosaic-sql";
+import { formatDate, formatLocaleAuto, formatLocaleNumber } from "./util/format.js";
+import { Input, input } from "./input.js";
+
+/** Table options object.
+ *
+ * @property element The parent DOM element in which to place the table element. If undefined, a new `div` element is created.
+ * @property filterBy A selection to filter the database table indicated by the *from* option.
+ * @property as The output selection. A selection clause is added for the currently selected table row.
+ * @property align An object that maps column names to horizontal text alignment values. If unspecified, alignment is determined based on the column data type.
+ * @property format An object that maps column names to format functions to use for that column's data. Each format function takes a value as input and generates formatted text or an HTML element to show in the table.
+ * @property from The backing table name or `tableRef()` node to use as a data source for this widget. Used in conjunction with the *columns* option.
+ * @property columns The name of database columns to include in the table component. If unspecified, all columns are included. Used in conjunction with the *from* option.
+ * @property width If a number, sets the desired width of the table, in pixels. If an object, is used to set explicit pixel widths for each named column included in the object.
+ * @property maxWidth The maximum width of the table, in pixels.
+ * @property height The desired height of the table, in pixels.
+ * @property rowBatch The number of rows to request per query batch. The batch size will be used to prefetch data beyond the currently visible range.
  */
-import { clausePoints, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
-import { Query, asTableRef, desc } from '@uwdata/mosaic-sql';
-import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
-import { Input, input } from './input.js';
+interface TableOptions {
+  element?: HTMLElement;
+  filterBy?: Selection;
+  as?: Selection;
+  align?: { [name: string]: "left" | "right" | "center" };
+  format?: { [name: string]: (value: any) => string | HTMLElement };
+  from?: string | msql.TableRefNode | mc.Param<string | string[]>;
+  columns?: string[];
+  width?: number | { [name: string]: number };
+  maxWidth?: number;
+  height?: number;
+  rowBatch?: number;
+}
+
+type SortEventTarget = EventTarget & { firstChild?: HTMLElement };
 
 let _id = -1;
 
 /**
  * Create a new table input instance.
- * @param {object} options Options object
- * @param {HTMLElement} [options.element] The parent DOM element in which to
- *  place the table element. If undefined, a new `div` element is created.
- * @param {Selection} [options.filterBy] A selection to filter the database
- *  table indicated by the *from* option.
- * @param {Selection} [options.as] The output selection. A selection
- *  clause is added for the currently selected table row.
- * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
- *  An object that maps column names to horizontal text alignment values. If
- *  unspecified, alignment is determined based on the column data type.
- * @param {{ [name: string]: (value: any) => string | HTMLElement }} [options.format] An
- *  object that maps column names to format functions to use for that
- *  column's data. Each format function takes a value as input and generates
- *  formatted text or an HTML element to show in the table.
- * @param {string | TableRefNode | Param<string | string[]>} [options.from] The backing table name or `tableRef()` node to use as a data
- *  source for this widget. Used in conjunction with the *columns* option.
- * @param {string[]} [options.columns] The name of database columns to include
- *  in the table component. If unspecified, all columns are included.
- *  Used in conjunction with the *from* option.
- * @param {number | { [name: string]: number }} [options.width] If a number,
- *  sets the desired width of the table, in pixels. If an object, is used to
- *  set explicit pixel widths for each named column included in the object.
- * @param {number} [options.maxWidth] The maximum width of the table, in pixels.
- * @param {number} [options.height] The desired height of the table, in pixels.
- * @param {number} [options.rowBatch] The number of rows to request per query
- *  batch. The batch size will be used to prefetch data beyond the currently
- *  visible range.
- * @returns {HTMLElement} The container element for a table component.
+ * @param options Options object
+ * @returns The container element for a table component.
  */
-export const table = options => input(Table, options);
+export function table(options: TableOptions): HTMLElement {
+  return input(Table, options);
+}
 
-/**
- * A HTML table based table component.
- * @extends {Input}
- */
+/** A HTML table based table component. */
 export class Table extends Input {
-  /**
-   * Create a new Table instance.
-   * @param {object} options Options object
-   * @param {HTMLElement} [options.element] The parent DOM element in which to
-   *  place the table element. If undefined, a new `div` element is created.
-   * @param {Selection} [options.filterBy] A selection to filter the database
-   *  table indicated by the *from* option.
-   * @param {Selection} [options.as] The output selection. A selection
-   *  clause is added for the currently selected table row.
-   * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
-   *  An object that maps column names to horizontal text alignment values. If
-   *  unspecified, alignment is determined based on the column data type.
-   * @param {{ [name: string]: (value: any) => string | HTMLElement }} [options.format] An
-   *  object that maps column names to format functions to use for that
-   *  column's data. Each format function takes a value as input and generates
-   *  formatted text or an HTML element to show in the table.
-   * @param {string | TableRefNode | Param<string | string[]>} [options.from] The backing table name or `tableRef()` node to use as a data
-   *  source for this widget. Used in conjunction with the *columns* option.
-   * @param {string[]} [options.columns] The name of database columns to include
-   *  in the table component. If unspecified, all columns are included.
-   *  Used in conjunction with the *from* option.
-   * @param {number | { [name: string]: number }} [options.width] If a number,
-   *  sets the desired width of the table, in pixels. If an object, is used to
-   *  set explicit pixel widths for each named column included in the object.
-   * @param {number} [options.maxWidth] The maximum width of the table, in pixels.
-   * @param {number} [options.height] The desired height of the table, in pixels.
-   * @param {number} [options.rowBatch] The number of rows to request per query
-   *  batch. The batch size will be used to prefetch data beyond the currently
-   *  visible range.
-   */
+  id: string;
+  from: string | msql.TableRefNode | mc.Param<string | string[]>;
+  align: { [name: string]: "left" | "right" | "center" };
+  format?: { [name: string]: (value: any) => string | HTMLElement };
+  columns: string[];
+  widths: { [name: string]: number };
+  maxWidth?: number;
+  height: number;
+  rowBatch: number;
+  selection?: Selection;
+  offset: number;
+  limit: number;
+  isPending: boolean;
+  currentRow: number;
+  sortHeader: SortEventTarget | null;
+  sortColumn: string | null;
+  sortDesc: boolean;
+  tbl: HTMLTableElement;
+  head: HTMLTableSectionElement;
+  body: HTMLTableSectionElement;
+  style: HTMLStyleElement;
+  schema: FieldInfo[];
+  formats: any;
+  loaded: boolean;
+  data: mc.DataColumns[];
+
+  /** Create a new Table instance. */
   constructor({
     element,
     filterBy,
     from,
-    columns = ['*'],
+    columns = ["*"],
     align = {},
     format,
     width,
     maxWidth,
     height = 500,
     rowBatch = 100,
-    as
-  } = {}) {
-    super(filterBy, element, null);
+    as,
+  }: TableOptions = {}) {
+    super(filterBy, element);
 
     this.id = `table-${++_id}`;
-    this.element.setAttribute('id', this.id);
+    this.element.setAttribute("id", this.id);
 
     this.from = from;
     this.columns = columns;
     this.format = format;
     this.align = align;
-    this.widths = typeof width === 'object' ? width : {};
+    this.widths = typeof width === "object" ? width : {};
 
     if (isParam(from)) {
       // if data table is a param, re-initialize upon change
-      from.addEventListener('value', () => this.initialize());
+      from.addEventListener("value", () => this.initialize());
     }
 
     this.offset = 0;
@@ -117,13 +122,13 @@ export class Table extends Input {
     this.sortColumn = null;
     this.sortDesc = false;
 
-    if (typeof width === 'number') this.element.style.width = `${width}px`;
+    if (typeof width === "number") this.element.style.width = `${width}px`;
     if (maxWidth) this.element.style.maxWidth = `${maxWidth}px`;
     this.element.style.maxHeight = `${height}px`;
-    this.element.style.overflow = 'auto';
+    this.element.style.overflow = "auto";
 
     let prevScrollTop = -1;
-    this.element.addEventListener('scroll', evt => {
+    this.element.addEventListener("scroll", (evt) => {
       const { isPending, loaded } = this;
       // @ts-expect-error unpack event
       const { scrollHeight, scrollTop, clientHeight } = evt.target;
@@ -138,48 +143,49 @@ export class Table extends Input {
       }
     });
 
-    this.tbl = document.createElement('table');
+    this.tbl = document.createElement("table");
     this.element.appendChild(this.tbl);
 
-    this.head = document.createElement('thead');
+    this.head = document.createElement("thead");
     this.tbl.appendChild(this.head);
 
-    this.body = document.createElement('tbody');
+    this.body = document.createElement("tbody");
     this.tbl.appendChild(this.body);
 
     if (this.selection) {
-      this.body.addEventListener('pointerover', evt => {
+      this.body.addEventListener("pointerover", (evt) => {
         const row = resolveRow(evt.target);
         if (row > -1 && row !== this.currentRow) {
           this.currentRow = row;
           this.selection.update(this.clause([row]));
         }
       });
-      this.body.addEventListener('pointerleave', () => {
+      this.body.addEventListener("pointerleave", () => {
         this.currentRow = -1;
-        this.selection.update(this.clause(null));
+        this.selection.update(this.clause());
       });
     }
 
-    this.style = document.createElement('style');
+    this.style = document.createElement("style");
     this.element.appendChild(this.style);
   }
 
-  sourceTable() {
+  sourceTable(): msql.TableRefNode {
     return asTableRef(isParam(this.from) ? this.from.value : this.from);
   }
 
-  clause(rows) {
+  clause(rows?: number[]): mc.SelectionClause {
     const { data, limit, schema } = this;
-    const fields = schema.map(s => s.column);
-    const values = rows?.map(row => {
+    const fields = schema.map((s) => s.column);
+    const values = rows?.map((row) => {
+      //@ts-expect-error Property 'columns' does not exist on type 'DataColumns'.
       const { columns } = data[~~(row / limit)];
-      return fields.map(f => columns[f][row % limit]);
+      return fields.map((f) => columns[f][row % limit]);
     });
     return clausePoints(fields, values, { source: this });
   }
 
-  requestData(offset = 0) {
+  requestData(offset: number = 0): void {
     this.offset = offset;
 
     // request next data batch
@@ -190,21 +196,21 @@ export class Table extends Input {
     this.coordinator?.prefetch(query.clone().offset(offset + this.limit));
   }
 
-  async prepare() {
+  async prepare(): Promise<void> {
     // query for column schema information
     const table = this.sourceTable();
-    const fields = this.columns.map(column => ({ column, table }));
+    const fields = this.columns.map((column) => ({ column, table }));
     const schema = await queryFieldInfo(this.coordinator, fields);
     this.schema = schema;
 
     // create table header row
     const thead = this.head;
-    thead.innerHTML = '';
-    const tr = document.createElement('tr');
+    thead.innerHTML = "";
+    const tr = document.createElement("tr");
     for (const { column } of schema) {
-      const th = document.createElement('th');
-      th.addEventListener('click', evt => this.sort(evt, column));
-      th.appendChild(document.createElement('span'));
+      const th = document.createElement("th");
+      th.addEventListener("click", (evt) => this.sort(evt, column));
+      th.appendChild(document.createElement("span"));
       th.appendChild(document.createTextNode(column));
       tr.appendChild(th);
     }
@@ -217,24 +223,21 @@ export class Table extends Input {
     this.style.innerText = tableCSS(
       this.id,
       alignof(this.align, schema),
-      widthof(this.widths, schema)
+      widthof(this.widths, schema),
     );
   }
 
-  /**
-   * @param {FilterExpr} filter
-   */
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery {
     const { limit, offset, schema, sortColumn, sortDesc } = this;
     return Query.from(this.sourceTable())
-      .select(schema.map(s => s.column))
+      .select(schema.map((s) => s.column))
       .where(filter)
       .orderby(sortColumn ? (sortDesc ? desc(sortColumn) : sortColumn) : [])
       .limit(limit)
       .offset(offset);
   }
 
-  queryResult(data) {
+  queryResult(data: unknown): this {
     if (!this.isPending) {
       // data is not from an internal request, so reset table
       this.loaded = false;
@@ -246,27 +249,26 @@ export class Table extends Input {
     return this;
   }
 
-  update() {
+  update(): this {
     const { body, formats, data, schema, limit } = this;
     const nf = schema.length;
     const n = data.length - 1;
     const rowCount = limit * n;
-
+    //@ts-expect-error Property 'columns' does not exist on type 'DataColumns'.
     const { numRows, columns } = data[n];
-    const cols = schema.map(s => columns[s.column]);
+    const cols = schema.map((s) => columns[s.column]);
     for (let i = 0; i < numRows; ++i) {
-      const tr = document.createElement('tr');
+      const tr = document.createElement("tr");
       Object.assign(tr, { __row__: rowCount + i });
       for (let j = 0; j < nf; ++j) {
         const value = cols[j][i];
-        const td = document.createElement('td');
-        const formatted = value == null ? '' : formats[j](value);
+        const td = document.createElement("td");
+        const formatted = value == null ? "" : formats[j](value);
         if (formatted instanceof HTMLElement || formatted instanceof SVGElement) {
           td.appendChild(formatted);
         } else {
           td.innerText = formatted;
         }
-        
         tr.appendChild(td);
       }
       body.appendChild(tr);
@@ -281,13 +283,13 @@ export class Table extends Input {
     return this;
   }
 
-  activate() {
+  activate(): void {
     if (isSelection(this.selection)) {
       this.selection.activate(this.clause([]));
     }
   }
 
-  sort(event, column) {
+  sort(event: PointerEvent, column: string): void {
     if (column === this.sortColumn) {
       this.sortDesc = !this.sortDesc;
     } else {
@@ -295,16 +297,16 @@ export class Table extends Input {
       this.sortDesc = false;
     }
 
-    const th = event.currentTarget;
+    const th: SortEventTarget = event.currentTarget;
     const currentHeader = this.sortHeader;
     if (currentHeader === th && event.metaKey) {
-      currentHeader.firstChild.textContent = '';
+      currentHeader.firstChild.textContent = "";
       this.sortHeader = null;
       this.sortColumn = null;
     } else {
-      if (currentHeader) currentHeader.firstChild.textContent = '';
+      if (currentHeader) currentHeader.firstChild.textContent = "";
       this.sortHeader = th;
-      th.firstChild.textContent = this.sortDesc ? '▾'  : '▴';
+      th.firstChild.textContent = this.sortDesc ? "▾" : "▴";
     }
 
     // issue query for sorted data
@@ -314,36 +316,40 @@ export class Table extends Input {
 
 /**
  * Resolve a table row number from a table cell element.
- * @param {any} element An HTML element.
- * @returns {number} The resolved row, or -1 if not a row.
+ * @param element An HTML element.
+ * @returns The resolved row, or -1 if not a row.
  */
-function resolveRow(element) {
+function resolveRow(element: EventTarget): number {
+  //@ts-expect-error
   const p = element.parentElement;
-  return Object.hasOwn(p, '__row__') ? +p.__row__ : -1;
+  return Object.hasOwn(p, "__row__") ? +p.__row__ : -1;
 }
 
-function formatof(base = {}, schema, locale) {
+function formatof(base, schema) {
   return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
     } else {
       switch (type) {
-        case 'number': return formatLocaleNumber(locale);
-        case 'date': return formatDate;
-        default: return formatLocaleAuto(locale);
+        case "number":
+          return formatLocaleNumber();
+        case "date":
+          return formatDate;
+        default:
+          return formatLocaleAuto();
       }
     }
   });
 }
 
-function alignof(base = {}, schema) {
+function alignof(base, schema) {
   return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
-    } else if (type === 'number') {
-      return 'right';
+    } else if (type === "number") {
+      return "right";
     } else {
-      return 'left';
+      return "left";
     }
   });
 }
@@ -356,11 +362,11 @@ function tableCSS(id, aligns, widths) {
   const styles = [];
   aligns.forEach((a, i) => {
     const w = +widths[i];
-    if (a !== 'left' || w) {
-      const align = a !== 'left' ? `text-align:${a};` : '';
-      const width = w ? `width:${w}px;max-width:${w}px;` : '';
-      styles.push(`#${id} tr>:nth-child(${i+1}) {${align}${width}}`);
+    if (a !== "left" || w) {
+      const align = a !== "left" ? `text-align:${a};` : "";
+      const width = w ? `width:${w}px;max-width:${w}px;` : "";
+      styles.push(`#${id} tr>:nth-child(${i + 1}) {${align}${width}}`);
     }
   });
-  return styles.join(' ');
+  return styles.join(" ");
 }
