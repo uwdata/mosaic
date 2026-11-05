@@ -103,7 +103,10 @@ export class ParseContext {
         return parse(spec, this);
       }
     }
-    this.error('Invalid specification.', spec);
+    const keysExpected = Array.from(this.components.keys()).map((s) => `'${s}'`).join(' | ')
+    const keysFound = Object.keys(spec).map((s) => `'${s}'`).join(' | ')
+    const msg = `Invalid spec, object keys are disjoint from component keys.\nExpected: ${keysExpected}\nGot     : ${keysFound}`
+    this.error(msg, spec);
   }
 
   /**
