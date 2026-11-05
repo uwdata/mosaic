@@ -1,0 +1,40 @@
+name: Python Server
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/python-server-smoke.yml
+      - packages/server/duckdb-server/pyproject.toml
+      - uv.lock
+
+env:
+  PY_COLORS: 1
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ">=0.12.0"
+          enable-cache: true
+          cache-suffix: -${{ matrix.os }}
+          cache-dependency-glob: |
+            uv.lock
+            **/pyproject.toml
+
+      - name: Build server
+        run: uv build --package duckdb-server
+      - name: Test server
+        run: |
+          cd packages/server/duckdb-server
+          uv run pytest -m smoke --verbose
