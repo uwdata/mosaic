@@ -7,12 +7,10 @@ import type { ClauseMetadata, ClauseSource, SelectionClause } from './SelectionC
 export type BinMethod = 'floor' | 'ceil' | 'round';
 
 /**
- * Selection clause metadata for one or more selected intervals. This
- * metadata can be used to determine appropriate data-space binning
- * schemes that correspond to pixel-level bins in screen space.
+ * Interval binning hints, used to discretize a selected interval into
+ * data-space bins that correspond to pixel-level bins in screen space.
  */
-export interface IntervalMetadata extends ClauseMetadata {
-  type: 'interval';
+export interface IntervalBinning {
   /**
    * The interactive pixel size used by the generating component.
    * Values larger than one indicate intervals that "snap-to" values
@@ -20,21 +18,43 @@ export interface IntervalMetadata extends ClauseMetadata {
    */
   pixelSize?: number;
   /**
+   * A hint for the binning method to use when discretizing the
+   * interval domain. If unspecified, the default is `'floor'`.
+   */
+  bin?: BinMethod;
+}
+
+/**
+ * Selection clause metadata for one or more selected intervals. This
+ * metadata can be used to determine appropriate data-space binning
+ * schemes that correspond to pixel-level bins in screen space.
+ */
+export interface IntervalMetadata extends ClauseMetadata, IntervalBinning {
+  type: 'interval';
+  /**
    * An array of one or more scale descriptors that describe the
    * mapping from data values to screen pixels.
    */
   scales?: ScaleOptions[];
+}
+
+/**
+ * Metadata for a single selected interval dimension, for example within
+ * a composite selection clause. The corresponding value is a [lo, hi] array.
+ */
+export interface IntervalDimension extends ClauseMetadata, IntervalBinning {
+  type: 'interval';
   /**
-   * A hint for the binning method to use when discretizing the
-   * interval domain. If unspecified, the default is `'floor'`.
+   * A scale descriptor that describes the mapping from data values
+   * to screen pixels.
    */
-  bin?: BinMethod
+  scale?: ScaleOptions;
 }
 
 /**
  * Options for interval-type selection clauses.
  */
-export interface IntervalOptions {
+export interface IntervalOptions extends IntervalBinning {
   /**
    * A unique identifier (according to object equality) for the source
    * component that generated this clause. In many cases, this is a
@@ -46,17 +66,6 @@ export interface IntervalOptions {
    * be updated when this clause is applied in a cross-filtering context.
    */
   clients?: Set<MosaicClient>;
-  /**
-   * A hint for the binning method to use when discretizing the
-   * interval domain. If unspecified, the default is `'floor'`.
-   */
-  bin?: BinMethod;
-  /**
-   * The interactive pixel size used by the generating component.
-   * Values larger than one indicate intervals that "snap-to" values
-   * greater than a single pixel. If unspecified, assumed to be `1`.
-   */
-  pixelSize?: number;
 }
 
 /**

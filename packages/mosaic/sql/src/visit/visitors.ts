@@ -1,8 +1,12 @@
 import { type AggregateNode, aggregateNames } from '../ast/aggregate.js';
-import type { ColumnRefNode } from '../ast/column-ref.js';
+import type { ColumnsNode } from '../ast/columns.js';
+import { type ColumnRefNode, ColumnNameRefNode } from '../ast/column-ref.js';
+import type { LiteralNode } from '../ast/literal.js';
+import type { ListNode } from '../ast/list.js';
 import type { SQLNode } from '../ast/node.js';
 import type { ParamNode } from '../ast/param.js';
-import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, FRAGMENT, PARAM, SCALAR_SUBQUERY, VERBATIM, WINDOW } from '../constants.js';
+import { StarNode } from '../ast/star.js';
+import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, COLUMNS, FRAGMENT, LIST, LITERAL, PARAM, POSITIONAL_REF, SCALAR_SUBQUERY, VERBATIM, WINDOW } from '../constants.js';
 import type { ParamLike } from '../types.js';
 import { walk } from './walk.js';
 
@@ -83,17 +87,43 @@ export function collectAggregates(root: SQLNode) {
  * Collect all unique column references.
  * Multiple references to the same column are de-duplicated, even if
  * they are not object-equal node instances.
+ * COLUMNS expressions with a list of names contribute those columns;
+ * regular expression and lambda selectors contribute a '*' column reference.
+ * Positional references (#n) also contribute a '*' column reference.
+ * Star expressions contribute themselves and any columns referenced by
+ * REPLACE expressions, but not EXCLUDE or RENAME columns.
  * @param root The root of the AST to search.
  */
 export function collectColumns(root: SQLNode) {
   const cols: Record<string, ColumnRefNode> = {};
-  walk(root, (node) => {
-    if (node.type === COLUMN_REF || node.type === COLUMN_PARAM) {
+  const visit = (node: SQLNode): number | void => {
+    if (node instanceof StarNode) {
+      cols[`${node}`] = node;
+      node.replace.forEach(c => walk(c, visit));
+      return 1;
+    } else if (node.type === COLUMN_REF || node.type === COLUMN_PARAM) {
        // key on string-coerced node
       cols[`${node}`] = (node as ColumnRefNode);
+    } else if (node.type === COLUMNS) {
+      for (const ref of selectedColumns(node as ColumnsNode)) {
+        cols[`${ref}`] = ref;
+      }
+    } else if (node.type === POSITIONAL_REF) {
+      cols['*'] = new ColumnNameRefNode('*');
     }
-  });
+  };
+  walk(root, visit);
   return Object.values(cols);
+}
+
+function selectedColumns({ selector }: ColumnsNode): ColumnRefNode[] {
+  if (selector.type === COLUMN_REF) return [];
+  const names = selector.type === LIST
+    ? (selector as ListNode).values.map(v => v.type === LITERAL ? (v as LiteralNode).value : null)
+    : [];
+  return names.length && names.every(name => typeof name === 'string')
+    ? names.map(name => new ColumnNameRefNode(name as string))
+    : [new ColumnNameRefNode('*')];
 }
 
 /**

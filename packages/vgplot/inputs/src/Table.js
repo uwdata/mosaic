@@ -157,7 +157,7 @@ export class Table extends Input {
       });
       this.body.addEventListener('pointerleave', () => {
         this.currentRow = -1;
-        this.selection.update(this.clause());
+        this.selection.update(this.clause(null));
       });
     }
 
@@ -169,10 +169,10 @@ export class Table extends Input {
     return isParam(this.from) ? this.from.value : this.from;
   }
 
-  clause(rows = []) {
+  clause(rows) {
     const { data, limit, schema } = this;
     const fields = schema.map(s => s.column);
-    const values = rows.map(row => {
+    const values = rows?.map(row => {
       const { columns } = data[~~(row / limit)];
       return fields.map(f => columns[f][row % limit]);
     });

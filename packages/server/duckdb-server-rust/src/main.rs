@@ -61,13 +61,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut listenfd = ListenFd::from_env();
     let listener = match listenfd.take_tcp_listener(0)? {
         // if we are given a tcp listener on listen fd 0, we use that one
-        Some(listener) => {
-            listener.set_nonblocking(true)?;
-            listener
-        }
+        Some(listener) => listener,
         // otherwise fall back to local listening
         None => TcpListener::bind(addr)?,
     };
+    listener.set_nonblocking(true)?;
 
     // Run the server
     match config {

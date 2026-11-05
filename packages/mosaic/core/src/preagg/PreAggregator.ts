@@ -1,5 +1,5 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
-import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../clause/index.js';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, isInDistinct, int32, literal, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
+import type { BinMethod, ClauseDimension, ClauseSource, CompositeMetadata, IntervalDimension, IntervalMetadata, SelectionClause } from '../clause/index.js';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
@@ -8,6 +8,7 @@ import { resolvePositional } from '../util/positional.js';
 import { QueryError } from '../util/query-error.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 import { subqueryPushdown } from './subquery-pushdown.js';
+import type { SketchOptions } from './sufficient-statistics.js';
 
 /**
  * Dummy preaggregate info object that indicates a view should be skipped
@@ -20,6 +21,15 @@ export interface PreAggregateOptions {
   schema?: string;
   /** Flag to enable or disable the pre-aggregation. This flag can be updated later via the `enabled` property. */
   enabled?: boolean;
+  /**
+   * Approximate distinct count and quantile aggregates using mergeable
+   * sketches from the DuckDB `datasketches` extension (default false). The
+   * extension must be installed; this manager only loads it. Use
+   * `true` to enable both, or an object with `distinct` and `quantile` flags
+   * to enable them individually (unspecified flags default to false). This
+   * setting can be updated later via the `useSketches` property.
+   */
+  useSketches?: boolean | SketchOptions;
 }
 
 type ActivePredicate = (clause?: SelectionClause) => MaybeArray<ExprNode>;
@@ -47,7 +57,8 @@ interface PreAggregateInfoOptions {
  *
  * Compatible client queries must consist of only groupby dimensions and
  * supported aggregate functions. Compatible selections must contain an active
- * clause that exposes metadata for an interval or point value predicate.
+ * clause that exposes metadata for an interval, point, or composite
+ * value predicate.
  *
  * Materialized views are written to a dedicated schema (namespace) that
  * can be set using the *schema* constructor option. This schema acts as a
@@ -62,6 +73,7 @@ export class PreAggregator {
   private mc: Coordinator;
   private _schema: string;
   private _enabled: boolean;
+  private _useSketches: Required<SketchOptions>;
 
   /**
    * Create a new manager of materialized views of pre-aggregated data.
@@ -70,13 +82,15 @@ export class PreAggregator {
    */
   constructor(coordinator: Coordinator, {
     schema = 'mosaic',
-    enabled = true
+    enabled = true,
+    useSketches = false
   }: PreAggregateOptions = {}) {
     this.entries = new Map();
     this.active = null;
     this.mc = coordinator;
     this._schema = schema;
     this._enabled = enabled;
+    this._useSketches = sketchOptions(useSketches);
   }
 
   /**
@@ -99,6 +113,35 @@ export class PreAggregator {
    */
   get enabled(): boolean {
     return this._enabled;
+  }
+
+  /**
+   * Set the sketch approximation state of this manager. Selected distinct
+   * count and quantile aggregates are approximated using mergeable sketches
+   * from the DuckDB `datasketches` extension, enabling pre-aggregation for
+   * these otherwise unsupported aggregates. The extension must be installed;
+   * this manager only loads it. Use `true`
+   * or `false` to enable or disable both, or an object with `distinct` and
+   * `quantile` flags (unspecified flags default to false). Upon changes, any
+   * local state is cleared.
+   * @param state The sketch approximation state to set.
+   */
+  set useSketches(state: boolean | SketchOptions) {
+    const next = sketchOptions(state);
+    const prev = this._useSketches;
+    if (prev.distinct !== next.distinct || prev.quantile !== next.quantile) {
+      this.clear();
+      this._useSketches = next;
+    }
+  }
+
+  /**
+   * Get the sketch approximation state of this manager.
+   * @returns The current sketch approximation state, with a flag for
+   *  each sketchable aggregate type.
+   */
+  get useSketches(): Readonly<Required<SketchOptions>> {
+    return this._useSketches;
   }
 
   /**
@@ -202,7 +245,7 @@ export class PreAggregator {
     }
 
     // get non-active materialized view columns
-    const preaggCols = preaggColumns(client);
+    const preaggCols = preaggColumns(client, this.useSketches);
 
     let info: PreAggregateInfo | typeof Skip | null;
     if (!preaggCols) {
@@ -218,6 +261,10 @@ export class PreAggregator {
         client.query(filter) as SelectQuery,
         active, preaggCols, schema
       );
+      if (!_info) {
+        entries.set(client, null);
+        return null;
+      }
       const createQuery = [
         createSchema(schema),
         createTable(_info.table, _info.create, { temp: false })
@@ -234,6 +281,16 @@ export class PreAggregator {
     entries.set(client, info);
     return info;
   }
+}
+
+/**
+ * Normalize a sketch approximation setting to per-aggregate flags.
+ * @param state A boolean flag for all aggregates, or per-aggregate flags.
+ */
+function sketchOptions(state: boolean | SketchOptions): Required<SketchOptions> {
+  return Object.freeze(typeof state === 'boolean'
+    ? { distinct: state, quantile: state }
+    : { distinct: !!state?.distinct, quantile: !!state?.quantile });
 }
 
 /**
@@ -263,31 +320,23 @@ function activeColumns(clause: SelectionClause): ActiveColumnsResult {
       );
       return rewrite(clause.predicate, map)!;
     };
-  } else if (meta.type === 'interval') {
-    // apply pixel-level binning, bail if a scale type is unsupported
-    const { scales, bin, pixelSize = 1 } = meta as IntervalMetadata;
-    const bins = scales?.map((s: ScaleOptions) => binInterval(s, pixelSize, bin));
-    if (bins?.every(b => b != null)) {
-      fields.forEach((f, i) => { columns[`active${i}`] = bins[i](f); });
-      if (bins.length === 1) {
-        // single interval selection
-        // selection clause predicate has type BetweenOpNode
-        predicate = (clause?: SelectionClause) => {
-          if (!clause?.predicate) return [];
-          const v = clause.value as number[];
-          return isBetween('active0', v.map(bins[0]));
-        };
-      } else {
-        // multiple interval selection
-        // selection clause predicate has type AndNode<BetweenOpNode>
-        predicate = (clause?: SelectionClause) => {
-          if (!clause?.predicate) return [];
-          const v = clause.value as number[][];
-          return and(
-            fields.map((_, i) => isBetween(`active${i}`, v[i].map(bins[i])))
-          );
-        };
-      }
+  } else if (meta.type === 'interval' || meta.type === 'composite') {
+    const dims = meta.type === 'interval'
+      ? intervalDimensions(meta as IntervalMetadata)
+      : (meta as CompositeMetadata).dims;
+    const bindings = dims?.length === fields.length
+      ? dims.map((d, i) => bindDimension(d, `active${i}`))
+      : undefined;
+    if (bindings?.every(b => b != null)) {
+      fields.forEach((f, i) => { columns[`active${i}`] = bindings[i].column(f); });
+      predicate = (clause?: SelectionClause) => {
+        if (!clause?.predicate) return [];
+        // clauseInterval values are a single [lo, hi] extent, not a list
+        const v = clause.value as unknown[];
+        const values = meta.type === 'interval' && !Array.isArray(v[0]) ? [v] : v;
+        const preds = bindings.flatMap((b, i) => values[i] == null ? [] : b.predicate(values[i]));
+        return preds.length === 1 ? preds[0] : and(preds);
+      };
     }
   }
 
@@ -295,6 +344,48 @@ function activeColumns(clause: SelectionClause): ActiveColumnsResult {
     return { source, columns, predicate };
   } else {
     return { source: null, columns: undefined, predicate };
+  }
+}
+
+interface DimensionBinding {
+  column: (field: ExprNode) => ExprNode;
+  predicate: (value: unknown) => ExprNode;
+}
+
+/**
+ * Expand interval clause metadata into per-field interval dimensions.
+ * @param meta The interval clause metadata.
+ */
+function intervalDimensions(
+  { scales, bin, pixelSize }: IntervalMetadata
+): IntervalDimension[] | undefined {
+  return scales?.map(scale => ({ type: 'interval', scale, bin, pixelSize }));
+}
+
+/**
+ * Determine the active column and predicate generator for a single
+ * selection dimension, or undefined if the dimension is not indexable.
+ * @param dim The selection dimension metadata.
+ * @param name The active column name.
+ */
+function bindDimension(
+  dim: ClauseDimension,
+  name: string
+): DimensionBinding | undefined {
+  if (dim.type === 'point') {
+    return {
+      column: field => field,
+      predicate: value => isInDistinct(name, (value as unknown[]).map(v => literal(v)))
+    };
+  } else if (dim.type === 'interval' && dim.scale) {
+    // apply pixel-level binning, bail if a scale type is unsupported
+    const bin = binInterval(dim.scale, dim.pixelSize ?? 1, dim.bin);
+    if (bin) {
+      return {
+        column: bin,
+        predicate: value => isBetween(name, (value as ExprValue[]).map(bin))
+      };
+    }
   }
 }
 
@@ -314,10 +405,16 @@ function binInterval(
   pixelSize: number,
   bin?: BinMethod
 ): ((value: ExprValue) => ExprNode) | undefined {
-  const { type, domain, range, apply, sqlApply } = scaleTransform(scale)!;
-  if (!apply) return; // unsupported scale type
+  let transform;
+  try {
+    transform = scaleTransform<number>(scale);
+  } catch {
+    return; // unsupported scale type
+  }
+  const { type, domain, range, apply, sqlApply } = transform;
+  if (!apply || (type !== 'identity' && !(domain && range))) return;
   const binFn = BIN[`${bin}`.toLowerCase()] || floor;
-  const dom = domain!.map(x => Number(x));
+  const dom = domain ? domain.map(x => Number(x)) : [0];
   const lo = apply(Math.min(...dom));
   const hi = apply(Math.max(...dom));
   const s = (type === 'identity'
@@ -338,25 +435,27 @@ function binInterval(
  * @param active Active (selected) columns.
  * @param preaggCols Pre-aggregation columns.
  * @param schema Database schema name.
- * @returns Pre-aggregation information.
+ * @returns Pre-aggregation information, or null if the active columns
+ *  can not be pushed down to the source table.
  */
 function preaggregateInfo(
   query: SelectQuery,
   active: ActiveColumnsResult,
   preaggCols: PreAggColumnsResult,
   schema: string
-): PreAggregateInfo {
+): PreAggregateInfo | null {
   query = deepClone(query);
   const { groupby, having, orderby, output, preagg, qualify, source } = preaggCols;
   const { columns = {} } = active;
   const selectClauses = query._select;
 
   // top-level select and group by changes are overwritten below
-  subqueryPushdown(
+  const pushed = subqueryPushdown(
     query,
     source,
     Object.values(columns).flatMap(c => collectColumns(c).map(c => c.column))
   );
+  if (!pushed) return null;
 
   // build materialized view construction query
   const create = Query

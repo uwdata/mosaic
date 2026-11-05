@@ -1,68 +1,158 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Protocol, final
+from typing import TYPE_CHECKING, Final, Literal, NewType, Protocol, final
 
 import msgspec
+import platformdirs
 
 if TYPE_CHECKING:
-    from _typeshed import Incomplete
-    from typing_extensions import Self
-
-DIR_PKG = Path(__file__).parent.parent
-DIR_DUCKDB_SERVER = DIR_PKG.parent
-KEYFILE = DIR_DUCKDB_SERVER / "localhost-key.pem"
-CERTFILE = DIR_DUCKDB_SERVER / "localhost.pem"
+    from collections.abc import Generator
+    from typing import LiteralString, Self
 
 
-@final
-class Args(msgspec.Struct):
-    database: Path | str = ":memory:"
-    """Path of database file (e.g., "database.db". ":memory:" for in-memory database)."""
+_DEFAULT_CERT: Final = Path("localhost.pem")
+_DEFAULT_KEY: Final = Path("localhost-key.pem")
 
+ENV_DB_PATH = "MOSAIC_DB_PATH"
+IN_MEMORY_DB_NAME = ":memory:"
+
+Url = NewType("Url", str)
+
+
+def user_config_path() -> Path:
+    return platformdirs.user_config_path(
+        appauthor="mosaic", appname="https", roaming=True
+    )
+
+
+class _HelpFormatter(
+    argparse.RawDescriptionHelpFormatter,
+    argparse.ArgumentDefaultsHelpFormatter,
+): ...
+
+
+class _BaseArgs(msgspec.Struct):
     address: str = "127.0.0.1"
     """HTTP Address."""
 
     port: int = 3000
     """HTTP Port."""
 
-    ssl_cert: Path | None = CERTFILE
-
-    ssl_key: Path | None = KEYFILE
-
     log_level: Literal[0, 10, 20, 30, 40, 50] = logging.DEBUG
 
-    def with_ssl_exists(self) -> Args:
-        if (
-            (cert := self.ssl_cert)
-            and cert.exists()
-            and (key := self.ssl_key)
-            and key.exists()
-        ):
-            return self
+    reload: bool = False
 
-        # TODO @dangotbanned: Log that paths were not found
-        self.ssl_cert = self.ssl_key = None
-        return self
+
+class SSL(msgspec.Struct):
+    cert: Path
+    key: Path
+
+
+@final
+class ResolvedArgs(_BaseArgs):
+    ssl: SSL | None = None
+
+    def base_url(self) -> Url:
+        scheme = "https" if self.ssl else "http"
+        return Url(f"{scheme}://{self.address}:{self.port}")
+
+
+def file_exists(path: Path, /) -> bool:
+    return path.is_file() and path.exists()
+
+
+@final
+class Args(_BaseArgs):
+    ssl_cert: Path = _DEFAULT_CERT
+    ssl_key: Path = _DEFAULT_KEY
+    no_http2: bool = False
+    """Escape hatch to make benchmarking and testing possible."""
+
+    def resolve(self) -> ResolvedArgs:
+        host, port, level, reload = self.address, self.port, self.log_level, self.reload
+        if self.no_http2:  # pragma: no cover
+            return ResolvedArgs(host, port, level, reload)
+        cert, key = self.ssl_cert, self.ssl_key
+        if file_exists(cert) and file_exists(key):
+            return ResolvedArgs(host, port, level, reload, ssl=SSL(cert, key))
+
+        config = user_config_path()
+        is_cert_default = cert == _DEFAULT_CERT
+        is_key_default = key == _DEFAULT_KEY
+        if is_cert_default and is_key_default:  # pragma: no cover
+            cert, key = config / cert, config / key
+            if file_exists(cert) and file_exists(key):
+                return ResolvedArgs(host, port, level, reload, ssl=SSL(cert, key))
+            else:
+                return ResolvedArgs(host, port, level, reload)
+        elif is_cert_default ^ is_key_default:
+            msg = "both --cert and --key are required for HTTPS"
+            raise TypeError(msg)
+        elif not (is_cert_default or is_key_default):
+            msg = "both --cert and --key must exist"
+            raise TypeError(msg)
+        else:  # pragma: no cover
+            msg_0 = f"Unhandled case ({is_cert_default=}, {is_key_default=})\n{cert=}\n{key=}"
+            raise NotImplementedError(msg_0)
+
+    @classmethod
+    def parse_sys_argv(cls) -> Args:  # pragma: no cover
+        return cls._parse(None)
+
+    @classmethod
+    def parse_args(cls, *args: str) -> Args:
+        return cls._parse(args)
 
     @staticmethod
-    def parse() -> Args:
+    def _parse(args: tuple[str, ...] | None, /) -> Args:
         parser = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            formatter_class=_HelpFormatter,
+            prog="uv run duckdb-server",
+            usage="%(prog)s [OPTIONS]",
+            description=(
+                f"By default, the server uses an in-memory database where all data is lost when the process finishes.\n"
+                f"For persistent storage, set `${ENV_DB_PATH}` to a value you'd pass to `duckdb.connect(...)`.\n"
+                f"See also: https://duckdb.org/docs/current/clients/python/overview#connection-options"
+            ),
+        )
+        parser.add_argument("--address", help="HTTP Address", default="127.0.0.1")
+        parser.add_argument("--port", help="HTTP Port", type=int, default=3000)
+        parser.add_argument(
+            "--cert",
+            help="Path to TLS certificate file (enables HTTPS)",
+            default=_DEFAULT_CERT,
+            dest="ssl_cert",
+            type=Path,
         )
         parser.add_argument(
-            "--database",
-            help="Path of database file (e.g., 'database.db'. ':memory:' for in-memory database).",
-            default=":memory:",
+            "--key",
+            help="Path to TLS private key file (enables HTTPS)",
+            default=_DEFAULT_KEY,
+            dest="ssl_key",
+            type=Path,
         )
-        parser.add_argument("--address", help="HTTP Address.", default="127.0.0.1")
-        parser.add_argument("--port", help="HTTP Port.", type=int, default=3000)
-        return parser.parse_args(namespace=Args()).with_ssl_exists()
+        parser.add_argument(
+            "--no-http2",
+            action="store_true",
+            help="TEMPORARY FLAG. Required for benchmarks until https://github.com/uwdata/mosaic/pull/1332",
+        )
+        parser.add_argument(
+            "--reload",
+            action="store_true",
+            help="Restart the server when changes in python files are detected.",
+        )
+        return parser.parse_args(args, namespace=Args())
 
 
 class Server(Protocol):
     @classmethod
-    def from_args(cls, args: Args, app: Incomplete, /) -> Self: ...
+    def from_args(
+        cls, args: ResolvedArgs, app_factory_path: LiteralString, /
+    ) -> Self: ...
     def run(self) -> None: ...
+    @contextlib.contextmanager
+    def run_in_thread(self) -> Generator[None]: ...

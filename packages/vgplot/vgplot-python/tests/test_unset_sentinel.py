@@ -59,7 +59,7 @@ def test_unset_union_identity() -> None:
 
 
 if TYPE_CHECKING:
-    from typing_extensions import assert_type
+    from typing import assert_type
 
     def typing_unset(
         a: UNSET, b: str | UNSET, c: Any | UNSET, d: int | UNSET | None = UNSET

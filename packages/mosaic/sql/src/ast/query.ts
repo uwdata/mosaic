@@ -14,7 +14,6 @@ import { isTableRef, TableRefNode } from './table-ref.js';
 import { VerbatimNode } from './verbatim.js';
 import { WindowClauseNode, type WindowDefNode } from './window.js';
 import { WithClauseNode } from './with.js';
-import { deepClone } from '../visit/clone.js';
 
 export type PivotSource = string | string[] | SQLNode;
 
@@ -393,6 +392,7 @@ export class SelectQuery extends Query {
   _window: WindowClauseNode[] = [];
   _qualify: ExprNode[] = [];
   _distinct: boolean = false;
+  _distinctOn: ExprNode[] = [];
 
   /**
    * Instantiate a new select query.
@@ -451,6 +451,25 @@ export class SelectQuery extends Query {
   distinct(value: boolean = true): this {
     this._distinct = !!value;
     return this;
+  }
+
+  /**
+   * Add DISTINCT ON expressions. These expressions take precedence over
+   * any *distinct* flag value.
+   * @param expr Expressions to add.
+   */
+  distinctOn(...expr: GroupByExpr[]): this {
+    this._distinctOn = this._distinctOn.concat(nodeList(expr));
+    return this;
+  }
+
+  /**
+   * Set DISTINCT ON expressions, replacing any prior expressions.
+   * @param expr Expressions to add.
+   */
+  setDistinctOn(...expr: GroupByExpr[]): this {
+    this._distinctOn = [];
+    return this.distinctOn(...expr);
   }
 
   /**

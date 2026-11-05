@@ -11,8 +11,10 @@ import pytest
 from httpx2 import RequestError
 
 if TYPE_CHECKING:
+    from typing import LiteralString
+
     from starlette.testclient import TestClient
-    from typing_extensions import LiteralString, TypedDict
+    from typing_extensions import TypedDict
 
     class QueryParams(TypedDict, closed=True):
         query: LiteralString
@@ -33,12 +35,13 @@ def q(sql: LiteralString, /, type: L["arrow", "exec"] = "arrow") -> QueryParams:
 def raise_for_status(response: httpx2.Response) -> httpx2.Response:
     if response.is_success:
         return response
-    body = msgspec.json.decode(response.content, type=dict[str, Any])
-    message = (
-        f"'{response.status_code} {response.reason_phrase}' for url '{response.url}'\n    {body!r}\n"
-        f"For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{response.status_code}"
-    )
-    raise RequestError(message)
+    else:  # pragma: no cover
+        body = msgspec.json.decode(response.content, type=dict[str, Any])
+        message = (
+            f"'{response.status_code} {response.reason_phrase}' for url '{response.url}'\n    {body!r}\n"
+            f"For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{response.status_code}"
+        )
+        raise RequestError(message)
 
 
 @pytest.mark.smoke
@@ -49,4 +52,16 @@ def test_query_arrow(client_session: TestClient) -> None:
     with pa.ipc.open_stream(content) as reader:
         table = reader.read_all()
     expected = pa.table({"a": [1]}, schema=pa.schema({"a": pa.int32()}))
+    assert table.equals(expected)
+
+
+# TODO @dangotbanned: Confirm buffer was used
+# - Might be easiest to enable coverage/pytest-cov?
+def test_buffer(real_server_session: httpx2.Client) -> None:
+    response = real_server_session.get("/", params=q("SELECT 2 AS b"))
+    raise_for_status(response)
+    content = response.read()
+    with pa.ipc.open_stream(content) as reader:
+        table = reader.read_all()
+    expected = pa.table({"b": [2]}, schema=pa.schema({"b": pa.int32()}))
     assert table.equals(expected)

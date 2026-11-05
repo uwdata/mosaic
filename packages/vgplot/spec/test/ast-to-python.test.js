@@ -61,6 +61,13 @@ describe('astToPython transforms', () => {
     );
   });
 
+  it('emits sketch transforms', () => {
+    const code = astToPython(lineY({
+      kllQuantile: [{ kllSketch: 'amount' }, 0.5],
+    }));
+    expect(code).toContain('y=vg.kll_quantile(vg.kll_sketch("amount"), 0.5)');
+  });
+
   it('emits nested transforms from a parsed spec', () => {
     const spec = parseSpec({
       plot: [{

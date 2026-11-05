@@ -167,6 +167,38 @@ export interface GeoJSON {
   geojson: Unary<TransformField>;
 }
 
+/** A cpcEstimate transform. */
+export interface CpcEstimate {
+  /**
+   * Return the estimated distinct count of a Compressed Probabilistic
+   * Counting (CPC) sketch. This transform requires the DuckDB
+   * `datasketches` extension.
+   */
+  cpcEstimate: Unary<TransformField>;
+}
+
+/** An hllEstimate transform. */
+export interface HllEstimate {
+  /**
+   * Return the estimated distinct count of a HyperLogLog (HLL) sketch.
+   * This transform requires the DuckDB `datasketches` extension.
+   */
+  hllEstimate: Unary<TransformField>;
+}
+
+/** A kllQuantile transform. */
+export interface KllQuantile {
+  /**
+   * Return the estimated quantile value of a KLL sketch at the provided
+   * normalized rank between 0 and 1. The optional third argument is a flag for
+   * inclusive (default `true`) or exclusive rank semantics. This transform
+   * requires the DuckDB `datasketches` extension.
+   */
+  kllQuantile:
+    | [sketch: TransformField, rank: TransformField | number]
+    | [sketch: TransformField, rank: TransformField | number, inclusive: boolean];
+}
+
 /** An argmax aggregate transform. */
 export interface Argmax extends AggregateOptions, WindowOptions {
   /**
@@ -237,6 +269,59 @@ export interface Last extends AggregateOptions, WindowOptions {
    * Return the last column value found in an aggregation group.
    */
   last: Unary<TransformField>;
+}
+
+/** A CPC sketch aggregate transform. */
+export interface CpcSketch {
+  /**
+   * Compute a Compressed Probabilistic Counting (CPC) sketch for
+   * approximate distinct counting. The optional second argument is the
+   * log2 sketch size parameter (default `11`). This transform requires the
+   * DuckDB `datasketches` extension.
+   */
+  cpcSketch: Unary<TransformField> | [expr: TransformField, lgK: number];
+}
+
+/** A CPC sketch union aggregate transform. */
+export interface CpcUnion {
+  /**
+   * Merge CPC sketches into a single sketch. The optional second argument
+   * is the log2 sketch size parameter (default `11`). This transform
+   * requires the DuckDB `datasketches` extension.
+   */
+  cpcUnion: Unary<TransformField> | [sketch: TransformField, lgK: number];
+}
+
+/** An HLL sketch aggregate transform. */
+export interface HllSketch {
+  /**
+   * Compute a HyperLogLog (HLL) sketch for approximate distinct counting.
+   * The optional second argument is the log2 number of sketch buckets
+   * (default `12`). This transform requires the DuckDB `datasketches`
+   * extension.
+   */
+  hllSketch: Unary<TransformField> | [expr: TransformField, lgK: number];
+}
+
+/** An HLL sketch union aggregate transform. */
+export interface HllUnion {
+  /**
+   * Merge HyperLogLog (HLL) sketches into a single sketch. The optional
+   * second argument is the log2 number of sketch buckets (default `12`).
+   * This transform requires the DuckDB `datasketches` extension.
+   */
+  hllUnion: Unary<TransformField> | [sketch: TransformField, lgK: number];
+}
+
+/** A KLL sketch aggregate transform. */
+export interface KllSketch {
+  /**
+   * Compute a KLL sketch for approximate quantile estimation, or merge
+   * input KLL sketches. The optional second argument is the sketch size
+   * parameter (default `200`). This transform requires the DuckDB
+   * `datasketches` extension.
+   */
+  kllSketch: Unary<TransformField> | [expr: TransformField, k: number];
 }
 
 /** A max aggregate transform. */
@@ -440,7 +525,10 @@ export type ColumnTransform =
   | Centroid
   | CentroidX
   | CentroidY
-  | GeoJSON;
+  | GeoJSON
+  | CpcEstimate
+  | HllEstimate
+  | KllQuantile;
 
 /** An aggregate transform that combines multiple values. */
 export type AggregateTransform =
@@ -448,6 +536,11 @@ export type AggregateTransform =
   | Argmin
   | Avg
   | Count
+  | CpcSketch
+  | CpcUnion
+  | HllSketch
+  | HllUnion
+  | KllSketch
   | Max
   | Min
   | First

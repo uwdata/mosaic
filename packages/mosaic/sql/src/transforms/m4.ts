@@ -1,10 +1,11 @@
-import type { ExprValue, FromExpr, SelectExpr } from '../types.js';
+import type { ExprValue, FromExpr } from '../types.js';
 import type { ColumnRefNode } from '../ast/column-ref.js';
-import { Query, isQuery } from '../ast/query.js';
+import { Query } from '../ast/query.js';
 import { argmax, argmin, max, min } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
-import { cte } from '../functions/cte.js';
+import { list } from '../functions/list.js';
 import { floor } from '../functions/numeric.js';
+import { unnest } from '../functions/unnest.js';
 
 /**
  * M4 is an optimization for value-preserving time-series aggregation
@@ -29,26 +30,13 @@ export function m4(
   groups: ColumnRefNode[] = []
 ) {
   const pixel = int32(floor(bin));
-
-  // Below, we treat input as a CTE when it is a query. In this case,
-  // we also request that the CTE be explicitly materialized.
-  const useCTE = isQuery(input);
-  const from = useCTE ? 'input' : input;
-  const query = useCTE
-    ? Query.with(cte(String(from), input, true))
-    : Query;
-
-  const q = (sel: SelectExpr) => Query
-    .from(from)
-    .select(sel)
-    .groupby(pixel, groups);
-
-  return query
-    .union(
-      q([{ [x]: min(x), [y]: argmin(y, x) }, ...groups]),
-      q([{ [x]: max(x), [y]: argmax(y, x) }, ...groups]),
-      q([{ [x]: argmin(x, y), [y]: min(y) }, ...groups]),
-      q([{ [x]: argmax(x, y), [y]: max(y) }, ...groups])
-    )
+  return Query
+    .from(input)
+    .select({
+      [x]: unnest(list([min(x), max(x), argmin(x, y), argmax(x, y)])),
+      [y]: unnest(list([argmin(y, x), argmax(y, x), min(y), max(y)]))
+    }, groups)
+    .distinct()
+    .groupby(pixel, groups)
     .orderby(groups, x);
 }

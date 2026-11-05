@@ -53,7 +53,7 @@ export interface SpecHead {
 }
 
 /** A specification component such as a plot, input widget, or layout. */
-export type Component =
+export type SpecComponent =
   | HConcat
   | VConcat
   | HSpace
@@ -63,8 +63,10 @@ export type Component =
   | Slider
   | Table
   | Plot
-  | PlotMark
   | Legend;
 
+/** A plot component such as a plot, mark, input widget, or layout. */
+export type Component = SpecComponent | PlotMark;
+
 /** A declarative Mosaic specification. */
-export type Spec = SpecHead & Component;
+export type Spec = SpecHead & SpecComponent;
