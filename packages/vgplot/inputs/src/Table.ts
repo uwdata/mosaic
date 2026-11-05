@@ -46,7 +46,7 @@ let _id = -1;
 
 /**
  * Create a new table input instance.
- * @param options Options object
+ * @param options A {@link TableOptions} object.
  * @returns The container element for a table component.
  */
 export function table(options: TableOptions): HTMLElement {
@@ -81,7 +81,10 @@ export class Table extends Input {
   loaded: boolean;
   data: mc.DataColumns[];
 
-  /** Create a new Table instance. */
+  /** 
+   * Create a new Table instance. 
+   * @param options A {@link TableOptions} object.
+   */
   constructor({
     element,
     filterBy,
