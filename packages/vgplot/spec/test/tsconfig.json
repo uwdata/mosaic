@@ -3,6 +3,7 @@
   "include": ["**/*"],
   "compilerOptions": {
     "composite": false,
+    "noEmit": true,
     "rootDir": ".."
   }
 }
