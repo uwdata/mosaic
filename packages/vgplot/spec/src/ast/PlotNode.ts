@@ -13,8 +13,12 @@ import type { ParseContext } from '../parse-spec.js';
 import type { InstantiateContext } from '../ast-to-dom.js';
 import type { CodegenContext } from '../ast-to-esm.js';
 import type { Plot } from '../spec/Plot.js';
-import type { PlotMark } from '../spec/PlotMark.js';
+import type { Component } from '../spec/Spec.js';
+import type { RootNode } from './SpecNode.js';
 
+export function parseComponent(spec: Component, ctx: ParseContext): RootNode {
+  return 'mark' in spec ? parsePlot({ plot: [spec] }, ctx): ctx.parseComponent(spec)
+}
 
 export function parsePlot(spec: Plot, ctx: ParseContext): PlotNode {
   const { [PLOT]: entries, ...attrs } = spec;
