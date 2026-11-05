@@ -1,67 +1,59 @@
-/** @import { Param, Selection } from '@uwdata/mosaic-core' */
+import type * as mc from '@uwdata/mosaic-core'
+import type * as msql from '@uwdata/mosaic-sql'
 import { isParam, isSelection, clauseMatch } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
 import { Input, input } from './input.js';
 
 let _id = 0;
 
-/**
- * Create a new text search input instance.
- * @param {object} [options] Options object
- * @param {HTMLElement} [options.element] The parent DOM element in which to
- *  place the search elements. If undefined, a new `div` element is created.
- * @param {Selection} [options.filterBy] A selection to filter the database
- *  table indicated by the *from* option.
- * @param {Param} [options.as] The output param or selection. A selection
- *  clause is added based on the current text search query.
- * @param {string} [options.field] The database column name to use within
- *  generated selection clause predicates. Defaults to the *column* option.
- * @param {'contains' | 'prefix' | 'suffix' | 'regexp'} [options.type] The
- *  type of text search query to perform. One of:
+/** Search options object.
+ * @property element The parent DOM element in which to place the search elements. If undefined, a new `div` element is created.
+ * @property filterBy A selection to filter the database table indicated by the *from* option.
+ * @property as The output param or selection. A selection clause is added based on the current text search query.
+ * @property field The database column name to use within generated selection clause predicates. Defaults to the *column* option.
+ * @property type The type of text search query to perform. One of:
  *  - `"contains"` (default): the query string may appear anywhere in the text
  *  - `"prefix"`: the query string must appear at the start of the text
  *  - `"suffix"`: the query string must appear at the end of the text
  *  - `"regexp"`: the query string is a regular expression the text must match
- * @param {string} [options.from] The name of a database table to use as an
- *  autocomplete data source for this widget. Used in conjunction with the
- *  *column* option.
- * @param {string} [options.column] The name of a database column from which
- *  to pull valid search results. The unique column values are used as search
- *  autocomplete values. Used in conjunction with the *from* option.
- * @param {string} [options.label] A text label for this input.
- * @returns {HTMLElement} The container element for a text search input.
+ * @property from The name of a database table to use as a data source for this widget. Used in conjunction with the *column* option.
+ * @property column The name of a database column from which to pull valid search results. The unique column values are used as search autocomplete values. Used in conjunction with the *from* option.
+ * @property label A text label for this input.
  */
-export const search = options => input(Search, options);
+interface SearchOptions {
+  element?: HTMLElement;
+  filterBy?: mc.Selection;
+  as?: mc.Param<unknown>;
+  field?: string;
+  type?: 'contains' | 'prefix' | 'suffix' | 'regexp';
+  from?: string;
+  column?: string;
+  label?: string;
+}
 
 /**
- * A HTML text search input.
- * @extends {Input}
+ * Create a new text search input instance.
+ * @param options A {@link SearchOptions} object.
+ * @returns The container element for a text search input.
  */
+export function search(options: SearchOptions): HTMLElement {
+  return input(Search, options);
+}
+
+/** A HTML text search input.*/
 export class Search extends Input {
+  id: string
+  type: 'contains' | 'prefix' | 'suffix' | 'regexp'
+  from?: string;
+  column?: string;
+  field?: string;
+  selection?: mc.Param<unknown>;
+  searchbox: HTMLInputElement;
+  data: { list: string }[];
+  datalist?: HTMLDataListElement;
   /**
    * Create a new text search input.
-   * @param {object} [options] Options object
-   * @param {HTMLElement} [options.element] The parent DOM element in which to
-   *  place the search elements. If undefined, a new `div` element is created.
-   * @param {Selection} [options.filterBy] A selection to filter the database
-   *  table indicated by the *from* option.
-   * @param {Param} [options.as] The output param or selection. A selection
-   *  clause is added based on the current text search query.
-   * @param {string} [options.field] The database column name to use within
-   *  generated selection clause predicates. Defaults to the *column* option.
-   * @param {'contains' | 'prefix' | 'suffix' | 'regexp'} [options.type] The
-   *  type of text search query to perform. One of:
-   *  - `"contains"` (default): the query string may appear anywhere in the text
-   *  - `"prefix"`: the query string must appear at the start of the text
-   *  - `"suffix"`: the query string must appear at the end of the text
-   *  - `"regexp"`: the query string is a regular expression the text must match
-   * @param {string} [options.from] The name of a database table to use as an
-   *  autocomplete data source for this widget. Used in conjunction with the
-   *  *column* option.
-   * @param {string} [options.column] The name of a database column from which
-   *  to pull valid search results. The unique column values are used as search
-   *  autocomplete values. Used in conjunction with the *from* option.
-   * @param {string} [options.label] A text label for this input.
+   * @param options A {@link SearchOptions} object.
    */
   constructor({
     element,
@@ -72,7 +64,7 @@ export class Search extends Input {
     type = 'contains',
     field = column,
     as
-  } = {}) {
+  }: SearchOptions = {}) {
     super(filterBy, element);
     this.id = 'search_' + (++_id);
     this.type = type;
@@ -99,7 +91,7 @@ export class Search extends Input {
         this.publish(this.searchbox.value || null);
       });
       if (!isSelection(this.selection)) {
-        this.selection.addEventListener('value', value => {
+        this.selection.addEventListener('value', (value: string) => {
           if (value !== this.searchbox.value) {
             this.searchbox.value = value;
           }
@@ -114,22 +106,22 @@ export class Search extends Input {
     }
   }
 
-  reset() {
+  reset(): void {
     this.searchbox.value = '';
   }
 
-  clause(value) {
+  clause(value: string | null | undefined): mc.SelectionClause {
     const { field, type } = this;
     return clauseMatch(field, value, { source: this, method: type });
   }
 
-  activate() {
+  activate(): void {
     if (isSelection(this.selection)) {
       this.selection.activate(this.clause(''));
     }
   }
 
-  publish(value) {
+  publish(value: string | null | undefined): void {
     const { selection } = this;
     if (isSelection(selection)) {
       selection.update(this.clause(value));
@@ -138,7 +130,7 @@ export class Search extends Input {
     }
   }
 
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery {
     const { from, column } = this;
     if (!from) return null;
     return Query
@@ -148,12 +140,12 @@ export class Search extends Input {
       .where(filter);
   }
 
-  queryResult(data) {
+  queryResult(data: { list: string }[]): this {
     this.data = data;
     return this;
   }
 
-  update() {
+  update(): this {
     const list = document.createElement('datalist');
     const id = `${this.id}_list`;
     list.setAttribute('id', id);
