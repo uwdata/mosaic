@@ -1,4 +1,5 @@
-/** @import { ClauseSource, Param, Selection } from '@uwdata/mosaic-core' */
+import type * as mc from '@uwdata/mosaic-core'
+import type * as msql from '@uwdata/mosaic-sql'
 import { clauseInterval, clausePoint, isParam, isSelection } from '@uwdata/mosaic-core';
 import { Query, max, min } from '@uwdata/mosaic-sql';
 import { Input, input } from './input.js';
@@ -6,72 +7,62 @@ import { Input, input } from './input.js';
 let _id = 0;
 
 /**
- * Create a new slider input instance.
- * @param {object} [options] Options object
- * @param {HTMLElement} [options.element] The parent DOM element in which to
- *  place the slider elements. If undefined, a new `div` element is created.
- * @param {Selection} [options.filterBy] A selection to filter the database
- *  table indicated by the *from* option.
- * @param {Param} [options.as] The output param or selection. A selection
- *  clause is added based on the currently selected slider option.
- * @param {string} [options.field] The database column name to use within
- *  generated selection clause predicates. Defaults to the *column* option.
- * @param {'point' | 'interval'} [options.select] The type of selection clause
- *  predicate to generate if the **as** option is a Selection.  If `'point'`
- *  (the default), the selection predicate is an equality check for the slider
- *  value. If `'interval'`, the predicate checks an interval from the minimum
- *  to the current slider value.
- * @param {number} [options.min] The minimum slider value.
- * @param {number} [options.max] The maximum slider value.
- * @param {number} [options.step] The slider step, the amount to increment
- *  between consecutive values.
- * @param {number} [options.value] The initial slider value.
- * @param {string} [options.from] The name of a database table to use as a data
- *  source for this widget. Used in conjunction with the *column* option.
- *  The minimum and maximum values of the column determine the slider range.
- * @param {string} [options.column] The name of a database column whose values
- *  determine the slider range. Used in conjunction with the *from* option.
- *  The minimum and maximum values of the column determine the slider range.
- * @param {string} [options.label] A text label for this input.
- * @param {number} [options.width] The width of the slider in screen pixels.
- * @returns {HTMLElement} The container element for a slider input.
+ * Slider options object.
+ * @property element The parent DOM element in which to place the slider elements. If undefined, a new `div` element is created.
+ * @property filterBy A selection to filter the database table indicated by the *from* option.
+ * @property as The output param or selection. A selection clause is added based on the currently selected slider option.
+ * @property field The database column name to use within generated selection clause predicates. Defaults to the *column* option.
+ * @property select The type of selection clause predicate to generate if the **as** option is a Selection.  If `'point'` (the default), the selection predicate is an equality check for the slider value. If `'interval'`, the predicate checks an interval from the minimum to the current slider value.
+ * @property min The minimum slider value.
+ * @property max The maximum slider value.
+ * @property step The slider step, the amount to increment between consecutive values.
+ * @property value The initial slider value.
+ * @property from The name of a database table to use as a data source for this widget. Used in conjunction with the *column* option. The minimum and maximum values of the column determine the slider range.
+ * @property column The name of a database column whose values determine the slider range. Used in conjunction with the *from* option. The minimum and maximum values of the column determine the slider range.
+ * @property label A text label for this input.
+ * @property width The width of the slider in screen pixels.
  */
-export const slider = options => input(Slider, options);
+interface SliderOptions {
+  element?: HTMLElement;
+  filterBy?: mc.Selection;
+  as?: mc.Param<number>;
+  select?: 'point' | 'interval'
+  min?: number;
+  max?: number;
+  step?: number;
+  value?: number;
+  field?: string;
+  from?: string;
+  column?: string;
+  label?: string;
+  width?: number;
+}
 
 /**
- * A HTML range-based slider input.
- * @extends {Input}
+ * Create a new slider input instance.
+ * @param options A {@link SliderOptions} object.
+ * @returns The container element for a slider input.
  */
+export function slider(options: SliderOptions): HTMLElement {
+  return input(Slider, options);
+}
+
+/** A HTML range-based slider input.*/
 export class Slider extends Input {
+  id: string;
+  from?: string;
+  column: string;
+  field?: string;
+  selection?: mc.Param<number>;
+  selectionType: 'point' | 'interval';
+  min?: number;
+  max?: number;
+  step?: number;
+  slider: HTMLInputElement;
+  curval: HTMLLabelElement;
   /**
    * Create a new slider input.
-   * @param {object} [options] Options object
-   * @param {HTMLElement} [options.element] The parent DOM element in which to
-   *  place the slider elements. If undefined, a new `div` element is created.
-   * @param {Selection} [options.filterBy] A selection to filter the database
-   *  table indicated by the *from* option.
-   * @param {Param} [options.as] The output param or selection. A selection
-   *  clause is added based on the currently selected slider option.
-   * @param {string} [options.field] The database column name to use within
-   *  generated selection clause predicates. Defaults to the *column* option.
-   * @param {'point' | 'interval'} [options.select] The type of selection clause
-   *  predicate to generate if the **as** option is a Selection.  If `'point'`
-   *  (the default), the selection predicate is an equality check for the slider
-   *  value. If `'interval'`, the predicate checks an interval from the minimum
-   *  to the current slider value.
-   * @param {number} [options.min] The minimum slider value.
-   * @param {number} [options.max] The maximum slider value.
-   * @param {number} [options.step] The slider step, the amount to increment
-   *  between consecutive values.
-   * @param {number} [options.value] The initial slider value.
-   * @param {string} [options.from] The name of a database table to use as a data
-   *  source for this widget. Used in conjunction with the *column* option.
-   *  The minimum and maximum values of the column determine the slider range.
-   * @param {string} [options.column] The name of a database column whose values
-   *  determine the slider range. Used in conjunction with the *from* option.
-   *  The minimum and maximum values of the column determine the slider range.
-   * @param {string} [options.label] A text label for this input.
-   * @param {number} [options.width] The width of the slider in screen pixels.
+   * @param options A {@link SliderOptions} object.
    */
   constructor({
     element,
@@ -87,7 +78,7 @@ export class Slider extends Input {
     select = 'point',
     field = column,
     width
-  } = {}) {
+  }: SliderOptions = {}) {
     super(filterBy, element);
     this.id = 'slider_' + (++_id);
     this.from = from;
@@ -140,7 +131,9 @@ export class Slider extends Input {
         // track param updates
         this.selection.addEventListener('value', value => {
           if (value !== +this.slider.value) {
+            //@ts-expect-error Type 'number' is not assignable to type 'string'.
             this.slider.value = value;
+            //@ts-expect-error Type 'number' is not assignable to type 'string'.
             this.curval.innerText = value;
           }
         });
@@ -154,7 +147,7 @@ export class Slider extends Input {
     }
   }
 
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery {
     const { from, column } = this;
     if (!from || (this.min != null && this.max != null)) return null;
     return Query
@@ -163,7 +156,7 @@ export class Slider extends Input {
       .where(filter);
   }
 
-  queryResult(data) {
+  queryResult(data: Iterable<{ min: number, max: number }>): this {
     const { min, max } = Array.from(data)[0];
     if (this.min == null) {
       this.min = min;
@@ -180,29 +173,28 @@ export class Slider extends Input {
     return this;
   }
 
-  clause(value) {
+  clause(value: number): mc.SelectionClause {
     const { field, selectionType } = this;
     if (selectionType === 'interval') {
-      /** @type {[number, number]} */
-      const domain = [this.min ?? 0, value];
+      const domain: [number, number] = [this.min ?? 0, value];
       return clauseInterval(field, domain, {
-        source: /** @type {ClauseSource} */(this),
+        source: this,
         bin: 'ceil',
         scale: { type: 'identity', domain },
         pixelSize: this.step
       });
     } else {
-      return clausePoint(field, value, { source: /** @type {ClauseSource} */(this) });
+      return clausePoint(field, value, { source: this });
     }
   }
 
-  activate() {
+  activate(): void {
     if (isSelection(this.selection)) {
       this.selection.activate(this.clause(0));
     }
   }
 
-  publish(value) {
+  publish(value: number): void {
     const { selection } = this;
     if (isSelection(selection)) {
       selection.update(this.clause(value));
