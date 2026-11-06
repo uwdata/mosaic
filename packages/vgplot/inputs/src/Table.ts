@@ -168,7 +168,7 @@ export class Table extends Input {
   }
 
   sourceTable(): string {
-    return isParam(this.from) ? this.from.value : this.from;
+    return isParam<string>(this.from) ? this.from.value : this.from;
   }
 
   clause(rows?: number[]): mc.SelectionClause {
@@ -322,7 +322,7 @@ function resolveRow(element: EventTarget): number {
   return Object.hasOwn(p, '__row__') ? +p.__row__ : -1;
 }
 
-function formatof(base, schema) {
+function formatof(base: { [x: string]: any }, schema: { column: any; type: any }[]) {
   return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
@@ -336,7 +336,7 @@ function formatof(base, schema) {
   });
 }
 
-function alignof(base, schema) {
+function alignof(base: { [x: string]: any }, schema: { column: any; type: any }[]) {
   return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
@@ -348,13 +348,13 @@ function alignof(base, schema) {
   });
 }
 
-function widthof(base = {}, schema) {
+function widthof(base: { [x: string]: any }, schema: { column: any }[]): any {
   return schema.map(({ column }) => base[column]);
 }
 
-function tableCSS(id, aligns, widths) {
-  const styles = [];
-  aligns.forEach((a, i) => {
+function tableCSS(id: string, aligns: any[], widths: { [x: string]: string | number }): string {
+  const styles: string[] = [];
+  aligns.forEach((a: string, i: number) => {
     const w = +widths[i];
     if (a !== 'left' || w) {
       const align = a !== 'left' ? `text-align:${a};` : '';
