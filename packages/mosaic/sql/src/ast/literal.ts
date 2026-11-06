@@ -19,7 +19,7 @@ function padZero(value: unknown, len = 2) {
   return `${value}`.padStart(len, '0');
 }
 
-export function literalToSQL(value: unknown) {
+export function literalToSQL(value: unknown): string {
   switch (typeof value) {
     case 'number':
       return Number.isFinite(value) ? `${value}` : 'NULL';
@@ -40,10 +40,23 @@ export function literalToSQL(value: unknown) {
           ? `DATE '${y}-${padZero(m+1)}-${padZero(d)}'` // utc date
           : `epoch_ms(${ts})`; // timestamp
       } else if (value instanceof RegExp) {
-        return `'${value.source}'`;
+        return `'${value.source.replaceAll('\'', '\'\'')}'`;
+      } else if (Array.isArray(value)) {
+        // serialize as a DuckDB list literal
+        return `[${value.map(v => literalToSQL(v)).join(', ')}]`;
+      } else if (isPlainObject(value)) {
+        // serialize as a DuckDB struct literal
+        const fields = Object.entries(value)
+          .map(([k, v]) => `${literalToSQL(k)}: ${literalToSQL(v)}`);
+        return `{${fields.join(', ')}}`;
       } else {
         // otherwise rely on string coercion
         return `${value}`;
       }
   }
+}
+
+function isPlainObject(value: object): value is Record<string, unknown> {
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
 }
