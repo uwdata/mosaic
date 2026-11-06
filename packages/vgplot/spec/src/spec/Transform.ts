@@ -11,16 +11,55 @@ export type FrameValue = number | IntervalTransform | null;
 
 /** Window transform options. */
 export interface WindowOptions {
+  /**
+   * One or more expressions by which to sort rows within each window
+   * partition.
+   */
   orderby?: TransformField | TransformField[];
+  /**
+   * One or more expressions by which to partition rows into separate
+   * windows.
+   */
   partitionby?: TransformField | TransformField[];
+  /**
+   * A "rows" window frame, as a two-element array of the number of
+   * preceding and following rows. A zero value indicates the current row,
+   * while `null` indicates an unbounded number of preceding (first entry) or
+   * following (second entry) rows. A rows frame is insensitive to peer rows
+   * (those tied according to the `orderby` criteria).
+   */
   rows?: [FrameValue, FrameValue] | ParamRef;
+  /**
+   * A "range" window frame, as a two-element array of the preceding and
+   * following offsets relative to the `orderby` value of the current row.
+   * A zero value indicates the current row, while `null` indicates an
+   * unbounded preceding (first entry) or following (second entry) extent.
+   * A range frame grows to include peer rows (those tied according to the
+   * `orderby` criteria).
+   */
   range?: [FrameValue, FrameValue] | ParamRef;
+  /**
+   * A "groups" window frame, as a two-element array of the number of
+   * preceding and following peer groups (rows tied according to the
+   * `orderby` criteria). A zero value indicates the current group, while
+   * `null` indicates an unbounded number of preceding (first entry) or
+   * following (second entry) groups.
+   */
   groups?: [FrameValue, FrameValue] | ParamRef;
+  /**
+   * Rows to exclude from the window frame: `"current row"` excludes the
+   * current row, `"group"` excludes the current row and its peers, `"ties"`
+   * excludes the peers of the current row but not the row itself, and
+   * `"no others"` (the default) excludes nothing.
+   */
   exclude?: Uppercase<FrameExclude> | Lowercase<FrameExclude>;
 }
 
 /** Aggregate transform options. */
 export interface AggregateOptions {
+  /**
+   * If true, apply the aggregate function only to distinct values.
+   */
   distinct?: boolean;
 }
 
