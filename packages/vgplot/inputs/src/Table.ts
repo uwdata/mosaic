@@ -343,7 +343,7 @@ function formatof(base: Format, schema: Schema): FormatFn[] {
   });
 }
 
-function alignof(base: Align, schema: Schema): ("left" | "right" | "center")[] {
+function alignof(base: Align, schema: Schema): ('left' | 'right' | 'center')[] {
   return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
@@ -359,7 +359,7 @@ function widthof(base: Width, schema: Schema): number[] {
   return schema.map(({ column }) => base[column]);
 }
 
-function tableCSS(id: string, aligns: ("left" | "right" | "center")[], widths: number[]): string {
+function tableCSS(id: string, aligns: ('left' | 'right' | 'center')[], widths: number[]): string {
   const styles: string[] = [];
   aligns.forEach((a, i) => {
     const w = +widths[i];
