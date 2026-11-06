@@ -2,21 +2,10 @@ import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr, ScaleOptions } from '@uwdata/mosaic-sql';
 import { Query, add, argmax, argmin, avg, columns, corr, count, covarPop, covariance, cpcEstimate, cpcSketch, cte, desc, eq, filterPushdown, geomean, gt, hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch, literal, loadObjects, max, median, min, mul, neq, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clauseComposite, clauseInterval, clauseIntervals, clausePoint, type CompositeMetadata, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
-import type { PreAggregateInfo, PreAggregateOptions } from '../src/preagg/PreAggregator.js';
+import type { PreAggregateInfo, PreAggregateMode, PreAggregateOptions } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
 import { NodeConnector } from '../src/connectors/NodeConnector.js';
 import { TestClient } from './util/test-client.js';
-
-async function setup(loadQuery: CreateQuery | string, preagg?: PreAggregateOptions) {
-  const mc = new Coordinator(await NodeConnector.make(), {
-    logger: null,
-    cache: false,
-    consolidate: false,
-    preagg
-  });
-  await mc.exec(loadQuery);
-  return mc;
-}
 
 type Datum = { measure: number };
 type RunMeasure = ExprNode | ((predicate?: FilterExpr) => Query);
@@ -29,67 +18,97 @@ const loadQuery = loadObjects('testData', [
   { dim: 'b', cat: 'd', order: 3, x: null, y: null }
 ]);
 
-/**
- * Query the test dataset with the given measure, filtered by the clause.
- * @param measure The aggregate measure or query function for the client.
- * @param clause The selection clause to apply.
- * @param preagg Pre-aggregation options.
- * @param load Data loading query.
- * @returns The measure value, the pre-aggregation entry (if any),
- *  and the coordinator.
- */
-async function runQuery(
-  measure: RunMeasure,
-  clause: SelectionClause,
-  preagg?: PreAggregateOptions,
-  load: CreateQuery | string = loadQuery
-) {
-  const mc = await setup(load, preagg);
-  const sel = Selection.single({ cross: true });
+const modes: PreAggregateMode[] = ['exec', 'preagg'];
 
-  return new Promise<{ value: number, info?: PreAggregateInfo, mc: Coordinator }>((resolve, reject) => {
-    let iter = 0;
-    const client = new TestClient(null, sel, {
-      query(filter = []) {
-        return typeof measure === 'function'
-          ? measure(filter)
-          : Query.from('testData').select({ measure }).where(filter);
-      },
-      queryResult(data: unknown) {
-        if (iter) {
-          resolve({
-            value: (Array.from(data as Iterable<Datum>))[0].measure,
-            info: mc.preaggregator.entries.get(client) as PreAggregateInfo | undefined,
-            mc
-          });
+/**
+ * Create test helpers whose coordinators pre-aggregate in the given mode.
+ * In 'preagg' mode the NodeConnector materializes the table itself.
+ * @param mode The pre-aggregation mode.
+ */
+function harness(mode: PreAggregateMode) {
+  async function setup(loadQuery: CreateQuery | string, preagg?: PreAggregateOptions) {
+    const mc = new Coordinator(await NodeConnector.make(), {
+      logger: null,
+      cache: false,
+      consolidate: false,
+      preagg: { mode, ...preagg }
+    });
+    await mc.exec(loadQuery);
+    return mc;
+  }
+
+  /**
+   * Query the test dataset with the given measure, filtered by the clause.
+   * @param measure The aggregate measure or query function for the client.
+   * @param clause The selection clause to apply.
+   * @param preagg Pre-aggregation options.
+   * @param load Data loading query.
+   * @returns The measure value, the pre-aggregation entry (if any),
+   *  and the coordinator.
+   */
+  async function runQuery(
+    measure: RunMeasure,
+    clause: SelectionClause,
+    preagg?: PreAggregateOptions,
+    load: CreateQuery | string = loadQuery
+  ) {
+    const mc = await setup(load, preagg);
+    const sel = Selection.single({ cross: true });
+
+    return new Promise<{ value: number, info?: PreAggregateInfo, mc: Coordinator }>((resolve, reject) => {
+      let iter = 0;
+      const client = new TestClient(null, sel, {
+        query(filter = []) {
+          return typeof measure === 'function'
+            ? measure(filter)
+            : Query.from('testData').select({ measure }).where(filter);
+        },
+        queryResult(data: unknown) {
+          if (iter) {
+            resolve({
+              value: (Array.from(data as Iterable<Datum>))[0].measure,
+              info: mc.preaggregator.entries.get(client) as PreAggregateInfo | undefined,
+              mc
+            });
+          }
+          ++iter;
+          return this;
+        },
+        queryError(err: Error) {
+          console.error('QUERY ERROR', err);
+          reject(err);
         }
-        ++iter;
-        return this;
-      },
-      queryError(err: Error) {
-        console.error('QUERY ERROR', err);
-        reject(err);
-      }
+      });
+      mc.connect(client);
+      client.pending.then(() => sel.update(clause)).catch(err => {
+        console.error(err);
+      });
     });
-    mc.connect(client);
-    client.pending.then(() => sel.update(clause)).catch(err => {
-      console.error(err);
-    });
+  }
+
+  /**
+   * Query the test dataset with the given measure, filtered by a point
+   * selection on dim = 'b'.
+   * @param measure The aggregate measure or query function for the client.
+   * @returns The measure value and whether pre-aggregation was applied.
+   */
+  async function run(measure: RunMeasure): Promise<[number, boolean]> {
+    const { value, info } = await runQuery(measure, clausePoint('dim', 'b', { source: {} }));
+    return [value, !!info];
+  }
+
+  return { setup, runQuery, run };
+}
+
+describe.each(modes)('PreAggregator (%s mode)', mode => {
+  const { run, runQuery } = harness(mode);
+
+  it('materializes into the table the mode assigns', async () => {
+    const { info } = await runQuery(sum('x'), clausePoint('dim', 'b', { source: {} }));
+    const name = expect.stringMatching(/^preagg_[0-9a-f]+$/);
+    expect(info!.table!.table).toEqual(mode === 'exec' ? ['mosaic', name] : ['temp', 'main', name]);
   });
-}
 
-/**
- * Query the test dataset with the given measure, filtered by a point
- * selection on dim = 'b'.
- * @param measure The aggregate measure or query function for the client.
- * @returns The measure value and whether pre-aggregation was applied.
- */
-async function run(measure: RunMeasure): Promise<[number, boolean]> {
-  const { value, info } = await runQuery(measure, clausePoint('dim', 'b', { source: {} }));
-  return [value, !!info];
-}
-
-describe('PreAggregator', () => {
   it('supports count aggregate', async () => {
     expect(await run(count())).toStrictEqual([3, true]);
     expect(await run(count('x'))).toStrictEqual([2, true]);
@@ -327,7 +346,7 @@ describe('PreAggregator', () => {
     expect(value).toBe(7);
 
     // one preaggregate row per expression value ('big', 'small')
-    const rows = await mc.query(Query.from(info!.table).select({ n: count() }));
+    const rows = await mc.query(Query.from(info!.table!).select({ n: count() }));
     expect(rows.get(0).n).toBe(2);
   });
 
@@ -461,7 +480,8 @@ describe('PreAggregator', () => {
   });
 });
 
-describe('PreAggregator selection clauses', () => {
+describe.each(modes)('PreAggregator selection clauses (%s mode)', mode => {
+  const { runQuery } = harness(mode);
   const linear = (domain: [number, number]): ScaleOptions => (
     { type: 'linear', domain, range: [0, 100] }
   );
@@ -565,7 +585,8 @@ describe('PreAggregator selection clauses', () => {
   });
 });
 
-describe('PreAggregator sketches', () => {
+describe.each(modes)('PreAggregator sketches (%s mode)', mode => {
+  const { setup, runQuery } = harness(mode);
   const sketchLoadQuery = `
     SET allow_extension_repositories = 'allowed';
     CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX 'https://duckdb-extensions.query.farm';

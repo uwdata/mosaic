@@ -98,7 +98,8 @@ export class Coordinator {
 
   /**
    * Clear the coordinator state. Pending queries are rejected, and in-flight
-   * queries other than exec queries are aborted.
+   * queries other than exec queries are aborted. Clearing the cache also
+   * resets the pre-aggregator, forgetting any server-assigned table references.
    * @param options Options object.
    * @param options.clients If true, disconnect all clients.
    * @param options.cache If true, clear the query cache.
@@ -112,20 +113,24 @@ export class Coordinator {
       this.clients?.forEach(client => this.disconnect(client));
       this.clients = new Set;
     }
-    if (cache) this.manager.cache().clear();
+    if (cache) {
+      this.manager.invalidate();
+      this.preaggregator?.reset();
+    }
   }
 
   /**
-   * Get or set the database connector.
+   * Get or set the database connector. Replacing the connector forgets
+   * tables materialized through the previous connector.
    * @param db The database connector to use.
    * @returns The current database connector.
    */
   databaseConnector(): Connector | null;
   databaseConnector(db: Connector): Connector;
   databaseConnector(db?: Connector): Connector | null {
-    return db
-      ? this.manager.connector(db)
-      : this.manager.connector();
+    if (!db) return this.manager.connector();
+    if (this.manager.connector() !== db) this.preaggregator?.reset();
+    return this.manager.connector(db);
   }
 
   /**
@@ -377,17 +382,48 @@ function updateSelection(
 
     // check if we can handle selection update via preaggregation
     const info = preaggregator.request(client, selection, active);
+    const resetGeneration = preaggregator.resetGeneration;
 
     if (info?.skip) {
       // skip due to cross-filtering
       return;
     }
 
-    if (info?.result) {  
+    // after each await below, a newer update for this client or its
+    // disconnection makes this one moot; updateClient assigns a fresh
+    // client.pending per update, so compare against the one captured before
+    const superseded = (pending: Promise<unknown>) => client.pending !== pending
+      || !mc.filterGroups.get(selection)?.clients.has(client);
+
+    if (info?.result) {
+      const pending = client.pending;
+      // synchronized clients (plot marks) must hold their render for the build
+      client.queryPending();
+      // wait for the materialized table; a failed build nulls info.result,
+      // which the check below turns into a standard query
+      await info.result.catch(() => {});
+      if (superseded(pending)) return;
+    }
+
+    // a reset() during the wait bumps the generation and invalidates info
+    if (info?.result && preaggregator.resetGeneration === resetGeneration) {
       // generate and issue preaggregate update query
       const query = info.query(active);
-      const result = await mc.updateClient(client, query);
+      const table = info.table;
+      const pending = mc.updateClient(client, query);
+      const result = await pending;
       if (!(result instanceof QueryError)) return;
+      if (superseded(pending)) return;
+      // in preagg mode the server may have dropped the table; recover()
+      // rebuilds it when the error names that table, then we retry once
+      const recovered = await preaggregator.recover(client, info, table, result.cause);
+      if (superseded(pending)) return;
+      if (recovered && preaggregator.entries.get(client) === info) {
+        const retry = mc.updateClient(client, info.query(active));
+        const retried = await retry;
+        if (!(retried instanceof QueryError)) return;
+        if (superseded(retry)) return;
+      }
       // if preaggregate update fails, fall through to standard query
       // this safeguards against potential preagg bugs
     }
