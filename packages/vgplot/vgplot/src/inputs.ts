@@ -1,3 +1,4 @@
+// oxlint-disable oxc/no-this-in-exported-function
 import { Menu, Search, Slider, Table } from '@uwdata/mosaic-inputs';
 import type { Input } from '@uwdata/mosaic-inputs';
 
@@ -6,9 +7,11 @@ import type { APIContext } from './context.js';
 
 function input<T extends Input>(
   ctx: APIContext,
-  InputClass: { new (options: unknown): T },
+  InputClass: new (options: unknown) => T,
+  // oxlint-disable-next-line typescript/no-explicit-any
   options: any,
 ): HTMLElement {
+  // oxlint-disable-next-line no-shadow
   const input = new InputClass(options);
   connect(ctx, input);
   return input.element;
