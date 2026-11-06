@@ -55,14 +55,10 @@ const NAMES = [
   'seconds',
   'milliseconds',
   'microseconds',
-] as const
+] as const;
 
-
-export type TransformName = (typeof NAMES)[number]
+export type TransformName = (typeof NAMES)[number];
 /** Valid transform method names. */
-export function transformNames<T extends string>(overrides:T[] = []): Set<T | TransformName> {
-  return new Set([
-    ...NAMES,
-    ...overrides
-  ]);
+export function transformNames<T extends string>(overrides: T[] = []): Set<T | TransformName> {
+  return new Set([...NAMES, ...overrides]);
 }
