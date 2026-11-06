@@ -6,6 +6,12 @@ import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { Input, input } from './input.js';
 
+type FormatFn = (value: any) => string | HTMLElement;
+type Align = { [name: string]: 'left' | 'right' | 'center' };
+type Format = { [name: string]: FormatFn };
+type Width = { [name: string]: number };
+type Schema = FieldInfo[];
+
 /** Table options object.
  * 
  * @property element The parent DOM element in which to place the table element. If undefined, a new `div` element is created.
@@ -24,11 +30,11 @@ interface TableOptions {
   element?: HTMLElement;
   filterBy?: Selection;
   as?: Selection;
-  align?: { [name: string]: 'left' | 'right' | 'center' };
-  format?: { [name: string]: (value: any) => string | HTMLElement };
+  align?: Align;
+  format?: Format;
   from?: string | mc.Param<string>;
   columns?: string[];
-  width?: number | { [name: string]: number };
+  width?: number | Width;
   maxWidth?: number;
   height?: number;
   rowBatch?: number;
@@ -49,17 +55,17 @@ export function table(options: TableOptions): HTMLElement {
 
 /** A HTML table based table component. */
 export class Table extends Input {
-  id: string
-  from: string | mc.Param<string>
-  align: { [name: string]: 'left' | 'right' | 'center' }
-  format?: { [name: string]: (value: any) => string | HTMLElement }
-  columns: string[]
-  widths: { [name: string]: number }
-  maxWidth?: number
-  height: number
-  rowBatch: number
-  selection?: Selection
-  offset: number
+  id: string;
+  from: string | mc.Param<string>;
+  align: Align;
+  format: Format;
+  columns: string[];
+  widths: Width;
+  maxWidth?: number;
+  height: number;
+  rowBatch: number;
+  selection?: Selection;
+  offset: number;
   limit: number;
   isPending: boolean;
   currentRow: number;
@@ -70,8 +76,8 @@ export class Table extends Input {
   head: HTMLTableSectionElement;
   body: HTMLTableSectionElement;
   style: HTMLStyleElement;
-  schema: FieldInfo[];
-  formats: any;
+  schema: Schema;
+  formats: FormatFn[];
   loaded: boolean;
   data: mc.DataColumns[];
 
@@ -85,8 +91,8 @@ export class Table extends Input {
     from,
     columns = ['*'],
     align = {},
-    format,
-    width,
+    format = {},
+    width = {},
     maxWidth,
     height = 500,
     rowBatch = 100,
@@ -261,6 +267,7 @@ export class Table extends Input {
         const value = cols[j][i];
         const td = document.createElement('td');
         const formatted = value == null ? '' : formats[j](value);
+        //@ts-expect-error The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
         if (formatted instanceof HTMLElement || formatted instanceof SVGElement) {
           td.appendChild(formatted);
         } else {
@@ -322,7 +329,7 @@ function resolveRow(element: EventTarget): number {
   return Object.hasOwn(p, '__row__') ? +p.__row__ : -1;
 }
 
-function formatof(base: { [x: string]: any }, schema: { column: any; type: any }[]) {
+function formatof(base: Format, schema: Schema): FormatFn[] {
   return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
@@ -336,7 +343,7 @@ function formatof(base: { [x: string]: any }, schema: { column: any; type: any }
   });
 }
 
-function alignof(base: { [x: string]: any }, schema: { column: any; type: any }[]) {
+function alignof(base: Align, schema: Schema): ("left" | "right" | "center")[] {
   return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
@@ -348,13 +355,13 @@ function alignof(base: { [x: string]: any }, schema: { column: any; type: any }[
   });
 }
 
-function widthof(base: { [x: string]: any }, schema: { column: any }[]): any {
+function widthof(base: Width, schema: Schema): number[] {
   return schema.map(({ column }) => base[column]);
 }
 
-function tableCSS(id: string, aligns: any[], widths: { [x: string]: string | number }): string {
+function tableCSS(id: string, aligns: ("left" | "right" | "center")[], widths: number[]): string {
   const styles: string[] = [];
-  aligns.forEach((a: string, i: number) => {
+  aligns.forEach((a, i) => {
     const w = +widths[i];
     if (a !== 'left' || w) {
       const align = a !== 'left' ? `text-align:${a};` : '';
