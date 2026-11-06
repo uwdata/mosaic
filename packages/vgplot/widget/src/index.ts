@@ -139,6 +139,9 @@ export default {
       logger.log('received message', msg, buffers);
 
       const query = openQueries.get(msg.uuid);
+      if (typeof query === 'undefined') {
+        throw new Error(`Query ${msg.uuid} not found`);
+      }
       openQueries.delete(msg.uuid);
 
       logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
