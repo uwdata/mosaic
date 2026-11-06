@@ -11,7 +11,7 @@
   },
   "scripts": {
     "clean": "rimraf mosaic_widget/static",
-    "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.js",
+    "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.ts",
     "dev": "pnpm run build -- --watch",
     "test": "tsc --build",
     "lint": "eslint src"
