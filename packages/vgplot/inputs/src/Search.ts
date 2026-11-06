@@ -23,7 +23,7 @@ let _id = 0;
 interface SearchOptions {
   element?: HTMLElement;
   filterBy?: mc.Selection;
-  as?: mc.Param<unknown>;
+  as?: mc.Param<string>;
   field?: string;
   type?: 'contains' | 'prefix' | 'suffix' | 'regexp';
   from?: string;
@@ -47,7 +47,7 @@ export class Search extends Input {
   from?: string;
   column?: string;
   field?: string;
-  selection?: mc.Param<unknown>;
+  selection?: mc.Param<string>;
   searchbox: HTMLInputElement;
   data: { list: string }[];
   datalist?: HTMLDataListElement;

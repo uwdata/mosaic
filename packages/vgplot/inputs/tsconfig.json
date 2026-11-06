@@ -4,7 +4,9 @@
   "compilerOptions": {
     "outDir": "dist",
     "allowJs": false,
-    "checkJs": false
+    "checkJs": false,
+    "strict": true,
+    "strictNullChecks": false
   },
   "references": [
     { "path": "../../mosaic/core" },
