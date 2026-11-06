@@ -30,17 +30,17 @@ interface TableOptions {
   element?: HTMLElement;
   filterBy?: Selection;
   as?: Selection;
-  align?: { [name: string]: "left" | "right" | "center" };
-  format?: { [name: string]: (value: any) => string | HTMLElement };
+  align?: { [name: string]: "left" | "right" | "center"; };
+  format?: { [name: string]: (value: any) => string | HTMLElement; };
   from?: string | msql.TableRefNode | mc.Param<string | string[]>;
   columns?: string[];
-  width?: number | { [name: string]: number };
+  width?: number | { [name: string]: number; };
   maxWidth?: number;
   height?: number;
   rowBatch?: number;
 }
 
-type SortEventTarget = EventTarget & { firstChild?: HTMLElement };
+type SortEventTarget = EventTarget & { firstChild?: HTMLElement; };
 
 let _id = -1;
 
@@ -57,10 +57,10 @@ export function table(options: TableOptions): HTMLElement {
 export class Table extends Input {
   id: string;
   from: string | msql.TableRefNode | mc.Param<string | string[]>;
-  align: { [name: string]: "left" | "right" | "center" };
-  format?: { [name: string]: (value: any) => string | HTMLElement };
+  align: { [name: string]: "left" | "right" | "center"; };
+  format?: { [name: string]: (value: any) => string | HTMLElement; };
   columns: string[];
-  widths: { [name: string]: number };
+  widths: { [name: string]: number; };
   maxWidth?: number;
   height: number;
   rowBatch: number;
@@ -174,7 +174,7 @@ export class Table extends Input {
   }
 
   sourceTable(): msql.TableRefNode {
-    return asTableRef(isParam(this.from) ? this.from.value : this.from);
+    return asTableRef(isParam<string | string[]>(this.from) ? this.from.value : this.from);
   }
 
   clause(rows?: number[]): mc.SelectionClause {
@@ -328,7 +328,7 @@ function resolveRow(element: EventTarget): number {
   return Object.hasOwn(p, "__row__") ? +p.__row__ : -1;
 }
 
-function formatof(base, schema) {
+function formatof(base: { [x: string]: any; }, schema: { column: any; type: any; }[]) {
   return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
@@ -345,7 +345,7 @@ function formatof(base, schema) {
   });
 }
 
-function alignof(base, schema) {
+function alignof(base: { [x: string]: any; }, schema: { column: any; type: any; }[]) {
   return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
@@ -357,13 +357,13 @@ function alignof(base, schema) {
   });
 }
 
-function widthof(base = {}, schema) {
+function widthof(base: { [x: string]: any; }, schema: { column: any; }[]): any {
   return schema.map(({ column }) => base[column]);
 }
 
-function tableCSS(id, aligns, widths) {
-  const styles = [];
-  aligns.forEach((a, i) => {
+function tableCSS(id: string, aligns: any[], widths: { [x: string]: string | number; }): string {
+  const styles: string[] = [];
+  aligns.forEach((a: string, i: number) => {
     const w = +widths[i];
     if (a !== "left" || w) {
       const align = a !== "left" ? `text-align:${a};` : "";

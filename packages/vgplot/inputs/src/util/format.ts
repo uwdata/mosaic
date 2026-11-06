@@ -9,12 +9,12 @@ export const formatLocaleAuto = localize(locale => {
   const formatNumber = formatLocaleNumber(locale);
   return (value: unknown) => value == null ? ''
     : typeof value === 'number' ? formatNumber(value)
-    : value instanceof Date ? formatDate(value)
-    : `${value}`;
+      : value instanceof Date ? formatDate(value)
+        : `${value}`;
 });
 
 export const formatLocaleNumber = localize(locale => {
-  return (value: number): string => value === 0 ? '0' : value.toLocaleString(locale); // handle negative zero
+  return (value: any): string => value === 0 ? '0' : value.toLocaleString(locale); // handle negative zero
 });
 
 export const formatAuto = formatLocaleAuto();
@@ -41,7 +41,7 @@ export function formatDate(date: Date): string {
 
 // Memoize the last-returned locale.
 export function localize(f: (locale?: string) => (value: unknown) => string) {
-  let key = null;
+  let key: string | null = null;
   let value: any;
   return (locale = 'en') => locale === key
     ? value
@@ -73,19 +73,16 @@ function isoformat(date: Date, fallback: string | ((date: Date) => string)): str
   const minutes = date.getUTCMinutes();
   const seconds = date.getUTCSeconds();
   const milliseconds = date.getUTCMilliseconds();
-  return `${formatYear(date.getUTCFullYear())}-${pad(date.getUTCMonth() + 1, 2)}-${pad(date.getUTCDate(), 2)}${
-    hours || minutes || seconds || milliseconds ? `T${pad(hours, 2)}:${pad(minutes, 2)}${
-      seconds || milliseconds ? `:${pad(seconds, 2)}${
-        milliseconds ? `.${pad(milliseconds, 3)}` : ''
-      }` : ''
-    }Z` : ''
-  }`;
+  return `${formatYear(date.getUTCFullYear())}-${pad(date.getUTCMonth() + 1, 2)}-${pad(date.getUTCDate(), 2)}${hours || minutes || seconds || milliseconds ? `T${pad(hours, 2)}:${pad(minutes, 2)}${seconds || milliseconds ? `:${pad(seconds, 2)}${milliseconds ? `.${pad(milliseconds, 3)}` : ''
+        }` : ''
+      }Z` : ''
+    }`;
 }
 
 function formatYear(year: number): string {
   return year < 0 ? `-${pad(-year, 6)}`
     : year > 9999 ? `+${pad(year, 6)}`
-    : pad(year, 4);
+      : pad(year, 4);
 }
 
 function pad(value: number, width: number): string {
