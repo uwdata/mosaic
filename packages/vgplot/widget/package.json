@@ -14,6 +14,7 @@
     "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.ts",
     "dev": "pnpm run build -- --watch",
     "test": "tsc --build",
+    "typecheck": "tsc --build",
     "lint": "eslint src"
   },
   "dependencies": {
