@@ -32,8 +32,6 @@ interface Msg {
   error?: string;
 }
 
-//TODO @dangotbanned: https://github.com/microsoft/TypeScript/issues/420
-/** @type {aw.AnyWidget<Model>} */
 export default {
   initialize({ model }: aw.InitializeProps<Model>): void {
     model.set('preagg_schema', coordinator().preaggregator.schema);
@@ -174,7 +172,7 @@ export default {
       reset();
     };
   },
-};
+} satisfies aw.AnyWidget<Model>;
 
 function instantiateSpec(spec: Spec): ReturnType<typeof astToDOM> {
   // parse specification, and instantiate it
