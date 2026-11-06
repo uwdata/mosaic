@@ -6,11 +6,11 @@ export default defineConfig({
   // Retry on CI only.
   retries: process.env.CI ? 2 : 0,
 
-  testMatch: '**/visual*.test.js',
+  testMatch: '**/visual*.test.ts',
 
   webServer: [
     {
-      command: 'node_modules/.bin/vite --port 5173 --host --config vite.config.docker.js',
+      command: 'pnpm vite --port 5173 --host --config vite.config.docker.js',
       port: 5173,
       reuseExistingServer: true,
       cwd: '../../../',

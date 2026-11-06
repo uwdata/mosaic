@@ -1,7 +1,7 @@
-import { decodeIPC, DuckDBWASMConnector, RestConnector } from '@uwdata/mosaic-core';
-import { createAPIContext } from '@uwdata/vgplot';
+import { Connector, decodeIPC, DuckDBWASMConnector, RestConnector } from '../packages/mosaic/core/src';
+import { createAPIContext } from '../packages/vgplot/vgplot/src';
 
-export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
+export { parseSpec, astToDOM, astToESM } from '../packages/vgplot/spec/src';
 export const vg = createAPIContext();
 
 // make API accessible for console debugging
@@ -9,8 +9,8 @@ Object.assign(self, { vg });
 
 // enable query interface on global this (window)
 Object.assign(self, {
-  query: async (sql) => {
-    const bytes = await vg.coordinator().databaseConnector().query({
+  query: async (sql: string) => {
+    const bytes = await vg.coordinator().databaseConnector()!.query({
       type: 'arrow',
       sql
     });
@@ -25,9 +25,9 @@ export function clear() {
   namedPlots.clear();
 }
 
-let wasm;
+let wasm: DuckDBWASMConnector | undefined;
 
-export async function setDatabaseConnector(type) {
+export async function setDatabaseConnector(type: 'rest' | 'rest_https' | 'wasm') {
   let connector;
   switch (type) {
     case 'rest':
@@ -50,7 +50,7 @@ export async function setDatabaseConnector(type) {
   coordinator.databaseConnector(connector);
 }
 
-async function installDatasketches(connector) {
+async function installDatasketches(connector: Connector) {
   try {
     for (const sql of [
       'SET allow_extension_repositories = \'allowed\'',
