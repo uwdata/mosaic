@@ -1,5 +1,5 @@
 import { isString } from '../util.js';
-import { ASTNode } from './ASTNode.js';
+import { ParentNode } from './ASTNode.js';
 import { PLOT } from '../constants.js';
 import { parseAttribute } from './PlotAttributeNode.js';
 import { parseInteractor } from './PlotInteractorNode.js';
@@ -25,7 +25,7 @@ export function parsePlot(spec, ctx) {
   return new PlotNode(children, attributes);
 }
 
-export class PlotNode extends ASTNode {
+export class PlotNode extends ParentNode {
   constructor(children, attributes) {
     super(PLOT, children);
     this.attributes = attributes;

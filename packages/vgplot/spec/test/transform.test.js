@@ -1,6 +1,6 @@
-import { expect, it } from 'vitest';
+import { expect, it, assert} from 'vitest';
 import { cpcEstimate, cpcSketch, isAggregateExpression, kllQuantile, kllSketch, sql, sum } from '@uwdata/mosaic-sql';
-import { parseSpec } from '../src/index.js';
+import { OptionsNode, parseSpec} from '../src/index.js';
 
 it('instantiates nested transforms and SQL expressions', () => {
   const ast = parseSpec({
@@ -11,7 +11,13 @@ it('instantiates nested transforms and SQL expressions', () => {
       y: { sum: { sum: { sql: 'amount' } }, orderby: 'day' },
     }],
   });
-  const actual = ast.root.children[0].options.instantiate({ api: { sql, sum } }).y;
+  const root = ast.root;
+  assert('children' in root)
+  const child = root.children[0]
+  assert('options' in child)
+  const options = child.options
+  assert.instanceOf(options, OptionsNode)
+  const actual = options.instantiate({ api: { sql, sum } }).y;
   expect(isAggregateExpression(actual)).toBe(1);
   expect(String(actual)).toBe(String(sum(sum(sql`amount`)).orderby('day')));
 });
@@ -27,7 +33,13 @@ it('instantiates sketch transforms', () => {
     }],
   });
   const api = { cpcEstimate, cpcSketch, kllQuantile, kllSketch };
-  const { y, y2 } = ast.root.children[0].options.instantiate({ api });
+  const root = ast.root;
+  assert('children' in root)
+  const child = root.children[0]
+  assert('options' in child)
+  const options = child.options
+  assert.instanceOf(options, OptionsNode)
+  const { y, y2 } = options.instantiate({ api });
   expect(isAggregateExpression(y)).toBe(1);
   expect(String(y)).toBe(String(cpcEstimate(cpcSketch('customer'))));
   expect(isAggregateExpression(y2)).toBe(1);
