@@ -1,30 +1,30 @@
 
 // Note: use formatAuto (or any other localized format) to present values to the
 // user; stringify is only intended for machine values.
-export function stringify(x) {
+export function stringify(x: unknown): string {
   return x == null ? '' : `${x}`;
 }
 
 export const formatLocaleAuto = localize(locale => {
   const formatNumber = formatLocaleNumber(locale);
-  return value => value == null ? ''
+  return (value: unknown) => value == null ? ''
     : typeof value === 'number' ? formatNumber(value)
-    : value instanceof Date ? formatDate(value)
-    : `${value}`;
+      : value instanceof Date ? formatDate(value)
+        : `${value}`;
 });
 
 export const formatLocaleNumber = localize(locale => {
-  return value => value === 0 ? '0' : value.toLocaleString(locale); // handle negative zero
+  return (value: any): string => value === 0 ? '0' : value.toLocaleString(locale); // handle negative zero
 });
 
 export const formatAuto = formatLocaleAuto();
 
 export const formatNumber = formatLocaleNumber();
 
-export function formatTrim(value) {
+export function formatTrim(value: object): string {
   const s = value.toString();
   const n = s.length;
-  let i0 = -1, i1;
+  let i0 = -1, i1: number;
   out: for (let i = 1; i < n; ++i) {
     switch (s[i]) {
       case '.': i0 = i1 = i; break;
@@ -35,14 +35,14 @@ export function formatTrim(value) {
   return i0 > 0 ? s.slice(0, i0) + s.slice(i1 + 1) : s;
 }
 
-export function formatDate(date) {
+export function formatDate(date: Date): string {
   return isoformat(date, 'Invalid Date');
 }
 
 // Memoize the last-returned locale.
-export function localize(f) {
-  let key = null;
-  let value;
+export function localize(f: (locale?: string) => (value: unknown) => string) {
+  let key: string | null = null;
+  let value: any;
   return (locale = 'en') => locale === key
     ? value
     : (value = f(key = locale));
@@ -65,34 +65,26 @@ export function localize(f) {
 // TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 // THIS SOFTWARE.
 
-/**
- * Format a Date in ISO format.
- * @param {Date} date The date to format
- * @param {string | ((date: Date) => string)} fallback Fallback value or function.
- * @returns {string}
- */
-function isoformat(date, fallback) {
+/** Format a Date in ISO format. */
+function isoformat(date: Date, fallback: string | ((date: Date) => string)): string {
   if (!(date instanceof Date)) date = new Date(+date);
   if (isNaN(+date)) return typeof fallback === 'function' ? fallback(date) : fallback;
   const hours = date.getUTCHours();
   const minutes = date.getUTCMinutes();
   const seconds = date.getUTCSeconds();
   const milliseconds = date.getUTCMilliseconds();
-  return `${formatYear(date.getUTCFullYear())}-${pad(date.getUTCMonth() + 1, 2)}-${pad(date.getUTCDate(), 2)}${
-    hours || minutes || seconds || milliseconds ? `T${pad(hours, 2)}:${pad(minutes, 2)}${
-      seconds || milliseconds ? `:${pad(seconds, 2)}${
-        milliseconds ? `.${pad(milliseconds, 3)}` : ''
-      }` : ''
-    }Z` : ''
-  }`;
+  return `${formatYear(date.getUTCFullYear())}-${pad(date.getUTCMonth() + 1, 2)}-${pad(date.getUTCDate(), 2)}${hours || minutes || seconds || milliseconds ? `T${pad(hours, 2)}:${pad(minutes, 2)}${seconds || milliseconds ? `:${pad(seconds, 2)}${milliseconds ? `.${pad(milliseconds, 3)}` : ''
+        }` : ''
+      }Z` : ''
+    }`;
 }
 
-function formatYear(year) {
+function formatYear(year: number): string {
   return year < 0 ? `-${pad(-year, 6)}`
     : year > 9999 ? `+${pad(year, 6)}`
-    : pad(year, 4);
+      : pad(year, 4);
 }
 
-function pad(value, width) {
+function pad(value: number, width: number): string {
   return `${value}`.padStart(width, '0');
 }
