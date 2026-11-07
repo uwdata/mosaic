@@ -36,14 +36,14 @@ function legend(channel: 'color' | 'opacity' | 'symbol', options: Options = {}):
   return (plot: Plot): void => plot.addLegend(new Legend(channel, options));
 }
 
-export function colorLegend(options: Options): ReturnType<typeof legend> {
+export function colorLegend(options: Options = {}): ReturnType<typeof legend> {
   return legend.call(this, 'color', options);
 }
 
-export function opacityLegend(options: Options): ReturnType<typeof legend> {
+export function opacityLegend(options: Options = {}): ReturnType<typeof legend> {
   return legend.call(this, 'opacity', options);
 }
 
-export function symbolLegend(options: Options): ReturnType<typeof legend> {
+export function symbolLegend(options: Options = {}): ReturnType<typeof legend> {
   return legend.call(this, 'symbol', options);
 }
