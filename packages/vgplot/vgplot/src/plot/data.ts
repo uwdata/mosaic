@@ -1,10 +1,10 @@
+import type * as mc from '@uwdata/mosaic-core';
 
-/**
- * @param {string | import("@uwdata/mosaic-core").Param} table
- * @param {object} [options]
- * @param {string | import("@uwdata/mosaic-core").Param} [options.filterBy]
- * @param {boolean} [options.optimize]
- */
-export function from(table, options = undefined) {
+interface Options {
+  filterBy?: mc.Selection;
+  optimize?: boolean;
+}
+
+export function from(table: string | mc.Param<string>, options: Options = {}): { table: string | mc.Param<string>; options: Options } {
   return { table, options };
 }

@@ -32,6 +32,7 @@ export class PlotFromNode extends ASTNode<ReturnType<APIContext['from']>, PlotFr
 
   instantiate(ctx: InstantiateContext): ReturnType<APIContext['from']> {
     const { table, options } = this;
+    //@ts-expect-error 'string | Param<unknown>' is not assignable to parameter of type 'string | Param<string>' (design issue)
     return ctx.api[FROM](table.instantiate(ctx), options.instantiate(ctx));
   }
 
