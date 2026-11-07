@@ -11,12 +11,10 @@ function concat<Nodes extends Node[]>(children: Nodes, direction: 'horizontal' |
   return Object.assign(div, { value: { element: div } });
 }
 
-// TODO @dangotbanned: Remove `flat`, which was working around ast instantiate bug
 export function vconcat<Nodes extends Node[]>(...plots: Nodes): Concat {
-  return concat(plots.flat(), 'vertical');
+  return concat(plots, 'vertical');
 }
 
-// TODO @dangotbanned: Remove `flat`, which was working around ast instantiate bug
 export function hconcat<Nodes extends Node[]>(...plots: Nodes): Concat {
-  return concat(plots.flat(), 'horizontal');
+  return concat(plots, 'horizontal');
 }
