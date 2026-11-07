@@ -15,7 +15,7 @@ import {
   RasterTileMark,
   RegressionMark,
 } from '@uwdata/mosaic-plot';
-import type { Callback, MarkType } from './types.js';
+import type { PlotDirective, MarkType } from './types.js';
 const decorators = new Set([
   'frame',
   'axisX', 'axisY', 'axisFx', 'axisFy',
@@ -24,7 +24,7 @@ const decorators = new Set([
   'graticule', 'sphere'
 ]);
 
-function mark(type: MarkType, data: any, channels: Record<string, string> = {}): Callback {
+function mark(type: MarkType, data: any, channels: Record<string, string> = {}): PlotDirective {
   if (arguments.length === 2 && !Array.isArray(data)) {
     channels = data;
     data = decorators.has(type) ? null : [{}];
@@ -36,13 +36,13 @@ function mark(type: MarkType, data: any, channels: Record<string, string> = {}):
   return explicitType(MarkClass, type, data, channels);
 }
 
-function explicitType(MarkClass: typeof Mark, type: MarkType, data?: any, channels?: Record<string, string>): Callback {
+function explicitType(MarkClass: typeof Mark, type: MarkType, data?: any, channels?: Record<string, string>): PlotDirective {
   return plot => {
     plot.addMark(new MarkClass(type, data, channels));
   };
 }
 
-function implicitType(MarkClass: typeof Mark, data?: any, channels?: Record<string, string>): Callback {
+function implicitType(MarkClass: typeof Mark, data?: any, channels?: Record<string, string>): PlotDirective {
   return plot => {
     plot.addMark(new MarkClass(data, channels));
   };

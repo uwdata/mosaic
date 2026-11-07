@@ -1,6 +1,6 @@
 // oxlint-disable typescript/explicit-module-boundary-types
 import type { Mark } from '@uwdata/mosaic-plot';
-import type { Callback, Plot, Rename, Require } from './types.js'
+import type { PlotDirective, Plot, Rename, Require } from './types.js'
 import {
   Highlight,
   Interval1D,
@@ -23,7 +23,7 @@ type ToggleOptions = Omit<ToggleChannelsOptions, 'channels'>;
 function interactor<T extends Interactor>(
   InteractorClass: new (mark: Mark, options: unknown) => T,
   options: unknown,
-): Callback {
+): PlotDirective {
   return (plot: Plot): void => {
     const mark = plot.marks[plot.marks.length - 1];
     plot.addInteractor(new InteractorClass(mark, options));
@@ -32,88 +32,88 @@ function interactor<T extends Interactor>(
 
 // TODO @dangotbanned: type `{Highlight,highlight}`
 // TODO @dangotbanned: use `Rename` for selection -> by
-export function highlight({ by, ...channels }): Callback {
+export function highlight({ by, ...channels }): PlotDirective {
   return interactor(Highlight, { selection: by, channels });
 }
 
 // TODO @dangotbanned: type `{Interval*,interval*}`
-export function intervalX({ as, ...rest }): Callback {
+export function intervalX({ as, ...rest }): PlotDirective {
   return interactor(Interval1D, { ...rest, selection: as, channel: 'x' });
 }
 
 // TODO @dangotbanned: type `{Interval*,interval*}`
-export function intervalY({ as, ...rest }): Callback {
+export function intervalY({ as, ...rest }): PlotDirective {
   return interactor(Interval1D, { ...rest, selection: as, channel: 'y' });
 }
 
 // TODO @dangotbanned: type `{Interval*,interval*}`
-export function intervalXY({ as, ...rest }): Callback {
+export function intervalXY({ as, ...rest }): PlotDirective {
   return interactor(Interval2D, { ...rest, selection: as });
 }
 
 // TODO @dangotbanned: type `{Nearest*,nearest*}`
-export function nearest({ as, ...rest }): Callback {
+export function nearest({ as, ...rest }): PlotDirective {
   return interactor(Nearest, { ...rest, selection: as, pointer: 'xy' });
 }
 
 // TODO @dangotbanned: type `{Nearest*,nearest*}`
-export function nearestX({ as, ...rest }): Callback {
+export function nearestX({ as, ...rest }): PlotDirective {
   return interactor(Nearest, { ...rest, selection: as, pointer: 'x' });
 }
 
 // TODO @dangotbanned: type `{Nearest*,nearest*}`
-export function nearestY({ as, ...rest }): Callback {
+export function nearestY({ as, ...rest }): PlotDirective {
   return interactor(Nearest, { ...rest, selection: as, pointer: 'y' });
 }
 
-export function region({ as, ...rest }): Callback {
+export function region({ as, ...rest }): PlotDirective {
   return interactor(Region, { ...rest, selection: as });
 }
 
-export function toggle({ as, ...rest }: ToggleChannelsOptions): Callback {
+export function toggle({ as, ...rest }: ToggleChannelsOptions): PlotDirective {
   return interactor(Toggle, { ...rest, selection: as });
 }
 
-export function toggleX(options: ToggleOptions): Callback {
+export function toggleX(options: ToggleOptions): PlotDirective {
   return toggle({ ...options, channels: ['x'] });
 }
 
-export function toggleY(options: ToggleOptions): Callback {
+export function toggleY(options: ToggleOptions): PlotDirective {
   return toggle({ ...options, channels: ['y'] });
 }
 
-export function toggleZ(options: ToggleOptions): Callback {
+export function toggleZ(options: ToggleOptions): PlotDirective {
   return toggle({ ...options, channels: ['z'] });
 }
 
-export function toggleColor(options: ToggleOptions): Callback {
+export function toggleColor(options: ToggleOptions): PlotDirective {
   return toggle({ ...options, channels: ['color'] });
 }
 
-function zoom(options: ConstructorParameters<typeof PanZoom>[1]): Callback {
+function zoom(options: ConstructorParameters<typeof PanZoom>[1]): PlotDirective {
   return interactor(PanZoom, options);
 }
 
-export function pan(options: PanZoomOptions = {}): Callback {
+export function pan(options: PanZoomOptions = {}): PlotDirective {
   return zoom({ ...options, zoom: false });
 }
 
-export function panX(options: PanZoom1DOptions = {}): Callback {
+export function panX(options: PanZoom1DOptions = {}): PlotDirective {
   return zoom({ ...options, zoom: false, pany: false });
 }
 
-export function panY(options: PanZoom1DOptions = {}): Callback {
+export function panY(options: PanZoom1DOptions = {}): PlotDirective {
   return zoom({ ...options, zoom: false, panx: false });
 }
 
-export function panZoom(options: PanZoomOptions = {}): Callback {
+export function panZoom(options: PanZoomOptions = {}): PlotDirective {
   return zoom(options);
 }
 
-export function panZoomX(options: PanZoom1DOptions = {}): Callback {
+export function panZoomX(options: PanZoom1DOptions = {}): PlotDirective {
   return zoom({ ...options, pany: false });
 }
 
-export function panZoomY(options: PanZoom1DOptions = {}): Callback {
+export function panZoomY(options: PanZoom1DOptions = {}): PlotDirective {
   return zoom({ ...options, panx: false });
 }
