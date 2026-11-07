@@ -1,6 +1,6 @@
 // oxlint-disable typescript/explicit-module-boundary-types
 import type { Mark } from '@uwdata/mosaic-plot';
-import type { Callback, Plot } from './types.js'
+import type { Callback, Plot, Rename, Require } from './types.js'
 import {
   Highlight,
   Interval1D,
@@ -14,6 +14,11 @@ import {
 type Interactor = Parameters<Plot['addInteractor']>[0];
 type PanZoomOptions = Omit<ConstructorParameters<typeof PanZoom>[1], 'zoom'>;
 type PanZoom1DOptions = Omit<PanZoomOptions, 'panx' | 'pany'>;
+
+type SelectionAs<T extends { selection?: unknown }> = Rename<Require<T, 'selection'>, 'selection', 'as'>;
+
+type ToggleChannelsOptions = SelectionAs<ConstructorParameters<typeof Toggle>[1]>;
+type ToggleOptions = Omit<ToggleChannelsOptions, 'channels'>;
 
 function interactor<T extends Interactor>(
   InteractorClass: new (mark: Mark, options: unknown) => T,
@@ -57,23 +62,23 @@ export function region({ as, ...rest }): Callback {
   return interactor(Region, { ...rest, selection: as });
 }
 
-export function toggle({ as, ...rest }): Callback {
+export function toggle({ as, ...rest }: ToggleChannelsOptions): Callback {
   return interactor(Toggle, { ...rest, selection: as });
 }
 
-export function toggleX(options): Callback {
+export function toggleX(options: ToggleOptions): Callback {
   return toggle({ ...options, channels: ['x'] });
 }
 
-export function toggleY(options): Callback {
+export function toggleY(options: ToggleOptions): Callback {
   return toggle({ ...options, channels: ['y'] });
 }
 
-export function toggleZ(options): Callback {
+export function toggleZ(options: ToggleOptions): Callback {
   return toggle({ ...options, channels: ['z'] });
 }
 
-export function toggleColor(options): Callback {
+export function toggleColor(options: ToggleOptions): Callback {
   return toggle({ ...options, channels: ['color'] });
 }
 
