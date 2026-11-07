@@ -42,7 +42,7 @@ type Context = { context?: { namedPlots?: NamedPlots } };
  * Otherwise the default instance is used.
  */
 export function requestNamedPlot(ctx: Context, name: string, callback: Callback): void {
-  const map: NamedPlots = ctx?.context?.namedPlots ?? namedPlots;
+  const map = ctx?.context?.namedPlots ?? namedPlots;
   map.request(name, callback);
 }
 
@@ -53,6 +53,6 @@ export function requestNamedPlot(ctx: Context, name: string, callback: Callback)
  * Otherwise the default instance is used.
  */
 export function setNamedPlot(ctx: Context, name: string, plot: Plot): void {
-  const map: NamedPlots = ctx?.context?.namedPlots ?? namedPlots;
+  const map = ctx?.context?.namedPlots ?? namedPlots;
   map.set(name, plot);
 }
