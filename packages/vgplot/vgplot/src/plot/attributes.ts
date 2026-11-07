@@ -1,11 +1,11 @@
 import { isParam } from '@uwdata/mosaic-core';
 import { setNamedPlot } from './named-plots.js';
-import type { Callback, PickValues, Plot, Value, CanParam, Primitive, FixedType } from './types.js';
+import type { PlotDirective, PickValues, Plot, Value, CanParam, Primitive, FixedType } from './types.js';
 
 
 type AnyValue = Value | object;
 
-export function name(name: string): Callback {
+export function name(name: string): PlotDirective {
   return plot => setNamedPlot(this, name, plot);
 }
 
@@ -23,11 +23,11 @@ function setAttribute(plot: Plot, name: string, value: AnyValue): void {
   }
 }
 
-function attribute(name: string, value: AnyValue): Callback {
+function attribute(name: string, value: AnyValue): PlotDirective {
   return plot => { setAttribute(plot, name, value); };
 }
 
-function attributes(values: { [s: string]: Value; } | ArrayLike<Value>): Callback {
+function attributes(values: { [s: string]: Value; } | ArrayLike<Value>): PlotDirective {
   return plot => {
     for (const [name, value] of Object.entries(values)) {
       setAttribute(plot, name, value)
@@ -44,7 +44,7 @@ interface Margins {
 
 type MarginMargins = { [P in keyof Margins as `margin${Capitalize<string & P>}`]: Margins[P] }
 
-export function margins(object: Margins): Callback {
+export function margins(object: Margins): PlotDirective {
   const { top, bottom, left, right } = object;
   const attr: MarginMargins = {};
   if (top !== undefined) attr.marginTop = top;
@@ -54,7 +54,7 @@ export function margins(object: Margins): Callback {
   return attributes(attr);
 }
 
-export function margin(value: CanParam<number>): Callback {
+export function margin(value: CanParam<number>): PlotDirective {
   return attributes({
     marginTop: value,
     marginBottom: value,
@@ -63,14 +63,14 @@ export function margin(value: CanParam<number>): Callback {
   });
 }
 
-export function xyDomain(value: Value): Callback {
+export function xyDomain(value: Value): PlotDirective {
   return attributes({ xDomain: value, yDomain: value });
 }
 
 /* TODO @dangotbanned: Expose the type of `attributeMap`'s keys and use here to validate internals
 https://github.com/uwdata/mosaic/blob/ddf3e792409f37a26e918040efecdee635576a16/packages/vgplot/plot/src/plot-attributes.js#L1-L212
 */
-function attrf<V extends Value | object = Value>(name: string): (value: V) => Callback {
+function attrf<V extends Value | object = Value>(name: string): (value: V) => PlotDirective {
   return (value: V) => attribute(name, value);
 }
 
