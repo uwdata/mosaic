@@ -3,11 +3,14 @@ import type { Fixed, Plot } from '@uwdata/mosaic-plot';
 export type { Plot } from '@uwdata/mosaic-plot';
 
 /** 
- * TODO @dangotbanned: Add docs to this and probably rename it.
+ * A plot [attribute][1], [mark][2], [interactor][3] or [legend][4].
  * 
- * (Most of the API depends on this guy)
+ * [1]: https://idl.uw.edu/mosaic/vgplot/?lang=js#attributes
+ * [2]: https://idl.uw.edu/mosaic/vgplot/?lang=js#marks
+ * [3]: https://idl.uw.edu/mosaic/vgplot/?lang=js#interactors
+ * [4]: https://idl.uw.edu/mosaic/vgplot/?lang=js#legends
  */
-export type Callback = (plot: Plot) => void;
+export type PlotDirective = (plot: Plot) => void;
 export type MarkType = 'text' | 'area' | 'areaX' | 'areaY' | 'arrow' | 'axisX' | 'axisY' | 'axisFx' | 'axisFy' | 'gridX' | 'gridY' | 'gridFx' | 'gridFy' | 'barX' | 'barY' | 'cell' | 'cellX' | 'cellY' | 'contour' | 'delaunayLink' | 'delaunayMesh' | 'hull' | 'voronoi' | 'voronoiMesh' | 'denseLine' | 'density' | 'densityX' | 'densityY' | 'dot' | 'dotX' | 'dotY' | 'circle' | 'hexagon' | 'errorbarX' | 'errorbarY' | 'frame' | 'geo' | 'graticule' | 'sphere' | 'hexbin' | 'hexgrid' | 'image' | 'line' | 'lineX' | 'lineY' | 'link' | 'raster' | 'heatmap' | 'rasterTile' | 'rect' | 'rectX' | 'rectY' | 'regressionY' | 'ruleX' | 'ruleY' | 'textX' | 'textY' | 'tickX' | 'tickY' | 'vector' | 'vectorX' | 'vectorY' | 'spike' | 'waffleX' | 'waffleY';
 
 /**Rename a single property in `T`. */

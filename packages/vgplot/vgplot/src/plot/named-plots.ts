@@ -1,12 +1,12 @@
-import type { Callback, Plot } from './types.js';
+import type { PlotDirective, Plot } from './types.js';
 
 export class NamedPlots extends Map<string, Plot> {
-  waiting: Map<string, Callback[]>;
-  request(name: string, callback: Callback): void {
+  waiting: Map<string, PlotDirective[]>;
+  request(name: string, callback: PlotDirective): void {
     if (this.has(name)) {
       callback(this.get(name));
     } else {
-      const waiting: Map<string, Callback[]> = this.waiting || (this.waiting = new Map);
+      const waiting: Map<string, PlotDirective[]> = this.waiting || (this.waiting = new Map);
       const list = waiting.get(name) || [];
       waiting.set(name, list.concat(callback));
     }
@@ -41,7 +41,7 @@ type Context = { context?: { namedPlots?: NamedPlots } };
  * If the provided context object has a local namedPlots, that is used.
  * Otherwise the default instance is used.
  */
-export function requestNamedPlot(ctx: Context, name: string, callback: Callback): void {
+export function requestNamedPlot(ctx: Context, name: string, callback: PlotDirective): void {
   const map = ctx?.context?.namedPlots ?? namedPlots;
   map.request(name, callback);
 }
