@@ -1,10 +1,11 @@
+import type * as mc from '@uwdata/mosaic-core';
+import type * as msql from '@uwdata/mosaic-sql';
 
-/**
- * @param {string | import("@uwdata/mosaic-core").Param | import("@uwdata/mosaic-sql").TableRefNode} table
- * @param {object} [options]
- * @param {string | import("@uwdata/mosaic-core").Param} [options.filterBy]
- * @param {boolean} [options.optimize]
- */
-export function from(table, options = undefined) {
+interface Options {
+  filterBy?: mc.Selection;
+  optimize?: boolean;
+}
+
+export function from(table: string | mc.Param<string> | msql.TableRefNode, options: Options = {}): { table: string | mc.Param<string> | msql.TableRefNode; options: Options; } {
   return { table, options };
 }
