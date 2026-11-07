@@ -1,9 +1,9 @@
 import type * as mc from '@uwdata/mosaic-core'
 import { Legend } from '@uwdata/mosaic-plot';
-import type { Plot } from '@uwdata/mosaic-plot';
 import { requestNamedPlot } from './named-plots.js';
+import type { Callback, Plot } from './types.js';
 
-interface PlotLegendOptions {
+interface LegendOptions {
   as?: mc.Param<unknown>;
   field?: string;
   label?: string;
@@ -17,13 +17,17 @@ interface PlotLegendOptions {
   columns?: number;
 }
 
-interface LegendOptions extends PlotLegendOptions {
+interface LegendForOptions extends LegendOptions {
   for: string;
 }
 
-type Options = PlotLegendOptions | LegendOptions;
+type Options = LegendOptions | LegendForOptions;
 
-function legend(channel: 'color' | 'opacity' | 'symbol', options: Options = {}): HTMLDivElement | ((plot: Plot) => void) {
+
+// TODO @dangotbanned: `options` might be expressible as a conditional type
+function legend(channel: 'color' | 'opacity' | 'symbol', options: LegendForOptions): HTMLDivElement
+function legend(channel: 'color' | 'opacity' | 'symbol', options: LegendOptions): Callback
+function legend(channel: 'color' | 'opacity' | 'symbol', options: Options = {}): HTMLDivElement | Callback {
   if ('for' in options) {
     const { for: maybePlot, ...rest } = options;
     const legend = new Legend(channel, rest);
@@ -36,14 +40,20 @@ function legend(channel: 'color' | 'opacity' | 'symbol', options: Options = {}):
   return (plot: Plot): void => plot.addLegend(new Legend(channel, options));
 }
 
-export function colorLegend(options: Options = {}): ReturnType<typeof legend> {
+export function colorLegend(options: LegendForOptions): HTMLDivElement
+export function colorLegend(options?: LegendOptions): Callback
+export function colorLegend(options: Options = {}): HTMLDivElement | Callback {
   return legend.call(this, 'color', options);
 }
 
-export function opacityLegend(options: Options = {}): ReturnType<typeof legend> {
+export function opacityLegend(options: LegendForOptions): HTMLDivElement
+export function opacityLegend(options?: LegendOptions): Callback
+export function opacityLegend(options: Options = {}): HTMLDivElement | Callback {
   return legend.call(this, 'opacity', options);
 }
 
-export function symbolLegend(options: Options = {}): ReturnType<typeof legend> {
+export function symbolLegend(options: LegendForOptions): HTMLDivElement
+export function symbolLegend(options?: LegendOptions): Callback
+export function symbolLegend(options: Options = {}): HTMLDivElement | Callback {
   return legend.call(this, 'symbol', options);
 }
