@@ -19,7 +19,7 @@ export class HConcatNode extends ParentNode<HTMLDivElement, HConcat> {
   }
 
   instantiate(ctx: InstantiateContext): HTMLDivElement {
-    return ctx.api[HCONCAT](this.children.map(c => c.instantiate(ctx)));
+    return ctx.api[HCONCAT](...this.children.map(c => c.instantiate(ctx)));
   }
 
   codegen(ctx: CodegenContext): string {
