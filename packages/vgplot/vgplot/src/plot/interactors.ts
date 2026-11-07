@@ -30,30 +30,38 @@ function interactor<T extends Interactor>(
   };
 }
 
+// TODO @dangotbanned: type `{Highlight,highlight}`
+// TODO @dangotbanned: use `Rename` for selection -> by
 export function highlight({ by, ...channels }): Callback {
   return interactor(Highlight, { selection: by, channels });
 }
 
+// TODO @dangotbanned: type `{Interval*,interval*}`
 export function intervalX({ as, ...rest }): Callback {
   return interactor(Interval1D, { ...rest, selection: as, channel: 'x' });
 }
 
+// TODO @dangotbanned: type `{Interval*,interval*}`
 export function intervalY({ as, ...rest }): Callback {
   return interactor(Interval1D, { ...rest, selection: as, channel: 'y' });
 }
 
+// TODO @dangotbanned: type `{Interval*,interval*}`
 export function intervalXY({ as, ...rest }): Callback {
   return interactor(Interval2D, { ...rest, selection: as });
 }
 
+// TODO @dangotbanned: type `{Nearest*,nearest*}`
 export function nearest({ as, ...rest }): Callback {
   return interactor(Nearest, { ...rest, selection: as, pointer: 'xy' });
 }
 
+// TODO @dangotbanned: type `{Nearest*,nearest*}`
 export function nearestX({ as, ...rest }): Callback {
   return interactor(Nearest, { ...rest, selection: as, pointer: 'x' });
 }
 
+// TODO @dangotbanned: type `{Nearest*,nearest*}`
 export function nearestY({ as, ...rest }): Callback {
   return interactor(Nearest, { ...rest, selection: as, pointer: 'y' });
 }
