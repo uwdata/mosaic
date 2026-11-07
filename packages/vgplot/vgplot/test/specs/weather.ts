@@ -1,6 +1,7 @@
 import { dataPath } from '../util/data-path.js';
+import type { APIContext } from '../../src/context.js';
 
-export default async function(vg) {
+export default async function(vg: APIContext): Promise<HTMLDivElement> {
   await vg.context.coordinator.exec([
     vg.loadParquet('weather', dataPath('seattle-weather.parquet'))
   ]);

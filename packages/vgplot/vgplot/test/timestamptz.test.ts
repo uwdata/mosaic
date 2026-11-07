@@ -4,8 +4,9 @@ import { Coordinator } from '@uwdata/mosaic-core';
 import { createAPIContext, xScale } from '../src/index.js';
 import { clientsReady } from './util/clients-ready.js';
 import { NodeConnector } from '@uwdata/mosaic-core/node-connector';
-
-async function xScaleType(columnType, ...attributes) {
+import type { Callback } from '../src/plot/types.js';
+//TODO @dangotbanned: whole file
+async function xScaleType(columnType: 'TIMESTAMP' | 'TIMESTAMPTZ', ...attributes: Callback[]): Promise<any> {
   const mc = new Coordinator(await NodeConnector.make(), { logger: null });
   const vg = createAPIContext({ coordinator: mc });
   await mc.exec(`CREATE TABLE data AS SELECT

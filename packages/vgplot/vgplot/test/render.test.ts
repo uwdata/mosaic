@@ -20,7 +20,7 @@ describe('render', () => {
   });
 });
 
-async function renderTest(name) {
+async function renderTest(name: string): Promise<void> {
   const specPath = resolve(cwd, `specs/${name}.js`);
   const htmlPath = resolve(cwd, `output/${name}.html`);
   const { default: run } = await import(specPath);
