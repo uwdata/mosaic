@@ -1,3 +1,5 @@
+// TODO @dangotbanned: Try to identify a path forward
+// Correctly typing *this impl* will be expensive to check and take ages to write
 import {
   Mark,
   ConnectedMark,
