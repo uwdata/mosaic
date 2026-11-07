@@ -427,6 +427,12 @@ importers:
         specifier: ^0.28.2
         version: 0.28.2
 
+  specs/esm:
+    dependencies:
+      '@uwdata/vgplot':
+        specifier: workspace:^
+        version: link:../../packages/vgplot/vgplot
+
 packages:
 
   '@11ty/gray-matter@2.1.0':
