@@ -20,6 +20,7 @@ export class PlotInteractorNode extends ASTNode<Interactor, PlotInteractor> {
   }
 
   instantiate(ctx: InstantiateContext): Interactor {
+    //@ts-expect-error different required arguments
     return ctx.api[this.name](this.options.instantiate(ctx));
   }
 
