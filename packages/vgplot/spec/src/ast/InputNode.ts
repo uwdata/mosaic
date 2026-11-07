@@ -19,7 +19,6 @@ export class InputNode extends ASTNode<HTMLElement, Input> {
   }
 
   instantiate(ctx: InstantiateContext): HTMLElement {
-    //@ts-expect-error 'Record<string, unknown>' is not assignable to <union of 4 incompatible constructors>
     return ctx.api[this.name](this.options.instantiate(ctx));
   }
 

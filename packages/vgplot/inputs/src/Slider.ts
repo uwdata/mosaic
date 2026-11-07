@@ -25,7 +25,7 @@ let _id = 0;
 interface SliderOptions {
   element?: HTMLElement;
   filterBy?: mc.Selection;
-  as?: mc.Param<number>;
+  as?: mc.Param<number> | mc.Selection;
   select?: 'point' | 'interval'
   min?: number;
   max?: number;
@@ -53,7 +53,7 @@ export class Slider extends Input {
   from?: string;
   column: string;
   field?: string;
-  selection?: mc.Param<number>;
+  selection?: mc.Param<number> | mc.Selection;
   selectionType: 'point' | 'interval';
   min?: number;
   max?: number;
@@ -74,6 +74,7 @@ export class Slider extends Input {
     from,
     column,
     label = column,
+    // @ts-expect-error return type differs from Param parent class
     value = as?.value,
     select = 'point',
     field = column,

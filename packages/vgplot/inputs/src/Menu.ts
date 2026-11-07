@@ -22,7 +22,7 @@ type Option = { value: any; label?: string }
 interface MenuOptions {
   element?: HTMLElement;
   filterBy?: mc.Selection;
-  as?: mc.Param<unknown>;
+  as?: mc.Param<unknown> | mc.Selection;
   field?: string;
   options?: (any | Option)[];
   format?: (value: any) => string;
@@ -53,7 +53,7 @@ export class Menu extends Input {
   format: (value: any) => string;
   field?: string;
   listMatch?: 'any' | 'all';
-  selection?: mc.Param<unknown>;
+  selection?: mc.Param<unknown> | mc.Selection;
   select: HTMLSelectElement;
   data: Option[];
   /**
