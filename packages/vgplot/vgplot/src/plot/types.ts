@@ -1,4 +1,5 @@
-import type { Plot } from '@uwdata/mosaic-plot';
+import type { Param } from '@uwdata/mosaic-core';
+import type { Fixed, Plot } from '@uwdata/mosaic-plot';
 export type { Plot } from '@uwdata/mosaic-plot';
 
 /** 
@@ -14,3 +15,11 @@ export type Rename<T, From extends keyof T, To extends string> = { [P in keyof T
 
 /**Make `K` properties in `T` required. */
 export type Require<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: T[P] };
+
+/**Select properties from `T` whose values are assignable to `U`.*/
+export type PickValues<T, U> = Pick<T, { [P in keyof T]: T[P] extends U ? P : never }[keyof T] & U>;
+
+export type Primitive = number | string | boolean | null;
+export type FixedType = typeof Fixed;
+export type Value = Param<unknown> | Primitive | Primitive[] | FixedType;
+export type CanParam<T extends Primitive | Primitive[]> = T | Param<T>;
