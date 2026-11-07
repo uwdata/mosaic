@@ -1,6 +1,4 @@
-import type { Plot } from '@uwdata/mosaic-plot';
-
-type Callback = (plot: Plot) => void;
+import type { Callback, Plot } from './types.js';
 
 export class NamedPlots extends Map<string, Plot> {
   waiting: Map<string, Callback[]>;

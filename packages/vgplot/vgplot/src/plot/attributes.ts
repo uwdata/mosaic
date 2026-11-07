@@ -1,11 +1,16 @@
-import { isParam } from '@uwdata/mosaic-core';
+import { isParam, Param } from '@uwdata/mosaic-core';
 import { setNamedPlot } from './named-plots.js';
+import type { Callback, Plot } from './types.js';
+import type { Fixed } from '@uwdata/mosaic-plot';
 
-export function name(name) {
+// TODO @dangotbanned: Figure out a bound that isn't `unknown` (union gets simplified)
+type Value = Param<unknown> | unknown;
+
+export function name(name: string): Callback {
   return plot => setNamedPlot(this, name, plot);
 }
 
-function setAttribute(plot, name, value) {
+function setAttribute(plot: Plot, name: string, value: Value): void {
   if (isParam(value)) {
     value.addEventListener('value', value => {
       plot.setAttribute(name, value);
@@ -19,11 +24,11 @@ function setAttribute(plot, name, value) {
   }
 }
 
-function attribute(name, value) {
+function attribute(name: string, value: Value): Callback {
   return plot => { setAttribute(plot, name, value); };
 }
 
-function attributes(values) {
+function attributes(values: { [s: string]: Value; } | ArrayLike<Value>): Callback {
   return plot => {
     for (const [name, value] of Object.entries(values)) {
       setAttribute(plot, name, value)
@@ -31,9 +36,18 @@ function attributes(values) {
   };
 }
 
-export function margins(object) {
+interface Margins {
+  top?: number | Param<number>;
+  right?: number | Param<number>;
+  bottom?: number | Param<number>;
+  left?: number | Param<number>;
+}
+
+type MarginMargins = { [P in keyof Margins as `margin${Capitalize<string & P>}`]: Margins[P] }
+
+export function margins(object: Margins): Callback {
   const { top, bottom, left, right } = object;
-  const attr = {};
+  const attr: MarginMargins = {};
   if (top !== undefined) attr.marginTop = top;
   if (bottom !== undefined) attr.marginBottom = bottom;
   if (left !== undefined) attr.marginLeft = left;
@@ -41,7 +55,7 @@ export function margins(object) {
   return attributes(attr);
 }
 
-export function margin(value) {
+export function margin(value: number | Param<number>): Callback {
   return attributes({
     marginTop: value,
     marginBottom: value,
@@ -50,11 +64,16 @@ export function margin(value) {
   });
 }
 
-export function xyDomain(value) {
+export function xyDomain(value: (typeof Fixed) | unknown[] | Param<unknown>): Callback {
   return attributes({ xDomain: value, yDomain: value });
 }
 
-const attrf = name => value => attribute(name, value);
+/* TODO @dangotbanned: Expose the type of `attributeMap`'s keys and use here to validate internals
+https://github.com/uwdata/mosaic/blob/ddf3e792409f37a26e918040efecdee635576a16/packages/vgplot/plot/src/plot-attributes.js#L1-L212
+*/
+function attrf(name: string): (value: Value) => Callback {
+  return (value: Value) => attribute(name, value);
+}
 
 // plot-level attributes
 export const style = attrf('style');
