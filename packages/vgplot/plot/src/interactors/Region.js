@@ -1,3 +1,6 @@
+/** @import { InteractorMark } from '../marks/Mark.js' */
+/** @import { Selection } from '@uwdata/mosaic-core' */
+
 import { clausePoints } from '@uwdata/mosaic-core';
 import { select } from 'd3';
 import { brush } from './util/brush.js';
@@ -13,6 +16,14 @@ import { getDatum } from './util/get-datum.js';
  * @implements {Activatable}
  */
 export class Region {
+  /**
+   * @param {InteractorMark} mark The mark to interact with.
+   * @param {object} options The interactor options.
+   * @param {string[]} options.channels
+   * @param {Selection} options.selection
+   * @param {boolean} [options.peers]
+   * @param {Record<string, string | number>} [options.brush]
+   */
   constructor(mark, {
     channels,
     selection,
@@ -62,6 +73,7 @@ export class Region {
 
     // extract channel values for points
     if (extent) {
+      // @ts-expect-error Property 'columns' does not exist on type 'DataColumns | {}'.
       const { data: { columns = {} } = {} } = mark;
       const map = new Map;
       intersect(svg, group, extent).forEach(el => {

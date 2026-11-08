@@ -38,56 +38,56 @@ export function highlight({ by, ...channels }): PlotDirective {
 
 // TODO @dangotbanned: type `{Interval*,interval*}`
 export function intervalX({ as, ...rest }): PlotDirective {
-  return interactor(Interval1D, { ...rest, selection: as, channel: 'x' });
+  return interactor(Interval1D, { selection: as, channel: 'x', ...rest });
 }
 
 // TODO @dangotbanned: type `{Interval*,interval*}`
 export function intervalY({ as, ...rest }): PlotDirective {
-  return interactor(Interval1D, { ...rest, selection: as, channel: 'y' });
+  return interactor(Interval1D, { selection: as, channel: 'y', ...rest });
 }
 
 // TODO @dangotbanned: type `{Interval*,interval*}`
 export function intervalXY({ as, ...rest }): PlotDirective {
-  return interactor(Interval2D, { ...rest, selection: as });
+  return interactor(Interval2D, { selection: as, ...rest });
 }
 
 // TODO @dangotbanned: type `{Nearest*,nearest*}`
 export function nearest({ as, ...rest }): PlotDirective {
-  return interactor(Nearest, { ...rest, selection: as, pointer: 'xy' });
+  return interactor(Nearest, { selection: as, pointer: 'xy', ...rest });
 }
 
 // TODO @dangotbanned: type `{Nearest*,nearest*}`
 export function nearestX({ as, ...rest }): PlotDirective {
-  return interactor(Nearest, { ...rest, selection: as, pointer: 'x' });
+  return interactor(Nearest, { selection: as, pointer: 'x', ...rest });
 }
 
 // TODO @dangotbanned: type `{Nearest*,nearest*}`
 export function nearestY({ as, ...rest }): PlotDirective {
-  return interactor(Nearest, { ...rest, selection: as, pointer: 'y' });
+  return interactor(Nearest, { selection: as, pointer: 'y', ...rest});
 }
 
-export function region({ as, ...rest }): PlotDirective {
-  return interactor(Region, { ...rest, selection: as });
+export function region({ as, channels, ...rest }): PlotDirective {
+  return interactor(Region, { selection: as, channels, ...rest });
 }
 
-export function toggle({ as, ...rest }: ToggleChannelsOptions): PlotDirective {
-  return interactor(Toggle, { ...rest, selection: as });
+export function toggle({ as, channels,...rest }: ToggleChannelsOptions): PlotDirective {
+  return interactor(Toggle, {selection: as, channels, ...rest });
 }
 
 export function toggleX(options: ToggleOptions): PlotDirective {
-  return toggle({ ...options, channels: ['x'] });
+  return toggle({ channels: ['x'], ...options });
 }
 
 export function toggleY(options: ToggleOptions): PlotDirective {
-  return toggle({ ...options, channels: ['y'] });
+  return toggle({ channels: ['y'], ...options });
 }
 
 export function toggleZ(options: ToggleOptions): PlotDirective {
-  return toggle({ ...options, channels: ['z'] });
+  return toggle({ channels: ['z'], ...options });
 }
 
 export function toggleColor(options: ToggleOptions): PlotDirective {
-  return toggle({ ...options, channels: ['color'] });
+  return toggle({ channels: ['color'], ...options  });
 }
 
 function zoom(options: ConstructorParameters<typeof PanZoom>[1]): PlotDirective {
@@ -95,15 +95,15 @@ function zoom(options: ConstructorParameters<typeof PanZoom>[1]): PlotDirective 
 }
 
 export function pan(options: PanZoomOptions = {}): PlotDirective {
-  return zoom({ ...options, zoom: false });
+  return zoom({ zoom: false, ...options  });
 }
 
 export function panX(options: PanZoom1DOptions = {}): PlotDirective {
-  return zoom({ ...options, zoom: false, pany: false });
+  return zoom({ zoom: false, pany: false, ...options });
 }
 
 export function panY(options: PanZoom1DOptions = {}): PlotDirective {
-  return zoom({ ...options, zoom: false, panx: false });
+  return zoom({ zoom: false, panx: false, ...options });
 }
 
 export function panZoom(options: PanZoomOptions = {}): PlotDirective {
@@ -111,9 +111,9 @@ export function panZoom(options: PanZoomOptions = {}): PlotDirective {
 }
 
 export function panZoomX(options: PanZoom1DOptions = {}): PlotDirective {
-  return zoom({ ...options, pany: false });
+  return zoom({ pany: false, ...options });
 }
 
 export function panZoomY(options: PanZoom1DOptions = {}): PlotDirective {
-  return zoom({ ...options, panx: false });
+  return zoom({ panx: false, ...options });
 }
