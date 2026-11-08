@@ -1,4 +1,4 @@
-/** @import { ClauseSource, Selection } from '@uwdata/mosaic-core' */
+/** @import { ClauseSource, Selection, Param } from '@uwdata/mosaic-core' */
 /** @import { InteractorMark } from '../marks/Mark.js' */
 import { clauseList, clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
 import { select, pointer, min } from 'd3';
@@ -12,7 +12,7 @@ export class Nearest {
   /**
    * @param {InteractorMark} mark The mark to interact with.
    * @param {object} options The interactor options.
-   * @param {Selection} options.selection
+   * @param {Selection | Param<any>} options.selection
    * @param {'x' | 'y'  | 'xy'} options.pointer
    * @param {string[]} [options.channels]
    * @param {string[]} [options.fields]
@@ -103,6 +103,7 @@ export class Nearest {
 
   activate() {
     const v = this.channels.map(() => 0);
+    //@ts-expect-error  Property 'activate' does not exist on type 'Param<any>'
     this.selection.activate(this.clause(v));
   }
 }
