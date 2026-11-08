@@ -11,8 +11,8 @@ import { neq, neqSome } from './util/neq.js';
 export class Toggle {
   /**
    * @param {InteractorMark} mark The mark to interact with.
-   * @param {object} [options] The interactor options.
-   * @param {Selection} [options.selection]
+   * @param {object} options The interactor options.
+   * @param {Selection} options.selection
    * @param {string[]} [options.channels]
    * @param {boolean} [options.peers]
    * @param {'any' | 'all'} [options.listMatch]
@@ -21,8 +21,8 @@ export class Toggle {
     selection,
     channels = [],
     peers = true,
-    listMatch
-  } = {}) {
+    listMatch = undefined
+  }) {
     this.mark = mark;
     this.value = null;
     this.selection = selection;

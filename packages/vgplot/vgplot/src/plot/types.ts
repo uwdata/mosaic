@@ -16,9 +16,6 @@ export type MarkType = 'text' | 'area' | 'areaX' | 'areaY' | 'arrow' | 'axisX' |
 /**Rename a single property in `T`. */
 export type Rename<T, From extends keyof T, To extends string> = { [P in keyof T as P extends From ? To : P]: T[P] };
 
-/**Make `K` properties in `T` required. */
-export type Require<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: T[P] };
-
 /**Select properties from `T` whose values are assignable to `U`.*/
 export type PickValues<T, U> = Pick<T, { [P in keyof T]: T[P] extends U ? P : never }[keyof T] & U>;
 
