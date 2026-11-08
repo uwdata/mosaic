@@ -36,11 +36,11 @@ export class Plot {
     /** @type {Synchronizer} */
     this.synch = new Synchronizer();
 
-    /** @type {HTMLElement} */
-    this.element = element || document.createElement('div');
-    this.element.setAttribute('class', 'plot');
-    this.element.style.display = 'flex';
-    Object.assign(this.element, { value: this });
+    const el = element || document.createElement('div');
+    el.setAttribute('class', 'plot');
+    el.style.display = 'flex';
+    /**@type {HTMLElement & {value: Plot}} */
+    this.element = Object.assign(el, { value: this });
   }
 
   margins() {
