@@ -70,15 +70,15 @@ export function nearestX({ as, ...rest }): PlotDirective {
 
 // TODO @dangotbanned: type `{Nearest*,nearest*}`
 export function nearestY({ as, ...rest }): PlotDirective {
-  return interactor(Nearest, { selection: as, pointer: 'y', ...rest});
+  return interactor(Nearest, { selection: as, pointer: 'y', ...rest });
 }
 
 export function region({ as, channels, ...rest }): PlotDirective {
   return interactor(Region, { selection: as, channels, ...rest });
 }
 
-export function toggle({ as, channels,...rest }: ToggleChannelsOptions): PlotDirective {
-  return interactor(Toggle, {selection: as, channels, ...rest });
+export function toggle({ as, channels, ...rest }: ToggleChannelsOptions): PlotDirective {
+  return interactor(Toggle, { selection: as, channels, ...rest });
 }
 
 export function toggleX(options: ToggleOptions): PlotDirective {
@@ -94,7 +94,7 @@ export function toggleZ(options: ToggleOptions): PlotDirective {
 }
 
 export function toggleColor(options: ToggleOptions): PlotDirective {
-  return toggle({ channels: ['color'], ...options  });
+  return toggle({ channels: ['color'], ...options });
 }
 
 function zoom(options: ConstructorParameters<typeof PanZoom>[1]): PlotDirective {
@@ -102,7 +102,7 @@ function zoom(options: ConstructorParameters<typeof PanZoom>[1]): PlotDirective 
 }
 
 export function pan(options: PanZoomOptions = {}): PlotDirective {
-  return zoom({ zoom: false, ...options  });
+  return zoom({ zoom: false, ...options });
 }
 
 export function panX(options: PanZoom1DOptions = {}): PlotDirective {
