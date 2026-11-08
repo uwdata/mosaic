@@ -10,6 +10,7 @@ import {
   Region,
   Toggle,
 } from '@uwdata/mosaic-plot';
+import type * as mc from '@uwdata/mosaic-core';
 
 type Interactor = Parameters<Plot['addInteractor']>[0];
 type PanZoomOptions = Omit<ConstructorParameters<typeof PanZoom>[1], 'zoom'>;
@@ -19,6 +20,14 @@ type SelectionAs<T extends { selection: unknown }> = Rename<T, 'selection', 'as'
 
 type ToggleChannelsOptions = SelectionAs<ConstructorParameters<typeof Toggle>[1]>;
 type ToggleOptions = Omit<ToggleChannelsOptions, 'channels'>;
+interface HighlightOptions {
+  by: mc.Selection;
+  opacity?: number;
+  fillOpacity?: number;
+  strokeOpacity?: number;
+  fill?: string;
+  stroke?: string;
+}
 
 function interactor<T extends new (...args: any) => Interactor>(
   InteractorClass: T,
@@ -30,9 +39,7 @@ function interactor<T extends new (...args: any) => Interactor>(
   };
 }
 
-// TODO @dangotbanned: type `{Highlight,highlight}`
-// TODO @dangotbanned: use `Rename` for selection -> by
-export function highlight({ by, ...channels }): PlotDirective {
+export function highlight({ by, ...channels }: HighlightOptions): PlotDirective {
   return interactor(Highlight, { selection: by, channels });
 }
 
