@@ -23,3 +23,10 @@ export type Primitive = number | string | boolean | null;
 export type FixedType = typeof Fixed;
 export type Value = Param<unknown> | Primitive | Primitive[] | FixedType;
 export type CanParam<T extends Primitive | Primitive[]> = T | Param<T>;
+
+type Children = { readonly children: HTMLCollection & { [index: number]: Element | PlotElement | SpaceElement | ConcatElement } };
+
+export type SpaceElement = HTMLSpanElement & { value: { element: HTMLSpanElement } };
+export type PlotElement = Plot['element'];
+export type ConcatElement = HTMLDivElement & { value: { element: HTMLDivElement & Children } };
+export type RootElement = PlotElement | ConcatElement;
