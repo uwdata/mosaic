@@ -1,5 +1,3 @@
-// oxlint-disable typescript/explicit-module-boundary-types
-
 import type { PlotDirective, Plot, Rename } from './types.js'
 import {
   Highlight,
@@ -13,13 +11,16 @@ import {
 import type * as mc from '@uwdata/mosaic-core';
 
 type Interactor = Parameters<Plot['addInteractor']>[0];
+type SelectionAs<T extends { selection: mc.Selection }> = Rename<T, 'selection', 'as'>;
+type Options<T extends new (...args: any) => Interactor> = SelectionAs<ConstructorParameters<T>[1]>
+
 type PanZoomOptions = Omit<ConstructorParameters<typeof PanZoom>[1], 'zoom'>;
 type PanZoom1DOptions = Omit<PanZoomOptions, 'panx' | 'pany'>;
-
-type SelectionAs<T extends { selection: unknown }> = Rename<T, 'selection', 'as'>;
-
-type ToggleChannelsOptions = SelectionAs<ConstructorParameters<typeof Toggle>[1]>;
+type ToggleChannelsOptions = Options<typeof Toggle>;
 type ToggleOptions = Omit<ToggleChannelsOptions, 'channels'>;
+type Interval1DOptions = Omit<Options<typeof Interval1D>, 'channel'>;
+type NearestOptions = Omit<Options<typeof Nearest>, 'pointer'>;
+
 interface HighlightOptions {
   by: mc.Selection;
   opacity?: number;
@@ -43,37 +44,31 @@ export function highlight({ by, ...channels }: HighlightOptions): PlotDirective 
   return interactor(Highlight, { selection: by, channels });
 }
 
-// TODO @dangotbanned: type `{Interval*,interval*}`
-export function intervalX({ as, ...rest }): PlotDirective {
+export function intervalX({ as, ...rest }: Interval1DOptions): PlotDirective {
   return interactor(Interval1D, { selection: as, channel: 'x', ...rest });
 }
 
-// TODO @dangotbanned: type `{Interval*,interval*}`
-export function intervalY({ as, ...rest }): PlotDirective {
+export function intervalY({ as, ...rest }: Interval1DOptions): PlotDirective {
   return interactor(Interval1D, { selection: as, channel: 'y', ...rest });
 }
 
-// TODO @dangotbanned: type `{Interval*,interval*}`
-export function intervalXY({ as, ...rest }): PlotDirective {
+export function intervalXY({ as, ...rest }: Options<typeof Interval2D>): PlotDirective {
   return interactor(Interval2D, { selection: as, ...rest });
 }
 
-// TODO @dangotbanned: type `{Nearest*,nearest*}`
-export function nearest({ as, ...rest }): PlotDirective {
+export function nearest({ as, ...rest }: NearestOptions): PlotDirective {
   return interactor(Nearest, { selection: as, pointer: 'xy', ...rest });
 }
 
-// TODO @dangotbanned: type `{Nearest*,nearest*}`
-export function nearestX({ as, ...rest }): PlotDirective {
+export function nearestX({ as, ...rest }: NearestOptions): PlotDirective {
   return interactor(Nearest, { selection: as, pointer: 'x', ...rest });
 }
 
-// TODO @dangotbanned: type `{Nearest*,nearest*}`
-export function nearestY({ as, ...rest }): PlotDirective {
+export function nearestY({ as, ...rest }: NearestOptions): PlotDirective {
   return interactor(Nearest, { selection: as, pointer: 'y', ...rest });
 }
 
-export function region({ as, channels, ...rest }): PlotDirective {
+export function region({ as, channels, ...rest }: Options<typeof Region>): PlotDirective {
   return interactor(Region, { selection: as, channels, ...rest });
 }
 
