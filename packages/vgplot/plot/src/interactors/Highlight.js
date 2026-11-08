@@ -1,3 +1,5 @@
+/** @import { InteractorMark } from '../marks/Mark.js' */
+/** @import { Selection } from '@uwdata/mosaic-core' */
 import { throttle } from '@uwdata/mosaic-core';
 import { and, isAggregateExpression } from '@uwdata/mosaic-sql';
 import { getDatum } from './util/get-datum.js';
@@ -35,6 +37,12 @@ function configureMark(mark) {
 }
 
 export class Highlight {
+  /**
+   * @param {InteractorMark} mark
+   * @param {object} options
+   * @param {Selection} options.selection
+   * @param {Record<string, string | number>} [options.channels]
+   */
   constructor(mark, {
     selection,
     channels = {}

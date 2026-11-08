@@ -1,3 +1,5 @@
+/** @import { InteractorMark } from '../marks/Mark.js' */
+/** @import { Selection } from '@uwdata/mosaic-core' */
 import { clauseIntervals } from '@uwdata/mosaic-core';
 import { ascending, min, max } from 'd3';
 import { brush, brushGroups } from './util/brush.js';
@@ -11,13 +13,23 @@ import { sanitizeStyles } from './util/sanitize-styles.js';
  * @implements {Activatable}
  */
 export class Interval2D {
+  /**
+   * @param {InteractorMark} mark The mark to interact with.
+   * @param {object} options
+   * @param {Selection} options.selection
+   * @param {string} [options.xfield]
+   * @param {string} [options.yfield]
+   * @param {number} [options.pixelSize]
+   * @param {boolean} [options.peers]
+   * @param {Record<string, string | number>} [options.brush]
+   */
   constructor(mark, {
     selection,
-    xfield,
-    yfield,
+    xfield = undefined,
+    yfield = undefined,
     pixelSize = 1,
     peers = true,
-    brush: style
+    brush: style = undefined
   }) {
     this.mark = mark;
     this.pixelSize = pixelSize || 1;

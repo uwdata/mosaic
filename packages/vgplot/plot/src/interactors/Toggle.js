@@ -13,13 +13,13 @@ export class Toggle {
    * @param {InteractorMark} mark The mark to interact with.
    * @param {object} options The interactor options.
    * @param {Selection} options.selection
-   * @param {string[]} [options.channels]
+   * @param {string[]} options.channels
    * @param {boolean} [options.peers]
    * @param {'any' | 'all'} [options.listMatch]
    */
   constructor(mark, {
     selection,
-    channels = [],
+    channels,
     peers = true,
     listMatch = undefined
   }) {
