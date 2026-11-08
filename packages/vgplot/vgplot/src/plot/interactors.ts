@@ -1,6 +1,6 @@
 // oxlint-disable typescript/explicit-module-boundary-types
-import type { Mark } from '@uwdata/mosaic-plot';
-import type { PlotDirective, Plot, Rename, Require } from './types.js'
+
+import type { PlotDirective, Plot, Rename } from './types.js'
 import {
   Highlight,
   Interval1D,
@@ -15,14 +15,14 @@ type Interactor = Parameters<Plot['addInteractor']>[0];
 type PanZoomOptions = Omit<ConstructorParameters<typeof PanZoom>[1], 'zoom'>;
 type PanZoom1DOptions = Omit<PanZoomOptions, 'panx' | 'pany'>;
 
-type SelectionAs<T extends { selection?: unknown }> = Rename<Require<T, 'selection'>, 'selection', 'as'>;
+type SelectionAs<T extends { selection: unknown }> = Rename<T, 'selection', 'as'>;
 
 type ToggleChannelsOptions = SelectionAs<ConstructorParameters<typeof Toggle>[1]>;
 type ToggleOptions = Omit<ToggleChannelsOptions, 'channels'>;
 
-function interactor<T extends Interactor>(
-  InteractorClass: new (mark: Mark, options: unknown) => T,
-  options: unknown,
+function interactor<T extends new (...args: any) => Interactor>(
+  InteractorClass: T,
+  options: ConstructorParameters<T>[1],
 ): PlotDirective {
   return (plot: Plot): void => {
     const mark = plot.marks[plot.marks.length - 1];
