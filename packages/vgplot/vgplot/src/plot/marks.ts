@@ -114,24 +114,24 @@ export const spike = (...args) => mark('spike', ...args);
 
 export const image = (...args) => mark('image', ...args);
 
-export const densityX = (...args) => explicitType(Density1DMark, 'areaX', ...args);
-export const densityY = (...args) => explicitType(Density1DMark, 'areaY', ...args);
+export const densityX = (...args: unknown[]) => explicitType(Density1DMark, 'areaX', ...args);
+export const densityY = (...args: unknown[]) => explicitType(Density1DMark, 'areaY', ...args);
 
-export const density = (...args) => implicitType(Density2DMark, ...args);
-export const denseLine = (...args) => implicitType(DenseLineMark, ...args);
-export const contour = (...args) => implicitType(ContourMark, ...args);
-export const heatmap = (...args) => implicitType(HeatmapMark, ...args);
-export const raster = (...args) => implicitType(RasterMark, ...args);
-export const rasterTile = (...args) => implicitType(RasterTileMark, ...args);
+export const density = (...args: unknown[]) => implicitType(Density2DMark, ...args);
+export const denseLine = (...args: unknown[]) => implicitType(DenseLineMark, ...args);
+export const contour = (...args: unknown[]) => implicitType(ContourMark, ...args);
+export const heatmap = (...args: unknown[]) => implicitType(HeatmapMark, ...args);
+export const raster = (...args: unknown[]) => implicitType(RasterMark, ...args);
+export const rasterTile = (...args: unknown[]) => implicitType(RasterTileMark, ...args);
 
-export const hexbin = (...args) => implicitType(HexbinMark, ...args);
+export const hexbin = (...args: unknown[]) => implicitType(HexbinMark, ...args);
 //@ts-expect-error
-export const hexgrid = (...args) => mark('hexgrid', ...args);
+export const hexgrid = (...args: unknown[]) => mark('hexgrid', ...args);
 
-export const regressionY = (...args) => implicitType(RegressionMark, ...args);
+export const regressionY = (...args: unknown[]) => implicitType(RegressionMark, ...args);
 
-export const errorbarX = (...args) => explicitType(ErrorBarMark, 'ruleY', ...args);
-export const errorbarY = (...args) => explicitType(ErrorBarMark, 'ruleX', ...args);
+export const errorbarX = (...args: unknown[]) => explicitType(ErrorBarMark, 'ruleY', ...args);
+export const errorbarY = (...args: unknown[]) => explicitType(ErrorBarMark, 'ruleX', ...args);
 
 //@ts-expect-error
 export const voronoi = (...args) => mark('voronoi', ...args);
