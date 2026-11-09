@@ -9,7 +9,7 @@ export class NamedPlots extends Map<string, Plot> {
   }
 
   request(name: string, callback: PlotDirective): void {
-    let plot: Plot | undefined = undefined;
+    let plot: Plot | undefined;
     if ((plot = this.get(name))) {
       callback(plot);
     } else {
@@ -23,7 +23,7 @@ export class NamedPlots extends Map<string, Plot> {
       console.warn(`Overwriting named plot "${name}".`);
     }
     const { waiting } = this;
-    let old: PlotDirective[] | undefined = undefined;
+    let old: PlotDirective[] | undefined;
     if ((old = waiting.get(name))) {
       old.forEach(fn => fn(plot));
       waiting.delete(name);
