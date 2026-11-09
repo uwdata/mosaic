@@ -5,8 +5,8 @@ import type { types } from '@uwdata/vgplot';
 function extractClients(el: types.RootElement | HTMLElement): MosaicClient[] {
   const clients: MosaicClient[] = [];
   const queue: (types.RootElement | Element)[] = [el];
-  while (queue.length) {
-    const node = queue.shift();
+  let node: Element | types.RootElement | undefined = undefined;
+  while (node = queue.shift()) {
     if ('value' in node) {
       const value = node.value;
       if (value instanceof MosaicClient) {
