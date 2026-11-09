@@ -5,7 +5,7 @@ import type { PlotDirective, Plot } from './types.js';
 import type { APIContext } from '../context.js';
 
 interface LegendOptions {
-  as?: mc.Param<unknown>;
+  as?: mc.Param<any> | mc.Selection;
   field?: string;
   label?: string;
   tickSize?: number;
