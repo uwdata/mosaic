@@ -170,7 +170,7 @@ export const gridFx = (...args) => mark('gridFx', ...args);
 //@ts-expect-error
 export const gridFy = (...args) => mark('gridFy', ...args);
 
-export const geo = (...args) => implicitType(GeoMark, ...args);
+export const geo = (...args: unknown[]) => implicitType(GeoMark, ...args);
 //@ts-expect-error
 export const sphere = (...args) => mark('sphere', ...args);
 //@ts-expect-error
