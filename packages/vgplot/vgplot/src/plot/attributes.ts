@@ -67,9 +67,7 @@ export function xyDomain(value: Value): PlotDirective {
   return attributes({ xDomain: value, yDomain: value });
 }
 
-/* TODO @dangotbanned: Expose the type of `attributeMap`'s keys and use here to validate internals
-https://github.com/uwdata/mosaic/blob/ddf3e792409f37a26e918040efecdee635576a16/packages/vgplot/plot/src/plot-attributes.js#L1-L212
-*/
+/* TODO @dangotbanned: Replace `name: string` after (https://github.com/uwdata/mosaic/issues/1388#issuecomment-6744099978)*/
 function attrf<V extends Value | object = Value>(name: string): (value: V) => PlotDirective {
   return (value: V) => attribute(name, value);
 }
