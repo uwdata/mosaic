@@ -1,43 +1,24 @@
-/** 
- * @import { SQLCodeGenerator } from '@uwdata/mosaic-sql'; 
- * @import { Mark } from '../marks/Mark.js';
- * 
- * @typedef {{ [key: string]: unknown; } & {offset?: number} } Options
- * @typedef { 'ariaLabel' | 'fill' | 'fillOpacity' | 'fontSize' | 'fx' | 'fy' | 'geometry' | 'height' | 'href' | 'length' | 'opacity' | 'path' | 'r' | 'rotate' | 'src' | 'stroke' | 'strokeOpacity' | 'strokeWidth' | 'symbol' | 'text' | 'title' | 'weight' | 'width' | 'x' | 'x1' | 'x2' | 'y' | 'y1' | 'y2' | 'z' | 'color'} Channel
- * Like [ChannelName][1], but excluding ([microsoft/TypeScript#29729][2]) and including `'color'`.
- * 
- * [1]: https://github.com/observablehq/plot/blob/535723d5e433727720d9b673c31622821bb03210/src/channel.d.ts#L25-L60
- * [2]: microsoft/TypeScript#29729
- * 
- * @typedef {import('@uwdata/mosaic-sql').ExprValue} Column
- * 
-*/
+import type { SQLCodeGenerator, ExprValue } from '@uwdata/mosaic-sql';
+import type { Mark } from '../marks/Mark.js';
 import { ExprNode, binDate, binHistogram, duckDBCodeGenerator } from '@uwdata/mosaic-sql';
 import { Transform } from '../symbols.js';
-import { channelScale } from '../marks/util/channel-scale.js';
+import { channelScale, type ChannelName } from '../marks/util/channel-scale.js';
+
+
+type Options = { [key: string]: unknown; } & { offset?: number; };
+type Column = ExprValue;
+type BinReturn = { (mark: Mark, channel: ChannelName): Record<string, BinTransformNode>;[Transform]: true; };
 
 const EXTENT = new Set([
   'rectY-x', 'rectX-y', 'rect-x', 'rect-y', 'ruleY-x', 'ruleX-y'
 ]);
 
-/**
- * @param {Mark} mark
- * @param {Channel} channel
- */
-export function hasExtent(mark, channel) {
+export function hasExtent(mark: Mark, channel: ChannelName): boolean {
   return EXTENT.has(`${mark.type}-${channel}`);
 }
 
-/**@typedef {{ (mark: Mark, channel: Channel): Record<string, BinTransformNode>; [Transform]: true;}} BinReturn */
-
-/**
- * @param {Column} field
- * @param {Options} options
- * @returns {BinReturn}
- */
-export function bin(field, options = {}) {
-  /**@type BinReturn */
-  const fn = (/** @type {Mark} */ mark, /** @type {Channel} */ channel) => {
+export function bin(field: Column, options: Options = {}): BinReturn {
+  const fn: BinReturn = (mark: Mark, channel: ChannelName) => {
     if (hasExtent(mark, channel)) {
       return {
         [`${channel}1`]: binNode(mark, channel, field, options),
@@ -53,51 +34,26 @@ export function bin(field, options = {}) {
   return fn;
 }
 
-/**
- * @param {Mark} mark
- * @param {Channel} channel
- * @param {Column} column
- * @param {Options} options
- * @returns {BinTransformNode}
- */
-function binNode(mark, channel, column, options) {
+function binNode(mark: Mark, channel: ChannelName, column: Column, options: Options): BinTransformNode {
   return new BinTransformNode(column, mark, channel, options);
 }
 
-/**
- * @param {Mark} mark
- * @param {Channel} channel
- */
-function hasTimeScale(mark, channel) {
+
+function hasTimeScale(mark: Mark, channel: ChannelName): boolean {
   const scale = mark.plot.getAttribute(`${channel}Scale`);
   return scale === 'utc' || scale === 'time';
 }
 
 class BinTransformNode extends ExprNode {
-  /**
-   * @param {Column} column
-   * @param {Mark} mark
-   * @param {Channel} channel
-   * @param {Options} options
-   */
-  constructor(column, mark, channel, options) {
+  constructor(public column: Column, public mark: Mark, public channel: ChannelName, public options: Options) {
     super('CUSTOM');
-    this.column = column;
-    this.mark = mark;
-    this.channel = channel;
-    this.options = options;
   }
 
-  /** @returns {{column: Column, stats: ['min', 'max']}} */
-  get stats() {
+  get stats(): { column: Column; stats: ['min', 'max']; } {
     return { column: this.column, stats: ['min', 'max'] };
   }
 
-  /**
-   * @param {SQLCodeGenerator} visitor
-   * @returns {string}
-   */
-  toString(visitor = duckDBCodeGenerator) {
+  toString(visitor: SQLCodeGenerator = duckDBCodeGenerator): string {
     const { mark, channel, column, options } = this;
     const { type, min, max } = mark.channelField(channel);
     const isDate = options.interval
