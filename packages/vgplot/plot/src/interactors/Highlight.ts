@@ -3,6 +3,7 @@ import { throttle, type Selection } from '@uwdata/mosaic-core';
 import { and, isAggregateExpression, type SelectQuery } from '@uwdata/mosaic-sql';
 import { getDatum } from './util/get-datum.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
+import type { Interactor, SVG } from '../types.js';
 
 function configureMark<Mark extends InteractorMark>(mark: Mark): Mark {
   const { channels } = mark;
@@ -36,7 +37,7 @@ function configureMark<Mark extends InteractorMark>(mark: Mark): Mark {
   return mark;
 }
 
-export class Highlight {
+export class Highlight implements Interactor {
   mark: InteractorMark;
   selection: Selection;
   channels: [string, unknown][] | (string | number)[][];
@@ -47,7 +48,7 @@ export class Highlight {
   constructor(mark: InteractorMark, {
     selection,
     channels = {}
-  }: { selection: Selection; channels?: Record<string, string | number> }) {
+  }: { selection: Selection; channels?: Record<string, string | number>; }) {
     this.mark = configureMark(mark);
     this.selection = selection;
     const c = Object.entries(sanitizeStyles(channels));
@@ -55,7 +56,7 @@ export class Highlight {
     this.selection.addEventListener('value', throttle(() => this.update()));
   }
 
-  init(svg: SVGElement): Promise<void> {
+  init(svg: SVG): Promise<void> {
     this.svg = svg;
     const values = this.values = [];
     const index = this.mark.index;

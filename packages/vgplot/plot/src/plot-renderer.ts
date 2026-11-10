@@ -17,7 +17,7 @@ const TIMESTAMPTZ_TYPES = new Set([
   'TIMESTAMP WITH TIME ZONE'
 ]);
 
-type SelectName = "first" | "last" | "maxX" | "maxY" | "minX" | "minY" | "nearest" | "nearestX" | "nearestY";
+type SelectName = 'first' | 'last' | 'maxX' | 'maxY' | 'minX' | 'minY' | 'nearest' | 'nearestX' | 'nearestY';
 
 const SELECT_TRANSFORMS = new Map<SelectName, typeof ObPlot.selectFirst | typeof ObPlot.pointer>(
   ([

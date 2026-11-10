@@ -1,35 +1,36 @@
-/** @import { ClauseSource, Selection, Param } from '@uwdata/mosaic-core' */
-/** @import { InteractorMark } from '../marks/Mark.js' */
+import { Selection, Param } from '@uwdata/mosaic-core';
+import { InteractorMark } from '../marks/Mark.js';
 import { clauseList, clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
 import { select, pointer, min } from 'd3';
 import { getField } from './util/get-field.js';
+import type { ChannelName, Interactor, SVG } from '../types.js';
+import type * as mc from '@uwdata/mosaic-core';
+import type { ScaleName } from '@observablehq/plot';
 
-/**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
- */
-export class Nearest {
-  /**
-   * @param {InteractorMark} mark The mark to interact with.
-   * @param {object} options The interactor options.
-   * @param {Selection | Param<any>} options.selection
-   * @param {'x' | 'y'  | 'xy'} options.pointer
-   * @param {string[]} [options.channels]
-   * @param {string[]} [options.fields]
-   * @param {number} [options.maxRadius]
-   * @param {'any' | 'all'} [options.listMatch]
-   */
-  constructor(mark, {
+
+
+export class Nearest implements Interactor, mc.Activatable {
+  mark: InteractorMark;
+  selection: Selection | Param<any>;
+  clients: Set<InteractorMark>;
+  pointer?: 'x' | 'y' | 'xy';
+  listMatch?: 'any' | 'all';
+  channels: ChannelName[];
+  fields: string[];
+  maxRadius: number;
+  valueIndex: number;
+
+  constructor(mark: InteractorMark, {
     selection,
     pointer,
     channels = undefined,
     fields = undefined,
     maxRadius = 40,
     listMatch = undefined
-  }) {
+  }: { selection: Selection | Param<any>; pointer: 'x' | 'y' | 'xy'; channels?: ChannelName[]; fields?: string[]; maxRadius?: number; listMatch?: 'any' | 'all'; }) {
     this.mark = mark;
     this.selection = selection;
-    this.clients = new Set().add(mark);
+    this.clients = new Set([mark]);
     this.pointer = pointer;
     this.listMatch = listMatch;
     this.channels = channels || (
@@ -40,23 +41,26 @@ export class Nearest {
     this.valueIndex = -1;
   }
 
-  clause(value) {
+  clause(value: any[]): mc.SelectionClause {
     const { clients, fields, mark } = this;
-    const opt = { source: /** @type {ClauseSource} */(this), clients };
+    const opt = { source: (this), clients };
     if (fields.length === 1) {
       // unnested field: use a list-membership predicate instead of point equality
       if (mark.isUnnested(fields[0])) {
         const list = value != null ? [value[0]] : undefined;
+        //@ts-expect-error `this` is bad
         return clauseList(fields[0], list, { ...opt, listMatch: this.listMatch });
       }
       // if only one field, use a simpler clause that passes the value
       // this allows a single field selection value to act like a param
+      //@ts-expect-error `this` is bad
       return clausePoint(fields[0], value?.[0], opt);
     }
+    //@ts-expect-error `this` is bad
     return clausePoints(fields, value ? [value] : value, opt);
   }
 
-  init(svg) {
+  init(svg: SVG): void {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this;
     const { mark, channels, selection, maxRadius } = this;
@@ -73,10 +77,12 @@ export class Nearest {
 
     // find value nearest to pointer and update param or selection
     // we don't pass undefined values to params, but do allow empty selections
-    root.on('pointerenter pointerdown pointermove', function(evt) {
+    root.on('pointerenter pointerdown pointermove', function (evt) {
       const [px, py] = pointer(evt, this);
       const i = findNearest(X, Y, px, py, sx, sy, maxRadius);
+      // @ts-expect-error Property 'valueIndex' does not exist on type 'SVGSVGElement & Plot'.
       if (i !== this.valueIndex) {
+        // @ts-expect-error Property 'valueIndex' does not exist on type 'SVGSVGElement & Plot'.
         this.valueIndex = i;
         const v = i < 0 ? undefined : keys.map(k => columns[k][i]);
         selection.update(
@@ -97,11 +103,12 @@ export class Nearest {
 
     // trigger activation updates
     svg.addEventListener('pointerenter', evt => {
+      //@ts-expect-error Property 'buttons' does not exist on type 'Event'.
       if (!evt.buttons) this.activate();
     });
   }
 
-  activate() {
+  activate(): void {
     const v = this.channels.map(() => 0);
     //@ts-expect-error  Property 'activate' does not exist on type 'Param<any>'
     this.selection.activate(this.clause(v));
@@ -111,18 +118,19 @@ export class Nearest {
 /**
  * Extract x, y coordinates for data values.
  */
-function calculateXY(svg, mark) {
+function calculateXY(svg: SVG, mark: InteractorMark): number[][] {
+  //@ts-expect-error Property 'columns' does not exist on type 'DataColumns'.
   const { data: { columns } } = mark;
-  const data = c => columns[mark.channelField(c)?.as];
-  const scale = c => svg.scale(c);
+  const data = (c: ChannelName) => columns[mark.channelField(c)?.as];
+  const scale = (c: ScaleName) => svg.scale(c);
 
   const sx = svg.scale('x');
   const sy = svg.scale('y');
   const sfx = scale('fx')?.apply;
   const sfy = scale('fy')?.apply;
 
-  const X = Array.from(data('x'), sx.apply);
-  const Y = Array.from(data('y'), sy.apply);
+  const X: number[] = Array.from(data('x'), sx.apply);
+  const Y: number[] = Array.from(data('y'), sy.apply);
 
   // as needed, adjust coordinates by facets
   if (sfx) {
@@ -148,17 +156,17 @@ function calculateXY(svg, mark) {
  * is found via Euclidean distance, but with scale factors *sx* and
  * *sy* applied to the x and y distances. For example, to prioritize
  * selection along the x-axis, use *sx* = 1, *sy* = 0.01.
- * @param {number[]} x Array of data point x coordinate values.
- * @param {number[]} y Array of data point y coordinate values.
- * @param {number} px The x coordinate of the pointer.
- * @param {number} py The y coordinate of the pointer.
- * @param {number} sx A scale factor for x coordinate spans.
- * @param {number} sy A scale factor for y coordinate spans.
- * @param {number} maxRadius The maximum pointer distance for selection.
- * @returns {number} An integer index into the data array corresponding
+ * @param x Array of data point x coordinate values.
+ * @param y Array of data point y coordinate values.
+ * @param px The x coordinate of the pointer.
+ * @param py The y coordinate of the pointer.
+ * @param sx A scale factor for x coordinate spans.
+ * @param sy A scale factor for y coordinate spans.
+ * @param maxRadius The maximum pointer distance for selection.
+ * @returns An integer index into the data array corresponding
  *  to the nearest data point, or -1 if no nearest point is found.
  */
-function findNearest(x, y, px, py, sx, sy, maxRadius) {
+function findNearest(x: number[], y: number[], px: number, py: number, sx: number, sy: number, maxRadius: number): number {
   let dist = maxRadius * maxRadius;
   let nearest = -1;
   for (let i = 0; i < x.length; ++i) {

@@ -32,7 +32,7 @@ export function intersect(svg: SVGSVGElement, el: SVGElement, extent: [[number, 
   return list;
 }
 
-function intersects(sel, ox, oy, el, matrix): boolean {
+function intersects(sel: [[number, number], [number, number]], ox: number, oy: number, el: any, matrix: DOMMatrix): boolean {
   let [[l, t], [r, b]] = sel;
 
   // facet groups involve translation only
@@ -96,7 +96,7 @@ function getTransformMatrix(el) {
   return m;
 }
 
-function intersectCircle(l, t, r, b, cx, cy, cr) {
+function intersectCircle(l, t, r, b, cx, cy, cr): boolean {
   const h = l <= cx && cx <= r;
   const v = t <= cy && cy <= b;
   if (h && v) return true; // center is enclosed
@@ -108,7 +108,7 @@ function intersectCircle(l, t, r, b, cx, cy, cr) {
   return (h && dy <= cr) || (dx * dx + dy * dy <= cr * cr);
 }
 
-function intersectLine(l, t, r, b, x1, y1, x2, y2) {
+function intersectLine(l, t, r, b, x1, y1, x2, y2): boolean {
   const xmin = Math.max(Math.min(x1, x2), l);
   const xmax = Math.min(Math.max(x1, x2), r);
   if (xmin > xmax) return false;
@@ -126,7 +126,7 @@ function intersectLine(l, t, r, b, x1, y1, x2, y2) {
   return ymin <= ymax;
 }
 
-export function intersectPath(l, t, r, b, el) {
+export function intersectPath(l, t, r, b, el): boolean {
   // parse path and cache result for reuse
   const cmds = el.__path__ || (el.__path__ = parsePath(el.getAttribute('d')));
 
@@ -155,7 +155,7 @@ export function intersectPath(l, t, r, b, el) {
     poly[n + 1] = y2;
     n += 2;
     return intersectLine(l, t, r, b, poly[n - 4], poly[n - 3], x2, y2);
-  }
+  };
 
   const lineTo = matrix
     ? (x2, y2) => {
@@ -224,7 +224,7 @@ function multiplyY(m, x, y) {
   return m.b * x + m.d * y + m.f;
 }
 
-function isCircle(cmds, i) {
+function isCircle(cmds, i: number): boolean {
   const a = cmds[i];
   const b = cmds[i + 1];
   return b && b[0] === 'a'
@@ -238,10 +238,10 @@ function isCircle(cmds, i) {
 /**
  * Point in polygon test, based on Dan Sunday's winding number algorithm.
  * https://web.archive.org/web/20130126163405/http://geomalgorithms.com/a03-_inclusion.html
- * @param {number} x The x-coordinate to test for inclusion
- * @param {number} y The y-coordinate to test for inclusion
- * @param {number[]} poly Polygon vertices as a flat array of numbers
- * @returns {number} The winding number. Non-zero values indicate inclusion.
+ * @param x The x-coordinate to test for inclusion
+ * @param y The y-coordinate to test for inclusion
+ * @param poly Polygon vertices as a flat array of numbers
+ * @returns The winding number. Non-zero values indicate inclusion.
  */
 function pointInPolygon(x: number, y: number, poly: number[]): number {
   let wn = 0;
@@ -262,6 +262,6 @@ function pointInPolygon(x: number, y: number, poly: number[]): number {
   return wn;
 }
 
-function isLeft(x, y, p, i) {
+function isLeft(x: number, y: number, p: number | number[], i?: number): number {
   return (p[i + 2] - p[i]) * (y - p[i + 1]) - (x - p[i]) * (p[i + 3] - p[i + 1]);
 }

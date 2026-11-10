@@ -1,6 +1,7 @@
 import { scaleTransform } from '@uwdata/mosaic-sql';
-import type * as msql from '@uwdata/mosaic-sql'
+import type * as msql from '@uwdata/mosaic-sql';
 import type { Mark } from '../Mark.js';
+import type { ChannelName } from '../../types.js';
 
 export function channelScale<T>(mark: Mark, channel: ChannelName): msql.Scale<T> {
   const { plot } = mark;
@@ -27,36 +28,3 @@ export function channelScale<T>(mark: Mark, channel: ChannelName): msql.Scale<T>
   return scaleTransform<T>(options);
 }
 
-
-export type ChannelName =
-  | 'ariaLabel'
-  | 'fill'
-  | 'fillOpacity'
-  | 'fontSize'
-  | 'fx'
-  | 'fy'
-  | 'geometry'
-  | 'height'
-  | 'href'
-  | 'length'
-  | 'opacity'
-  | 'path'
-  | 'r'
-  | 'rotate'
-  | 'src'
-  | 'stroke'
-  | 'strokeOpacity'
-  | 'strokeWidth'
-  | 'symbol'
-  | 'text'
-  | 'title'
-  | 'weight'
-  | 'width'
-  | 'x'
-  | 'x1'
-  | 'x2'
-  | 'y'
-  | 'y1'
-  | 'y2'
-  | 'z'
-  | 'color';

@@ -1,6 +1,8 @@
-/** @import { InteractorMark } from '../marks/Mark.js' */
-/** @import { Selection } from '@uwdata/mosaic-core' */
+import { InteractorMark } from '../marks/Mark.js';
+import { Selection } from '@uwdata/mosaic-core';
+import type { Extent, Interactor, SVG } from '../types.js';
 
+import type * as mc from '@uwdata/mosaic-core';
 import { clausePoints } from '@uwdata/mosaic-core';
 import { select } from 'd3';
 import { brush } from './util/brush.js';
@@ -11,20 +13,23 @@ import { sanitizeStyles } from './util/sanitize-styles.js';
 import { neqSome } from './util/neq.js';
 import { getDatum } from './util/get-datum.js';
 
-/**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
- */
-export class Region {
-  /**
-   * @param {InteractorMark} mark The mark to interact with.
-   * @param {object} options The interactor options.
-   * @param {string[]} options.channels
-   * @param {Selection} options.selection
-   * @param {boolean} [options.peers]
-   * @param {Record<string, string | number>} [options.brush]
-   */
-  constructor(mark, {
+
+export class Region implements Interactor, mc.Activatable {
+  mark: InteractorMark;
+  selection: Selection;
+  peers: boolean;
+  style: Record<string, string | number>;
+  brush: any;
+  extent: Extent | null;
+  groups: null;
+  fields: any[];
+  as: any[];
+  value: any;
+  g: any;
+  svg: any;
+  group: any;
+
+  constructor(mark: InteractorMark, {
     channels,
     selection,
     peers = true,
@@ -33,7 +38,7 @@ export class Region {
       stroke: 'currentColor',
       strokeDasharray: '1,1'
     }
-  }) {
+  }: { channels: string[]; selection: Selection; peers?: boolean; brush?: Record<string, string | number>; }) {
     this.mark = mark;
     this.selection = selection;
     this.peers = peers;
@@ -49,25 +54,26 @@ export class Region {
     this.as = as;
   }
 
-  reset() {
+  reset(): void {
     this.value = undefined;
     this.extent = null;
     if (this.g) this.brush.reset(this.g);
   }
 
-  activate() {
+  activate(): void {
     this.selection.activate(this.clause([this.fields.map(() => 0)]));
   }
 
-  clause(value) {
+  clause(value): mc.SelectionClause {
     const { fields, mark } = this;
     return clausePoints(fields, value, {
       source: this,
-      clients: this.peers ? mark.plot.markSet : new Set().add(mark)
+      //@ts-expect-error
+      clients: this.peers ? mark.plot.markSet : new Set([mark])
     });
   }
 
-  publish(extent) {
+  publish(extent: Extent): void {
     const { as, group, mark, svg } = this;
     let value;
 
@@ -77,6 +83,7 @@ export class Region {
       const { data: { columns = {} } = {} } = mark;
       const map = new Map;
       intersect(svg, group, extent).forEach(el => {
+        //@ts-expect-error Argument of type 'Element' is not assignable to parameter of type 'Element & { __data__: any; }'.
         const index = getDatum(el);
         const vals = as.map(name => columns[name][index]);
         map.set(vals.join('|'), vals); // deduplicate values
@@ -91,11 +98,12 @@ export class Region {
     }
   }
 
-  init(svg) {
+  init(svg: SVG): void {
     const { brush, extent, mark, style } = this;
     this.svg = svg;
-
+    //@ts-expect-error Property 'width' does not exist on type 'HTMLElement & Plot'.
     const w = svg.width.baseVal.value;
+    //@ts-expect-error Property 'height' does not exist on type 'HTMLElement & Plot'.
     const h = svg.height.baseVal.value;
     brush.extent([[0, 0], [w, h]]);
 
@@ -118,6 +126,7 @@ export class Region {
     }
 
     svg.addEventListener('pointerenter', evt => {
+      //@ts-expect-error Property 'buttons' does not exist on type 'Event'.
       if (!evt.buttons) this.activate();
     });
   }

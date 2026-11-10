@@ -2,7 +2,8 @@ import type { SQLCodeGenerator, ExprValue } from '@uwdata/mosaic-sql';
 import type { Mark } from '../marks/Mark.js';
 import { ExprNode, binDate, binHistogram, duckDBCodeGenerator } from '@uwdata/mosaic-sql';
 import { Transform } from '../symbols.js';
-import { channelScale, type ChannelName } from '../marks/util/channel-scale.js';
+import { channelScale } from '../marks/util/channel-scale.js';
+import type { ChannelName } from '../types.js';
 
 
 type Options = { [key: string]: unknown; } & { offset?: number; };

@@ -1,28 +1,33 @@
-/** @import { InteractorMark } from '../marks/Mark.js' */
-/** @import { ClauseSource } from '@uwdata/mosaic-core' */
+import { InteractorMark } from '../marks/Mark.js';
+
 import { Selection, clauseInterval } from '@uwdata/mosaic-core';
 import { select, zoom, ZoomTransform } from 'd3';
 import { getField } from './util/get-field.js';
+import type * as mc from '@uwdata/mosaic-core';
+import type { SVG } from '../types.js';
+import * as ObPlot from '@observablehq/plot';
+import type { ExprNode, ExprValue, ParamLike } from '@uwdata/mosaic-sql';
 
-const asc = (a, b) => a - b;
+function asc(a: number, b: number): number {
+  return a - b;
+}
 
-/**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
- */
-export class PanZoom {
-  /**
-   * @param {InteractorMark} mark The mark to interact with.
-   * @param {object} options
-   * @param {Selection} [options.x]
-   * @param {Selection} [options.y]
-   * @param {string} [options.xfield]
-   * @param {string} [options.yfield]
-   * @param {boolean} [options.zoom]
-   * @param {boolean} [options.panx]
-   * @param {boolean} [options.pany]
-   */
-  constructor(mark, {
+
+export class PanZoom implements mc.Activatable {
+  mark: InteractorMark;
+  xsel: Selection;
+  ysel: Selection;
+  xfield: any;
+  yfield: any;
+  zoom: any;
+  panx: boolean;
+  pany: boolean;
+  svg: any;
+  initialized: any;
+  xscale?: ObPlot.Scale;
+  yscale?: ObPlot.Scale;
+
+  constructor(mark: InteractorMark, {
     x = new Selection(),
     y = new Selection(),
     xfield = undefined,
@@ -30,7 +35,7 @@ export class PanZoom {
     zoom = true,
     panx = true,
     pany = true
-  }) {
+  }: { x?: Selection; y?: Selection; xfield?: string; yfield?: string; zoom?: boolean; panx?: boolean; pany?: boolean; }) {
     this.mark = mark;
     this.xsel = x;
     this.ysel = y;
@@ -43,17 +48,19 @@ export class PanZoom {
     const { plot } = mark;
     if (panx) {
       this.xsel.addEventListener('value', value => {
+        //@ts-expect-error An argument for 'mark' was not provided.
         if (plot.setAttribute('xDomain', value)) plot.update();
       });
     }
     if (pany) {
       this.ysel.addEventListener('value', value => {
+        //@ts-expect-error An argument for 'mark' was not provided.
         if (plot.setAttribute('yDomain', value)) plot.update();
       });
     }
   }
 
-  publish(transform) {
+  publish(transform: any): void {
     if (this.panx) {
       const xdom = rescaleX(transform, this.xscale);
       this.xsel.update(this.clause(xdom, this.xfield, this.xscale));
@@ -64,15 +71,15 @@ export class PanZoom {
     }
   }
 
-  clause(value, field, scale) {
+  clause(value: any, field: ExprValue, scale: any): mc.SelectionClause {
     return clauseInterval(field, value, {
-      source: /** @type {ClauseSource} */(this),
+      source: (this),
       clients: this.mark.plot.markSet,
       scale
     });
   }
 
-  init(svg) {
+  init(svg: SVG): void {
     this.svg = svg;
     if (this.initialized) return; else this.initialized = true;
 
@@ -80,8 +87,8 @@ export class PanZoom {
 
     this.xscale = svg.scale('x');
     this.yscale = svg.scale('y');
-    const rx = this.xscale.range.slice().sort(asc);
-    const ry = this.yscale.range.slice().sort(asc);
+    const rx = Array.from(this.xscale.range).slice().sort(asc);
+    const ry = Array.from(this.yscale.range).slice().sort(asc);
     const tx = extent(panx, [-Infinity, Infinity], rx);
     const ty = extent(pany, [-Infinity, Infinity], ry);
 
@@ -109,7 +116,7 @@ export class PanZoom {
     }
   }
 
-  activate() {
+  activate(): void {
     if (this.panx) {
       const { xscale, xfield } = this;
       this.xsel.activate(this.clause(xscale.domain, xfield, xscale));
@@ -121,20 +128,20 @@ export class PanZoom {
   }
 }
 
-function extent(ext, defaultTrue, defaultFalse) {
+function extent(ext: boolean, defaultTrue: number[], defaultFalse: any[]): any[] {
   return ext
     ? (Array.isArray(ext) ? ext : defaultTrue)
     : defaultFalse;
 }
 
-function rescaleX(transform, scale) {
-  return scale.range
+function rescaleX(transform: { invertX: (value: any) => any; }, scale: ObPlot.Scale): any[] {
+  return Array.from(scale.range)
     .map(transform.invertX, transform)
     .map(scale.invert, scale);
 }
 
-function rescaleY(transform, scale) {
-  return scale.range
+function rescaleY(transform: { invertY: (value: any) => any; }, scale: ObPlot.Scale): any[] {
+  return Array.from(scale.range)
     .map(transform.invertY, transform)
     .map(scale.invert, scale);
 }
