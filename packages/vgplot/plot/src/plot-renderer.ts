@@ -1,6 +1,9 @@
-import * as Plot from '@observablehq/plot';
+import * as ObPlot from '@observablehq/plot';
 import { setAttributes } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
+import type { Plot } from './plot.js';
+import type { Attributes, AttrName, Spec, SVG } from './types.js';
+import type { Mark } from './marks/Mark.js';
 
 const OPTIONS_ONLY_MARKS = new Set([
   'frame',
@@ -14,36 +17,34 @@ const TIMESTAMPTZ_TYPES = new Set([
   'TIMESTAMP WITH TIME ZONE'
 ]);
 
-const SELECT_TRANSFORMS = new Map(
-  /** @type {[string, typeof Plot.selectFirst | typeof Plot.pointer][]} */ ([
-    ['first', Plot.selectFirst],
-    ['last', Plot.selectLast],
-    ['maxX', Plot.selectMaxX],
-    ['maxY', Plot.selectMaxY],
-    ['minX', Plot.selectMinX],
-    ['minY', Plot.selectMinY],
-    ['nearest', Plot.pointer],
-    ['nearestX', Plot.pointerX],
-    ['nearestY', Plot.pointerY]
+type SelectName = "first" | "last" | "maxX" | "maxY" | "minX" | "minY" | "nearest" | "nearestX" | "nearestY";
+
+const SELECT_TRANSFORMS = new Map<SelectName, typeof ObPlot.selectFirst | typeof ObPlot.pointer>(
+  ([
+    ['first', ObPlot.selectFirst],
+    ['last', ObPlot.selectLast],
+    ['maxX', ObPlot.selectMaxX],
+    ['maxY', ObPlot.selectMaxY],
+    ['minX', ObPlot.selectMinX],
+    ['minY', ObPlot.selectMinY],
+    ['nearest', ObPlot.pointer],
+    ['nearestX', ObPlot.pointerX],
+    ['nearestY', ObPlot.pointerY]
   ])
 );
 
 // construct Plot output
 // see https://github.com/observablehq/plot
-/**
- * @param {import('./plot.js').Plot} plot
- * @returns {Promise<(SVGSVGElement | HTMLElement) & Plot.Plot>}
- */
-export async function plotRenderer(plot) {
+export async function plotRenderer(plot: Plot): Promise<SVG> {
   const spec = { marks: [] };
-  const symbols = [];
+  const symbols: AttrName[] = [];
   const { attributes, marks } = plot;
 
   // populate top-level and scale properties
   setAttributes(attributes, spec, symbols);
 
   // populate marks
-  const indices = [];
+  const indices: number[] = [];
   for (const mark of marks) {
     for (const { type, data, options } of mark.plotSpecs()) {
       // prepare mark options
@@ -52,7 +53,7 @@ export async function plotRenderer(plot) {
       const arg = OPTIONS_ONLY_MARKS.has(type) ? [opt] : [data, opt];
 
       // instantiate Plot mark and add to spec
-      spec.marks.push(Plot[type](...arg));
+      spec.marks.push(ObPlot[type](...arg));
       if (mark.index > -1) indices.push(mark.index);
     }
   }
@@ -62,7 +63,7 @@ export async function plotRenderer(plot) {
   inferLabels(spec, plot);
 
   // render plot
-  const svg = Plot.plot(spec);
+  const svg: SVG = ObPlot.plot(spec);
 
   // annotate svg with mark indices
   annotatePlot(svg, indices);
@@ -78,7 +79,7 @@ export async function plotRenderer(plot) {
   return svg;
 }
 
-function setSymbolAttributes(plot, svg, attributes, symbols) {
+function setSymbolAttributes(plot: Plot, svg: SVG, attributes: Attributes, symbols: AttrName[]): void {
   symbols.forEach(key => {
     const value = attributes[key];
     if (value === Fixed) {
@@ -86,10 +87,11 @@ function setSymbolAttributes(plot, svg, attributes, symbols) {
         throw new Error(`Unsupported fixed attribute: ${key}`);
       }
       const type = key.slice(0, -'Domain'.length);
+      //@ts-expect-error Argument of type 'string' is not assignable to parameter of type 'ScaleName'.
       const scale = svg.scale(type);
       if (scale?.domain) {
         plot.setAttribute(key, attributes[`${type}Reverse`]
-          ? scale.domain.slice().reverse()
+          ? Array.from(scale.domain).slice().reverse()
           : scale.domain);
       }
     } else {
@@ -100,8 +102,8 @@ function setSymbolAttributes(plot, svg, attributes, symbols) {
 
 // Plot defaults temporal scales to UTC; TIMESTAMPTZ values are
 // instants, so render them in local time instead
-function inferScaleTypes(spec, plot) {
-  for (const key of ['x', 'y']) {
+function inferScaleTypes(spec: Spec, plot: Plot): void {
+  for (const key of ['x', 'y'] as const) {
     const scale = spec[key] || {};
     if (scale.type != null) continue;
     const timestamptz = plot.marks.some(
@@ -111,7 +113,7 @@ function inferScaleTypes(spec, plot) {
   }
 }
 
-function inferLabels(spec, plot) {
+function inferLabels(spec: Spec, plot: Plot): void {
   const { marks } = plot;
   inferLabel('x', spec, marks);
   inferLabel('y', spec, marks);
@@ -119,7 +121,7 @@ function inferLabels(spec, plot) {
   inferLabel('fy', spec, marks);
 }
 
-function inferLabel(key, spec, marks) {
+function inferLabel(key: 'x' | 'y' | 'fx' | 'fy', spec: Spec, marks: Mark[]): void {
   const scale = spec[key] || {};
   if (scale.axis === null || scale.label !== undefined) return; // nothing to do
 
@@ -127,7 +129,7 @@ function inferLabel(key, spec, marks) {
   if (fields.every(x => x == null)) return; // no columns found
 
   // check for consistent label
-  let candidate;
+  let candidate: string | undefined;
   for (let i = 0; i < fields.length; ++i) {
     const label = fieldLabel(fields[i]);
     if (label === undefined) {
@@ -144,7 +146,7 @@ function inferLabel(key, spec, marks) {
   spec[key] = { ...scale, label: candidate };
 }
 
-function fieldLabel(field) {
+function fieldLabel(field: any): string | undefined {
   if (!field) return undefined;
   switch (field.type) {
     case 'COLUMN_REF':
@@ -158,12 +160,12 @@ function fieldLabel(field) {
   return exprLabel(field);
 }
 
-function exprLabel(field) {
+function exprLabel(field: unknown): string {
   const s = `${field}`.replaceAll('"', '').replaceAll('(*)', '()');
   return s.endsWith('()') ? s.slice(0, -2) : s;
 }
 
-function annotatePlot(svg, indices) {
+function annotatePlot(svg: SVG, indices: number[]): void {
   let index = -1;
   for (const child of svg.children) {
     const aria = child.getAttribute('aria-label') || '';
@@ -174,6 +176,7 @@ function annotatePlot(svg, indices) {
       || aria === 'frame'
       || aria === 'hexgrid';
     if (!skip) {
+      //@ts-expect-error Argument of type 'number' is not assignable to parameter of type 'string'.
       child.setAttribute('data-index', indices[++index]);
     }
   }

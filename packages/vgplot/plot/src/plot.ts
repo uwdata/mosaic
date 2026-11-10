@@ -4,6 +4,7 @@ import { plotRenderer } from './plot-renderer.js';
 import { guideMarks } from './marks/util/guide-marks.js';
 import type { Mark } from './marks/Mark.js';
 import type { Legend } from './legend.js';
+import type { Attributes, AttrName } from './types.js';
 
 const DEFAULT_ATTRIBUTES = {
   width: 640,
@@ -18,19 +19,18 @@ interface Interactor {
 }
 
 
-type AttrName = string;
 type AttrCallback = (name: AttrName, value: any) => unknown;
 
 export class Plot {
-  attributes: Record<AttrName, any>;
+  attributes: Attributes;
   listeners: Map<AttrName, Set<AttrCallback>>;
   interactors: Interactor[];
-  legends: { legend: Legend, include: boolean }[];
+  legends: { legend: Legend, include: boolean; }[];
   marks: Mark[];
   markset: Set<Mark> | null;
   params: Map<mc.Param<any>, Mark[]>;
   synch: Synchronizer<Mark>;
-  element: HTMLElement & { value: Plot };
+  element: HTMLElement & { value: Plot; };
   pendingRender: boolean | undefined;
 
   constructor(element?: HTMLElement) {
@@ -49,7 +49,7 @@ export class Plot {
     this.element = Object.assign(el, { value: this });
   }
 
-  margins(): { left: number; top: number; bottom: number; right: number } {
+  margins(): { left: number; top: number; bottom: number; right: number; } {
     return {
       left: this.getAttribute('marginLeft'),
       top: this.getAttribute('marginTop'),
@@ -111,7 +111,7 @@ export class Plot {
    * @param options Options for setting the attribute.
    * @returns whether the value changed.
    */
-  setAttribute(name: string, value: any, options?: { silent: boolean }): boolean {
+  setAttribute(name: AttrName, value: any, options?: { silent: boolean; }): boolean {
     if (distinct(this.attributes[name], value)) {
       if (value === undefined) {
         delete this.attributes[name];
@@ -130,7 +130,7 @@ export class Plot {
    * @param name The attribute name.
    * @param callback The function to call when the attribute changes.
    */
-  addAttributeListener(name: string, callback: AttrCallback): this {
+  addAttributeListener(name: AttrName, callback: AttrCallback): this {
     const map = this.listeners;
     if (!map.has(name)) map.set(name, new Set);
     map.get(name).add(callback);
@@ -141,7 +141,7 @@ export class Plot {
    * @param name The attribute name.
    * @param callback The function to call when the attribute changes.
    */
-  removeAttributeListener(name: string, callback: AttrCallback): boolean | undefined {
+  removeAttributeListener(name: AttrName, callback: AttrCallback): boolean | undefined {
     return this.listeners.get(name)?.delete(callback);
   }
 
