@@ -1,7 +1,7 @@
-import type { SelectQuery } from '@uwdata/mosaic-sql'
-import type { DataColumns } from '@uwdata/mosaic-core'
+import type { SelectQuery } from '@uwdata/mosaic-sql';
+import type { DataColumns } from '@uwdata/mosaic-core';
 import type { Table } from '@uwdata/flechette';
-import type * as msql from '@uwdata/mosaic-sql'
+import type * as msql from '@uwdata/mosaic-sql';
 import type * as mc from '@uwdata/mosaic-core';
 import { isParam, MosaicClient, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, collectParams, column, isAggregateExpression, isColumnParam, isColumnRef, isNode, isParamLike, unnest } from '@uwdata/mosaic-sql';
@@ -11,6 +11,8 @@ import { isSymbol } from './util/is-symbol.js';
 import { Transform } from '../symbols.js';
 import type { Plot } from '../plot.js';
 import type { ChannelName } from './util/channel-scale.js';
+import type { MarkType } from '../types.js';
+
 
 
 type EncodingName = ChannelName | ConstantOption | 'orderby'; // (uwdata/mosaic#266)
@@ -24,11 +26,12 @@ type Reqs = { [name in EncodingName]?: mc.Stat[] };
 interface Entry {
   channel: EncodingName;
   value?: any;
-  field?: { stats?: { stats?: mc.Stat[], column?: mc.FieldRef } } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode;
+  field?: { stats?: { stats?: mc.Stat[], column?: mc.FieldRef; }; } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode;
   as?: string;
-  type?: string;
-  min?: any;
-  max?: any;
+  type?: mc.FieldInfo['type'];
+  min?: mc.FieldInfo['min'];
+  max?: mc.FieldInfo['max'];
+  sqlType?: mc.FieldInfo['sqlType'];
 }
 
 
@@ -68,9 +71,6 @@ export function isDataArray(source: unknown): source is any[] {
   return Array.isArray(source);
 }
 
-/**TODO @dangotbanned: Move the def in `vgplot` here and re-export*/
-type MarkType = string;
-
 
 interface PlotMarkSpec {
   type: MarkType;
@@ -86,7 +86,7 @@ export interface InteractorMark {
   plot: Plot;
   data?: mc.DataColumns;
   index?: number;
-  channels: Entry[]
+  channels: Entry[];
   channelField: (channel: ChannelName, options?: { exact?: boolean; }) => ({ field?: any; as?: any; } | null | undefined);
   isUnnested: (field: any) => boolean;
   query(filter: msql.FilterExpr): msql.SelectQuery | null;
@@ -146,6 +146,7 @@ export class Mark extends MosaicClient implements InteractorMark {
       } else if (isParamLike(entry)) {
         const c = { channel, value: entry.value };
         channels.push(c);
+        //@ts-expect-error Argument of type '<T>(value: unknown) => Promise<void>' is not assignable to parameter of type 'EventCallback'.
         entry.addEventListener('value', value => {
           // update immediately, the value is simply passed to Plot
           c.value = value;
@@ -154,7 +155,7 @@ export class Mark extends MosaicClient implements InteractorMark {
       } else if (isNode(entry)) {
         //@ts-expect-error `collectParams`  returns `ParamLike[]`, which is not the same as `Param[]`
         collectParams(entry).forEach(p => params.add(p));
-        channels.push(fieldEntry(channel, entry))
+        channels.push(fieldEntry(channel, entry));
       } else if (type === 'object' && isFieldObject(channel, entry)) {
         channels.push(fieldEntry(channel, entry));
       } else if (entry !== undefined) {
@@ -303,7 +304,7 @@ export class Mark extends MosaicClient implements InteractorMark {
  * @param columns named data column arrays
  * @returns the Plot channel option
  */
-export function channelOption(c: Entry, columns?: { [as: string]: string }): { value: string, scale: 'color' | 'opacity' } | string {
+export function channelOption(c: Entry, columns?: { [as: string]: string; }): { value: string, scale: 'color' | 'opacity'; } | string {
   // use a scale override for color channels to sidestep
   // https://github.com/observablehq/plot/issues/1593
   const value = columns?.[c.as] ?? c.as;
