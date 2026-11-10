@@ -1,4 +1,4 @@
-const symbols = new Set([
+const SYMBOLS = [
   'asterisk',
   'circle',
   'cross',
@@ -13,8 +13,11 @@ const symbols = new Set([
   'triangle',
   'triangle2',
   'wye'
-]);
+] as const
 
-export function isSymbol(value) {
+const symbols = new Set(SYMBOLS);
+export type SymbolType = (typeof SYMBOLS)[number]
+export function isSymbol(value: any): value is SymbolType {
+  //@ts-expect-error value must already be lowercase https://github.com/uwdata/mosaic/blob/367cbf69588961ec588f05a04cceed42523aaebd/packages/vgplot/spec/src/spec/PlotTypes.ts#L410-L425
   return symbols.has(`${value}`.toLowerCase());
 }

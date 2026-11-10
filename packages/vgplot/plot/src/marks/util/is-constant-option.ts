@@ -1,4 +1,4 @@
-const constantOptions = new Set([
+const CONSTANT_OPTIONS = [
   'offset',
   'order',
   'reverse',
@@ -37,8 +37,10 @@ const constantOptions = new Set([
   'pointerEvents',
   'target',
   'select'
-]);
+] as const
 
-export function isConstantOption(value) {
+const constantOptions = new Set(CONSTANT_OPTIONS);
+export type ConstantOption = (typeof CONSTANT_OPTIONS)[number]
+export function isConstantOption(value: any): value is ConstantOption {
   return constantOptions.has(value);
 }
