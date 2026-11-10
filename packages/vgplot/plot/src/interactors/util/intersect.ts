@@ -2,14 +2,14 @@ import { parsePath } from './parse-path.js';
 
 /**
  * Return SVG elements that intersect the provided spatial extent.
- * @param {SVGSVGElement} svg Parent SVG element to search within.
- * @param {SVGElement} el SVG container element to search for points.
- * @param {[[number, number], [number, number]]} extent Rectangular brush
+ * @param svg Parent SVG element to search within.
+ * @param el SVG container element to search for points.
+ * @param extent Rectangular brush
  *  extent within which to select elements. The extent is represented as
  *  upper-left and bottom-right (x, y) coordinates.
- * @returns {Element[]} A list of intersecting SVG elements.
+ * @returns A list of intersecting SVG elements.
  */
-export function intersect(svg, el, extent) {
+export function intersect(svg: SVGSVGElement, el: SVGElement, extent: [[number, number], [number, number]]): Element[] {
   // svg origin in viewport coordinates
   const { x, y } = svg.getBoundingClientRect();
   const identity = svg.createSVGMatrix();
@@ -32,7 +32,7 @@ export function intersect(svg, el, extent) {
   return list;
 }
 
-function intersects(sel, ox, oy, el, matrix) {
+function intersects(sel, ox, oy, el, matrix): boolean {
   let [[l, t], [r, b]] = sel;
 
   // facet groups involve translation only
@@ -152,18 +152,18 @@ export function intersectPath(l, t, r, b, el) {
 
   const test = (x2, y2) => {
     poly[n] = x2;
-    poly[n+1] = y2;
+    poly[n + 1] = y2;
     n += 2;
-    return intersectLine(l, t, r, b, poly[n-4], poly[n-3], x2, y2);
+    return intersectLine(l, t, r, b, poly[n - 4], poly[n - 3], x2, y2);
   }
 
   const lineTo = matrix
     ? (x2, y2) => {
-        hit = test(
-          multiplyX(matrix, x = x2, y = y2),
-          multiplyY(matrix, x2, y2)
-        );
-      }
+      hit = test(
+        multiplyX(matrix, x = x2, y = y2),
+        multiplyY(matrix, x2, y2)
+      );
+    }
     : (x2, y2) => { hit = test(x = x2, y = y2); };
 
   for (let i = 0; i < cmds.length; ++i) {
@@ -226,9 +226,9 @@ function multiplyY(m, x, y) {
 
 function isCircle(cmds, i) {
   const a = cmds[i];
-  const b = cmds[i+1];
+  const b = cmds[i + 1];
   return b && b[0] === 'a'
-    && cmds[i+2]?.[0] === 'z'
+    && cmds[i + 2]?.[0] === 'z'
     && a[1] === a[2]
     && b[1] === b[2]
     && a[1] === b[1]
@@ -243,7 +243,7 @@ function isCircle(cmds, i) {
  * @param {number[]} poly Polygon vertices as a flat array of numbers
  * @returns {number} The winding number. Non-zero values indicate inclusion.
  */
-function pointInPolygon(x, y, poly) {
+function pointInPolygon(x: number, y: number, poly: number[]): number {
   let wn = 0;
   const n = poly.length - 2;
 
@@ -251,7 +251,7 @@ function pointInPolygon(x, y, poly) {
     if (poly[i + 1] <= y) {
       // an upward crossing and (x,y) left of edge
       if (poly[i + 3] > y && isLeft(x, y, poly, i) > 0)
-         ++wn; // valid up intersect
+        ++wn; // valid up intersect
     }
     // a downward crossing and (x,y) right of edge
     else if (poly[i + 3] <= y && isLeft(x, y, poly[i]) < 0) {
@@ -263,5 +263,5 @@ function pointInPolygon(x, y, poly) {
 }
 
 function isLeft(x, y, p, i) {
-  return (p[i+2] - p[i]) * (y - p[i+1]) - (x - p[i]) * (p[i+3] - p[i+1]);
+  return (p[i + 2] - p[i]) * (y - p[i + 1]) - (x - p[i]) * (p[i + 3] - p[i + 1]);
 }

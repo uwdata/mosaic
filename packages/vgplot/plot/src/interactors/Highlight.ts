@@ -1,11 +1,10 @@
-/** @import { InteractorMark } from '../marks/Mark.js' */
-/** @import { Selection } from '@uwdata/mosaic-core' */
-import { throttle } from '@uwdata/mosaic-core';
-import { and, isAggregateExpression } from '@uwdata/mosaic-sql';
+import type { InteractorMark } from '../marks/Mark.js';
+import { throttle, type Selection } from '@uwdata/mosaic-core';
+import { and, isAggregateExpression, type SelectQuery } from '@uwdata/mosaic-sql';
 import { getDatum } from './util/get-datum.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
-function configureMark(mark) {
+function configureMark<Mark extends InteractorMark>(mark: Mark): Mark {
   const { channels } = mark;
   const dims = new Set;
   let ordered = false;
@@ -16,6 +15,7 @@ function configureMark(mark) {
     if (channel === 'orderby') {
       ordered = true;
     } else if (field) {
+      //@ts-expect-error Type 'string' is not assignable to type 'SQLNode'.
       if (isAggregateExpression(field)) {
         aggregate = true;
       } else {
@@ -37,16 +37,17 @@ function configureMark(mark) {
 }
 
 export class Highlight {
-  /**
-   * @param {InteractorMark} mark
-   * @param {object} options
-   * @param {Selection} options.selection
-   * @param {Record<string, string | number>} [options.channels]
-   */
-  constructor(mark, {
+  mark: InteractorMark;
+  selection: Selection;
+  channels: [string, unknown][] | (string | number)[][];
+  svg: any;
+  values: any[];
+  nodes: any;
+
+  constructor(mark: InteractorMark, {
     selection,
     channels = {}
-  }) {
+  }: { selection: Selection; channels?: Record<string, string | number> }) {
     this.mark = configureMark(mark);
     this.selection = selection;
     const c = Object.entries(sanitizeStyles(channels));
@@ -54,7 +55,7 @@ export class Highlight {
     this.selection.addEventListener('value', throttle(() => this.update()));
   }
 
-  init(svg) {
+  init(svg: SVGElement): Promise<void> {
     this.svg = svg;
     const values = this.values = [];
     const index = this.mark.index;
@@ -71,7 +72,7 @@ export class Highlight {
     return this.update();
   }
 
-  async update() {
+  async update(): Promise<void> {
     const { svg, nodes, channels, values, mark, selection } = this;
     if (!svg) return;
 
@@ -89,26 +90,30 @@ export class Highlight {
     }
   }
 }
-
-async function predicateFunction(mark, selection) {
+//NOTE: This function depends on `Mark` and reaches into the internals of mosaic sql
+async function predicateFunction(mark: InteractorMark, selection: Selection): Promise<(i: any) => boolean> {
+  //@ts-expect-error Argument of type 'InteractorMark' is not assignable to parameter of type 'MosaicClient'.
   const pred = selection?.predicate(mark);
-
+  //@ts-expect-error Proerty length does not exist on 'true'
   if (!pred || pred.length === 0) {
     return () => true;
   }
 
   // set flag so we do not skip cross-filtered sources
+  //@ts-expect-error Argument of type 'InteractorMark' is not assignable to parameter of type 'MosaicClient'.
   const filter = mark.filterBy?.predicate(mark, true);
 
   const s = { __: and(pred) };
   const q = mark.query(filter);
-  (q.queries || [q]).forEach(q => {
+  //@ts-expect-error Property 'queries' does not exist on type 'SelectQuery'.
+  (q.queries || [q]).forEach((q: SelectQuery) => {
     q._groupby.length ? q.select(s) : q.setSelect(s);
   });
 
   const data = await mark.coordinator.query(q);
   const v = data.getChild?.('__');
+  //@ts-expect-error Property 'length' does not exist on type 'Table<TypeMap>'.
   return !(data.numRows || data.length) ? (() => false)
     : v ? (i => v.at(i))
-    : (i => data[i].__);
+      : (i => data[i].__);
 }
