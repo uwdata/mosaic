@@ -1,5 +1,5 @@
 import type { InteractorMark } from '../marks/Mark.js';
-import { Selection, Activatable, type SelectionClause } from '@uwdata/mosaic-core'
+import { Selection, type SelectionClause } from '@uwdata/mosaic-core';
 import { clauseInterval } from '@uwdata/mosaic-core';
 import { ascending, min, max } from 'd3';
 import { brushGroups, brushX, brushY } from './util/brush.js';
@@ -8,11 +8,13 @@ import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 import type { ScaleDomain } from '@uwdata/mosaic-sql';
+import type { Extent, Interactor, SVG } from '../types.js';
+import type * as ObPlot from '@observablehq/plot';
+import type * as mc from '@uwdata/mosaic-core';
 
-
-export class Interval1D implements Activatable {
+export class Interval1D implements Interactor, mc.Activatable {
   mark: InteractorMark;
-  channel: string;
+  channel: ObPlot.ScaleName;
   pixelSize: number;
   selection: Selection;
   peers: boolean;
@@ -21,7 +23,7 @@ export class Interval1D implements Activatable {
   brush: any;
   value: any;
   g: any;
-  scale: any
+  scale: any;
 
   constructor(mark: InteractorMark, {
     channel,
@@ -30,7 +32,7 @@ export class Interval1D implements Activatable {
     pixelSize = 1,
     peers = true,
     brush: style = undefined
-  }: { channel: string; selection: Selection; field?: string; pixelSize?: number; peers?: boolean; brush?: Record<string, string | number> }) {
+  }: { channel: ObPlot.ScaleName; selection: Selection; field?: string; pixelSize?: number; peers?: boolean; brush?: Record<string, string | number>; }) {
     this.mark = mark;
     this.channel = channel;
     this.pixelSize = pixelSize || 1;
@@ -51,7 +53,7 @@ export class Interval1D implements Activatable {
     this.selection.activate(this.clause(this.value || [0, 1]));
   }
 
-  publish(extent: any): void {
+  publish(extent: Extent): void {
     let range = undefined;
     if (extent) {
       range = extent
@@ -69,20 +71,18 @@ export class Interval1D implements Activatable {
     const { mark, pixelSize, field, scale } = this;
     return clauseInterval(field, value, {
       source: this,
-      clients: this.peers ? mark.plot.markSet : new Set().add(mark),
+      //@ts-expect-error  Type 'Set<InteractorMark>' is not assignable to type 'Set<MosaicClient>'.
+      clients: this.peers ? mark.plot.markSet : new Set([mark]),
       scale,
       pixelSize
     });
   }
 
-  init(svg: SVGElement, root: any): void {
+  init(svg: SVG, root?: any): void {
     const { brush, channel, style } = this;
-    //@ts-expect-error Property 'scale' does not exist on type 'SVGElement'.
     this.scale = svg.scale(channel);
     const range = this.value?.map(this.scale.apply).sort(ascending);
-    //@ts-expect-error Property 'scale' does not exist on type 'SVGElement'.
     const rx = svg.scale('x').range;
-    //@ts-expect-error Property 'scale' does not exist on type 'SVGElement'.
     const ry = svg.scale('y').range;
     brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);
     this.g = brushGroups(svg, root, min(rx), min(ry), `interval-${channel}`)
@@ -97,6 +97,7 @@ export class Interval1D implements Activatable {
     }
 
     svg.addEventListener('pointerenter', evt => {
+      //@ts-expect-error Property 'buttons' does not exist on type 'Event'.
       if (!evt.buttons) this.activate();
     });
   }

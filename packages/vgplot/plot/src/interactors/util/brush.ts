@@ -1,7 +1,8 @@
-import { brush as d3_brush, brushX as d3_brushX, brushY as d3_brushY, select } from 'd3';
+import { brush as d3_brush, brushX as d3_brushX, brushY as d3_brushY, select, type BrushBehavior, type Selection as d3_Selection } from 'd3';
 import { patchScreenCTM } from './patchScreenCTM.js';
+import type { SVG } from '../../types.js';
 
-function wrap(brush) {
+function wrap(brush: BrushBehavior<unknown>) {
   const brushOn = brush.on;
   let enabled = true;
 
@@ -11,11 +12,15 @@ function wrap(brush) {
     enabled = true;
   }
 
+  //@ts-expect-error monkeypatching
   brush.reset = (...args) => {
+    //@ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.
     silence(() => brush.clear(...args));
   };
 
+  //@ts-expect-error monkeypatching
   brush.moveSilent = (...args) => {
+    //@ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.
     silence(() => brush.move(...args));
   };
 
@@ -25,6 +30,7 @@ function wrap(brush) {
       const callback = args[1];
       args[1] = (...event) => enabled && callback(...event);
     }
+    //@ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.
     return brushOn(...args);
   };
 
@@ -43,16 +49,18 @@ export function brushY() {
   return wrap(d3_brushY());
 }
 
-export function brushGroups(svg, root, dx, dy, className) {
-  let groups = select(root ?? svg)
+export function brushGroups(svg: SVG, root, dx, dy, className) {
+  let groups: d3_Selection<SVGGElement, unknown, SVGGElement | null, undefined> = select(root ?? svg)
     .append('g')
-    .attr('class', className)
+    .attr('class', className);
 
   // if the plot is faceted, create per-facet brush groups
   const fx = svg.scale('fx');
   const fy = svg.scale('fy');
   if (fx || fy) {
+    //@ts-expect-error roperty 'map' does not exist on type 'Iterable<any>'.
     const X = fx?.domain.map(v => fx.apply(v) - dx);
+    //@ts-expect-error roperty 'map' does not exist on type 'Iterable<any>'.
     const Y = fy?.domain.map(v => fy.apply(v) - dy);
     if (X && Y) {
       for (let i = 0; i < X.length; ++i) {

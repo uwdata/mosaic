@@ -7,7 +7,7 @@ import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 import type { InteractorMark } from '../marks/Mark.js';
 import type { ScaleDomain } from '@uwdata/mosaic-sql';
-import { Interactor, type SVG } from '../types.js';
+import { Interactor, type Extent, type SVG } from '../types.js';
 
 export class Interval2D implements Interactor, Activatable {
   mark: InteractorMark;
@@ -50,7 +50,7 @@ export class Interval2D implements Interactor, Activatable {
     this.selection.activate(this.clause(this.value || [[0, 1], [0, 1]]));
   }
 
-  publish(extent: [any, any]): void {
+  publish(extent: Extent): void {
     const { value, pixelSize, xscale, yscale } = this;
 
     let xr = undefined;
