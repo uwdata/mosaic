@@ -1,4 +1,4 @@
-export function toKebabCase(cc) {
+export function toKebabCase(cc: string): string {
   const lc = cc.toLowerCase();
   const n = cc.length;
   let kc = '';

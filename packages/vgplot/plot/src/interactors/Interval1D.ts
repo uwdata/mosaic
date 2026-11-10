@@ -1,5 +1,5 @@
-/** @import { InteractorMark } from '../marks/Mark.js' */
-/** @import { Selection } from '@uwdata/mosaic-core' */
+import type { InteractorMark } from '../marks/Mark.js';
+import { Selection, Activatable, type SelectionClause } from '@uwdata/mosaic-core'
 import { clauseInterval } from '@uwdata/mosaic-core';
 import { ascending, min, max } from 'd3';
 import { brushGroups, brushX, brushY } from './util/brush.js';
@@ -7,30 +7,30 @@ import { closeTo } from './util/close-to.js';
 import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
+import type { ScaleDomain } from '@uwdata/mosaic-sql';
 
-/**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
- */
-export class Interval1D {
-  /**
-   * @param {InteractorMark} mark The mark to interact with.
-   * @param {object} options
-   * @param {string} options.channel
-   * @param {Selection} options.selection
-   * @param {string} [options.field]
-   * @param {number} [options.pixelSize]
-   * @param {boolean} [options.peers]
-   * @param {Record<string, string | number>} [options.brush]
-   */
-  constructor(mark, {
+
+export class Interval1D implements Activatable {
+  mark: InteractorMark;
+  channel: string;
+  pixelSize: number;
+  selection: Selection;
+  peers: boolean;
+  field: any;
+  style: Record<string, string | number>;
+  brush: any;
+  value: any;
+  g: any;
+  scale: any
+
+  constructor(mark: InteractorMark, {
     channel,
     selection,
     field = undefined,
     pixelSize = 1,
     peers = true,
     brush: style = undefined
-  }) {
+  }: { channel: string; selection: Selection; field?: string; pixelSize?: number; peers?: boolean; brush?: Record<string, string | number> }) {
     this.mark = mark;
     this.channel = channel;
     this.pixelSize = pixelSize || 1;
@@ -42,16 +42,16 @@ export class Interval1D {
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
 
-  reset() {
+  reset(): void {
     this.value = undefined;
     if (this.g) this.brush.reset(this.g);
   }
 
-  activate() {
+  activate(): void {
     this.selection.activate(this.clause(this.value || [0, 1]));
   }
 
-  publish(extent) {
+  publish(extent: any): void {
     let range = undefined;
     if (extent) {
       range = extent
@@ -65,7 +65,7 @@ export class Interval1D {
     }
   }
 
-  clause(value) {
+  clause(value: ScaleDomain | null | undefined): SelectionClause {
     const { mark, pixelSize, field, scale } = this;
     return clauseInterval(field, value, {
       source: this,
@@ -75,16 +75,14 @@ export class Interval1D {
     });
   }
 
-  /**
-   * @param {*} svg
-   * @param {*} [root]
-   */
-  init(svg, root) {
+  init(svg: SVGElement, root: any): void {
     const { brush, channel, style } = this;
+    //@ts-expect-error Property 'scale' does not exist on type 'SVGElement'.
     this.scale = svg.scale(channel);
     const range = this.value?.map(this.scale.apply).sort(ascending);
-
+    //@ts-expect-error Property 'scale' does not exist on type 'SVGElement'.
     const rx = svg.scale('x').range;
+    //@ts-expect-error Property 'scale' does not exist on type 'SVGElement'.
     const ry = svg.scale('y').range;
     brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);
     this.g = brushGroups(svg, root, min(rx), min(ry), `interval-${channel}`)

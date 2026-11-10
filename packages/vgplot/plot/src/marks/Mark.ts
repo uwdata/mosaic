@@ -13,7 +13,7 @@ import type { Plot } from '../plot.js';
 import type { ChannelName } from './util/channel-scale.js';
 
 
-type EncodingName = ChannelName | ConstantOption;
+type EncodingName = ChannelName | ConstantOption | 'orderby'; // (uwdata/mosaic#266)
 type Encodings = { [name in EncodingName]?: any };
 type Reqs = { [name in EncodingName]?: mc.Stat[] };
 
@@ -82,12 +82,16 @@ interface PlotMarkSpec {
  * The minimal mark surface consumed by interactors, allowing marks
  * and lightweight stand-ins to be used interchangeably.
  */
-interface InteractorMark {
+export interface InteractorMark {
   plot: Plot;
-  channelField: (channel: ChannelName, options?: { exact?: boolean; }) => ({ field?: any; as?: any; } | null | undefined);
-  isUnnested: (field: any) => boolean;
   data?: mc.DataColumns;
   index?: number;
+  channels: Entry[]
+  channelField: (channel: ChannelName, options?: { exact?: boolean; }) => ({ field?: any; as?: any; } | null | undefined);
+  isUnnested: (field: any) => boolean;
+  query(filter: msql.FilterExpr): msql.SelectQuery | null;
+  get filterBy(): mc.Selection | undefined;
+  get coordinator(): mc.Coordinator | null;
 }
 
 
@@ -95,7 +99,7 @@ export class Mark extends MosaicClient implements InteractorMark {
   public plot: Plot;
   public data?: mc.DataColumns;
   public index?: number;
-  channels: Entry[];
+  public channels: Entry[];
   detail: Set<EncodingName>;
   params: Set<mc.Param<any>>;
   _fieldInfo?: boolean;
@@ -250,7 +254,7 @@ export class Mark extends MosaicClient implements InteractorMark {
    * @param filter The filtering criteria to apply in the query.
    * @returns The client query
    */
-  query(filter: msql.FilterExpr = []): msql.SelectQuery | null {
+  public query(filter: msql.FilterExpr = []): msql.SelectQuery | null {
     if (this.hasOwnData()) return null;
     const { unnestFields } = this;
     // wrap unnested column fields in UNNEST() so arrays expand into rows
@@ -326,7 +330,6 @@ export function markQuery(channels: Entry[], table: any, skip: string[] = []): S
 
   for (const { channel, field, as, value } of channels) {
     if (skip.includes(channel)) continue;
-    //@ts-expect-error This comparison appears to be unintentional because the types 'EncodingName' and '"orderby"' have no overlap.
     if (channel === 'orderby') {
       q.orderby(value ?? field);
     } else if (field) {
