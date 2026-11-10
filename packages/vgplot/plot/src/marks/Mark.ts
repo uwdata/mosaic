@@ -10,8 +10,7 @@ import { isConstantOption, type ConstantOption } from './util/is-constant-option
 import { isSymbol } from './util/is-symbol.js';
 import { Transform } from '../symbols.js';
 import type { Plot } from '../plot.js';
-import type { ChannelName } from './util/channel-scale.js';
-import type { MarkType } from '../types.js';
+import type { MarkType, ChannelName } from '../types.js';
 
 
 
@@ -26,7 +25,7 @@ type Reqs = { [name in EncodingName]?: mc.Stat[] };
 interface Entry {
   channel: EncodingName;
   value?: any;
-  field?: { stats?: { stats?: mc.Stat[], column?: mc.FieldRef; }; } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode;
+  field?: { stats?: { stats?: mc.Stat[], column?: mc.FieldRef; }; basis?: unknown; } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode;
   as?: string;
   type?: mc.FieldInfo['type'];
   min?: mc.FieldInfo['min'];
@@ -87,7 +86,7 @@ export interface InteractorMark {
   data?: mc.DataColumns;
   index?: number;
   channels: Entry[];
-  channelField: (channel: ChannelName, options?: { exact?: boolean; }) => ({ field?: any; as?: any; } | null | undefined);
+  channelField: (channel: ChannelName, options?: { exact?: boolean; }) => Entry | null;
   isUnnested: (field: any) => boolean;
   query(filter: msql.FilterExpr): msql.SelectQuery | null;
   get filterBy(): mc.Selection | undefined;
