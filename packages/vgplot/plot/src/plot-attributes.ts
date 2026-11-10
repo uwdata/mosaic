@@ -1,3 +1,5 @@
+import type { Attributes, AttrName, Spec } from './types.js';
+
 export const attributeMap = new Map([
   ['style', 'style'],
   ['width', 'width'],
@@ -209,9 +211,9 @@ export const attributeMap = new Map([
   ['projectionInsetTop', 'projection.insetTop'],
   ['projectionInsetBottom', 'projection.insetBottom'],
   ['projectionClip', 'projection.clip']
-]);
+] as const);
 
-function setProperty(object, path, value) {
+function setProperty(object: Spec, path: string | any[], value: any): void {
   for (let i = 0; i < path.length; ++i) {
     const key = path[i];
     if (i === path.length - 1) {
@@ -222,16 +224,16 @@ function setProperty(object, path, value) {
   }
 }
 
-export function setAttributes(attributes, spec, symbols) {
+export function setAttributes(attributes: Attributes, spec: Spec, symbols: AttrName[]): void {
   // populate top-level and scale properties
   for (const key in attributes) {
-    const specKey = attributeMap.get(key);
+    const specKey = attributeMap.get(key as AttrName);
     if (specKey == null) {
       throw new Error(`Unrecognized plot attribute: ${key}`);
     }
     const value = attributes[key];
     if (typeof value === 'symbol') {
-      symbols.push(key);
+      symbols.push(key as AttrName);
     } else if (value !== undefined) {
       setProperty(spec, specKey.split('.'), value);
     }
