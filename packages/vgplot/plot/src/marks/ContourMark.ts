@@ -29,7 +29,7 @@ export class ContourMark extends Grid2DMark {
     const { bins, densityMap, grids, thresholds, plot } = this;
     const { numRows, columns } = grids;
 
-    let t = thresholds;
+    const t = thresholds;
     let tz;
     if (Array.isArray(t)) {
       tz = t;

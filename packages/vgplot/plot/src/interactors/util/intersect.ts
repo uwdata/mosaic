@@ -135,7 +135,7 @@ export function intersectPath(l, t, r, b, el) {
   let x = 0;
   let y = 0;
   let hit = false;
-  let poly = [0, 0];
+  const poly = [0, 0];
   let n = 2;
 
   const matrix = getTransformMatrix(el);
