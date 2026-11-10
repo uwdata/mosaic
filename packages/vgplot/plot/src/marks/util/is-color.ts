@@ -8,14 +8,14 @@ import { color } from 'd3';
 // coercion here, though note that d3-color instances would need to support
 // valueOf to work correctly with InternMap.
 // https://www.w3.org/TR/SVG11/painting.html#SpecifyingPaint
-export function isColor(value) {
+export function isColor(value: unknown): value is string {
   if (typeof value !== 'string') return false;
-  value = value.toLowerCase().trim();
+  const v = value.toLowerCase().trim();
   return (
-    value === 'none' ||
-    value === 'currentcolor' ||
-    (value.startsWith('url(') && value.endsWith(')')) || // <funciri>, e.g. pattern or gradient
-    (value.startsWith('var(') && value.endsWith(')')) || // CSS variable
-    color(value) !== null
+    v === 'none' ||
+    v === 'currentcolor' ||
+    (v.startsWith('url(') && v.endsWith(')')) || // <funciri>, e.g. pattern or gradient
+    (v.startsWith('var(') && v.endsWith(')')) || // CSS variable
+    color(v) !== null
   );
 }
