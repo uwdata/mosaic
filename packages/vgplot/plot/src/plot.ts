@@ -4,7 +4,7 @@ import { plotRenderer } from './plot-renderer.js';
 import { guideMarks } from './marks/util/guide-marks.js';
 import type { Mark } from './marks/Mark.js';
 import type { Legend } from './legend.js';
-import type { Attributes, AttrName } from './types.js';
+import type { Attributes, AttrName, Interactor } from './types.js';
 
 const DEFAULT_ATTRIBUTES = {
   width: 640,
@@ -13,10 +13,6 @@ const DEFAULT_ATTRIBUTES = {
   marginTop: 20,
   marginBottom: 30
 };
-
-interface Interactor {
-  init: (svg: Awaited<ReturnType<typeof plotRenderer>>) => Promise<void> | void;
-}
 
 
 type AttrCallback = (name: AttrName, value: any) => unknown;
