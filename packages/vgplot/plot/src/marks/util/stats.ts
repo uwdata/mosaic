@@ -28,11 +28,11 @@
  * @returns {number}
  */
 export function ibetainv(p, a, b) {
-  var EPS = 1e-8;
-  var a1 = a - 1;
-  var b1 = b - 1;
-  var j = 0;
-  var lna, lnb, pp, t, u, err, x, al, h, w, afac;
+  const EPS = 1e-8;
+  const a1 = a - 1;
+  const b1 = b - 1;
+  let j = 0;
+  let lna, lnb, pp, t, u, err, x, al, h, w;
   if (p <= 0) return 0;
   if (p >= 1) return 1;
   if (a >= 1 && b >= 1) {
@@ -53,7 +53,7 @@ export function ibetainv(p, a, b) {
     if (p < t / w) x = Math.pow(a * w * p, 1 / a);
     else x = 1 - Math.pow(b * w * (1 - p), 1 / b);
   }
-  afac = -gammaln(a) - gammaln(b) + gammaln(a + b);
+  const afac = -gammaln(a) - gammaln(b) + gammaln(a + b);
   for (; j < 10; j++) {
     if (x === 0 || x === 1) return x;
     err = ibeta(x, a, b) - p;
@@ -76,7 +76,7 @@ export function ibetainv(p, a, b) {
  */
 export function ibeta(x, a, b) {
   // Factors in front of the continued fraction.
-  var bt =
+  const bt =
     x === 0 || x === 1 ? 0 : Math.exp(gammaln(a + b) - gammaln(a) - gammaln(b) + a * Math.log(x) + b * Math.log(1 - x));
   if (x < 0 || x > 1) return 0;
   if (x < (a + 1) / (a + b + 2))
@@ -94,14 +94,14 @@ export function ibeta(x, a, b) {
  * @returns {number}
  */
 export function betacf(x, a, b) {
-  var fpmin = 1e-30;
-  var m = 1;
-  var qab = a + b;
-  var qap = a + 1;
-  var qam = a - 1;
-  var c = 1;
-  var d = 1 - (qab * x) / qap;
-  var m2, aa, del, h;
+  const fpmin = 1e-30;
+  let m = 1;
+  const qab = a + b;
+  const qap = a + 1;
+  const qam = a - 1;
+  let c = 1;
+  let d = 1 - (qab * x) / qap;
+  let m2, aa, del, h;
 
   // These q's will be used in factors that occur in the coefficients
   if (Math.abs(d) < fpmin) d = fpmin;
@@ -139,13 +139,13 @@ export function betacf(x, a, b) {
  * @returns {number}
  */
 export function gammaln(x) {
-  var j = 0;
-  var cof = [
+  let j = 0;
+  const cof = [
     76.18009172947146, -86.5053203294167, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2,
     -0.5395239384953e-5
   ];
-  var ser = 1.000000000190015;
-  var xx, y, tmp;
+  let ser = 1.000000000190015;
+  let xx, y, tmp;
   tmp = (y = xx = x) + 5.5;
   tmp -= (xx + 0.5) * Math.log(tmp);
   for (; j < 6; j++) ser += cof[j] / ++y;
@@ -159,7 +159,7 @@ export function gammaln(x) {
  * @returns {number}
  */
 export function qt(p, dof) {
-  var x = ibetainv(2 * Math.min(p, 1 - p), 0.5 * dof, 0.5);
+  let x = ibetainv(2 * Math.min(p, 1 - p), 0.5 * dof, 0.5);
   x = Math.sqrt((dof * (1 - x)) / x);
   return p > 0.5 ? x : -x;
 }
