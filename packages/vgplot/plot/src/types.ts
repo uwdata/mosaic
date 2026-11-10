@@ -13,3 +13,7 @@ export type Spec = { [x: string]: any; marks?: ObPlot.Mark[]; };
 
 /**Observable plot element */
 export type SVG = (SVGSVGElement | HTMLElement) & ObPlot.Plot;
+
+export interface Interactor {
+    init: (svg: SVG) => Promise<void> | void;
+}

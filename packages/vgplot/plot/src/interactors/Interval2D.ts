@@ -1,36 +1,35 @@
-/** @import { InteractorMark } from '../marks/Mark.js' */
-/** @import { Selection } from '@uwdata/mosaic-core' */
-import { clauseIntervals } from '@uwdata/mosaic-core';
+import { clauseIntervals, Selection, Activatable, type SelectionClause } from '@uwdata/mosaic-core';
 import { ascending, min, max } from 'd3';
 import { brush, brushGroups } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
+import type { InteractorMark } from '../marks/Mark.js';
+import type { ScaleDomain } from '@uwdata/mosaic-sql';
+import { Interactor, type SVG } from '../types.js';
 
-/**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
- */
-export class Interval2D {
-  /**
-   * @param {InteractorMark} mark The mark to interact with.
-   * @param {object} options
-   * @param {Selection} options.selection
-   * @param {string} [options.xfield]
-   * @param {string} [options.yfield]
-   * @param {number} [options.pixelSize]
-   * @param {boolean} [options.peers]
-   * @param {Record<string, string | number>} [options.brush]
-   */
-  constructor(mark, {
+export class Interval2D implements Interactor, Activatable {
+  mark: InteractorMark;
+  pixelSize: number;
+  selection: Selection;
+  peers: boolean;
+  xfield: any;
+  yfield: any;
+  style: Record<string, string | number>;
+  brush: any;
+  value: any;
+  g: any;
+  xscale: any;
+  yscale: any;
+  constructor(mark: InteractorMark, {
     selection,
     xfield = undefined,
     yfield = undefined,
     pixelSize = 1,
     peers = true,
     brush: style = undefined
-  }) {
+  }: { selection: Selection; xfield?: string; yfield?: string; pixelSize?: number; peers?: boolean; brush?: Record<string, string | number>; }) {
     this.mark = mark;
     this.pixelSize = pixelSize || 1;
     this.selection = selection;
@@ -42,16 +41,16 @@ export class Interval2D {
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
 
-  reset() {
+  reset(): void {
     this.value = undefined;
     if (this.g) this.brush.reset(this.g);
   }
 
-  activate() {
+  activate(): void {
     this.selection.activate(this.clause(this.value || [[0, 1], [0, 1]]));
   }
 
-  publish(extent) {
+  publish(extent: [any, any]): void {
     const { value, pixelSize, xscale, yscale } = this;
 
     let xr = undefined;
@@ -69,17 +68,18 @@ export class Interval2D {
     }
   }
 
-  clause(value) {
+  clause(value: ScaleDomain[]): SelectionClause {
     const { mark, pixelSize, xfield, yfield, xscale, yscale } = this;
     return clauseIntervals([xfield, yfield], value, {
       source: this,
-      clients: this.peers ? mark.plot.markSet : new Set().add(mark),
+      //@ts-expect-error  Type 'Set<InteractorMark>' is not assignable to type 'Set<MosaicClient>'.
+      clients: this.peers ? mark.plot.markSet : new Set([mark]),
       scales: [xscale, yscale],
       pixelSize
     });
   }
 
-  init(svg) {
+  init(svg: SVG): void {
     const { brush, style, value } = this;
     const xscale = this.xscale = svg.scale('x');
     const yscale = this.yscale = svg.scale('y');
@@ -102,6 +102,7 @@ export class Interval2D {
     }
 
     svg.addEventListener('pointerenter', evt => {
+      //@ts-expect-error Property 'buttons' does not exist on type 'Event'.
       if (!evt.buttons) this.activate();
     });
   }
