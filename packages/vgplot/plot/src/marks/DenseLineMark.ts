@@ -3,19 +3,24 @@ import { binExpr } from './util/bin-expr.js';
 import { extentX, extentY } from './util/extent.js';
 import { handleParam } from './util/handle-param.js';
 import { RasterMark } from './RasterMark.js';
+import type { Grid2DOptions } from './Grid2DMark.js';
+import type * as msql from '@uwdata/mosaic-sql';
+import type { CanParam } from '../types.js';
+
+type DenseLineOptions = Grid2DOptions & { normalize?: CanParam<boolean>; };
 
 export class DenseLineMark extends RasterMark {
-  constructor(source, options) {
+  normalize: boolean;
+  constructor(source: any, options: DenseLineOptions) {
     const { normalize = true, ...rest } = options;
     super(source, rest);
 
-    /** @type {boolean} */
     this.normalize = handleParam(normalize, value => {
       return (this.normalize = value, this.requestUpdate());
     });
   }
 
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery {
     const { channels, normalize, pad } = this;
     const [nx, ny] = this.bins = this.binDimensions();
     const [x] = binExpr(this, 'x', nx, extentX(this, filter), pad);
@@ -32,9 +37,11 @@ export class DenseLineMark extends RasterMark {
       if (Object.hasOwn(c, 'field')) {
         const { channel, field } = c;
         if (channel === 'z') {
+          // @ts-expect-error Type '{ stats?: { stats?: Stat[]; column?: FieldRef; }; basis?: unknown; }' is not assignable to type 'ExprValue'.
           q.select({ [channel]: field });
           z.push('z');
         } else if (channel !== 'x' && channel !== 'y') {
+          //@ts-expect-error Type '{ [x: string]: Field; }' is not assignable to type 'string'.
           q.select({ [channel]: field });
           groupby.push(channel);
         }
@@ -48,7 +55,7 @@ export class DenseLineMark extends RasterMark {
 // strip x, y fields from filter predicate
 // to prevent improper clipping of line segments
 // TODO: improve, perhaps with supporting query utilities
-function stripXY(mark, filter) {
+function stripXY(mark: DenseLineMark, filter: msql.FilterExpr): msql.FilterExpr {
   if (Array.isArray(filter) && !filter.length) return filter;
 
   // get column expressions for x and y encoding channels
