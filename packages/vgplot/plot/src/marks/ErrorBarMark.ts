@@ -1,39 +1,44 @@
 import { toDataColumns } from '@uwdata/mosaic-core';
 import { avg, count, div, sqrt, stddev } from '@uwdata/mosaic-sql';
 import { erfinv } from './util/stats.js';
-import { Mark, markPlotSpec, markQuery } from './Mark.js';
+import { Mark, markPlotSpec, markQuery, type Field, type PlotMarkSpec } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
+import type * as msql from '@uwdata/mosaic-sql';
 
 export class ErrorBarMark extends Mark {
-  constructor(type, source, options) {
+  dim: 'x' | 'y';
+  field: Field;
+  ci: number;
+  constructor(type: 'ruleX' | 'ruleY', source: any, options) {
     const dim = type.endsWith('X') ? 'y' : 'x';
     const { ci = 0.95, ...channels } = options;
     super(type, source, channels);
     this.dim = dim;
     this.field = this.channelField(dim).field;
     this.channels = this.channels.filter(c => c.channel !== dim);
-
-    /** @type {number} */
     this.ci = handleParam(ci, value => {
       return (this.ci = value, this.update());
     });
   }
 
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery {
     const { channels, field } = this;
+    //@ts-ignore both fields are missing a required `channel` field. Error isn't showing on CLI
     const fields = channels.concat([
+      //@ts-expect-error Type '{ stats?: { stats?: Stat[]; column?: FieldRef; }; basis?: unknown; }' is not assignable to type 'ExprValue'.
       { field: avg(field), as: '__avg__' },
+      //@ts-expect-error Type '{ stats?: { stats?: Stat[]; column?: FieldRef; }; basis?: unknown; }' is not assignable to type 'ExprValue'.
       { field: div(stddev(field), sqrt(count(field))), as: '__se__', }
     ]);
     return markQuery(fields, this.sourceTable()).where(filter);
   }
 
-  queryResult(data) {
+  queryResult(data: unknown): this {
     this.data = toDataColumns(data);
     return this;
   }
 
-  plotSpecs() {
+  plotSpecs(): PlotMarkSpec[] {
     const { type, dim, detail, data, ci, channels } = this;
 
     // compute confidence interval channels
