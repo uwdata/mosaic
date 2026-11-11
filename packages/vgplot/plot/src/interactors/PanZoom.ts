@@ -69,7 +69,7 @@ export class PanZoom implements mc.Activatable {
     }
   }
 
-  clause(value: any, field: ExprValue, scale: any): mc.SelectionClause {
+  clause(value: any, field?: ExprValue, scale?: any): mc.SelectionClause {
     return clauseInterval(field, value, {
       source: (this),
       clients: this.mark.plot.markSet,

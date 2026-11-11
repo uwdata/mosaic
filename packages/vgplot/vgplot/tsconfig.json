@@ -3,7 +3,8 @@
   "include": ["src/**/*"],
   "compilerOptions": {
     "outDir": "dist",
-    "strict": true
+    "strict": true,
+    "noImplicitAny": false
   },
   "references": [
     { "path": "../../mosaic/core" },
