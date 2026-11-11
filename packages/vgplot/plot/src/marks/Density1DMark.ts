@@ -33,7 +33,7 @@ export class Density1DMark extends Mark {
   stack: boolean;
   extent?: any[];
   groupby?: any[];
-  constructor(type: DensityType, source: any, options: Density1DOptions) {
+  constructor(type: DensityType, source: any, options: Density1DOptions = {}) {
     const {
       bins = 1024,
       bandwidth = 20,

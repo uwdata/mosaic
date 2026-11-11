@@ -48,13 +48,11 @@ export class PanZoom implements mc.Activatable {
     const { plot } = mark;
     if (panx) {
       this.xsel.addEventListener('value', value => {
-        //@ts-expect-error An argument for 'mark' was not provided.
         if (plot.setAttribute('xDomain', value)) plot.update();
       });
     }
     if (pany) {
       this.ysel.addEventListener('value', value => {
-        //@ts-expect-error An argument for 'mark' was not provided.
         if (plot.setAttribute('yDomain', value)) plot.update();
       });
     }
