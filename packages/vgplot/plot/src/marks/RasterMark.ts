@@ -10,7 +10,9 @@ import type { Plot } from '../plot.js';
 import type { PlotMarkSpec } from './Mark.js';
 import type * as ObPlot from '@observablehq/plot';
 
-type Image = { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; img: ImageData; w: number; h: number; };
+export type Image = { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; img: ImageData; w: number; h: number; };
+
+type Grid2DImageMark = Grid2DMark & { image: Image | null; };
 
 /**
  * Raster image mark. Data is binned to a grid based on the x and y options.
@@ -282,7 +284,7 @@ function inferScaleType(type: ObPlot.ScaleType): ObPlot.ScaleType {
  * @param h The canvas height.
  * @returns An object with a canvas, context, image data, and dimensions.
  */
-export function imageData(mark: RasterMark, w: number, h: number): Image {
+export function imageData(mark: Grid2DImageMark, w: number, h: number): Image {
   if (!mark.image || mark.image.w !== w || mark.image.h !== h) {
     const canvas = createCanvas(w, h);
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
