@@ -1,5 +1,6 @@
 import { geojson } from '@uwdata/mosaic-sql';
-import { Mark, isDataArray } from './Mark.js';
+import { Mark, isDataArray, type Encodings, type Reqs } from './Mark.js';
+import type { Table } from '@uwdata/flechette';
 
 // default geometry column created by st_read
 // warning: if another "geom" column exists this default
@@ -7,7 +8,7 @@ import { Mark, isDataArray } from './Mark.js';
 const DEFAULT_GEOMETRY_COLUMN = 'geom';
 
 export class GeoMark extends Mark {
-  constructor(source, encodings = {}, reqs) {
+  constructor(source: any, encodings: Encodings = {}, reqs: Reqs = {}) {
     if (!isDataArray(source) && !encodings?.geometry) {
       // if issuing queries and no geometry channel specified
       // then request default geometry column as GeoJSON
@@ -17,7 +18,7 @@ export class GeoMark extends Mark {
     super('geo', source, encodings, reqs);
   }
 
-  queryResult(data) {
+  queryResult(data: Table | Record<string, unknown>[]): this {
     super.queryResult(data); // map to columns, set this.data
 
     // look for an explicit geometry field
