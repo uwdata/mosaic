@@ -1,41 +1,35 @@
+import type { Arrayish } from '@uwdata/mosaic-core';
 import { InternSet, ascending } from 'd3';
-
-/**
- * @typedef {any[] | Int8Array | Uint8Array | Uint8ClampedArray
- *  | Int16Array | Uint16Array | Int32Array | Uint32Array
- *  | Float32Array | Float64Array
- * } Arrayish - an Array or TypedArray
- */
+import * as ObPlot from '@observablehq/plot';
 
 /**
  * Generate a new array with designated size and type.
- * @param {number} size The size of the array
- * @param {Arrayish} [proto] A prototype object of the desired array type.
+ * @param size The size of the array
+ * @param proto A prototype object of the desired array type.
  *  This may be a typed array or standard array (the default).
- * @returns {Arrayish} The generated array.
+ * @returns The generated array.
  */
-export function array(size, proto = []) {
+export function array(size: number, proto: Arrayish = []): Arrayish {
   // @ts-expect-error dynamic instantiation
   return new proto.constructor(size);
 }
 
 /**
  * Create a 1D grid for the given sample values
- * @param {number} size The grid size.
- * @param {Arrayish} index The grid indices for sample points.
- * @param {Arrayish} value The sample point values.
- * @param {Record<string,Arrayish>} columns Named column arrays with groupby values.
- * @param {string[]} groupby The names of columns to group by.
- * @returns {{
- *  numRows: number;
- *  columns: { [key:string]: Arrayish }
- * }} Named column arrays of generated grid values.
+ * @param size The grid size.
+ * @param index The grid indices for sample points.
+ * @param value The sample point values.
+ * @param columns Named column arrays with groupby values.
+ * @param groupby The names of columns to group by.
+ * @returns Named column arrays of generated grid values.
  */
-export function grid1d(size, index, value, columns, groupby) {
+export function grid1d(size: number, index: Arrayish, value: Arrayish, columns: Record<string, Arrayish>, groupby: string[]): {
+  numRows: number;
+  columns: { [key: string]: Arrayish; };
+} {
   if (!index?.length) return { numRows: 0, columns: {} };
   const numRows = index.length;
-  /** @type {{ [key:string]: Arrayish }} */
-  const result = {};
+  const result: { [key: string]: Arrayish; } = {};
   const cells = [];
 
   // if grouped, generate per-row group indices
@@ -45,6 +39,7 @@ export function grid1d(size, index, value, columns, groupby) {
     const cellMap = {};
     for (let row = 0; row < numRows; ++row) {
       const key = gvalues.map(group => group[row]);
+      //@ts-expect-error Type 'unknown[]' cannot be used as an index type.
       group[row] = cellMap[key] ??= cells.push(key) - 1;
     }
     for (let i = 0; i < groupby.length; ++i) {
@@ -52,12 +47,14 @@ export function grid1d(size, index, value, columns, groupby) {
     }
     const G = result._grid = cells.map(() => array(size, value));
     for (let row = 0; row < numRows; ++row) {
+      //@ts-expect-error Type 'unknown' cannot be used as an index type.
       G[group[row]][index[row]] = value[row];
     }
   } else {
     cells.push([]); // single group
-    const [G] = result._grid = [array(size, value)]
+    const [G] = result._grid = [array(size, value)];
     for (let row = 0; row < numRows; ++row) {
+      //@ts-expect-error Type 'unknown' cannot be used as an index type.
       G[index[row]] = value[row];
     }
   }
@@ -68,27 +65,26 @@ export function grid1d(size, index, value, columns, groupby) {
 /**
  * Create a 2D grid for the given sample values.
  * Can handle multiple grids and groupby values per output row.
- * @param {number} w The grid width.
- * @param {number} h The grid height.
- * @param {Arrayish} index The grid indices for sample points.
+ * @param w The grid width.
+ * @param h The grid height.
+ * @param index The grid indices for sample points.
  *  An index value is an integer of the form (y * w + x).
- * @param {Record<string,Arrayish>} columns Named column arrays with sample point values.
- * @param {string[]} aggregates The names of aggregate columns to grid.
- * @param {string[]} groupby The names of additional columns to group by.
- * @param {function} [interpolate] A grid interpolation function.
+ * @param columns Named column arrays with sample point values.
+ * @param aggregates The names of aggregate columns to grid.
+ * @param groupby The names of additional columns to group by.
+ * @param interpolate A grid interpolation function.
  *  By default sample values are directly copied to output grid arrays.
- * @returns {{
- *  numRows: number;
- *  columns: { [key:string]: Arrayish }
- * }} Named column arrays of generated grid values.
+ * @returns Named column arrays of generated grid values.
  */
-export function grid2d(w, h, index, columns, aggregates, groupby, interpolate) {
+export function grid2d(w: number, h: number, index: Arrayish, columns: Record<string, Arrayish>, aggregates: string[], groupby: string[], interpolate: ObPlot.RasterInterpolateFunction): {
+  numRows: number;
+  columns: { [key: string]: Arrayish; };
+} {
   if (!index?.length) return { numRows: 0, columns: {} };
   const numRows = index.length;
   const size = w * h;
   const values = aggregates.map(name => columns[name]);
-  /** @type {{ [key:string]: Arrayish }} */
-  const result = {};
+  const result: { [key: string]: Arrayish; } = {};
   const cells = [];
   const group = new Int32Array(numRows);
 
@@ -98,6 +94,7 @@ export function grid2d(w, h, index, columns, aggregates, groupby, interpolate) {
     const cellMap = {};
     for (let row = 0; row < numRows; ++row) {
       const key = gvalues.map(group => group[row]);
+      //@ts-expect-error Type 'unknown[]' cannot be used as an index type.
       group[row] = cellMap[key] ??= cells.push(key) - 1;
     }
     for (let i = 0; i < groupby.length; ++i) {
@@ -117,7 +114,7 @@ export function grid2d(w, h, index, columns, aggregates, groupby, interpolate) {
     }
     aggregates.forEach((name, i) => {
       const V = values[i];
-      result[name] = cells.map((_, j) => interpolate(I[j], w, h, X, Y, V));
+      result[name] = cells.map((_, j) => interpolate(I[j], w, h, X as number[], Y as number[], V as number[]));
     });
   } else {
     // no interpolation, copy values directly to grids
@@ -125,6 +122,7 @@ export function grid2d(w, h, index, columns, aggregates, groupby, interpolate) {
       const V = values[i];
       const G = result[name] = cells.map(() => array(size, V));
       for (let row = 0; row < numRows; ++row) {
+        //@ts-expect-error Type 'unknown' cannot be used as an index type.
         G[group[row]][index[row]] = V[row];
       }
     });

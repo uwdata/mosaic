@@ -12,9 +12,7 @@ import { Transform } from '../symbols.js';
 import type { Plot } from '../plot.js';
 import type { MarkType, ChannelName } from '../types.js';
 
-
-
-type EncodingName = ChannelName | ConstantOption | 'orderby'; // (uwdata/mosaic#266)
+export type EncodingName = ChannelName | ConstantOption | 'orderby'; // (uwdata/mosaic#266)
 export type Encodings = { [name in EncodingName]?: any };
 type Reqs = { [name in EncodingName]?: mc.Stat[] };
 
@@ -29,6 +27,7 @@ interface Entry {
   value?: any;
   field?: Field;
   as?: string;
+  column?: mc.FieldInfo['column'];
   type?: mc.FieldInfo['type'];
   count?: mc.FieldInfo['count'];
   min?: mc.FieldInfo['min'];

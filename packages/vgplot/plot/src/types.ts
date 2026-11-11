@@ -59,3 +59,4 @@ export type ChannelName =
   | 'color';
 
 export type FixedType = typeof Fixed;
+export type CanParam<T> = T | mc.Param<T>;
