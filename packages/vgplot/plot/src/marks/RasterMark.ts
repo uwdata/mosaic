@@ -4,8 +4,13 @@ import { gridDomainContinuous, gridDomainDiscrete } from './util/grid.js';
 import { isColor } from './util/is-color.js';
 import { indices, permute } from './util/permute.js';
 import { alphaScheme, alphaConstant, colorConstant, colorCategory, colorScheme, createCanvas } from './util/raster.js';
-import { DENSITY, Grid2DMark } from './Grid2DMark.js';
+import { DENSITY, Grid2DMark, type Grid2DOptions } from './Grid2DMark.js';
 import { Fixed, Transient } from '../symbols.js';
+import type { Plot } from '../plot.js';
+import type { PlotMarkSpec } from './Mark.js';
+import type * as ObPlot from '@observablehq/plot';
+
+type Image = { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; img: ImageData; w: number; h: number; };
 
 /**
  * Raster image mark. Data is binned to a grid based on the x and y options.
@@ -19,24 +24,26 @@ import { Fixed, Transient } from '../symbols.js';
  * the bandwidth option.
  */
 export class RasterMark extends Grid2DMark {
-  constructor(source, options) {
+  image: Image | null;
+  constructor(source: any, options: Grid2DOptions) {
     super('image', source, options);
     this.image = null;
   }
 
-  setPlot(plot, index) {
+  setPlot(plot: Plot, index: number): void {
     const update = () => { if (this.hasFieldInfo()) this.rasterize(); };
+    // @ts-expect-error 'schemeColor' is not defined in the spec?
     plot.addAttributeListener('schemeColor', update);
     super.setPlot(plot, index);
   }
 
-  convolve() {
+  convolve(): this {
     return super.convolve().rasterize();
   }
 
-  rasterize() {
+  rasterize(): this {
     const { bins, grids } = this;
-    const [ w, h ] = bins;
+    const [w, h] = bins;
     const { numRows, columns } = grids;
 
     // raster data
@@ -68,7 +75,7 @@ export class RasterMark extends Grid2DMark {
     return this;
   }
 
-  plotSpecs() {
+  plotSpecs(): PlotMarkSpec[] {
     // @ts-expect-error Correct the data column type
     const { type, plot, data: { numRows: length, columns } } = this;
     const options = {
@@ -76,6 +83,7 @@ export class RasterMark extends Grid2DMark {
       width: plot.innerWidth(),
       height: plot.innerHeight(),
       preserveAspectRatio: 'none',
+      //@ts-expect-error Argument of type '"imageRendering"' is not assignable to parameter of type 'ChannelName'.
       imageRendering: this.channel('imageRendering')?.value,
       frameAnchor: 'middle'
     };
@@ -89,7 +97,7 @@ export class RasterMark extends Grid2DMark {
  * accurate binning and smoothing for density estimation.
  */
 export class HeatmapMark extends RasterMark {
-  constructor(source, options) {
+  constructor(source: any, options: Grid2DOptions) {
     super(source, {
       bandwidth: 20,
       interpolate: 'linear',
@@ -102,9 +110,8 @@ export class HeatmapMark extends RasterMark {
 /**
  * Utility method to generate color and alpha encoding helpers.
  * The returned methods can write directly to a pixel raster.
- * @param {RasterMark} mark
  */
-export function rasterEncoding(mark) {
+export function rasterEncoding(mark: RasterMark): { alphaProp: string; colorProp: string; alpha: (data: any, w: any, h: any, grid: any) => void; color: (data: any, w: any, h: any, grid: any) => void; } {
   const { aggr, densityMap, groupby, plot } = mark;
   const hasDensity = aggr.includes(DENSITY);
   const hasFillOpacity = aggr.includes('fillOpacity');
@@ -122,15 +129,15 @@ export function rasterEncoding(mark) {
   // determine fill encoding channel use
   const fill = densityMap.fill || aggr.includes('fill') ? 'grid'
     : groupby.includes(fillEntry?.as) ? 'group' // groupby
-    : isColor(fillEntry?.value) ? fillEntry.value // constant
-    : hasDensity && plot.getAttribute('colorScheme') ? 'grid'
-    : undefined;
+      : isColor(fillEntry?.value) ? fillEntry.value // constant
+        : hasDensity && plot.getAttribute('colorScheme') ? 'grid'
+          : undefined;
 
   // determine fill opacity encoding channel use
   const opac = densityMap.fillOpacity || aggr.includes('fillOpacity') ? 'grid'
     : typeof opacEntry?.value === 'number' ? opacEntry.value // constant
-    : hasDensity && fill !== 'grid' ? 'grid'
-    : undefined;
+      : hasDensity && fill !== 'grid' ? 'grid'
+        : undefined;
 
   if (fill !== 'grid' && opac !== 'grid') {
     // TODO: use a threshold-based encoding?
@@ -151,11 +158,11 @@ export function rasterEncoding(mark) {
 
 /**
  * Generate an opacity rasterizer for a bitmap alpha channel.
- * @param {RasterMark} mark The mark instance
- * @param {string} prop The data property name
+ * @param mark The mark instance
+ * @param prop The data property name
  * @returns A bitmap rasterizer function.
  */
-function alphaScale(mark, prop) {
+function alphaScale(mark: RasterMark, prop: string): (data: any, w: any, h: any, grid: any) => void {
   const { plot, grids } = mark;
 
   // determine scale domain
@@ -189,13 +196,14 @@ function alphaScale(mark, prop) {
 
 /**
  * Generate an color rasterizer for bitmap r, g, b channels.
- * @param {RasterMark} mark The mark instance
- * @param {string} prop
+ * @param mark The mark instance
+ * @param prop
  * @returns A bitmap rasterizer function.
  */
-function colorScale(mark, prop) {
+function colorScale(mark: RasterMark, prop: string): (data: any, w: any, h: any, grid: any) => void {
   const { plot, grids } = mark;
   const data = grids.columns[prop] ?? [];
+  //@ts-expect-error Property 'map' does not exist on type 'unknown'.
   const flat = !data[0]?.map; // not array-like
   const discrete = flat || Array.isArray(data[0]);
 
@@ -206,7 +214,7 @@ function colorScale(mark, prop) {
   const domain = (!domainFixed && !domainTransient && domainAttr) || (
     flat ? data.slice().sort(ascending)
       : discrete ? gridDomainDiscrete(data)
-      : gridDomainContinuous(data)
+        : gridDomainContinuous(data)
   );
   if (domainFixed || domainTransient || !domainAttr) {
     if (!domainFixed) domain[Transient] = true;
@@ -256,7 +264,7 @@ function colorScale(mark, prop) {
   }
 }
 
-function inferScaleType(type) {
+function inferScaleType(type: ObPlot.ScaleType): ObPlot.ScaleType {
   if (type.endsWith('symlog')) return 'symlog';
   if (type.endsWith('log')) return 'log';
   if (type.endsWith('pow')) return 'pow';
@@ -269,12 +277,12 @@ function inferScaleType(type) {
  * Retrieve canvas image data for a 2D raster bitmap.
  * The resulting data is cached in the mark.image property.
  * If the canvas dimensions change, a new canvas is created.
- * @param {RasterMark} mark The mark instance
- * @param {number} w The canvas width.
- * @param {number} h The canvas height.
+ * @param mark The mark instance
+ * @param w The canvas width.
+ * @param h The canvas height.
  * @returns An object with a canvas, context, image data, and dimensions.
  */
-export function imageData(mark, w, h) {
+export function imageData(mark: RasterMark, w: number, h: number): Image {
   if (!mark.image || mark.image.w !== w || mark.image.h !== h) {
     const canvas = createCanvas(w, h);
     const ctx = canvas.getContext('2d', { willReadFrequently: true });

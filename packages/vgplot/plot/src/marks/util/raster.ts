@@ -1,4 +1,4 @@
-import { rgb } from 'd3';
+import { rgb, type RGBColor } from 'd3';
 
 export function createCanvas(w, h) {
   if (typeof document !== 'undefined') {
@@ -36,7 +36,7 @@ export function alphaScheme(scale) {
   };
 }
 
-export function colorConstant(v = {}) {
+export function colorConstant(v: string | Partial<RGBColor> = {}): (data: any, w: any, h: any) => void {
   const { r = 0, g = 0, b = 0, opacity = 1 } = typeof v === 'string' ? rgb(v) : v;
   const c = new Uint8ClampedArray([r, g, b, (255 * opacity) | 0]);
 
