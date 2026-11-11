@@ -3,12 +3,23 @@ import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-
 import { binExpr } from './util/bin-expr.js';
 import { extentX, extentY } from './util/extent.js';
 import { indices, permute } from './util/permute.js';
-import { createCanvas } from './util/raster.js';
-import { Grid2DMark } from './Grid2DMark.js';
-import { rasterEncoding } from './RasterMark.js';
+import { Grid2DMark, type Grid2DOptions } from './Grid2DMark.js';
+import { imageData, rasterEncoding, Image } from './RasterMark.js';
+import type { Plot } from '../plot.js';
+import type * as msql from '@uwdata/mosaic-sql';
+import type { PlotMarkSpec } from './Mark.js';
+import type { Table } from '@uwdata/flechette';
+
+type RasterTileOptions = Grid2DOptions & { origin?: [number, number]; dim?: 'x' | 'y' | 'xy'; };
 
 export class RasterTileMark extends Grid2DMark {
-  constructor(source, options) {
+  image: Image | null;
+  origin: [number, number];
+  tileX: boolean;
+  tileY: boolean;
+  _filter: msql.FilterExpr;
+  prefetch: any;
+  constructor(source: any, options: RasterTileOptions) {
     const { origin = [0, 0], dim = 'xy', ...markOptions } = options;
     super('image', source, markOptions);
     this.image = null;
@@ -19,23 +30,24 @@ export class RasterTileMark extends Grid2DMark {
     this.tileY = dim.toLowerCase().includes('y');
   }
 
-  setPlot(plot, index) {
+  setPlot(plot: Plot, index: number): void {
     const update = () => { if (this.hasFieldInfo()) this.rasterize(); };
+    // @ts-expect-error 'schemeColor' is not defined in the spec?
     plot.addAttributeListener('schemeColor', update);
     super.setPlot(plot, index);
   }
 
-  requestQuery() {
+  requestQuery(): Promise<void> {
     return this.requestTiles();
   }
 
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): null {
     this._filter = filter;
     // we will submit our own queries
     return null;
   }
 
-  tileQuery(extent) {
+  tileQuery(extent: number[][]) {
     const { interpolate, pad, channels, densityMap } = this;
     const [[x0, x1], [y0, y1]] = extent;
     const [nx, ny] = this.bins;
@@ -52,20 +64,24 @@ export class RasterTileMark extends Grid2DMark {
       .from(this.sourceTable())
       .where(bounds);
 
-    const groupby = this.groupby = [];
-    const aggrMap = {};
+    const groupby: string[] = this.groupby = [];
+    const aggrMap: Record<string, msql.ExprNode> = {};
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
         const { as, channel, field } = c;
+        //@ts-expect-error Property 'aggregate' does not exist on type 'string'
         if (field.aggregate) {
           // include custom aggregate
+          //@ts-expect-error Type 'string' is not assignable to type 'SQLNode'.
           aggrMap[channel] = field;
           densityMap[channel] = true;
         } else if (channel === 'weight') {
           // compute weighted density
+          // @ts-expect-error Type '{ stats?: { stats?: Stat[]; column?: FieldRef; }; basis?: unknown; }' is not assignable to type 'ExprValue'.
           aggrMap.density = sum(field);
         } else if (channel !== 'x' && channel !== 'y') {
           // add groupby field
+          //@ts-expect-error Type '{ [x: string]: Field; }' is not assignable to type 'string'.
           q.select({ [as]: field });
           groupby.push(as);
         }
@@ -98,7 +114,7 @@ export class RasterTileMark extends Grid2DMark {
     }
   }
 
-  async requestTiles() {
+  async requestTiles(): Promise<void> {
     // get coordinator, cancel prior prefetch queries
     const mc = coordinator();
     if (this.prefetch) mc.cancel(this.prefetch);
@@ -113,7 +129,7 @@ export class RasterTileMark extends Grid2DMark {
     const xx = Math.floor((x0 - tx) * (m - pad) / xspan);
     const yy = Math.floor((y0 - ty) * (n - pad) / yspan);
 
-    const tileExtent = (i, j) => [
+    const tileExtent = (i: number, j: number) => [
       [tx + i * xspan, tx + (i + 1) * xspan],
       [ty + j * yspan, ty + (j + 1) * yspan]
     ];
@@ -125,7 +141,7 @@ export class RasterTileMark extends Grid2DMark {
     const j1 = tileY ? tileFloor((y1 - ty) / yspan) : j0;
 
     // query for currently needed data tiles
-    const coords = [];
+    const coords: number[][] = [];
     for (let i = i0; i <= i1; ++i) {
       for (let j = j0; j <= j1; ++j) {
         coords.push([i, j]);
@@ -165,13 +181,13 @@ export class RasterTileMark extends Grid2DMark {
     this.convolve().update();
   }
 
-  convolve() {
+  convolve(): this {
     return super.convolve().rasterize();
   }
 
-  rasterize() {
+  rasterize(): this {
     const { bins, grids } = this;
-    const [ w, h ] = bins;
+    const [w, h] = bins;
     const { numRows, columns } = grids;
 
     // raster data
@@ -203,7 +219,7 @@ export class RasterTileMark extends Grid2DMark {
     return this;
   }
 
-  plotSpecs() {
+  plotSpecs(): PlotMarkSpec[] {
     // @ts-expect-error Correct the data column type
     const { type, plot, data: { numRows: length, columns } } = this;
     const options = {
@@ -211,6 +227,7 @@ export class RasterTileMark extends Grid2DMark {
       width: plot.innerWidth(),
       height: plot.innerHeight(),
       preserveAspectRatio: 'none',
+      //@ts-expect-error Argument of type '"imageRendering"' is not assignable to parameter of type 'ChannelName'.
       imageRendering: this.channel('imageRendering')?.value,
       frameAnchor: 'middle'
     };
@@ -218,7 +235,7 @@ export class RasterTileMark extends Grid2DMark {
   }
 }
 
-function processTiles(m, n, x, y, coords, tiles) {
+function processTiles(m: number, n: number, x: number, y: number, coords: number[][], tiles: Table[]): Float64Array<ArrayBuffer> {
   const grid = new Float64Array(m * n);
   tiles.forEach((data, index) => {
     const [i, j] = coords[index];
@@ -229,7 +246,7 @@ function processTiles(m, n, x, y, coords, tiles) {
   return grid;
 }
 
-function copy(m, n, grid, values, tx, ty) {
+function copy(m: number, n: number, grid: Float64Array<ArrayBuffer>, values: Table, tx: number, ty: number): void {
   // index = row + col * width
   const num = values.numRows;
   if (num === 0) return;
@@ -245,17 +262,7 @@ function copy(m, n, grid, values, tx, ty) {
   }
 }
 
-function imageData(mark, w, h) {
-  if (!mark.image || mark.image.w !== w || mark.image.h !== h) {
-    const canvas = createCanvas(w, h);
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const img = ctx.getImageData(0, 0, w, h);
-    mark.image = { canvas, ctx, img, w, h };
-  }
-  return mark.image;
-}
-
-function bin2d(q, xp, yp, aggs, xn, groupby) {
+function bin2d(q: msql.SelectQuery, xp: msql.ExprValue, yp: msql.ExprValue, aggs: Record<string, msql.ExprNode>, xn: number, groupby: string[]): msql.SelectQuery {
   return q
     .select({
       index: sql`FLOOR(${xp})::INTEGER + FLOOR(${yp})::INTEGER * ${xn}`,
@@ -264,7 +271,8 @@ function bin2d(q, xp, yp, aggs, xn, groupby) {
     .groupby('index', groupby);
 }
 
-function binLinear2d(q, xp, yp, value, xn, groupby) {
+function binLinear2d(q: msql.SelectQuery, xp: msql.ExprValue, yp: msql.ExprValue, value: msql.ExprNode, xn: number, groupby: string[]): msql.SelectQuery {
+  //@ts-expect-error Property 'column' does not exist on type 'ExprNode'.
   const w = value.column ? `* ${value.column}` : '';
   const subq = (i, w) => q.clone().select({ xp, yp, i, w });
 
@@ -299,7 +307,7 @@ function binLinear2d(q, xp, yp, value, xn, groupby) {
     .having(neq('density', 0));
 }
 
-function tileFloor(value) {
+function tileFloor(value: number): number {
   const floored = Math.floor(value);
   return floored === value ? floored - 1 : floored;
 }
