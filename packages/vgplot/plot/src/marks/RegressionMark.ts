@@ -6,32 +6,39 @@ import {
   regrSYY, regrSXX, regrAvgX
 } from '@uwdata/mosaic-sql';
 import { qt } from './util/stats.js';
-import { Mark, channelOption } from './Mark.js';
+import { Mark, channelOption, type Encodings, type PlotMarkSpec } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
+import type * as msql from '@uwdata/mosaic-sql';
+import type * as mc from '@uwdata/mosaic-core';
 
 export class RegressionMark extends Mark {
-  constructor(source, options) {
+  modelFit?: mc.DataColumns;
+  ci: number;
+  precision: number;
+  lineData: { numRows: any; columns: any; };
+  areaData: { numRows: number; columns: { x: any[]; y1: any[]; y2: any[]; }; };
+  constructor(source: any, options) {
     const { ci = 0.95, precision = 4, ...channels } = options;
     super('line', source, channels);
 
     const update = () => this.modelFit ? this.confidenceBand().update() : null;
 
-    /** @type {number} */
+
     this.ci = handleParam(ci, value => {
       return (this.ci = value, update());
     });
 
-    /** @type {number} */
+
     this.precision = handleParam(precision, value => {
       return (this.precision = value, update());
     });
   }
 
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery {
     const x = this.channelField('x').as;
     const y = this.channelField('y').as;
     const groupby = Array.from(new Set(
-      ['stroke', 'z', 'fx', 'fy'].flatMap(c => this.channelField(c)?.as || [])
+      (['stroke', 'z', 'fx', 'fy'] as const).flatMap(c => this.channelField(c)?.as || [])
     ));
 
     return Query
@@ -50,7 +57,7 @@ export class RegressionMark extends Mark {
       .groupby(groupby);
   }
 
-  queryResult(data) {
+  queryResult(data: unknown): this {
     this.modelFit = toDataColumns(data);
 
     // regression line
@@ -60,7 +67,7 @@ export class RegressionMark extends Mark {
     return this.confidenceBand();
   }
 
-  confidenceBand() {
+  confidenceBand(): this {
     // regression ci area
     const { ci, modelFit, precision, plot } = this;
     const width = plot.innerWidth();
@@ -68,12 +75,12 @@ export class RegressionMark extends Mark {
     return this;
   }
 
-  plotSpecs() {
+  plotSpecs(): PlotMarkSpec[] {
     const { lineData, areaData, channels, ci } = this;
     const lcols = lineData.columns;
-    const acols = ci ? areaData.columns : {};
-    const lopt = { x: lcols.x, y: lcols.y };
-    const aopt = { x: acols.x, y1: acols.y1, y2: acols.y2, fillOpacity: 0.1 };
+    const acols: Partial<(typeof areaData.columns)> = ci ? areaData.columns : {};
+    const lopt: Encodings = { x: lcols.x, y: lcols.y };
+    const aopt: Encodings = { x: acols.x, y1: acols.y1, y2: acols.y2, fillOpacity: 0.1 };
 
     for (const c of channels) {
       switch (c.channel) {
@@ -102,8 +109,8 @@ export class RegressionMark extends Mark {
     }
 
     return [
-      ...(ci ? [{ type: 'areaY', data: { length: areaData.numRows }, options: aopt }] : []),
-      { type: 'line', data: { length: lineData.numRows }, options: lopt }
+      ...(ci ? [{ type: 'areaY' as const, data: { length: areaData.numRows }, options: aopt }] : []),
+      { type: 'line' as const, data: { length: lineData.numRows }, options: lopt }
     ];
   }
 }
@@ -117,7 +124,7 @@ function concat(a, b) {
 }
 
 function linePoints(fit) {
-   
+
   const { x0 = [], x1 = [], xm, intercept, slope, n, ssx, ssy, ...rest } = fit.columns;
   const predict = (x, i) => intercept[i] + x * slope[i];
   const x = concat(x0, x1);
@@ -128,8 +135,9 @@ function linePoints(fit) {
   return { numRows: x.length, columns: { x, y, ...rest } };
 }
 
-export function areaPoints(fit, ci, precision, width) {
+export function areaPoints(fit: mc.DataColumns, ci: number, precision: number, width: number): { numRows: number; columns: { x: any[]; y1: any[]; y2: any[]; }; } {
   const len = fit.numRows;
+  //@ts-expect-error  Property 'columns' does not exist on type '{ numRows: number; values: Arrayish; }'.
   const { x0, x1, xm, intercept, slope, n, ssx, ssy, ...rest } = fit.columns;
   const other = Object.keys(rest);
   const columns = { x: [], y1: [], y2: [] };
