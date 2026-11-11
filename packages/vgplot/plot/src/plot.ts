@@ -93,6 +93,7 @@ export class Plot {
     this.synch.resolve();
   }
 
+  // TODO @dangotbanned: use `name: AttrName` after making all usage static
   /**
    * @param name The attribute to return.
    * @returns The value of the attribute.

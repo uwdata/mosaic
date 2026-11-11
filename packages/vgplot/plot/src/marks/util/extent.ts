@@ -1,15 +1,24 @@
 import { scaleLinear } from 'd3';
 import { Fixed, Transient } from '../../symbols.js';
 import { BetweenOpNode, walk } from '@uwdata/mosaic-sql';
+import type { Mark } from '../Mark.js';
+import type * as msql from '@uwdata/mosaic-sql';
+import type { ChannelName, FixedType } from '../../types.js';
 
-export const xext = { x: ['min', 'max'] };
-export const yext = { y: ['min', 'max'] };
-export const xyext = { ...xext, ...yext };
+export const xext = { x: ['min', 'max'] } as const;
+export const yext = { y: ['min', 'max'] } as const;
+/** TODO @dangotbanned Investigate shared state `xyext`
+ *
+ * - appears to be shared by all *instances* of `Grid2DMark` & `HexbinMark`.
+ * - Passed to `Mark.reqs`, which is not `readonly`
+ */
+export const xyext = { ...xext, ...yext } as const;
 
-export function plotExtent(mark, filter, channel, domainAttr, niceAttr) {
+// TODO @dangotbanned: Remove `{domain,nice}Attr`, `extentX`, `extentY` and replace all calls with `plotExtent(mark, filter, 'x' | 'y')
+export function plotExtent(mark: Mark, filter: msql.FilterExpr, channel: 'x' | 'y', domainAttr: 'xDomain' | 'yDomain', niceAttr: 'xNice' | 'yNice'): any[] {
   const { plot } = mark;
-  const domain = plot.getAttribute(domainAttr);
-  const nice = plot.getAttribute(niceAttr);
+  const domain: any[] | FixedType | undefined = plot.getAttribute(domainAttr);
+  const nice: boolean | string | number | undefined = plot.getAttribute(niceAttr);
 
   if (Array.isArray(domain) && !domain[Transient]) {
     return domain;
@@ -24,15 +33,15 @@ export function plotExtent(mark, filter, channel, domainAttr, niceAttr) {
   }
 }
 
-export function extentX(mark, filter) {
+export function extentX(mark: Mark, filter: msql.FilterExpr): any[] {
   return plotExtent(mark, filter, 'x', 'xDomain', 'xNice');
 }
 
-export function extentY(mark, filter) {
+export function extentY(mark: Mark, filter: msql.FilterExpr): any[] {
   return plotExtent(mark, filter, 'y', 'yDomain', 'yNice');
 }
 
-export function filteredExtent(filter, column) {
+export function filteredExtent(filter: msql.FilterExpr, column: string | undefined): any[] | undefined {
   if (!filter) return;
 
   let lo;
