@@ -218,8 +218,8 @@ export class Mark extends MosaicClient implements InteractorMark {
     return c?.field ? c : null;
   }
 
-  async prepare(): Promise<null | undefined> {
-    if (this.hasOwnData()) return null;
+  async prepare(): Promise<void> {
+    if (this.hasOwnData()) return;
 
     const { channels, reqs } = this;
     const fields = new Map<any, Set<mc.Stat>>();
