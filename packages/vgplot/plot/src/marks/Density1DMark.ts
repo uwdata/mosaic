@@ -1,18 +1,39 @@
 import { toDataColumns } from '@uwdata/mosaic-core';
 import { binLinear1d, isBetween } from '@uwdata/mosaic-sql';
-import { max, sum } from 'd3';
+import { max, sum, type Numeric } from 'd3';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv1d } from './util/density.js';
 import { extentX, extentY, xext, yext } from './util/extent.js';
 import { grid1d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
-import { Mark, channelOption, markQuery } from './Mark.js';
+import { Mark, channelOption, markQuery, type PlotMarkSpec } from './Mark.js';
+import type * as msql from '@uwdata/mosaic-sql';
+import type { CanParam } from '../types.js';
 
 const GROUPBY = { fill: 1, stroke: 1, z: 1 };
 
+type DensityType = 'dot' | 'dotY' | 'circle' | 'hexagon' | 'textX' | 'text' | 'textY' | 'areaX' | 'areaY' | 'lineX' | 'lineY' | 'dotX';
+type Normalize = boolean | 'max' | 'sum' | 'none';
+
+interface Density1DOptions {
+  bins?: CanParam<number>;
+  bandwidth?: CanParam<number>;
+  normalize?: CanParam<Normalize>;
+  stack?: CanParam<boolean>;
+  [x: string]: any;
+}
+
 export class Density1DMark extends Mark {
-  constructor(type, source, options) {
+  dim: 'x' | 'y';
+  bins: number;
+  bandwidth: number;
+  grids: any;
+  normalize: Normalize;
+  stack: boolean;
+  extent?: any[];
+  groupby?: any[];
+  constructor(type: DensityType, source: any, options: Density1DOptions) {
     const {
       bins = 1024,
       bandwidth = 20,
@@ -21,41 +42,40 @@ export class Density1DMark extends Mark {
       ...channels
     } = options;
     const dim = type.endsWith('X') ? 'y' : 'x';
-
+    //@ts-expect-error The type 'readonly ["min", "max"]' is 'readonly' and cannot be assigned to the mutable type 'Stat[]'
     super(type, source, channels, dim === 'x' ? xext : yext);
     this.dim = dim;
 
-    /** @type {number} */
+
     this.bins = handleParam(bins, value => {
       return (this.bins = value, this.requestUpdate());
     });
 
-    /** @type {number} */
     this.bandwidth = handleParam(bandwidth, value => {
       this.bandwidth = value;
       return this.grids ? this.convolve().update() : null;
     });
 
-    /** @type {string | boolean} */
     this.normalize = handleParam(normalize, value => {
       return (this.normalize = value, this.convolve().update());
     });
 
-    /** @type {boolean} */
+
     this.stack = handleParam(stack, value => {
       return (this.stack = value, this.update());
     });
   }
 
-  get filterStable() {
+  get filterStable(): boolean {
     const name = this.dim === 'x' ? 'xDomain' : 'yDomain';
     const dom = this.plot.getAttribute(name);
     return dom && !dom[Transient];
   }
 
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery {
     if (this.hasOwnData()) throw new Error('Density1DMark requires a data source');
     const { bins, channels, dim } = this;
+    filter = [filter].flat();
     const extent = this.extent = (dim === 'x' ? extentX : extentY)(this, filter);
     const [x, bx] = binExpr(this, dim, bins, extent);
     const q = markQuery(channels, this.sourceTable(), [dim])
@@ -67,14 +87,14 @@ export class Density1DMark extends Mark {
     return binLinear1d(q, x, v, g);
   }
 
-  queryResult(data) {
+  queryResult(data: unknown): this {
     // @ts-expect-error Correct the data column type
     const c = toDataColumns(data).columns;
     this.grids = grid1d(this.bins, c.index, c.density, c, this.groupby);
     return this.convolve();
   }
 
-  convolve() {
+  convolve(): this {
     const {
       bins, bandwidth, normalize, dim, grids, groupby, plot, extent: [lo, hi]
     } = this;
@@ -120,7 +140,7 @@ export class Density1DMark extends Mark {
     return this;
   }
 
-  plotSpecs() {
+  plotSpecs(): PlotMarkSpec[] {
     // @ts-expect-error Correct the data column type
     const { type, data: { numRows: length, columns }, channels, dim, stack } = this;
 
@@ -136,9 +156,9 @@ export class Density1DMark extends Mark {
   }
 }
 
-function norm(grid, smoothed, delta, type) {
+function norm(grid: Iterable<Numeric>, smoothed: Float64Array<any>, delta: number, type: Normalize): number {
   const value = type === true || type === 'sum' ? sum(grid)
     : type === 'max' ? max(smoothed)
-    : delta;
+      : delta;
   return value || 1;
 }
