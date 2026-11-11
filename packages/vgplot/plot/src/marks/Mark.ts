@@ -15,7 +15,7 @@ import type { MarkType, ChannelName } from '../types.js';
 
 
 type EncodingName = ChannelName | ConstantOption | 'orderby'; // (uwdata/mosaic#266)
-type Encodings = { [name in EncodingName]?: any };
+export type Encodings = { [name in EncodingName]?: any };
 type Reqs = { [name in EncodingName]?: mc.Stat[] };
 
 export type Field = { stats?: { stats?: mc.Stat[], column?: mc.FieldRef; }; basis?: unknown; } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode;
@@ -30,6 +30,7 @@ interface Entry {
   field?: Field;
   as?: string;
   type?: mc.FieldInfo['type'];
+  count?: mc.FieldInfo['count'];
   min?: mc.FieldInfo['min'];
   max?: mc.FieldInfo['max'];
   sqlType?: mc.FieldInfo['sqlType'];
