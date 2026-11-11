@@ -1,6 +1,6 @@
 import { ExprNode } from '@uwdata/mosaic-sql';
 import type * as mc from '@uwdata/mosaic-core';
-import * as ObPlot from '@observablehq/plot';
+import type * as ObPlot from '@observablehq/plot';
 import { interpolatorBarycentric, interpolateNearest, interpolatorRandomWalk } from '@observablehq/plot';
 import { toDataColumns } from '@uwdata/mosaic-core';
 import { Query, bin2d, binLinear2d, collectColumns, count, isAggregateExpression, isBetween, lt, lte, sum } from '@uwdata/mosaic-sql';
@@ -25,7 +25,7 @@ type GridInterpolate =
   | 'random-walk';
 
 
-interface Grid2DOptions {
+export interface Grid2DOptions {
   x?: unknown;
   y?: unknown;
   width?: CanParam<number>;
