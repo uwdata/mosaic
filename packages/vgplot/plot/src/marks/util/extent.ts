@@ -3,7 +3,7 @@ import { Fixed, Transient } from '../../symbols.js';
 import { BetweenOpNode, walk } from '@uwdata/mosaic-sql';
 import type { Mark } from '../Mark.js';
 import type * as msql from '@uwdata/mosaic-sql';
-import type { ChannelName, FixedType } from '../../types.js';
+import type { FixedType } from '../../types.js';
 
 export const xext = { x: ['min', 'max'] } as const;
 export const yext = { y: ['min', 'max'] } as const;
@@ -41,7 +41,7 @@ export function extentY(mark: Mark, filter: msql.FilterExpr): any[] {
   return plotExtent(mark, filter, 'y', 'yDomain', 'yNice');
 }
 
-export function filteredExtent(filter: msql.FilterExpr, column: string | undefined): any[] | undefined {
+export function filteredExtent(filter: msql.FilterExpr, column: any): any[] | undefined {
   if (!filter) return;
 
   let lo;
