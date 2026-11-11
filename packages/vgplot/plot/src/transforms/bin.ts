@@ -19,7 +19,7 @@ export function hasExtent(mark: Mark, channel: ChannelName): boolean {
 }
 
 export function bin(field: Column, options: Options = {}): BinReturn {
-  const fn: BinReturn = (mark: Mark, channel: ChannelName) => {
+  const fn = (mark: Mark, channel: ChannelName) => {
     if (hasExtent(mark, channel)) {
       return {
         [`${channel}1`]: binNode(mark, channel, field, options),
@@ -31,7 +31,7 @@ export function bin(field: Column, options: Options = {}): BinReturn {
       };
     }
   };
-  fn[Transform] = true;
+  fn[Transform] = true as const;
   return fn;
 }
 
