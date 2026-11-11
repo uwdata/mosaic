@@ -128,7 +128,7 @@ function createLegend(legend: Legend, svg: SVG): HTMLElement | SVGSVGElement {
   return el;
 }
 
-function getInteractor(legend: Legend, type: "swatch" | "ramp"): Toggle | Interval1D {
+function getInteractor(legend: Legend, type: 'swatch' | 'ramp'): Toggle | Interval1D {
   const { channel, handler, selection } = legend;
 
   // exit early if already instantiated
@@ -174,7 +174,7 @@ function interactorMark(legend: Legend): InteractorMark | undefined {
 }
 
 // search marks for a backing data field for the legend
-function findField(marks: Mark[], channel: "symbol" | "color" | "opacity"): Field | null {
+function findField(marks: Mark[], channel: 'symbol' | 'color' | 'opacity'): Field | null {
   const channels = channel === 'color' ? ['fill', 'stroke'] as const
     : channel === 'opacity' ? ['opacity', 'fillOpacity', 'strokeOpacity'] as const
       : null;
@@ -188,7 +188,7 @@ function findField(marks: Mark[], channel: "symbol" | "color" | "opacity"): Fiel
   return null;
 }
 
-type SupportedScale = "pow" | "sqrt" | "log" | "symlog" | "linear";
+type SupportedScale = 'pow' | 'sqrt' | 'log' | 'symlog' | 'linear';
 
 // generate a spatial scale to brush within color or opacity ramps
 function spatialScale(sourceScale: ObPlot.Scale, width: number): ObPlot.Scale | null {
