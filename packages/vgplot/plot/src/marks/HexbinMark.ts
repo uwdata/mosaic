@@ -3,33 +3,34 @@ import { Transient } from '../symbols.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { Mark } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
+import type * as msql from '@uwdata/mosaic-sql';
 
 export class HexbinMark extends Mark {
-  constructor(source, options) {
+  binWidth: number;
+  constructor(source: any, options) {
     const { type = 'hexagon', binWidth = 20, ...channels } = options;
     //@ts-expect-error (see `xyext` todo)
     super(type, source, { r: binWidth / 2, clip: true, ...channels }, xyext);
 
-    /** @type {number} */
     this.binWidth = handleParam(binWidth, value => {
       return (this.binWidth = value, this.requestUpdate());
     });
   }
 
-  get filterStable() {
+  get filterStable(): boolean {
     const xdom = this.plot.getAttribute('xDomain');
     const ydom = this.plot.getAttribute('yDomain');
     return xdom && ydom && !xdom[Transient] && !ydom[Transient];
   }
 
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery | null {
     if (this.hasOwnData()) return null;
     const { plot, binWidth, channels } = this;
 
     // Extract channel information, update top-level query
     // and extract dependent columns for aggregates
     let xc, yc;
-    const dims = new Set;
+    const dims = new Set<string>();
     const cols = {};
     for (const c of channels) {
       if (c.channel === 'orderby') {
@@ -41,6 +42,7 @@ export class HexbinMark extends Mark {
       } else if (Object.hasOwn(c, 'field')) {
         const { as, field } = c;
         cols[as] = field;
+        //@ts-expect-error Type 'string' is not assignable to type 'SQLNode'.
         if (!isAggregateExpression(field)) {
           dims.add(as);
         }
