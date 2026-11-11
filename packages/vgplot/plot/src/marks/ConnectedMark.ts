@@ -1,22 +1,20 @@
 import { m4 } from '@uwdata/mosaic-sql';
+import type * as msql from '@uwdata/mosaic-sql';
 import { binExpr } from './util/bin-expr.js';
 import { filteredExtent } from './util/extent.js';
-import { Mark } from './Mark.js';
+import { Mark, type Encodings } from './Mark.js';
+import type { MarkType } from '../types.js';
 
 export class ConnectedMark extends Mark {
-  constructor(type, source, encodings) {
+  public dim: 'x' | 'y' | null;
+  constructor(type: MarkType, source: any, encodings: Encodings = {}) {
     const dim = type.endsWith('X') ? 'y' : type.endsWith('Y') ? 'x' : null;
     const req = dim ? { [dim]: ['count', 'min', 'max'] } : undefined;
     super(type, source, encodings, req);
     this.dim = dim;
   }
 
-  /**
-   * Return a query specifying the data needed by this Mark client.
-   * @param {*} [filter] The filtering criteria to apply in the query.
-   * @returns {*} The client query
-   */
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery | null {
     const { plot, dim, source } = this;
     let optimize = source.options?.optimize;
     const q = super.query(filter);
@@ -28,7 +26,7 @@ export class ConnectedMark extends Mark {
     const isContinuous = type === 'date' || type === 'number';
 
     const plotSize = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
-    const size = Math.ceil(plotSize * (globalThis.devicePixelRatio || 1))
+    const size = Math.ceil(plotSize * (globalThis.devicePixelRatio || 1));
 
     optimize ??= (count / size) > 10; // threshold for applying M4
 
