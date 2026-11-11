@@ -73,7 +73,7 @@ export function isDataArray(source: unknown): source is any[] {
 }
 
 
-interface PlotMarkSpec {
+export interface PlotMarkSpec {
   type: MarkType;
   data: any;
   options: Record<string, any>;
