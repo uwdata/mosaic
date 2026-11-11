@@ -1,11 +1,16 @@
-import { contours } from 'd3';
+import { contours, type ContourMultiPolygon } from 'd3';
 import { gridDomainContinuous } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
-import { Grid2DMark } from './Grid2DMark.js';
-import { channelOption } from './Mark.js';
+import { Grid2DMark, type Grid2DOptions } from './Grid2DMark.js';
+import { channelOption, type EncodingName, type PlotMarkSpec } from './Mark.js';
+import type { CanParam } from '../types.js';
+
+type ContourOptions = Grid2DOptions & { thresholds?: CanParam<number | number[]>; };
 
 export class ContourMark extends Grid2DMark {
-  constructor(source, options) {
+  thresholds: number | number[];
+  contourData?: number[];
+  constructor(source: any, options: ContourOptions) {
     const { thresholds = 10, ...channels } = options;
     super('geo', source, {
       bandwidth: 20,
@@ -14,28 +19,27 @@ export class ContourMark extends Grid2DMark {
       ...channels
     });
 
-    /** @type {number|number[]} */
     this.thresholds = handleParam(thresholds, value => {
       this.thresholds = value;
       return this.grids ? this.contours().update() : null;
     });
   }
 
-  convolve() {
+  convolve(): this {
     return super.convolve().contours();
   }
 
-  contours() {
+  contours(): this {
     const { bins, densityMap, grids, thresholds, plot } = this;
     const { numRows, columns } = grids;
 
     const t = thresholds;
-    let tz;
+    let tz: number[];
     if (Array.isArray(t)) {
       tz = t;
     } else {
       const [, hi] = gridDomainContinuous(columns.density);
-      tz = Array.from({length: t - 1}, (_, i) => (hi * (i + 1)) / t);
+      tz = Array.from({ length: t - 1 }, (_, i) => (hi * (i + 1)) / t);
     }
 
     if (densityMap.fill || densityMap.stroke) {
@@ -62,8 +66,8 @@ export class ContourMark extends Grid2DMark {
     const { density, ...groupby } = columns;
     const groups = Object.entries(groupby);
     for (let i = 0, k = 0; i < numRows; ++i) {
-      const grid = density[i];
-      const rest = groups.reduce((o, [name, col]) => (o[name] = col[i], o), {});
+      const grid = density[i] as number[];
+      const rest = groups.reduce((o, [name, col]) => (o[name] = col[i], o), {} as Record<string, any>);
       for (let j = 0; j < tz.length; ++j, ++k) {
         // annotate contour geojson with cell groupby fields
         // d3-contour already adds a threshold "value" property
@@ -77,7 +81,7 @@ export class ContourMark extends Grid2DMark {
     return this;
   }
 
-  plotSpecs() {
+  plotSpecs(): PlotMarkSpec[] {
     const { type, channels, densityMap, contourData: data } = this;
     const options = {};
     for (const c of channels) {
@@ -90,22 +94,22 @@ export class ContourMark extends Grid2DMark {
     // here we ensure requested density values are encoded
     for (const channel in densityMap) {
       if (!densityMap[channel]) continue;
-      options[channel] = channelOption({ channel, as: 'value' });
+      options[channel] = channelOption({ channel: (channel as EncodingName), as: 'value' });
     }
     return [{ type, data, options }];
   }
 }
 
-function transform(geometry, x, y) {
-  function transformPolygon(coordinates) {
+function transform(geometry: ContourMultiPolygon, x: { (v: any): number; (arg0: any): any; }, y: { (v: any): number; (arg0: any): any; }): ContourMultiPolygon {
+  function transformPolygon(coordinates: number[][][]): void {
     coordinates.forEach(transformRing);
   }
 
-  function transformRing(coordinates) {
+  function transformRing(coordinates: number[][]): void {
     coordinates.forEach(transformPoint);
   }
 
-  function transformPoint(coordinates) {
+  function transformPoint(coordinates: number[]): void {
     coordinates[0] = x(coordinates[0]);
     coordinates[1] = y(coordinates[1]);
   }
