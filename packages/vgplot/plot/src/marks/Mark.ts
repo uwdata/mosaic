@@ -12,7 +12,7 @@ import { Transform } from '../symbols.js';
 import type { Plot } from '../plot.js';
 import type { MarkType, ChannelName } from '../types.js';
 
-export type EncodingName = ChannelName | ConstantOption | 'orderby'; // (uwdata/mosaic#266)
+export type EncodingName = ChannelName | 'tip' | ConstantOption | 'orderby'; // (uwdata/mosaic#266)
 export type Encodings = { [name in EncodingName]?: any };
 type Reqs = { [name in EncodingName]?: mc.Stat[] };
 
@@ -305,7 +305,7 @@ export class Mark extends MosaicClient implements InteractorMark {
  * @param columns named data column arrays
  * @returns the Plot channel option
  */
-export function channelOption(c: Entry, columns?: { [as: string]: string; }): { value: string, scale: 'color' | 'opacity'; } | string {
+export function channelOption(c: Entry, columns?: { [as: string]: any; }): { value: string, scale: 'color' | 'opacity'; } | string {
   // use a scale override for color channels to sidestep
   // https://github.com/observablehq/plot/issues/1593
   const value = columns?.[c.as] ?? c.as;
