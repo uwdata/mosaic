@@ -1,4 +1,6 @@
-/** @import { ExprNode } from '@uwdata/mosaic-sql' */
+import { ExprNode } from '@uwdata/mosaic-sql';
+import type * as mc from '@uwdata/mosaic-core';
+import * as ObPlot from '@observablehq/plot';
 import { interpolatorBarycentric, interpolateNearest, interpolatorRandomWalk } from '@observablehq/plot';
 import { toDataColumns } from '@uwdata/mosaic-core';
 import { Query, bin2d, binLinear2d, collectColumns, count, isAggregateExpression, isBetween, lt, lte, sum } from '@uwdata/mosaic-sql';
@@ -8,12 +10,50 @@ import { dericheConfig, dericheConv2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { grid2d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
-import { Mark } from './Mark.js';
+import { Mark, type Encodings } from './Mark.js';
+import type { Plot } from '../plot.js';
+import type * as msql from '@uwdata/mosaic-sql';
+import type { CanParam } from '../types.js';
 
 export const DENSITY = 'density';
 
+type GridInterpolate =
+  | 'none'
+  | 'linear'
+  | 'nearest'
+  | 'barycentric'
+  | 'random-walk';
+
+
+interface Grid2DOptions {
+  x?: unknown;
+  y?: unknown;
+  width?: CanParam<number>;
+  height?: CanParam<number>;
+  pixelSize?: CanParam<number>;
+  pad?: CanParam<number>;
+  bandwidth?: CanParam<number>;
+  interpolate?: CanParam<GridInterpolate | null>;
+}
+
+type Grids = { numRows: number; columns: Record<string, mc.Arrayish>;[prop: string]: any; };
+
 export class Grid2DMark extends Mark {
-  constructor(type, source, options) {
+  densityMap: Encodings;
+  bandwidth: number;
+  grids?: Grids;
+  interpolate: GridInterpolate;
+  pixelSize: number;
+  pad: number;
+  width: number;
+  height: number;
+  extentX?: any[];
+  extentY?: any[];
+  bins?: [number, number];
+  groupby?: string[];
+  aggr?: string[];
+  grids0?: Grids;
+  constructor(type: 'dot' | 'geo' | 'image', source: any, options: Grid2DOptions) {
     const {
       bandwidth = 0,
       interpolate = 'none',
@@ -25,60 +65,52 @@ export class Grid2DMark extends Mark {
     } = options;
 
     const densityMap = createDensityMap(channels);
+    //@ts-expect-error (see `xyext` todo)
     super(type, source, channels, xyext);
     this.densityMap = densityMap;
 
-    /** @type {number} */
     this.bandwidth = handleParam(bandwidth, value => {
       this.bandwidth = value;
       return this.grids ? this.convolve().update() : null;
     });
 
-    /** @type {string} */
     this.interpolate = handleParam(interpolate, value => {
       return (this.interpolate = value, this.requestUpdate());
     });
 
-    /** @type {number} */
     this.pixelSize = handleParam(pixelSize, value => {
       return (this.pixelSize = value, this.requestUpdate());
     });
 
-    /** @type {number} */
     this.pad = handleParam(pad, value => {
       return (this.pad = value, this.requestUpdate());
     });
 
-    /** @type {number|undefined} */
     this.width = handleParam(width, value => {
       return (this.width = value, this.requestUpdate());
     });
 
-    /** @type {number|undefined} */
     this.height = handleParam(height, value => {
       return (this.height = value, this.requestUpdate());
     });
   }
 
-  /**
-   * @param {import('../plot.js').Plot} plot The plot.
-   * @param {number} index
-   */
-  setPlot(plot, index) {
+  setPlot(plot: Plot, index: number): void {
     const update = () => { if (this.hasFieldInfo()) this.requestUpdate(); };
     plot.addAttributeListener('xDomain', update);
     plot.addAttributeListener('yDomain', update);
     super.setPlot(plot, index);
   }
 
-  get filterStable() {
+  get filterStable(): boolean {
     const xdom = this.plot.getAttribute('xDomain');
     const ydom = this.plot.getAttribute('yDomain');
     return xdom && ydom && !xdom[Transient] && !ydom[Transient];
   }
 
-  query(filter = []) {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery {
     const { interpolate, pad, channels, densityMap } = this;
+    filter = [filter].flat();
     const [x0, x1] = this.extentX = extentX(this, filter);
     const [y0, y1] = this.extentY = extentY(this, filter);
     const [nx, ny] = this.bins = this.binDimensions();
@@ -95,22 +127,25 @@ export class Grid2DMark extends Mark {
       .from(this.sourceTable())
       .where(filter.concat(bounds));
 
-    /** @type {string[]} */
-    const groupby = this.groupby = [];
-    /** @type {Record<string, ExprNode>} */
-    const aggrMap = {};
+
+    const groupby: string[] = this.groupby = [];
+    const aggrMap: Record<string, ExprNode> = {};
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
         const { as, channel, field } = c;
+        //@ts-expect-error Type 'string' is not assignable to type 'SQLNode'.
         if (isAggregateExpression(field)) {
           // include custom aggregate
+          //@ts-expect-error Type 'string' is not assignable to type 'SQLNode'.
           aggrMap[channel] = field;
           densityMap[channel] = true;
         } else if (channel === 'weight') {
           // compute weighted density
+          // @ts-expect-error Type '{ stats?: { stats?: Stat[]; column?: FieldRef; }; basis?: unknown; }' is not assignable to type 'ExprValue'.
           aggrMap[DENSITY] = sum(field);
         } else if (channel !== 'x' && channel !== 'y') {
           // add groupby field
+          //@ts-expect-error Type '{ [x: string]: Field; }' is not assignable to type 'string'.
           q.select({ [as]: field });
           groupby.push(as);
         }
@@ -144,10 +179,7 @@ export class Grid2DMark extends Mark {
     }
   }
 
-  /**
-   * @returns {[number, number]} The bin dimensions.
-   */
-  binDimensions() {
+  binDimensions(): [number, number] {
     const { plot, pixelSize, width, height } = this;
     return [
       width ?? Math.round(plot.innerWidth() / pixelSize),
@@ -155,7 +187,7 @@ export class Grid2DMark extends Mark {
     ];
   }
 
-  queryResult(data) {
+  queryResult(data: unknown): this {
     const [w, h] = this.bins;
     const interp = maybeInterpolate(this.interpolate);
     // @ts-expect-error Correct the data column type
@@ -164,7 +196,7 @@ export class Grid2DMark extends Mark {
     return this.convolve();
   }
 
-  convolve() {
+  convolve(): this {
     const { aggr, bandwidth, bins, grids0, plot } = this;
 
     // no smoothing as default fallback
@@ -174,7 +206,7 @@ export class Grid2DMark extends Mark {
       // determine which grid to smooth
       const prop = aggr.length === 1 ? aggr[0]
         : aggr.includes(DENSITY) ? DENSITY
-        : null;
+          : null;
 
       // bail if no compatible grid found
       if (!prop) {
@@ -207,8 +239,8 @@ export class Grid2DMark extends Mark {
 /**
  * Extract channels that explicitly encode computed densities.
  */
-function createDensityMap(channels) {
-  const densityMap = {};
+function createDensityMap(channels: { [x: string]: any; x?: unknown; y?: unknown; }): Encodings {
+  const densityMap: Encodings = {};
   for (const key in channels) {
     if (channels[key] === 'density') {
       delete channels[key];
@@ -218,7 +250,7 @@ function createDensityMap(channels) {
   return densityMap;
 }
 
-function maybeInterpolate(interpolate = 'none') {
+function maybeInterpolate(interpolate: ObPlot.RasterInterpolateFunction | string): ObPlot.RasterInterpolateFunction {
   if (typeof interpolate === 'function') return interpolate;
   switch (interpolate.toLowerCase()) {
     case 'none':

@@ -7,6 +7,7 @@ import { handleParam } from './util/handle-param.js';
 export class HexbinMark extends Mark {
   constructor(source, options) {
     const { type = 'hexagon', binWidth = 20, ...channels } = options;
+    //@ts-expect-error (see `xyext` todo)
     super(type, source, { r: binWidth / 2, clip: true, ...channels }, xyext);
 
     /** @type {number} */
@@ -60,7 +61,7 @@ export class HexbinMark extends Mark {
     const yr = float64(plot.innerHeight() / (y2 - y1));
 
     // column references
-    const x ='_x';
+    const x = '_x';
     const y = '_y';
     const px = '_px';
     const py = '_py';
@@ -71,47 +72,47 @@ export class HexbinMark extends Mark {
     // Top-level query maps from screen space back to data values.
     // Doing so ensures that Plot generates correct data-driven scales.
     return Query.select({
-        [xc.as]: add(
-          float64(x1),
-          div(add(mul(add(x, mul(0.5, bitAnd(y, 1))), dx), ox), xr)
-        ),
-        [yc.as]: sub(
-          float64(y2),
-          div(add(mul(y, dy), oy), yr)
-        ),
-        ...cols
-      })
+      [xc.as]: add(
+        float64(x1),
+        div(add(mul(add(x, mul(0.5, bitAnd(y, 1))), dx), ox), xr)
+      ),
+      [yc.as]: sub(
+        float64(y2),
+        div(add(mul(y, dy), oy), yr)
+      ),
+      ...cols
+    })
       .groupby(x, y, ...dims)
       .from(
         // Subquery performs hex binning in screen space and also passes
         // original columns through (the DB should optimize this).
         Query.select({
-            [py]: div(sub(mul(yr, sub(y2, yc.field)), oy), dy),
-            [pj]: int32(round(py)),
-            [px]: sub(
-                div(sub(mul(xr, sub(xc.field, x1)), ox), dx),
-                mul(0.5, bitAnd(pj, 1))
-              ),
-            [pi]: int32(round(px)),
-            [tt]: and(
-                gt(mul(abs(sub(py, pj)), 3), 1),
-                gt(
-                  add(pow(sub(px, pi), 2), pow(sub(py, pj), 2)),
-                  add(
-                    pow(sub(sub(px, pi), mul(0.5, cond(lt(px, pi), -1, 1))), 2),
-                    pow(sub(sub(py, pj), cond(lt(py, pj), -1, 1)), 2)
-                  )
-                )
-              ),
-            [x]: cond(tt,
-                int32(add(
-                  add(pi, cond(lt(px, pi), -0.5, 0.5)),
-                  cond(neq(bitAnd(pj, 1), 0), 0.5, -0.5)
-                )),
-                pi
-              ),
-            [y]: cond(tt, int32(add(pj, cond(lt(py, pj), -1, 1))), pj)
-          }, '*')
+          [py]: div(sub(mul(yr, sub(y2, yc.field)), oy), dy),
+          [pj]: int32(round(py)),
+          [px]: sub(
+            div(sub(mul(xr, sub(xc.field, x1)), ox), dx),
+            mul(0.5, bitAnd(pj, 1))
+          ),
+          [pi]: int32(round(px)),
+          [tt]: and(
+            gt(mul(abs(sub(py, pj)), 3), 1),
+            gt(
+              add(pow(sub(px, pi), 2), pow(sub(py, pj), 2)),
+              add(
+                pow(sub(sub(px, pi), mul(0.5, cond(lt(px, pi), -1, 1))), 2),
+                pow(sub(sub(py, pj), cond(lt(py, pj), -1, 1)), 2)
+              )
+            )
+          ),
+          [x]: cond(tt,
+            int32(add(
+              add(pi, cond(lt(px, pi), -0.5, 0.5)),
+              cond(neq(bitAnd(pj, 1), 0), 0.5, -0.5)
+            )),
+            pi
+          ),
+          [y]: cond(tt, int32(add(pj, cond(lt(py, pj), -1, 1))), pj)
+        }, '*')
           .from(this.sourceTable())
           .where(isNotNull(xc.field), isNotNull(yc.field), filter)
       );
