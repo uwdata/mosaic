@@ -27,7 +27,7 @@ export function m4(
   bin: ExprValue,
   x: string,
   y: string,
-  groups: ColumnRefNode[] = []
+  groups: (ColumnRefNode | string)[] = []
 ) {
   const pixel = int32(floor(bin));
   return Query
