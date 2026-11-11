@@ -30,3 +30,5 @@ export { Legend } from './legend.js';
 
 // transforms
 export { bin } from './transforms/bin.js';
+
+export type * as options from './options.js';

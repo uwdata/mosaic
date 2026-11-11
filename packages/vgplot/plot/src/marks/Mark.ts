@@ -18,6 +18,8 @@ type EncodingName = ChannelName | ConstantOption | 'orderby'; // (uwdata/mosaic#
 type Encodings = { [name in EncodingName]?: any };
 type Reqs = { [name in EncodingName]?: mc.Stat[] };
 
+export type Field = { stats?: { stats?: mc.Stat[], column?: mc.FieldRef; }; basis?: unknown; } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode;
+
 /** `channels: Entry[]` is being used to describe every possible input that is not `data` or `type: MarkType`.
  * 
  * For example, {@link markQuery} anticipates `channel: 'orderby'` - which is a property of a transform (`WindowOptions.orderby`).
@@ -25,7 +27,7 @@ type Reqs = { [name in EncodingName]?: mc.Stat[] };
 interface Entry {
   channel: EncodingName;
   value?: any;
-  field?: { stats?: { stats?: mc.Stat[], column?: mc.FieldRef; }; basis?: unknown; } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode;
+  field?: Field;
   as?: string;
   type?: mc.FieldInfo['type'];
   min?: mc.FieldInfo['min'];
