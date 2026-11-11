@@ -74,7 +74,7 @@ export class Plot {
     this.synch.pending(mark);
   }
 
-  update(mark: Mark): Promise<void> {
+  update(mark?: Mark): Promise<void> {
     if (this.synch.ready(mark) && !this.pendingRender) {
       this.pendingRender = true;
       requestAnimationFrame(() => this.render());
