@@ -6,7 +6,10 @@
     "strict": true,
     "strictNullChecks": false, // 234 errors
     "strictPropertyInitialization": false, // +6 (requires strictNullChecks)
-    "noImplicitAny": false, // 200+ errors
+    "noImplicitAny": true, /**
+    * ~~Found 249 errors in 33 files.~~
+    * Found 195 errors in 20 files.
+    */
   },
   "references": [
     { "path": "../../mosaic/core" },

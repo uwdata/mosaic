@@ -85,7 +85,7 @@ export class Plot {
   async render(): Promise<void> {
     this.pendingRender = false;
     const svg = await plotRenderer(this);
-    const legends = this.legends.flatMap(({ legend, include }) => {
+    const legends = this.legends.flatMap(({ legend, include }): HTMLDivElement | any[] => {
       const el = legend.init(svg);
       return include ? el : [];
     });
