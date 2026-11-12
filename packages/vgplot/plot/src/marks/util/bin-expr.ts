@@ -9,7 +9,7 @@ import type { Mark } from '../Mark.js';
  * input value being binned. Often the field is just a column
  * name. For time data, fields are mapped to millisecond timestamps.
  */
-export function binExpr(mark: Mark, channel, n, extent, pad = 1, expr?) {
+export function binExpr(mark: Mark, channel: 'x' | 'y', n, extent, pad = 1, expr?) {
   // get base expression, the channel field unless otherwise given
   const { field } = mark.channelField(channel);
   expr = expr ?? field;

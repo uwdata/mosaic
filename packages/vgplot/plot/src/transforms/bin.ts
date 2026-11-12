@@ -3,23 +3,23 @@ import type { Mark } from '../marks/Mark.js';
 import { ExprNode, binDate, binHistogram, duckDBCodeGenerator } from '@uwdata/mosaic-sql';
 import { Transform } from '../symbols.js';
 import { channelScale } from '../marks/util/channel-scale.js';
-import type { ChannelName } from '../types.js';
+import type { TransformScaleName } from '../types.js';
 
 
 type Options = { [key: string]: unknown; } & { offset?: number; };
 type Column = ExprValue;
-type BinReturn = { (mark: Mark, channel: ChannelName): Record<string, BinTransformNode>;[Transform]: true; };
+type BinReturn = { (mark: Mark, channel: TransformScaleName): Record<string, BinTransformNode>;[Transform]: true; };
 
 const EXTENT = new Set([
   'rectY-x', 'rectX-y', 'rect-x', 'rect-y', 'ruleY-x', 'ruleX-y'
 ]);
 
-export function hasExtent(mark: Mark, channel: ChannelName): boolean {
+export function hasExtent(mark: Mark, channel: TransformScaleName): boolean {
   return EXTENT.has(`${mark.type}-${channel}`);
 }
 
 export function bin(field: Column, options: Options = {}): BinReturn {
-  const fn = (mark: Mark, channel: ChannelName) => {
+  const fn = (mark: Mark, channel: TransformScaleName) => {
     if (hasExtent(mark, channel)) {
       return {
         [`${channel}1`]: binNode(mark, channel, field, options),
@@ -35,18 +35,18 @@ export function bin(field: Column, options: Options = {}): BinReturn {
   return fn;
 }
 
-function binNode(mark: Mark, channel: ChannelName, column: Column, options: Options): BinTransformNode {
+function binNode(mark: Mark, channel: TransformScaleName, column: Column, options: Options): BinTransformNode {
   return new BinTransformNode(column, mark, channel, options);
 }
 
 
-function hasTimeScale(mark: Mark, channel: ChannelName): boolean {
+function hasTimeScale(mark: Mark, channel: TransformScaleName): boolean {
   const scale = mark.plot.getAttribute(`${channel}Scale`);
   return scale === 'utc' || scale === 'time';
 }
 
 class BinTransformNode extends ExprNode {
-  constructor(public column: Column, public mark: Mark, public channel: ChannelName, public options: Options) {
+  constructor(public column: Column, public mark: Mark, public channel: TransformScaleName, public options: Options) {
     super('CUSTOM');
   }
 

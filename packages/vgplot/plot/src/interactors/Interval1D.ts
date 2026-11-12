@@ -8,13 +8,12 @@ import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 import type { ScaleDomain } from '@uwdata/mosaic-sql';
-import type { Extent, Interactor, SVG } from '../types.js';
-import type * as ObPlot from '@observablehq/plot';
+import type { Extent, Interactor, SVG, ScaleName } from '../types.js';
 import type * as mc from '@uwdata/mosaic-core';
 
 export class Interval1D implements Interactor, mc.Activatable {
   mark: InteractorMark;
-  channel: ObPlot.ScaleName;
+  channel: ScaleName;
   pixelSize: number;
   selection: Selection;
   peers: boolean;
@@ -32,7 +31,7 @@ export class Interval1D implements Interactor, mc.Activatable {
     pixelSize = 1,
     peers = true,
     brush: style = undefined
-  }: { channel: ObPlot.ScaleName; selection: Selection; field?: string; pixelSize?: number; peers?: boolean; brush?: Record<string, string | number>; }) {
+  }: { channel: ScaleName; selection: Selection; field?: string; pixelSize?: number; peers?: boolean; brush?: Record<string, string | number>; }) {
     this.mark = mark;
     this.channel = channel;
     this.pixelSize = pixelSize || 1;
