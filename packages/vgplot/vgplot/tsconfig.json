@@ -9,7 +9,6 @@
     "strictPropertyInitialization": false, // +6 (requires strictNullChecks)
     "strictFunctionTypes": false, // 7 errors
     "noImplicitAny": false, // 200+ errors
-    "noImplicitThis": false, // 1 error
   },
   "references": [
     { "path": "../../mosaic/core" },
