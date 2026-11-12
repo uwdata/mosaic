@@ -1,5 +1,5 @@
 import type * as mc from '@uwdata/mosaic-core';
-import { type InteractorMark } from '../marks/Mark.js';
+import { type Field, type InteractorMark } from '../marks/Mark.js';
 import { clauseList, clausePoints, ClauseSource, Selection } from '@uwdata/mosaic-core';
 import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
@@ -8,12 +8,12 @@ import type { ChannelName, Interactor, SVG } from '../types.js';
 
 export class Toggle implements Interactor, mc.Activatable {
   mark: InteractorMark;
-  value: null;
+  value: any[] | null;
   selection: Selection;
   peers: boolean;
   listMatch: 'any' | 'all' | undefined;
-  fields: any[];
-  as: any[];
+  fields: Field[];
+  as: string[];
 
   constructor(mark: InteractorMark, {
     selection,
@@ -26,8 +26,8 @@ export class Toggle implements Interactor, mc.Activatable {
     this.selection = selection;
     this.peers = peers;
     this.listMatch = listMatch;
-    const fields = this.fields = [];
-    const as = this.as = [];
+    const fields: Field[] = this.fields = [];
+    const as: string[] = this.as = [];
     channels.forEach(c => {
       const q = c === 'color' ? ['color', 'fill', 'stroke'] as const
         : c === 'x' ? ['x', 'x1', 'x2'] as const
@@ -35,9 +35,9 @@ export class Toggle implements Interactor, mc.Activatable {
             : [c];
       for (let i = 0; i < q.length; ++i) {
         const f = mark.channelField(q[i], { exact: true });
-        if (f) {
-          //@ts-expect-error Property 'basis' does not exist on type 'string'.
-          fields.push(f.field?.basis || f.field);
+        let field: Field | undefined;
+        if ((field = f?.field)) {
+          fields.push(typeof field === 'object' && 'basis' in field ? field.basis : field);
           as.push(f.as);
           return;
         }
@@ -46,7 +46,7 @@ export class Toggle implements Interactor, mc.Activatable {
     });
   }
 
-  clause(value): mc.SelectionClause {
+  clause(value: any[] | undefined): mc.SelectionClause {
     const { fields, mark } = this;
     const clients = this.peers ? mark.plot.markSet : new Set([mark]);
     const opt = { source: (this), clients };
@@ -69,21 +69,17 @@ export class Toggle implements Interactor, mc.Activatable {
     selector ??= `[data-index="${mark.index}"]`;
     const groups = Array.from(svg.querySelectorAll(selector));
 
-    svg.addEventListener('pointerdown', evt => {
-      const state = selection.single ? selection.value : this.value;
+    svg.addEventListener('pointerdown', (evt: PointerEvent) => {
+      const state = selection.single ? selection.value as any[] | undefined : this.value;
       const target = evt.target;
-      let value = null;
+      let value: any | any[] | null = null;
 
       if (isTargetElement(groups, target)) {
         const point = accessor(target);
-        //@ts-expect-error
         if ((evt.shiftKey || evt.metaKey) && state?.length) {
-          //@ts-expect-error
           value = state.filter(s => neq(s, point));
-          //@ts-expect-error
           if (value.length === state.length) value.push(point);
           if (value.length === 0) value = null;
-          //@ts-expect-error
         } else if (state?.length === 1 && !neq(state[0], point)) {
           value = null;
         } else {

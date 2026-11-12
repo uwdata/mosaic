@@ -16,7 +16,7 @@ export type EncodingName = ChannelName | 'tip' | ConstantOption | 'orderby'; // 
 export type Encodings = { [name in EncodingName]?: any };
 export type Reqs = { [name in EncodingName]?: mc.Stat[] };
 
-export type Field = { stats?: { stats?: mc.Stat[], column?: mc.FieldRef; }; basis?: unknown; } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode;
+export type Field = { stats?: { stats?: mc.Stat[], column?: mc.FieldRef; }; basis?: msql.ExprValue; } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode;
 
 /** `channels: Entry[]` is being used to describe every possible input that is not `data` or `type: MarkType`.
  * 
