@@ -1,9 +1,9 @@
 import { scaleTransform } from '@uwdata/mosaic-sql';
 import type * as msql from '@uwdata/mosaic-sql';
 import type { Mark } from '../Mark.js';
-import type { ChannelName } from '../../types.js';
+import type { TransformScaleName } from '../../types.js';
 
-export function channelScale<T>(mark: Mark, channel: ChannelName): msql.Scale<T> {
+export function channelScale<T>(mark: Mark, channel: TransformScaleName): msql.Scale<T> {
   const { plot } = mark;
 
   let scaleType: msql.ScaleType | undefined = plot.getAttribute(`${channel}Scale`);

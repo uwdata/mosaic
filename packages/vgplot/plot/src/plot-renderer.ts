@@ -2,7 +2,7 @@ import * as ObPlot from '@observablehq/plot';
 import { setAttributes } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
 import type { Plot } from './plot.js';
-import type { Attributes, AttrName, Spec, SVG } from './types.js';
+import type { Attributes, AttrName, Spec, SVG, ScaleName } from './types.js';
 import type { Mark } from './marks/Mark.js';
 
 const OPTIONS_ONLY_MARKS = new Set([
@@ -79,7 +79,7 @@ export async function plotRenderer(plot: Plot): Promise<SVG> {
   return svg;
 }
 
-function isDomainAttribute(key: AttrName): key is `${ObPlot.ScaleName}Domain` {
+function isDomainAttribute(key: AttrName): key is `${ScaleName}Domain` {
   return key.endsWith('Domain');
 }
 
@@ -90,7 +90,7 @@ function setSymbolAttributes(plot: Plot, svg: SVG, attributes: Attributes, symbo
       if (!isDomainAttribute(key)) {
         throw new Error(`Unsupported fixed attribute: ${key}`);
       }
-      const type = key.slice(0, -'Domain'.length) as ObPlot.ScaleName;
+      const type = key.slice(0, -'Domain'.length) as ScaleName;
       const scale = svg.scale(type);
       if (scale?.domain) {
         plot.setAttribute(key, attributes[`${type}Reverse`]

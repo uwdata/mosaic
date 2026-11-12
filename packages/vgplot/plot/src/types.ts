@@ -25,38 +25,34 @@ export interface Interactor {
   clause?(value: unknown): mc.SelectionClause;
 }
 
+export type PositionalScaleName = 'x' | 'y' | 'fx' | 'fy';
+export type TransformScaleName = 'x' | 'y' | 'color' | 'length' | 'symbol' | 'r' | 'opacity';
+export type ScaleName = PositionalScaleName | 'color' | 'length' | 'symbol' | 'r' | 'opacity';
+
 export type ChannelName =
+  ScaleName
   | 'ariaLabel'
   | 'fill'
   | 'fillOpacity'
   | 'fontSize'
-  | 'fx'
-  | 'fy'
   | 'geometry'
   | 'height'
   | 'href'
-  | 'length'
-  | 'opacity'
   | 'path'
-  | 'r'
   | 'rotate'
   | 'src'
   | 'stroke'
   | 'strokeOpacity'
   | 'strokeWidth'
-  | 'symbol'
   | 'text'
   | 'title'
   | 'weight'
   | 'width'
-  | 'x'
   | 'x1'
   | 'x2'
-  | 'y'
   | 'y1'
   | 'y2'
-  | 'z'
-  | 'color';
+  | 'z';
 
 export type FixedType = typeof Fixed;
 export type CanParam<T> = T | mc.Param<T>;

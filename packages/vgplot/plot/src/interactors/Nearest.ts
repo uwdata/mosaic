@@ -3,10 +3,8 @@ import { InteractorMark } from '../marks/Mark.js';
 import { clauseList, clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
 import { select, pointer, min } from 'd3';
 import { getField } from './util/get-field.js';
-import type { ChannelName, Interactor, SVG } from '../types.js';
+import type { ChannelName, Interactor, SVG, ScaleName } from '../types.js';
 import type * as mc from '@uwdata/mosaic-core';
-import type { ScaleName } from '@observablehq/plot';
-
 
 
 export class Nearest implements Interactor, mc.Activatable {

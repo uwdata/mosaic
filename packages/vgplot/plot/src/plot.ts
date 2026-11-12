@@ -93,12 +93,13 @@ export class Plot {
     this.synch.resolve();
   }
 
-  // TODO @dangotbanned: use `name: AttrName` after making all usage static
   /**
    * @param name The attribute to return.
    * @returns The value of the attribute.
    */
-  getAttribute(name: string): any {
+  getAttribute(name: AttrName): any;
+  getAttribute(name: string): undefined;
+  getAttribute(name: AttrName): any {
     return this.attributes[name];
   }
 
