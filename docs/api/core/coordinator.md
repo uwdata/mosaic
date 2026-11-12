@@ -118,6 +118,7 @@ The input _query_ should produce a SQL query upon string coercion.
 The supported _options_ are:
 
 - _cache_: A Boolean flag (default `true`) indicating if the query result should be cached.
+- _consolidate_: A Boolean flag (default `true`) indicating if the query may be consolidated with other queries. If `false`, the query is exempt from query consolidation.
 - _priority_: A value indicating the query priority, one of: `Priority.High`, `Priority.Normal` (the default), or `Priority.Low`.
 
 Any additional options will be passed through to the backing database.
