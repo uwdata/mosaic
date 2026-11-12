@@ -95,7 +95,7 @@ export class Interval1D implements Interactor, mc.Activatable {
       }
     }
 
-    svg.addEventListener('pointerenter', (evt: PointerEvent) => {
+    svg.addEventListener('pointerenter', evt => {
       if (!evt.buttons) this.activate();
     });
   }

@@ -3,7 +3,7 @@ import type * as ObPlot from '@observablehq/plot';
 import type * as mc from '@uwdata/mosaic-core';
 import { Interval1D } from './interactors/Interval1D.js';
 import { Toggle } from './interactors/Toggle.js';
-import type { SVG } from './types.js';
+import type { SVG, SVGHTMLElement } from './types.js';
 import type { Plot } from './plot.js';
 import type { LegendOptions } from './options.js';
 import type { InteractorMark, Mark, Field } from './marks/Mark.js';
@@ -22,7 +22,7 @@ export class Legend {
   // Usage implies that only `Selection` is allowed
   selection: mc.Selection | undefined;
   field: string | undefined;
-  legend: HTMLElement | SVGSVGElement | null;
+  legend: SVGHTMLElement | null;
   element: HTMLDivElement;
   plot?: Plot;
 
@@ -116,11 +116,11 @@ function createLegend(legend: Legend, svg: SVG): HTMLElement | SVGSVGElement {
   if (interactive) {
     const handler = getInteractor(legend, type);
     if (type === SWATCH) {
-      //@ts-expect-error Expected `Interactor.init(svg: (SVGSVGElement | HTMLElement) & ObPlot.Plot)`
+      //@ts-expect-error Expected `Interactor.init(svg: (SVGSVGElement & ObPlot.Plot)`
       handler.init(el, TOGGLE_SELECTOR, el => [el.__data__]);
       legend.update();
     } else {
-      //@ts-expect-error Expected `Interactor.init(svg: (SVGSVGElement | HTMLElement) & ObPlot.Plot)`
+      //@ts-expect-error Expected `Interactor.init(svg: (SVGSVGElement & ObPlot.Plot)`
       handler.init(el, el.querySelector('g:last-of-type'));
     }
   }
