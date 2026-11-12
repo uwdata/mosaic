@@ -174,6 +174,7 @@ export class Coordinator {
    * @param options An options object.
    * @param options.type The query result format type.
    * @param options.cache If true, cache the query result client-side within the QueryManager.
+   * @param options.consolidate If false, exempt the query from query consolidation.
    * @param options.priority The query priority, defaults to `Priority.Normal`.
    * @returns A query result promise.
    */
@@ -181,16 +182,21 @@ export class Coordinator {
     query: QueryType,
     options: {
       cache?: boolean;
+      consolidate?: boolean;
       priority?: number;
       [key: string]: unknown;
     } = {}
   ): QueryResult<Table> {
     const {
       cache = true,
+      consolidate = true,
       priority = Priority.Normal,
       ...otherOptions
     } = options;
-    return this.manager.request({ type: 'arrow', query, cache, options: otherOptions }, priority) as QueryResult<Table>;
+    return this.manager.request(
+      { type: 'arrow', query, cache, consolidate, options: otherOptions },
+      priority
+    ) as QueryResult<Table>;
   }
 
   /**

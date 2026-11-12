@@ -1,5 +1,6 @@
 import { Table, tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { describe, it, expect } from 'vitest';
+import { Query, count, sum } from '@uwdata/mosaic-sql';
 import { QueryManager } from '../src/QueryManager.js';
 import { QueryResult } from '../src/util/query-result.js';
 import { QueryRequest } from '../src/types.js';
@@ -138,5 +139,27 @@ describe('QueryManager', () => {
     await queryManager.request(cachedRequest);
 
     expect(calls).toBe(2);
+  });
+
+  it('skips consolidation for requests that opt out', async () => {
+    const queryManager = new QueryManager();
+    const sqls: string[] = [];
+    queryManager.connector({
+      // @ts-expect-error assumes type value
+      query: async ({ sql }) => {
+        sqls.push(sql);
+        return tableToIPC(tableFromArrays({ col0: [1], col1: [2] }), {})!;
+      }
+    });
+    queryManager.consolidate(true);
+
+    const q1 = Query.from('table').select({ c: count() });
+    const q2 = Query.from('table').select({ c: sum('foo') });
+    await Promise.all([
+      queryManager.request({ type: 'arrow', query: q1, consolidate: false }),
+      queryManager.request({ type: 'arrow', query: q2, consolidate: false })
+    ]);
+
+    expect(sqls).toEqual([q1.toString(), q2.toString()]);
   });
 });
