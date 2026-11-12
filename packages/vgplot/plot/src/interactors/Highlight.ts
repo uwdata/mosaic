@@ -95,8 +95,7 @@ export class Highlight implements Interactor {
 async function predicateFunction(mark: InteractorMark, selection: Selection): Promise<(i: any) => boolean> {
   //@ts-expect-error Argument of type 'InteractorMark' is not assignable to parameter of type 'MosaicClient'.
   const pred = selection?.predicate(mark);
-  //@ts-expect-error Proerty length does not exist on 'true'
-  if (!pred || pred.length === 0) {
+  if (!pred || Array.isArray(pred) && pred.length === 0) {
     return () => true;
   }
 
@@ -106,15 +105,13 @@ async function predicateFunction(mark: InteractorMark, selection: Selection): Pr
 
   const s = { __: and(pred) };
   const q = mark.query(filter);
-  //@ts-expect-error Property 'queries' does not exist on type 'SelectQuery'.
-  (q.queries || [q]).forEach((q: SelectQuery) => {
+  ('queries' in q ? q.queries as SelectQuery[] : [q]).forEach(q => {
     q._groupby.length ? q.select(s) : q.setSelect(s);
   });
 
   const data = await mark.coordinator.query(q);
   const v = data.getChild?.('__');
-  //@ts-expect-error Property 'length' does not exist on type 'Table<TypeMap>'.
-  return !(data.numRows || data.length) ? (() => false)
+  return !(data.numRows) ? (() => false)
     : v ? (i => v.at(i))
       : (i => data[i].__);
 }
