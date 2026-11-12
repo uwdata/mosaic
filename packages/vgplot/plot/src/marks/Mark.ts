@@ -179,7 +179,7 @@ export class Mark extends MosaicClient implements InteractorMark {
 
   sourceTable(): string | null {
     const table: mc.Param<string> | string | undefined = this.source?.table;
-    return table ? (isParam(table) ? table.value : table) : null;
+    return table ? (isParam<string>(table) ? table.value : table) : null;
   }
 
   /**
