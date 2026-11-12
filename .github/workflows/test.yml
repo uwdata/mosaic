@@ -151,12 +151,16 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./packages/server/duckdb-server-rust
+
     steps:
       - uses: actions/checkout@v7
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
-          components: clippy, rustfmt
+          rust-src-dir: ./packages/server/duckdb-server-rust
           cache: true
           cache-workspaces: |-
             ./packages/server/duckdb-server-rust
@@ -164,14 +168,14 @@ jobs:
       # rust-cache prunes files but not directories outside cargo profile dirs, so it restores
       # an empty duckdb-sources tree that makes the libduckdb-sys build script fail with ENOTEMPTY.
       - name: Remove stale DuckDB sources
-        run: rm -rf ./packages/server/duckdb-server-rust/target/duckdb-sources
+        run: rm -rf target/duckdb-sources
 
       - name: Format
-        run: cargo fmt --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml -- --check
+        run: cargo fmt -- --check
       - name: Clippy
-        run: cargo clippy --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml --all -- -D warnings
+        run: cargo clippy --all -- -D warnings
       - name: Test
-        run: cargo test --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml --verbose
+        run: cargo test --verbose
 
   go:
     name: Test in Go

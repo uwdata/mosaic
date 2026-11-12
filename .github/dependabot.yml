@@ -49,6 +49,11 @@ updates:
         patterns:
           - "*"
 
+  - package-ecosystem: rust-toolchain
+    directory: "/packages/server/duckdb-server-rust"
+    schedule:
+      interval: monthly
+
   - package-ecosystem: gomod
     directory: "/packages/server/duckdb-server-go"
     schedule:
