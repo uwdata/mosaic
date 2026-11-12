@@ -102,7 +102,7 @@ export class Nearest implements Interactor, mc.Activatable {
     });
 
     // trigger activation updates
-    svg.addEventListener('pointerenter', (evt: PointerEvent) => {
+    svg.addEventListener('pointerenter', evt => {
       if (!evt.buttons) this.activate();
     });
   }

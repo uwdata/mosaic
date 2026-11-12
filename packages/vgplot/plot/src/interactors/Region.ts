@@ -26,7 +26,7 @@ export class Region implements Interactor, mc.Activatable {
   as: any[];
   value: any;
   g: any;
-  svg: any;
+  svg?: SVG;
   group: any;
 
   constructor(mark: InteractorMark, {
@@ -101,9 +101,7 @@ export class Region implements Interactor, mc.Activatable {
   init(svg: SVG): void {
     const { brush, extent, mark, style } = this;
     this.svg = svg;
-    //@ts-expect-error Property 'width' does not exist on type 'HTMLElement & Plot'.
     const w = svg.width.baseVal.value;
-    //@ts-expect-error Property 'height' does not exist on type 'HTMLElement & Plot'.
     const h = svg.height.baseVal.value;
     brush.extent([[0, 0], [w, h]]);
 
@@ -125,7 +123,7 @@ export class Region implements Interactor, mc.Activatable {
       }
     }
 
-    svg.addEventListener('pointerenter', (evt: PointerEvent) => {
+    svg.addEventListener('pointerenter', evt => {
       if (!evt.buttons) this.activate();
     });
   }

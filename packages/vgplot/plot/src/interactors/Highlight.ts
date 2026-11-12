@@ -41,7 +41,7 @@ export class Highlight implements Interactor {
   mark: InteractorMark;
   selection: Selection;
   channels: [string, unknown][] | (string | number)[][];
-  svg: any;
+  svg?: SVG;
   values: any[];
   nodes: any;
 

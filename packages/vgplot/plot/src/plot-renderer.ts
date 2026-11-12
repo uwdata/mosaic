@@ -63,7 +63,7 @@ export async function plotRenderer(plot: Plot): Promise<SVG> {
   inferLabels(spec, plot);
 
   // render plot
-  const svg: SVG = ObPlot.plot(spec);
+  const svg = ObPlot.plot(spec) as SVG;
 
   // annotate svg with mark indices
   annotatePlot(svg, indices);
