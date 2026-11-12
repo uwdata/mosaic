@@ -79,15 +79,18 @@ export async function plotRenderer(plot: Plot): Promise<SVG> {
   return svg;
 }
 
+function isDomainAttribute(key: AttrName): key is `${ObPlot.ScaleName}Domain` {
+  return key.endsWith('Domain');
+}
+
 function setSymbolAttributes(plot: Plot, svg: SVG, attributes: Attributes, symbols: AttrName[]): void {
   symbols.forEach(key => {
     const value = attributes[key];
     if (value === Fixed) {
-      if (!key.endsWith('Domain')) {
+      if (!isDomainAttribute(key)) {
         throw new Error(`Unsupported fixed attribute: ${key}`);
       }
-      const type = key.slice(0, -'Domain'.length);
-      //@ts-expect-error Argument of type 'string' is not assignable to parameter of type 'ScaleName'.
+      const type = key.slice(0, -'Domain'.length) as ObPlot.ScaleName;
       const scale = svg.scale(type);
       if (scale?.domain) {
         plot.setAttribute(key, attributes[`${type}Reverse`]
@@ -176,8 +179,7 @@ function annotatePlot(svg: SVG, indices: number[]): void {
       || aria === 'frame'
       || aria === 'hexgrid';
     if (!skip) {
-      //@ts-expect-error Argument of type 'number' is not assignable to parameter of type 'string'.
-      child.setAttribute('data-index', indices[++index]);
+      child.setAttribute('data-index', String(indices[++index]));
     }
   }
 }
