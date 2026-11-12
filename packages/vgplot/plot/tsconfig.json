@@ -3,8 +3,10 @@
   "include": ["src/**/*"],
   "compilerOptions": {
     "outDir": "dist",
-    "noImplicitThis": true,
-    "strictFunctionTypes": true
+    "strict": true,
+    "strictNullChecks": false, // 234 errors
+    "strictPropertyInitialization": false, // +6 (requires strictNullChecks)
+    "noImplicitAny": false, // 200+ errors
   },
   "references": [
     { "path": "../../mosaic/core" },
