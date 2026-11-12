@@ -100,7 +100,7 @@ To dive into how Mosaic optimizes selections, read the [TVCG'26 Mosaic Selection
 Mosaic is used in production by a growing number of companies and projects, including:
 
 * [Apple Embedding Atlas](https://apple.github.io/embedding-atlas/)
-* [Hudson River Trading](https://www.hudsonrivertrading.com/)
+* [Marimo Notebooks](https://marimo.io/)
 * [Nozzle](https://nozzle.io/)
 * [NVidia](https://research.nvidia.com/labs/dbr/blog/sae/)
 * [Observable Notebooks](https://observablehq.com/@observablehq/mosaic)
