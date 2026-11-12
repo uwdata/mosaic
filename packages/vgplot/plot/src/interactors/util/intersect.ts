@@ -1,4 +1,4 @@
-import { parsePath } from './parse-path.js';
+import { parsePath, type DrawingCommand } from './parse-path.js';
 
 /**
  * Return SVG elements that intersect the provided spatial extent.
@@ -19,7 +19,7 @@ export function intersect(svg: SVGSVGElement, el: SVGElement, extent: [[number, 
   for (const child of el.children) {
     if (child.tagName === 'g') {
       // handle faceted mark
-      const matrix = getTransformMatrix(child) ?? identity;
+      const matrix = getTransformMatrix(child as SVGGElement) ?? identity;
       for (const grandchild of child.children) {
         if (intersects(extent, x, y, grandchild, matrix)) {
           list.push(grandchild);
@@ -32,7 +32,7 @@ export function intersect(svg: SVGSVGElement, el: SVGElement, extent: [[number, 
   return list;
 }
 
-function intersects(sel: [[number, number], [number, number]], ox: number, oy: number, el: any, matrix: DOMMatrix): boolean {
+function intersects(sel: [[number, number], [number, number]], ox: number, oy: number, el: Element, matrix: DOMMatrix): boolean {
   let [[l, t], [r, b]] = sel;
 
   // facet groups involve translation only
@@ -72,21 +72,23 @@ function intersects(sel: [[number, number], [number, number]], ox: number, oy: n
 
     switch (tag) {
       case 'circle':
-        return intersectCircle(l, t, r, b, $(el.cx), $(el.cy), $(el.r));
+        const circle = el as SVGCircleElement;
+        return intersectCircle(l, t, r, b, $(circle.cx), $(circle.cy), $(circle.r));
       case 'line':
-        return intersectLine(l, t, r, b, $(el.x1), $(el.y1), $(el.x2), $(el.y2));
+        const line = el as SVGLineElement;
+        return intersectLine(l, t, r, b, $(line.x1), $(line.y1), $(line.x2), $(line.y2));
       case 'path':
-        return intersectPath(l, t, r, b, el);
+        return intersectPath(l, t, r, b, el as SVGGElement);
     }
   }
   return false;
 }
 
-function $(attr) {
+function $<R>(attr: { baseVal: { value: R; }; }): R {
   return attr.baseVal.value;
 }
 
-function getTransformMatrix(el) {
+function getTransformMatrix(el: SVGGElement): DOMMatrix {
   const transform = el.transform.baseVal;
   const n = transform.length;
   let m = transform[0]?.matrix;
@@ -96,7 +98,7 @@ function getTransformMatrix(el) {
   return m;
 }
 
-function intersectCircle(l, t, r, b, cx, cy, cr): boolean {
+function intersectCircle(l: number, t: number, r: number, b: number, cx: number, cy: number, cr: number): boolean {
   const h = l <= cx && cx <= r;
   const v = t <= cy && cy <= b;
   if (h && v) return true; // center is enclosed
@@ -108,7 +110,7 @@ function intersectCircle(l, t, r, b, cx, cy, cr): boolean {
   return (h && dy <= cr) || (dx * dx + dy * dy <= cr * cr);
 }
 
-function intersectLine(l, t, r, b, x1, y1, x2, y2): boolean {
+function intersectLine(l: number, t: number, r: number, b: number, x1: number, y1: number, x2: number, y2: number): boolean {
   const xmin = Math.max(Math.min(x1, x2), l);
   const xmax = Math.min(Math.max(x1, x2), r);
   if (xmin > xmax) return false;
@@ -126,7 +128,7 @@ function intersectLine(l, t, r, b, x1, y1, x2, y2): boolean {
   return ymin <= ymax;
 }
 
-export function intersectPath(l, t, r, b, el): boolean {
+export function intersectPath(l: number, t: number, r: number, b: number, el: SVGGElement & { __path__?: DrawingCommand[]; }): boolean {
   // parse path and cache result for reuse
   const cmds = el.__path__ || (el.__path__ = parsePath(el.getAttribute('d')));
 
@@ -140,17 +142,17 @@ export function intersectPath(l, t, r, b, el): boolean {
 
   const matrix = getTransformMatrix(el);
 
-  const setAnchor = (ax, ay) => {
+  const setAnchor = (ax: number, ay: number) => {
     poly.length = n = 2;
     poly[0] = x = anchorX = ax;
     poly[1] = y = anchorY = ay;
   };
 
   const anchor = matrix
-    ? (x, y) => setAnchor(multiplyX(matrix, x, y), multiplyY(matrix, x, y))
-    : (x, y) => setAnchor(x, y);
+    ? (x: number, y: number) => setAnchor(multiplyX(matrix, x, y), multiplyY(matrix, x, y))
+    : (x: number, y: number) => setAnchor(x, y);
 
-  const test = (x2, y2) => {
+  const test = (x2: number, y2: number) => {
     poly[n] = x2;
     poly[n + 1] = y2;
     n += 2;
@@ -158,13 +160,13 @@ export function intersectPath(l, t, r, b, el): boolean {
   };
 
   const lineTo = matrix
-    ? (x2, y2) => {
+    ? (x2: number, y2: number) => {
       hit = test(
         multiplyX(matrix, x = x2, y = y2),
         multiplyY(matrix, x2, y2)
       );
     }
-    : (x2, y2) => { hit = test(x = x2, y = y2); };
+    : (x2: number, y2: number) => { hit = test(x = x2, y = y2); };
 
   for (let i = 0; i < cmds.length; ++i) {
     const cmd = cmds[i];
@@ -216,15 +218,15 @@ export function intersectPath(l, t, r, b, el): boolean {
   return false;
 }
 
-function multiplyX(m, x, y) {
+function multiplyX(m: DOMMatrix, x: number, y: number): number {
   return m.a * x + m.c * y + m.e;
 }
 
-function multiplyY(m, x, y) {
+function multiplyY(m: DOMMatrix, x: number, y: number): number {
   return m.b * x + m.d * y + m.f;
 }
 
-function isCircle(cmds, i: number): boolean {
+function isCircle(cmds: DrawingCommand[], i: number): boolean {
   const a = cmds[i];
   const b = cmds[i + 1];
   return b && b[0] === 'a'
@@ -254,6 +256,7 @@ function pointInPolygon(x: number, y: number, poly: number[]): number {
         ++wn; // valid up intersect
     }
     // a downward crossing and (x,y) right of edge
+    // @ts-expect-error `poly[i]` passes a number, which shouldn't be indexed?
     else if (poly[i + 3] <= y && isLeft(x, y, poly[i]) < 0) {
       --wn; // valid down intersect
     }
@@ -262,6 +265,6 @@ function pointInPolygon(x: number, y: number, poly: number[]): number {
   return wn;
 }
 
-function isLeft(x: number, y: number, p: number | number[], i?: number): number {
+function isLeft(x: number, y: number, p: number[], i?: number): number {
   return (p[i + 2] - p[i]) * (y - p[i + 1]) - (x - p[i]) * (p[i + 3] - p[i + 1]);
 }

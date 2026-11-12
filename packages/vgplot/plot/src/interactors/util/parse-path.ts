@@ -1,20 +1,22 @@
-const paramCounts = { m:2, l:2, h:1, v:1, z:0, c:6, s:4, q:4, t:2, a:7 };
+const paramCounts: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, z: 0, c: 6, s: 4, q: 4, t: 2, a: 7 };
 const commandPattern = /[mlhvzcsqta]([^mlhvzcsqta]+|$)/gi;
 const numberPattern = /^[+-]?(([0-9]*\.[0-9]+)|([0-9]+\.)|([0-9]+))([eE][+-]?[0-9]+)?/;
 const spacePattern = /^((\s+,?\s*)|(,\s*))/;
 const flagPattern = /^[01]/;
 
-const errmsg = attr => `Invalid SVG path, incorrect parameter ${attr}`;
+const errmsg = (attr: string) => `Invalid SVG path, incorrect parameter ${attr}`;
+
+export type DrawingCommand = [string, ...number[]];
 
 /**
  * Parse an SVG path into a list of drawing commands.
- * @param {string} path The SVG path string to parse
- * @returns {[string, ...number[]][]} A list of drawing commands.
+ * @param path The SVG path string to parse
+ * @returns A list of drawing commands.
  *  Each command has a single letter as the first entry. All subsequent
  *  entries are numeric parameter values.
  */
-export function parsePath(path) {
-  const commands = [];
+export function parsePath(path: string): DrawingCommand[] {
+  const commands: DrawingCommand[] = [];
   const matches = path.match(commandPattern) || [];
 
   matches.forEach(str => {
@@ -53,10 +55,10 @@ export function parsePath(path) {
   return commands;
 }
 
-function parseParams(type, paramCount, segment) {
-  const params = [];
+function parseParams(type: string, paramCount: number, segment: string): number[] {
+  const params: number[] = [];
 
-  for (let index = 0; paramCount && index < segment.length; ) {
+  for (let index = 0; paramCount && index < segment.length;) {
     for (let i = 0; i < paramCount; ++i) {
       const pattern = type === 'a' && (i === 3 || i === 4) ? flagPattern : numberPattern;
       const match = segment.slice(index).match(pattern);
