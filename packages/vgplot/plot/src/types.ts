@@ -2,7 +2,7 @@ import * as ObPlot from '@observablehq/plot';
 
 import type { attributeMap } from './plot-attributes.js';
 import type * as mc from '@uwdata/mosaic-core';
-import type { Fixed } from './symbols.js';
+import type { Fixed, Transient } from './symbols.js';
 
 export type MarkType = 'text' | 'area' | 'areaX' | 'areaY' | 'arrow' | 'axisX' | 'axisY' | 'axisFx' | 'axisFy' | 'gridX' | 'gridY' | 'gridFx' | 'gridFy' | 'barX' | 'barY' | 'cell' | 'cellX' | 'cellY' | 'contour' | 'delaunayLink' | 'delaunayMesh' | 'hull' | 'voronoi' | 'voronoiMesh' | 'denseLine' | 'density' | 'densityX' | 'densityY' | 'dot' | 'dotX' | 'dotY' | 'circle' | 'hexagon' | 'errorbarX' | 'errorbarY' | 'frame' | 'geo' | 'graticule' | 'sphere' | 'hexbin' | 'hexgrid' | 'image' | 'line' | 'lineX' | 'lineY' | 'link' | 'raster' | 'heatmap' | 'rasterTile' | 'rect' | 'rectX' | 'rectY' | 'regressionY' | 'ruleX' | 'ruleY' | 'textX' | 'textY' | 'tickX' | 'tickY' | 'vector' | 'vectorX' | 'vectorY' | 'spike' | 'waffleX' | 'waffleY';
 
@@ -62,4 +62,5 @@ export type ChannelName =
   | 'z';
 
 export type FixedType = typeof Fixed;
+export type TransientType = typeof Transient;
 export type CanParam<T> = T | mc.Param<T>;
