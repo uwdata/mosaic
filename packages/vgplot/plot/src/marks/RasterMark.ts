@@ -58,7 +58,7 @@ export class RasterMark extends Grid2DMark {
 
     // determine raster order
     const idx = numRows > 1 && colorProp && this.groupby?.includes(colorProp)
-      ? permute(colorData, this.plot.getAttribute('colorDomain'))
+      ? permute(colorData as number[], this.plot.getAttribute('colorDomain'))
       : indices(numRows);
 
     // generate rasters

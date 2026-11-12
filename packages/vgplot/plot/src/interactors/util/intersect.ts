@@ -71,12 +71,14 @@ function intersects(sel: [[number, number], [number, number]], ox: number, oy: n
     b -= ty;
 
     switch (tag) {
-      case 'circle':
+      case 'circle': {
         const circle = el as SVGCircleElement;
         return intersectCircle(l, t, r, b, $(circle.cx), $(circle.cy), $(circle.r));
-      case 'line':
+      }
+      case 'line': {
         const line = el as SVGLineElement;
         return intersectLine(l, t, r, b, $(line.x1), $(line.y1), $(line.x2), $(line.y2));
+      }
       case 'path':
         return intersectPath(l, t, r, b, el as SVGGElement);
     }
