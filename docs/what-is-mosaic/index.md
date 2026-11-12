@@ -101,6 +101,7 @@ Mosaic is used in production by a growing number of companies and projects, incl
 
 * [Apple Embedding Atlas](https://apple.github.io/embedding-atlas/)
 * [Nozzle](https://nozzle.io/)
+* [Observable Notebooks](https://observablehq.com/@observablehq/mosaic)
 * [Ridge AI](https://ridgedata.ai)
 * [SQLRooms](https://github.com/sqlrooms/sqlrooms/tree/main/packages/mosaic)
 
