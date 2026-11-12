@@ -13,8 +13,15 @@ export type Attributes = { [name in AttrName]?: any };
 /**Observable Plot spec. */
 export type Spec = { [x: string]: any; marks?: ObPlot.Mark[]; };
 
-/**Observable plot element */
-export type SVG = (SVGSVGElement | HTMLElement) & ObPlot.Plot;
+export type SVGHTMLElement = SVGSVGElement & HTMLElement;
+
+/**Observable plot element .
+ * 
+ * Unlike the return type of {@link ObPlot.plot} - we use an intersection.
+ * This preserves overloads on {@link HTMLElement.addEventListener}, 
+ * which we need for {@link PointerEvent}.
+*/
+export type SVG = SVGHTMLElement & (Omit<ObPlot.Plot, 'legend'> & { legend(name: ScaleName, options?: ObPlot.LegendOptions): SVGHTMLElement | undefined; });
 
 export type Extent = [any, any];
 

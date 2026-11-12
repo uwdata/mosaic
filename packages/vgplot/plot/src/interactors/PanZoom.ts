@@ -22,7 +22,7 @@ export class PanZoom implements mc.Activatable {
   zoom: any;
   panx: boolean;
   pany: boolean;
-  svg: any;
+  svg?: SVG;
   initialized: any;
   xscale?: ObPlot.Scale;
   yscale?: ObPlot.Scale;
