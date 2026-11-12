@@ -3,11 +3,7 @@
   "include": ["src/**/*"],
   "compilerOptions": {
     "outDir": "dist",
-    // strict cannot be fully enabled until fixing vgplot/plot
-    "strict": true,
-    "strictNullChecks": false, // 234 errors
-    "strictPropertyInitialization": false, // +6 (requires strictNullChecks)
-    "noImplicitAny": false, // 200+ errors
+    "strict": true
   },
   "references": [
     { "path": "../../mosaic/core" },
