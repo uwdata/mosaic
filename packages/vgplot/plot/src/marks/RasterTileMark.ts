@@ -200,7 +200,7 @@ export class RasterTileMark extends Grid2DMark {
 
     // determine raster order
     const idx = numRows > 1 && colorProp && this.groupby?.includes(colorProp)
-      ? permute(colorData, this.plot.getAttribute('colorDomain'))
+      ? permute(colorData as number[], this.plot.getAttribute('colorDomain'))
       : indices(numRows);
 
     // generate rasters
@@ -274,7 +274,7 @@ function bin2d(q: msql.SelectQuery, xp: msql.ExprValue, yp: msql.ExprValue, aggs
 function binLinear2d(q: msql.SelectQuery, xp: msql.ExprValue, yp: msql.ExprValue, value: msql.ExprNode, xn: number, groupby: string[]): msql.SelectQuery {
   //@ts-expect-error Property 'column' does not exist on type 'ExprNode'.
   const w = value.column ? `* ${value.column}` : '';
-  const subq = (i, w) => q.clone().select({ xp, yp, i, w });
+  const subq = (i: any, w: any) => q.clone().select({ xp, yp, i, w });
 
   // grid[xu + yu * xn] += (xv - xp) * (yv - yp) * wi;
   const a = subq(
