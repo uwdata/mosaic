@@ -7,7 +7,7 @@ import type * as mc from '@uwdata/mosaic-core';
  * @returns the input value or (if a Param) the current Param value.
  */
 export function handleParam<T>(value: T | mc.Param<T>, update: (value: T) => void | Promise<unknown>): T {
-  return isParam(value)
+  return isParam<T>(value)
     ? (value.addEventListener('value', update), value.value)
     : value;
 }

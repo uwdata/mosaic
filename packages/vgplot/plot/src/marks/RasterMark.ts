@@ -214,7 +214,7 @@ function colorScale(mark: RasterMark, prop: string): (data: any, w: any, h: any,
   const domainFixed = domainAttr === Fixed;
   const domainTransient = domainAttr?.[Transient];
   const domain = (!domainFixed && !domainTransient && domainAttr) || (
-    flat ? data.slice().sort(ascending)
+    flat ? (data as number[]).slice().sort(ascending)
       : discrete ? gridDomainDiscrete(data)
         : gridDomainContinuous(data)
   );
