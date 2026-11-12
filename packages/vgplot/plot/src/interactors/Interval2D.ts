@@ -1,6 +1,6 @@
 import { clauseIntervals, Selection, Activatable, type SelectionClause } from '@uwdata/mosaic-core';
 import { ascending, min, max } from 'd3';
-import { brush, brushGroups } from './util/brush.js';
+import { brush, brushGroups, type WrapBrush } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
@@ -17,8 +17,8 @@ export class Interval2D implements Interactor, Activatable {
   xfield: any;
   yfield: any;
   style: Record<string, string | number>;
-  brush: any;
-  value: any;
+  brush: WrapBrush;
+  value?: any;
   g: any;
   xscale: any;
   yscale: any;

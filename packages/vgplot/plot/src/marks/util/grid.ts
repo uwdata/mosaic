@@ -85,7 +85,7 @@ export function grid2d(w: number, h: number, index: Arrayish, columns: Record<st
   const size = w * h;
   const values = aggregates.map(name => columns[name]);
   const result: { [key: string]: Arrayish; } = {};
-  const cells = [];
+  const cells: any[] = [];
   const group = new Int32Array(numRows);
 
   // if grouped, generate per-row group indices
@@ -106,9 +106,9 @@ export function grid2d(w: number, h: number, index: Arrayish, columns: Record<st
 
   if (interpolate) {
     // prepare index arrays, then interpolate grid values
-    const X = index.map(k => k % w);
-    const Y = index.map(k => Math.floor(k / w));
-    const I = cells.map(() => []);
+    const X = index.map((k: any) => k % w);
+    const Y = index.map((k: any) => Math.floor(k / w));
+    const I = cells.map((): any[] => []);
     for (let row = 0; row < numRows; ++row) {
       I[group[row]].push(row);
     }
@@ -131,9 +131,9 @@ export function grid2d(w: number, h: number, index: Arrayish, columns: Record<st
   return { numRows: cells.length, columns: result };
 }
 
-export function gridDomainContinuous(grids) {
+export function gridDomainContinuous(grids: Arrayish): number[] {
   let lo = Infinity, hi = -Infinity;
-  grids.forEach(G => {
+  grids.forEach((G: any) => {
     const n = G.length;
     for (let i = 0; i < n; ++i) {
       const v = G[i];
@@ -144,10 +144,10 @@ export function gridDomainContinuous(grids) {
   return (Number.isFinite(lo) && Number.isFinite(hi)) ? [lo, hi] : [0, 1];
 }
 
-export function gridDomainDiscrete(grids) {
+export function gridDomainDiscrete(grids: Arrayish): any[] {
   // TODO: sort options?
   const values = new InternSet();
-  grids.forEach(G => {
+  grids.forEach((G: any) => {
     const n = G.length;
     for (let i = 0; i < n; ++i) {
       values.add(G[i]);

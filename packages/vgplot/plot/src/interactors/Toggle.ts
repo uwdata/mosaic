@@ -103,6 +103,6 @@ export class Toggle implements Interactor, mc.Activatable {
   }
 }
 
-function isTargetElement(groups, node) {
+function isTargetElement(groups: Element[], node: any): boolean {
   return groups.some(g => g.contains(node));
 }

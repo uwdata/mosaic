@@ -2,10 +2,10 @@ import * as ObPlot from '@observablehq/plot';
 import { setAttributes } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
 import type { Plot } from './plot.js';
-import type { Attributes, AttrName, Spec, SVG, ScaleName } from './types.js';
+import type { Attributes, AttrName, Spec, SVG, ScaleName, MarkType, PositionalScaleName } from './types.js';
 import type { Mark } from './marks/Mark.js';
 
-const OPTIONS_ONLY_MARKS = new Set([
+const OPTIONS_ONLY_MARKS = new Set<MarkType>([
   'frame',
   'hexgrid',
   'sphere',
@@ -36,7 +36,7 @@ const SELECT_TRANSFORMS = new Map<SelectName, typeof ObPlot.selectFirst | typeof
 // construct Plot output
 // see https://github.com/observablehq/plot
 export async function plotRenderer(plot: Plot): Promise<SVG> {
-  const spec = { marks: [] };
+  const spec: Spec = { marks: [] };
   const symbols: AttrName[] = [];
   const { attributes, marks } = plot;
 
@@ -53,6 +53,7 @@ export async function plotRenderer(plot: Plot): Promise<SVG> {
       const arg = OPTIONS_ONLY_MARKS.has(type) ? [opt] : [data, opt];
 
       // instantiate Plot mark and add to spec
+      //@ts-expect-error 'Plot.denseLine' does not exist
       spec.marks.push(ObPlot[type](...arg));
       if (mark.index > -1) indices.push(mark.index);
     }
@@ -93,6 +94,7 @@ function setSymbolAttributes(plot: Plot, svg: SVG, attributes: Attributes, symbo
       const type = key.slice(0, -'Domain'.length) as ScaleName;
       const scale = svg.scale(type);
       if (scale?.domain) {
+        //@ts-expect-error `type` could be `'length' | 'r' | 'symbol'`
         plot.setAttribute(key, attributes[`${type}Reverse`]
           ? Array.from(scale.domain).slice().reverse()
           : scale.domain);

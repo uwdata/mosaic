@@ -11,7 +11,7 @@ export type AttrName = Parameters<(typeof attributeMap)['get']>[0];
 export type Attributes = { [name in AttrName]?: any };
 
 /**Observable Plot spec. */
-export type Spec = { [x: string]: any; marks?: ObPlot.Mark[]; };
+export type Spec = { [x: string]: any; marks?: ObPlot.Markish[]; };
 
 export type SVGHTMLElement = SVGSVGElement & HTMLElement;
 

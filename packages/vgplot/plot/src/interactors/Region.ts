@@ -5,7 +5,7 @@ import type { Extent, Interactor, SVG } from '../types.js';
 import type * as mc from '@uwdata/mosaic-core';
 import { clausePoints } from '@uwdata/mosaic-core';
 import { select } from 'd3';
-import { brush } from './util/brush.js';
+import { brush, type WrapBrush } from './util/brush.js';
 import { getFields } from './util/get-field.js';
 import { intersect } from './util/intersect.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
@@ -19,12 +19,12 @@ export class Region implements Interactor, mc.Activatable {
   selection: Selection;
   peers: boolean;
   style: Record<string, string | number>;
-  brush: any;
+  brush: WrapBrush;
   extent: Extent | null;
   groups: null;
   fields: any[];
   as: any[];
-  value: any;
+  value?: any[];
   g: any;
   svg?: SVG;
   group: any;
@@ -64,7 +64,7 @@ export class Region implements Interactor, mc.Activatable {
     this.selection.activate(this.clause([this.fields.map(() => 0)]));
   }
 
-  clause(value): mc.SelectionClause {
+  clause(value: unknown[][] | null | undefined): mc.SelectionClause {
     const { fields, mark } = this;
     return clausePoints(fields, value, {
       source: this,
