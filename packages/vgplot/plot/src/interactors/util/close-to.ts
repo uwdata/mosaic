@@ -1,6 +1,6 @@
 const EPS = 1e-12;
 
-export function closeTo(a, b) {
+export function closeTo(a: number[] | null | undefined, b: number[] | null | undefined): boolean {
   return a === b || (
     a && b &&
     Math.abs(a[0] - b[0]) < EPS &&
