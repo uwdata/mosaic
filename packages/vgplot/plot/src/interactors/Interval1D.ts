@@ -96,8 +96,7 @@ export class Interval1D implements Interactor, mc.Activatable {
       }
     }
 
-    svg.addEventListener('pointerenter', evt => {
-      //@ts-expect-error Property 'buttons' does not exist on type 'Event'.
+    svg.addEventListener('pointerenter', (evt: PointerEvent) => {
       if (!evt.buttons) this.activate();
     });
   }

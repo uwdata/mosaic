@@ -101,8 +101,7 @@ export class Interval2D implements Interactor, Activatable {
       this.g.call(brush.moveSilent, [[x1, y1], [x2, y2]]);
     }
 
-    svg.addEventListener('pointerenter', evt => {
-      //@ts-expect-error Property 'buttons' does not exist on type 'Event'.
+    svg.addEventListener('pointerenter', (evt: PointerEvent) => {
       if (!evt.buttons) this.activate();
     });
   }
