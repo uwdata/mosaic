@@ -1,9 +1,14 @@
 import { channelScale } from './util/channel-scale.js';
-import { Grid2DMark } from './Grid2DMark.js';
-import { channelOption } from './Mark.js';
+import { Grid2DMark, type Grid2DOptions } from './Grid2DMark.js';
+import { channelOption, type EncodingName, type PlotMarkSpec } from './Mark.js';
+import type * as msql from '@uwdata/mosaic-sql';
+
+interface Density2DOptions extends Grid2DOptions {
+  type?: 'dot' | 'circle' | 'hexagon' | 'cell' | 'text';
+}
 
 export class Density2DMark extends Grid2DMark {
-  constructor(source, options) {
+  constructor(source: any, options: Density2DOptions) {
     const { type = 'dot', ...channels } = options;
     super(type, source, {
       bandwidth: 20,
@@ -14,12 +19,12 @@ export class Density2DMark extends Grid2DMark {
     });
   }
 
-  convolve() {
+  convolve(): this {
     super.convolve();
     const { bins, pad, extentX, extentY } = this;
     const [nx, ny] = bins;
-    const scaleX = channelScale(this, 'x');
-    const scaleY = channelScale(this, 'y');
+    const scaleX = channelScale<number>(this, 'x');
+    const scaleY = channelScale<number>(this, 'y');
     const [x0, x1] = extentX.map(v => scaleX.apply(v));
     const [y0, y1] = extentY.map(v => scaleY.apply(v));
     const deltaX = (x1 - x0) / (nx - pad);
@@ -32,17 +37,18 @@ export class Density2DMark extends Grid2DMark {
     return this;
   }
 
-  plotSpecs() {
+  plotSpecs(): PlotMarkSpec[] {
     // @ts-expect-error Correct the data column type
     const { type, channels, densityMap, data: { numRows: length, columns } } = this;
-    const options = {};
+    const options = {} as Record<string, any>;
     for (const c of channels) {
       const { channel } = c;
       options[channel] = (channel === 'x' || channel === 'y')
         ? columns[channel] // use generated x/y data fields
         : channelOption(c, columns);
     }
-    for (const channel in densityMap) {
+    for (const c in densityMap) {
+      const channel = c as EncodingName;
       if (densityMap[channel]) {
         options[channel] = columns.density;
       }
@@ -51,7 +57,17 @@ export class Density2DMark extends Grid2DMark {
   }
 }
 
-function points(data, bins, x0, y0, deltaX, deltaY, invertX, invertY, offset) {
+function points(
+  data: { [x: string]: any; numRows: any; columns: any; },
+  bins: [any, any],
+  x0: number,
+  y0: number,
+  deltaX: number,
+  deltaY: number,
+  invertX: msql.Scale<number>['invert'],
+  invertY: msql.Scale<number>['invert'],
+  offset: number
+) {
   const scale = 1 / (deltaX * deltaY);
   const [nx, ny] = bins;
   const batch = nx * ny;
@@ -60,7 +76,7 @@ function points(data, bins, x0, y0, deltaX, deltaY, invertX, invertY, offset) {
   const x = new Float64Array(numRows);
   const y = new Float64Array(numRows);
   const density = new Float64Array(numRows);
-  const columns = { x, y, density };
+  const columns = { x, y, density } as Record<string, Float64Array>;
   const { density: grids, ...rest } = data.columns;
   for (const name in rest) {
     columns[name] = new rest[name].constructor(numRows);

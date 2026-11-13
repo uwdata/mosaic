@@ -53,7 +53,7 @@ export class Grid2DMark extends Mark {
   groupby?: string[];
   aggr?: string[];
   grids0?: Grids;
-  constructor(type: 'dot' | 'geo' | 'image', source: any, options: Grid2DOptions) {
+  constructor(type: 'dot' | 'geo' | 'image' | 'circle' | 'hexagon' | 'cell' | 'text', source: any, options: Grid2DOptions) {
     const {
       bandwidth = 0,
       interpolate = 'none',

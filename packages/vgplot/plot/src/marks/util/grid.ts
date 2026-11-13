@@ -2,6 +2,13 @@ import type { Arrayish } from '@uwdata/mosaic-core';
 import { InternSet, ascending } from 'd3';
 import * as ObPlot from '@observablehq/plot';
 
+export interface Grid {
+  numRows: number;
+  columns: { [key: string]: Arrayish; };
+}
+
+export type Grid1D = Grid & { columns: { _grid?: Arrayish[];[key: string]: Arrayish; }; };
+
 /**
  * Generate a new array with designated size and type.
  * @param size The size of the array
@@ -23,10 +30,7 @@ export function array(size: number, proto: Arrayish = []): Arrayish {
  * @param groupby The names of columns to group by.
  * @returns Named column arrays of generated grid values.
  */
-export function grid1d(size: number, index: Arrayish, value: Arrayish, columns: Record<string, Arrayish>, groupby: string[]): {
-  numRows: number;
-  columns: { [key: string]: Arrayish; };
-} {
+export function grid1d(size: number, index: Arrayish, value: Arrayish, columns: Record<string, Arrayish>, groupby: string[]): Grid1D {
   if (!index?.length) return { numRows: 0, columns: {} };
   const numRows = index.length;
   const result: { [key: string]: Arrayish; } = {};
@@ -76,10 +80,7 @@ export function grid1d(size: number, index: Arrayish, value: Arrayish, columns: 
  *  By default sample values are directly copied to output grid arrays.
  * @returns Named column arrays of generated grid values.
  */
-export function grid2d(w: number, h: number, index: Arrayish, columns: Record<string, Arrayish>, aggregates: string[], groupby: string[], interpolate: ObPlot.RasterInterpolateFunction): {
-  numRows: number;
-  columns: { [key: string]: Arrayish; };
-} {
+export function grid2d(w: number, h: number, index: Arrayish, columns: Record<string, Arrayish>, aggregates: string[], groupby: string[], interpolate: ObPlot.RasterInterpolateFunction): Grid {
   if (!index?.length) return { numRows: 0, columns: {} };
   const numRows = index.length;
   const size = w * h;
