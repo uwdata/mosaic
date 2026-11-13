@@ -13,8 +13,8 @@ export class PanZoom {
   constructor(mark, {
     x = new Selection(),
     y = new Selection(),
-    xfield,
-    yfield,
+    xfield = undefined,
+    yfield = undefined,
     zoom = true,
     panx = true,
     pany = true

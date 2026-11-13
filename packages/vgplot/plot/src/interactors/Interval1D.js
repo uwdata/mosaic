@@ -68,6 +68,10 @@ export class Interval1D {
     });
   }
 
+  /**
+   * @param {*} svg
+   * @param {*} [root]
+   */
   init(svg, root) {
     const { brush, channel, style } = this;
     this.scale = svg.scale(channel);
