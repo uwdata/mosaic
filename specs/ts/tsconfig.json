@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["*.ts"],
+  "compilerOptions": {
+    "noEmit": true,
+  },
+  "references": [
+    { "path": "../../packages/vgplot/spec" }
+  ]
+}
