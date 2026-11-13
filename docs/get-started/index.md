@@ -64,5 +64,6 @@ After installation, you can run examples locally, using either DuckDB-WASM or a 
 
 To launch a local DuckDB server:
 
-* Install [hatch](https://hatch.pypa.io/latest/install/), if not already present.
-* Run `pnpm server` to launch the [`duckdb-server`](/server/). This runs the server in development mode, so the server will restart if you change its code.
+* Install [`uv`](https://docs.astral.sh/uv/getting-started/installation/), if not already present. For full development prerequisites, see the [contributing guide](https://github.com/uwdata/mosaic/blob/main/CONTRIBUTING.md).
+* Run `pnpm server` to launch the [`duckdb-server`](/server/) in development mode. This uses `uv` and restarts the server when its code changes.
+* If `pyarrow` fails to build with a newer Python version, try Python 3.13: run `uv python install 3.13`, then `UV_PYTHON=3.13 pnpm server`.
