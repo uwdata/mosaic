@@ -5,6 +5,10 @@ import { ASTNode } from './ASTNode.js';
 import { LiteralNode } from './LiteralNode.js';
 import { parseTransform } from './TransformNode.js';
 
+/**
+ * @param {import('../spec/Transform.js').WindowOptions} spec
+ * @param {import('../parse-spec.js').ParseContext} ctx
+ */
 export function parseWindowFrame(spec, ctx) {
   const type = spec.rows ? 'ROWS'
     : spec.range ? 'RANGE'
@@ -13,10 +17,14 @@ export function parseWindowFrame(spec, ctx) {
 
   if (!type) return null;
 
-  const value = spec[type.toLowerCase()];
+  /** @type {Lowercase<typeof type>}*/
+  // @ts-expect-error need to force lowercase for the next lookup to be inferred
+  const lower = type.toLowerCase()
+  const value = spec[lower];
   const name = paramRef(value);
   const extent = name
     ? ctx.paramRef(name)
+    // @ts-expect-error condition doesn't narrow `Array | string`
     : value.map(v => isObject(v)
         ? parseTransform(v, ctx)
         : new LiteralNode(v)

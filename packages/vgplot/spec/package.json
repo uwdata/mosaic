@@ -37,7 +37,9 @@
     "test:visual": "playwright test test/visual.test.js",
     "test:visual:update": "pnpm run test:visual -- --update-snapshots",
     "version": "cd ../../.. && pnpm run docs:schema",
-    "prepublishOnly": "pnpm run build"
+    "prepublishOnly": "pnpm run build",
+    "docs:examples": "tsx scripts/prepare-examples.ts && cd ../../.. && uv run ruff format",
+    "generate:python-api": "pnpm run schema && tsx scripts/generate-python-api.ts && cd ../../.. && uv run ruff check && uv run ruff format packages/vgplot/vgplot-python/vgplot/_generated"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "workspace:^",
@@ -45,6 +47,7 @@
     "@uwdata/vgplot": "workspace:^"
   },
   "devDependencies": {
-    "ts-json-schema-generator": "3.0.0-native.5"
+    "ts-json-schema-generator": "3.0.0-native.5",
+    "tsx": "^4.23.15"
   }
 }
