@@ -8,6 +8,6 @@ import { UnnestNode } from '../ast/unnest.js';
  * @param recursive
  * @param maxDepth
  */
-export function unnest(value: ExprValue, recursive = false, maxDepth = 0) {
+export function unnest(value: unknown, recursive = false, maxDepth = 0) {
   return new UnnestNode(asNode(value), recursive, maxDepth);
 }
