@@ -9,15 +9,18 @@ import { qt } from './util/stats.js';
 import { Mark, channelOption, type Encodings, type PlotMarkSpec } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
 import type * as msql from '@uwdata/mosaic-sql';
-import type * as mc from '@uwdata/mosaic-core';
+
+type Columns = { x: number[]; y1: number[]; y2: number[];[name: string]: number[]; };
+type AreaData = { numRows: number; columns: Columns; };
+type ModelFit = { numRows: number; columns: { [name: string]: number[]; }; };
 
 export class RegressionMark extends Mark {
-  modelFit?: mc.DataColumns;
+  modelFit?: ModelFit;
   ci: number;
   precision: number;
   lineData: { numRows: any; columns: any; };
-  areaData: { numRows: number; columns: { x: any[]; y1: any[]; y2: any[]; }; };
-  constructor(source: any, options) {
+  areaData: AreaData;
+  constructor(source: any, options: Record<string, any> = {}) {
     const { ci = 0.95, precision = 4, ...channels } = options;
     super('line', source, channels);
 
@@ -38,7 +41,7 @@ export class RegressionMark extends Mark {
     const x = this.channelField('x').as;
     const y = this.channelField('y').as;
     const groupby = Array.from(new Set(
-      (['stroke', 'z', 'fx', 'fy'] as const).flatMap(c => this.channelField(c)?.as || [])
+      (['stroke', 'z', 'fx', 'fy'] as const).flatMap(c => this.channelField(c)?.as || [] as string[])
     ));
 
     return Query
@@ -58,6 +61,7 @@ export class RegressionMark extends Mark {
   }
 
   queryResult(data: unknown): this {
+    //@ts-expect-error Type 'DataColumns' is not assignable to type 'ModelFit'.
     this.modelFit = toDataColumns(data);
 
     // regression line
@@ -115,7 +119,7 @@ export class RegressionMark extends Mark {
   }
 }
 
-function concat(a, b) {
+function concat(a: any, b: any): any[] {
   if (a.concat) return a.concat(b);
   const array = new (a.constructor)(a.length + b.length);
   array.set(a, 0);
@@ -123,10 +127,9 @@ function concat(a, b) {
   return array;
 }
 
-function linePoints(fit) {
-
+function linePoints(fit: ModelFit): { numRows: number; columns: { x: any[]; y: any[]; }; } {
   const { x0 = [], x1 = [], xm, intercept, slope, n, ssx, ssy, ...rest } = fit.columns;
-  const predict = (x, i) => intercept[i] + x * slope[i];
+  const predict = (x: number, i: number) => intercept[i] + x * slope[i];
   const x = concat(x0, x1);
   const y = concat(x0.map(predict), x1.map(predict));
   for (const name in rest) {
@@ -135,12 +138,11 @@ function linePoints(fit) {
   return { numRows: x.length, columns: { x, y, ...rest } };
 }
 
-export function areaPoints(fit: mc.DataColumns, ci: number, precision: number, width: number): { numRows: number; columns: { x: any[]; y1: any[]; y2: any[]; }; } {
+export function areaPoints(fit: ModelFit, ci: number, precision: number, width: number): AreaData {
   const len = fit.numRows;
-  //@ts-expect-error  Property 'columns' does not exist on type '{ numRows: number; values: Arrayish; }'.
   const { x0, x1, xm, intercept, slope, n, ssx, ssy, ...rest } = fit.columns;
   const other = Object.keys(rest);
-  const columns = { x: [], y1: [], y2: [] };
+  const columns = { x: [], y1: [], y2: [] } as Columns;
   other.forEach(name => columns[name] = []);
 
   for (let i = 0; i < len; ++i) {

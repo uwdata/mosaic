@@ -2,54 +2,56 @@ import { brush as d3_brush, brushX as d3_brushX, brushY as d3_brushY, select, ty
 import { patchScreenCTM } from './patchScreenCTM.js';
 import type { SVG } from '../../types.js';
 
-function wrap(brush: BrushBehavior<unknown>) {
+export type WrapBrush = BrushBehavior<unknown> & { reset: (...args: any[]) => void, moveSilent: (...args: any[]) => void; };
+
+function wrap(brush: BrushBehavior<unknown>): WrapBrush {
   const brushOn = brush.on;
   let enabled = true;
 
-  function silence(callback) {
+  function silence(callback: () => void): void {
     enabled = false;
     callback();
     enabled = true;
   }
 
   //@ts-expect-error monkeypatching
-  brush.reset = (...args) => {
+  brush.reset = (...args: any[]): void => {
     //@ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.
     silence(() => brush.clear(...args));
   };
 
   //@ts-expect-error monkeypatching
-  brush.moveSilent = (...args) => {
+  brush.moveSilent = (...args: any[]): void => {
     //@ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.
     silence(() => brush.move(...args));
   };
 
-  brush.on = (...args) => {
+  brush.on = (...args: any[]) => {
     if (args.length > 1 && args[1]) {
       // wrap callback to respect enabled flag
       const callback = args[1];
-      args[1] = (...event) => enabled && callback(...event);
+      args[1] = (...event: any[]) => enabled && callback(...event);
     }
     //@ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.
     return brushOn(...args);
   };
 
-  return brush;
+  return brush as WrapBrush;
 }
 
-export function brush() {
+export function brush(): WrapBrush {
   return wrap(d3_brush());
 }
 
-export function brushX() {
+export function brushX(): WrapBrush {
   return wrap(d3_brushX());
 }
 
-export function brushY() {
+export function brushY(): WrapBrush {
   return wrap(d3_brushY());
 }
 
-export function brushGroups(svg: SVG, root, dx, dy, className) {
+export function brushGroups(svg: SVG, root: SVGGElement | undefined | null, dx: number, dy: number, className: string) {
   let groups: d3_Selection<SVGGElement, unknown, SVGGElement | null, undefined> = select(root ?? svg)
     .append('g')
     .attr('class', className);

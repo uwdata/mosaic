@@ -22,7 +22,7 @@ export class PanZoom implements mc.Activatable {
   zoom: any;
   panx: boolean;
   pany: boolean;
-  svg: any;
+  svg?: SVG;
   initialized: any;
   xscale?: ObPlot.Scale;
   yscale?: ObPlot.Scale;
@@ -90,7 +90,7 @@ export class PanZoom implements mc.Activatable {
     const tx = extent(panx, [-Infinity, Infinity], rx);
     const ty = extent(pany, [-Infinity, Infinity], ry);
 
-    const z = zoom()
+    const z = zoom<(typeof element), unknown>()
       .extent([[rx[0], ry[0]], [rx[1], ry[1]]])
       .scaleExtent(this.zoom)
       .translateExtent([[tx[0], ty[0]], [tx[1], ty[1]]])
@@ -98,7 +98,7 @@ export class PanZoom implements mc.Activatable {
         this.xscale = this.svg.scale('x');
         this.yscale = this.svg.scale('y');
       })
-      //@ts-expect-error Property '__zoom' does not exist on type 'HTMLElement'.
+      //@ts-expect-error Property '__zoom' does not exist on type 'HTMLElement & { value: Plot; }'.
       .on('end', () => element.__zoom = new ZoomTransform(1, 0, 0))
       .on('zoom', ({ transform }) => this.publish(transform));
 

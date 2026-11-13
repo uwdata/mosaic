@@ -3,7 +3,17 @@
 // https://www.ipol.im/pub/art/2013/87/gaussian_20131215.tgz
 // http://dev.ipol.im/~getreuer/code/doc/gaussian_20131215_doc/gaussian__conv__deriche_8c.html
 
-export function dericheConfig(sigma, negative = false) {
+export interface DericheConfig {
+  sigma: number;
+  negative: boolean;
+  a: Float64Array;
+  b_causal: Float64Array;
+  b_anticausal: Float64Array;
+  sum_causal: number;
+  sum_anticausal: number;
+}
+
+export function dericheConfig(sigma: number, negative: boolean = false): DericheConfig {
   // compute causal filter coefficients
   const a = new Float64Array(5);
   const bc = new Float64Array(4);
@@ -35,7 +45,7 @@ export function dericheConfig(sigma, negative = false) {
   };
 }
 
-function dericheCausalCoeff(a_out, b_out, sigma) {
+function dericheCausalCoeff(a_out: Float64Array, b_out: Float64Array, sigma: number): void {
   const K = 4;
 
   const alpha = Float64Array.of(
@@ -50,9 +60,9 @@ function dericheCausalCoeff(a_out, b_out, sigma) {
   const y1 = 0.6318 / sigma;
   const y2 = 1.997 / sigma;
   const beta = Float64Array.of(
-    -x1 * Math.cos( y1), x1 * Math.sin( y1),
+    -x1 * Math.cos(y1), x1 * Math.sin(y1),
     -x1 * Math.cos(-y1), x1 * Math.sin(-y1),
-    -x2 * Math.cos( y2), x2 * Math.sin( y2),
+    -x2 * Math.cos(y2), x2 * Math.sin(y2),
     -x2 * Math.cos(-y2), x2 * Math.sin(-y2)
   );
 
@@ -66,21 +76,21 @@ function dericheCausalCoeff(a_out, b_out, sigma) {
 
   for (k = 2; k < 8; k += 2) {
     // add kth term, b/a += alpha[k] / (1 + beta[k] z^-1)
-    b[k]     = beta[k] * b[k - 2] - beta[k + 1] * b[k - 1];
+    b[k] = beta[k] * b[k - 2] - beta[k + 1] * b[k - 1];
     b[k + 1] = beta[k] * b[k - 1] + beta[k + 1] * b[k - 2];
     for (j = k - 2; j > 0; j -= 2) {
-      b[j]     += beta[k] * b[j - 2] - beta[k + 1] * b[j - 1];
+      b[j] += beta[k] * b[j - 2] - beta[k + 1] * b[j - 1];
       b[j + 1] += beta[k] * b[j - 1] + beta[k + 1] * b[j - 2];
     }
     for (j = 0; j <= k; j += 2) {
-      b[j]     += alpha[k] * a[j]     - alpha[k + 1] * a[j + 1];
+      b[j] += alpha[k] * a[j] - alpha[k + 1] * a[j + 1];
       b[j + 1] += alpha[k] * a[j + 1] + alpha[k + 1] * a[j];
     }
 
-    a[k + 2] = beta[k] * a[k]     - beta[k + 1] * a[k + 1];
+    a[k + 2] = beta[k] * a[k] - beta[k + 1] * a[k + 1];
     a[k + 3] = beta[k] * a[k + 1] + beta[k + 1] * a[k];
     for (j = k; j > 0; j -= 2) {
-      a[j]     += beta[k] * a[j - 2] - beta[k + 1] * a[j - 1];
+      a[j] += beta[k] * a[j - 2] - beta[k + 1] * a[j - 1];
       a[j + 1] += beta[k] * a[j - 1] + beta[k + 1] * a[j - 2];
     }
   }
@@ -92,7 +102,7 @@ function dericheCausalCoeff(a_out, b_out, sigma) {
   }
 }
 
-export function dericheConv2d(cx, cy, grid, [nx, ny]) {
+export function dericheConv2d(cx: DericheConfig, cy: DericheConfig, grid: Float64Array, [nx, ny]: [number, number]): Float64Array {
   // allocate buffers
   const yc = new Float64Array(Math.max(nx, ny)); // causal
   const ya = new Float64Array(Math.max(nx, ny)); // anticausal
@@ -115,13 +125,15 @@ export function dericheConv2d(cx, cy, grid, [nx, ny]) {
 }
 
 export function dericheConv1d(
-  c, src, N,
-  stride = 1,
-  y_causal = new Float64Array(N),
-  y_anticausal = new Float64Array(N),
-  h = new Float64Array(5), // q + 1
-  d = y_causal,
-  init = dericheInitZeroPad
+  c: DericheConfig,
+  src: Float64Array,
+  N: number,
+  stride: number = 1,
+  y_causal: Float64Array = new Float64Array(N),
+  y_anticausal: Float64Array = new Float64Array(N),
+  h: Float64Array = new Float64Array(5), // q + 1
+  d: Float64Array = y_causal,
+  init: (typeof dericheInitZeroPad) = dericheInitZeroPad
 ) {
   const stride_2 = stride * 2;
   const stride_3 = stride * 3;
@@ -192,9 +204,19 @@ export function dericheConv1d(
 }
 
 export function dericheInitZeroPad(
-  dest, src, N, stride, b, p, a, q,
-  sum, h, sigma, tol = 0.5
-) {
+  dest: Float64Array,
+  src: Float64Array,
+  N: number,
+  stride: number,
+  b: Float64Array,
+  p: number,
+  a: Float64Array,
+  q: number,
+  sum: number,
+  h: Float64Array,
+  sigma: number,
+  tol: number = 0.5
+): void {
   const stride_N = Math.abs(stride) * N;
   const off = stride < 0 ? stride_N + stride : 0;
   let i, n, m;

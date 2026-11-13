@@ -1,13 +1,13 @@
-import { Query, abs, add, and, bitAnd, cond, div, float64, gt, int32, isAggregateExpression, isNotNull, lt, mul, neq, pow, round, sub } from '@uwdata/mosaic-sql';
+import { Query, abs, add, and, asNode, bitAnd, cond, div, float64, gt, int32, isAggregateExpression, isNotNull, lt, mul, neq, pow, round, sub } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { extentX, extentY, xyext } from './util/extent.js';
-import { Mark } from './Mark.js';
+import { Mark, type Encodings, type Field } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
 import type * as msql from '@uwdata/mosaic-sql';
 
 export class HexbinMark extends Mark {
   binWidth: number;
-  constructor(source: any, options) {
+  constructor(source: any, options: Record<string, any> = {}) {
     const { type = 'hexagon', binWidth = 20, ...channels } = options;
     //@ts-expect-error (see `xyext` todo)
     super(type, source, { r: binWidth / 2, clip: true, ...channels }, xyext);
@@ -31,7 +31,7 @@ export class HexbinMark extends Mark {
     // and extract dependent columns for aggregates
     let xc, yc;
     const dims = new Set<string>();
-    const cols = {};
+    const cols = {} as Record<string, Field>;
     for (const c of channels) {
       if (c.channel === 'orderby') {
         // ignore ordering, as we will aggregate
@@ -71,8 +71,12 @@ export class HexbinMark extends Mark {
     const pj = '_pj';
     const tt = '_tt';
 
+    const xc_field = asNode(xc.field);
+    const yc_field = asNode(yc.field);
+
     // Top-level query maps from screen space back to data values.
     // Doing so ensures that Plot generates correct data-driven scales.
+    //@ts-expect-error `Field` (in `cols`) is not assignable to `SelectExpr`
     return Query.select({
       [xc.as]: add(
         float64(x1),
@@ -89,10 +93,10 @@ export class HexbinMark extends Mark {
         // Subquery performs hex binning in screen space and also passes
         // original columns through (the DB should optimize this).
         Query.select({
-          [py]: div(sub(mul(yr, sub(y2, yc.field)), oy), dy),
+          [py]: div(sub(mul(yr, sub(y2, yc_field)), oy), dy),
           [pj]: int32(round(py)),
           [px]: sub(
-            div(sub(mul(xr, sub(xc.field, x1)), ox), dx),
+            div(sub(mul(xr, sub(xc_field, x1)), ox), dx),
             mul(0.5, bitAnd(pj, 1))
           ),
           [pi]: int32(round(px)),
@@ -116,7 +120,7 @@ export class HexbinMark extends Mark {
           [y]: cond(tt, int32(add(pj, cond(lt(py, pj), -1, 1))), pj)
         }, '*')
           .from(this.sourceTable())
-          .where(isNotNull(xc.field), isNotNull(yc.field), filter)
+          .where(isNotNull(xc_field), isNotNull(yc_field), filter)
       );
   }
 }

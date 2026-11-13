@@ -58,7 +58,7 @@ export class RasterMark extends Grid2DMark {
 
     // determine raster order
     const idx = numRows > 1 && colorProp && this.groupby?.includes(colorProp)
-      ? permute(colorData, this.plot.getAttribute('colorDomain'))
+      ? permute(colorData as number[], this.plot.getAttribute('colorDomain'))
       : indices(numRows);
 
     // generate rasters
@@ -214,7 +214,7 @@ function colorScale(mark: RasterMark, prop: string): (data: any, w: any, h: any,
   const domainFixed = domainAttr === Fixed;
   const domainTransient = domainAttr?.[Transient];
   const domain = (!domainFixed && !domainTransient && domainAttr) || (
-    flat ? data.slice().sort(ascending)
+    flat ? (data as number[]).slice().sort(ascending)
       : discrete ? gridDomainDiscrete(data)
         : gridDomainContinuous(data)
   );

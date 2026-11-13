@@ -1,9 +1,9 @@
 import { expect, describe, it } from 'vitest';
 import { clauseIntervals } from '@uwdata/mosaic-core';
-import { column } from '@uwdata/mosaic-sql';
+import { column, type ExprNode } from '@uwdata/mosaic-sql';
 import { filteredExtent } from '../src/marks/util/extent.js';
 
-function predicate(xr, yr) {
+function predicate(xr: [Date, Date], yr: [number, number]): ExprNode {
   const fields = [column('Date'), column('Close')];
   return clauseIntervals(fields, [xr, yr], { source: {}, clients: new Set() }).predicate;
 }

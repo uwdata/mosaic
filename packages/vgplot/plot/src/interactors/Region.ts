@@ -5,7 +5,7 @@ import type { Extent, Interactor, SVG } from '../types.js';
 import type * as mc from '@uwdata/mosaic-core';
 import { clausePoints } from '@uwdata/mosaic-core';
 import { select } from 'd3';
-import { brush } from './util/brush.js';
+import { brush, type WrapBrush } from './util/brush.js';
 import { getFields } from './util/get-field.js';
 import { intersect } from './util/intersect.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
@@ -19,14 +19,14 @@ export class Region implements Interactor, mc.Activatable {
   selection: Selection;
   peers: boolean;
   style: Record<string, string | number>;
-  brush: any;
+  brush: WrapBrush;
   extent: Extent | null;
   groups: null;
   fields: any[];
   as: any[];
-  value: any;
+  value?: any[];
   g: any;
-  svg: any;
+  svg?: SVG;
   group: any;
 
   constructor(mark: InteractorMark, {
@@ -49,6 +49,7 @@ export class Region implements Interactor, mc.Activatable {
     this.extent = null;
     this.groups = null;
 
+    //@ts-expect-error Type 'string' is not assignable to type 'ChannelName'. (https://github.com/uwdata/mosaic/pull/1360)
     const { fields, as } = getFields(mark, channels);
     this.fields = fields;
     this.as = as;
@@ -64,7 +65,7 @@ export class Region implements Interactor, mc.Activatable {
     this.selection.activate(this.clause([this.fields.map(() => 0)]));
   }
 
-  clause(value): mc.SelectionClause {
+  clause(value: unknown[][] | null | undefined): mc.SelectionClause {
     const { fields, mark } = this;
     return clausePoints(fields, value, {
       source: this,
@@ -101,9 +102,7 @@ export class Region implements Interactor, mc.Activatable {
   init(svg: SVG): void {
     const { brush, extent, mark, style } = this;
     this.svg = svg;
-    //@ts-expect-error Property 'width' does not exist on type 'HTMLElement & Plot'.
     const w = svg.width.baseVal.value;
-    //@ts-expect-error Property 'height' does not exist on type 'HTMLElement & Plot'.
     const h = svg.height.baseVal.value;
     brush.extent([[0, 0], [w, h]]);
 
@@ -125,7 +124,7 @@ export class Region implements Interactor, mc.Activatable {
       }
     }
 
-    svg.addEventListener('pointerenter', (evt: PointerEvent) => {
+    svg.addEventListener('pointerenter', evt => {
       if (!evt.buttons) this.activate();
     });
   }

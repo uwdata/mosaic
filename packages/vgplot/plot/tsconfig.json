@@ -2,7 +2,10 @@
   "extends": "../../../tsconfig.base.json",
   "include": ["src/**/*"],
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "dist",
+    "strict": true,
+    "strictNullChecks": false, // 234 errors
+    "strictPropertyInitialization": false, // +5 (requires strictNullChecks)
   },
   "references": [
     { "path": "../../mosaic/core" },

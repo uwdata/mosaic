@@ -1,4 +1,4 @@
-import { bin1d } from '@uwdata/mosaic-sql';
+import { bin1d, type ExprValue } from '@uwdata/mosaic-sql';
 import { channelScale } from './channel-scale.js';
 import type { Mark } from '../Mark.js';
 
@@ -9,10 +9,10 @@ import type { Mark } from '../Mark.js';
  * input value being binned. Often the field is just a column
  * name. For time data, fields are mapped to millisecond timestamps.
  */
-export function binExpr(mark: Mark, channel: 'x' | 'y', n, extent, pad = 1, expr?) {
+export function binExpr(mark: Mark, channel: 'x' | 'y', n: number, extent: number[], pad: number = 1, expr?: ExprValue): [ExprValue, ExprValue] {
   // get base expression, the channel field unless otherwise given
   const { field } = mark.channelField(channel);
-  expr = expr ?? field;
+  expr = expr ?? field as ExprValue;
 
   // extract scale information
   const { type, apply, sqlApply } = channelScale(mark, channel);

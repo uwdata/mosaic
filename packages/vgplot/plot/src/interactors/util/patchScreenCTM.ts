@@ -3,8 +3,8 @@
  * result seen. This will let the method continue to function
  * even after the node is removed from the DOM.
  */
-export function patchScreenCTM(): void {
-  const node: SVGGraphicsElement = this;
+export function patchScreenCTM(this: SVGGraphicsElement): void {
+  const node = this;
   const getScreenCTM = node.getScreenCTM;
   let memo: DOMMatrix;
   node.getScreenCTM = () => {

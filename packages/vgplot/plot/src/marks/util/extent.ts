@@ -3,7 +3,7 @@ import { Fixed, Transient } from '../../symbols.js';
 import { BetweenOpNode, walk } from '@uwdata/mosaic-sql';
 import type { Mark } from '../Mark.js';
 import type * as msql from '@uwdata/mosaic-sql';
-import type { FixedType } from '../../types.js';
+import type { FixedType, TransientType } from '../../types.js';
 
 export const xext = { x: ['min', 'max'] } as const;
 export const yext = { y: ['min', 'max'] } as const;
@@ -14,17 +14,19 @@ export const yext = { y: ['min', 'max'] } as const;
  */
 export const xyext = { ...xext, ...yext } as const;
 
+type MonkeypatchedExtent = any[] & { [k in TransientType]?: true };
+
 // TODO @dangotbanned: Remove `{domain,nice}Attr`, `extentX`, `extentY` and replace all calls with `plotExtent(mark, filter, 'x' | 'y')
 export function plotExtent(mark: Mark, filter: msql.FilterExpr, channel: 'x' | 'y', domainAttr: 'xDomain' | 'yDomain', niceAttr: 'xNice' | 'yNice'): any[] {
   const { plot } = mark;
-  const domain: any[] | FixedType | undefined = plot.getAttribute(domainAttr);
+  const domain: MonkeypatchedExtent | FixedType | undefined = plot.getAttribute(domainAttr);
   const nice: boolean | string | number | undefined = plot.getAttribute(niceAttr);
 
   if (Array.isArray(domain) && !domain[Transient]) {
     return domain;
   } else {
     const { column, min, max } = mark.channelField(channel);
-    const dom = filteredExtent(filter, column) || (nice
+    const dom: MonkeypatchedExtent = filteredExtent(filter, column) || (nice
       ? scaleLinear().domain([min, max]).nice().domain()
       : [min, max]);
     if (domain !== Fixed) dom[Transient] = true;
@@ -44,8 +46,8 @@ export function extentY(mark: Mark, filter: msql.FilterExpr): any[] {
 export function filteredExtent(filter: msql.FilterExpr, column: any): any[] | undefined {
   if (!filter) return;
 
-  let lo;
-  let hi;
+  let lo: number | null | undefined;
+  let hi: number | null | undefined;
   const field = `${column}`;
 
   [filter].flat().forEach(p => walk(p, (node) => {

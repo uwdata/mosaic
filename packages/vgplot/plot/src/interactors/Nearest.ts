@@ -5,6 +5,7 @@ import { select, pointer, min } from 'd3';
 import { getField } from './util/get-field.js';
 import type { ChannelName, Interactor, SVG, ScaleName } from '../types.js';
 import type * as mc from '@uwdata/mosaic-core';
+import type { ExprValue } from '@uwdata/mosaic-sql';
 
 
 export class Nearest implements Interactor, mc.Activatable {
@@ -14,7 +15,7 @@ export class Nearest implements Interactor, mc.Activatable {
   pointer?: 'x' | 'y' | 'xy';
   listMatch?: 'any' | 'all';
   channels: ChannelName[];
-  fields: string[];
+  fields: ExprValue[];
   maxRadius: number;
   valueIndex: number;
 
@@ -34,7 +35,8 @@ export class Nearest implements Interactor, mc.Activatable {
     this.channels = channels || (
       pointer === 'x' ? ['x'] : pointer === 'y' ? ['y'] : ['x', 'y']
     );
-    this.fields = fields || this.channels.map(c => getField(mark, [c]));
+    //@ts-expect-error `getField` may introduce any type to fields
+    this.fields = fields || this.channels.map(c => getField(mark, c));
     this.maxRadius = maxRadius;
     this.valueIndex = -1;
   }
@@ -100,7 +102,7 @@ export class Nearest implements Interactor, mc.Activatable {
     });
 
     // trigger activation updates
-    svg.addEventListener('pointerenter', (evt: PointerEvent) => {
+    svg.addEventListener('pointerenter', evt => {
       if (!evt.buttons) this.activate();
     });
   }
