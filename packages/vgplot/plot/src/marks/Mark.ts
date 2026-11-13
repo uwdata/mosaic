@@ -11,12 +11,13 @@ import { isSymbol } from './util/is-symbol.js';
 import { Transform } from '../symbols.js';
 import type { Plot } from '../plot.js';
 import type { MarkType, ChannelName } from '../types.js';
+import type { BinTransformNode } from '../transforms/bin.js';
 
 export type EncodingName = ChannelName | 'tip' | ConstantOption | 'orderby'; // (uwdata/mosaic#266)
 export type Encodings = { [name in EncodingName]?: any };
 export type Reqs = { [name in EncodingName]?: mc.Stat[] };
 
-export type Field = { stats?: { stats?: mc.Stat[], column?: mc.FieldRef; }; basis?: msql.ExprValue; } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode;
+export type Field = { stats?: { stats?: mc.Stat[], column?: mc.FieldRef; }; basis?: msql.ExprValue; } | msql.ExprValue | msql.ColumnRefNode | msql.ColumnParamNode | msql.SQLNode | BinTransformNode;
 
 /** `channels: Entry[]` is being used to describe every possible input that is not `data` or `type: MarkType`.
  * 
@@ -108,7 +109,7 @@ export class Mark extends MosaicClient implements InteractorMark {
   constructor(public type: MarkType, public source: any, encodings: Encodings = {}, public reqs: Reqs = {}) {
     super(source?.options?.filterBy);
 
-    const channels = this.channels = [];
+    const channels = this.channels = [] as Entry[];
     const detail = this.detail = new Set;
     const params = this.params = new Set;
 
@@ -164,8 +165,9 @@ export class Mark extends MosaicClient implements InteractorMark {
       }
     };
 
-    for (const channel in encodings) {
-      process(channel as EncodingName, encodings[channel]);
+    for (const c in encodings) {
+      const channel = c as EncodingName;
+      process(channel, encodings[channel]);
     }
   }
 
@@ -230,7 +232,7 @@ export class Mark extends MosaicClient implements InteractorMark {
       //@ts-expect-error Property 'stats' does not exist on type 'string'
       const key = field.stats?.column ?? field;
       const entry = fields.get(key) ?? fields.set(key, new Set).get(key);
-      stats.forEach(s => entry.add(s));
+      stats.forEach((s: mc.Stat) => entry.add(s));
       reqs[channel]?.forEach(s => entry.add(s));
     }
 

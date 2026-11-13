@@ -58,7 +58,7 @@ export class Highlight implements Interactor {
 
   init(svg: SVG): Promise<void> {
     this.svg = svg;
-    const values = this.values = [];
+    const values = this.values = [] as any[];
     const index = this.mark.index;
     const g = `g[data-index="${index}"]`;
     const selector = `${g} > *:not(g), ${g} > g > *`;
@@ -67,7 +67,7 @@ export class Highlight implements Interactor {
     const { channels } = this;
     for (let i = 0; i < nodes.length; ++i) {
       const node = nodes[i];
-      values.push(channels.map(c => node.getAttribute(c[0])));
+      values.push(channels.map(c => node.getAttribute(String(c[0]))));
     }
 
     return this.update();
@@ -113,5 +113,6 @@ async function predicateFunction(mark: InteractorMark, selection: Selection): Pr
   const v = data.getChild?.('__');
   return !(data.numRows) ? (() => false)
     : v ? (i => v.at(i))
+      //@ts-expect-error Element implicitly has an 'any' type because type 'Table' has no index signature. Did you mean to call 'data.get'?
       : (i => data[i].__);
 }

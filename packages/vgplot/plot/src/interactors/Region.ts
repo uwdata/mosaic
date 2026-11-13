@@ -49,6 +49,7 @@ export class Region implements Interactor, mc.Activatable {
     this.extent = null;
     this.groups = null;
 
+    //@ts-expect-error Type 'string' is not assignable to type 'ChannelName'. (https://github.com/uwdata/mosaic/pull/1360)
     const { fields, as } = getFields(mark, channels);
     this.fields = fields;
     this.as = as;
