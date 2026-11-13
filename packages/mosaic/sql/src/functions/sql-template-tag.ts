@@ -23,11 +23,11 @@ export type TemplateValue =
  * @param strings Template string constants.
  * @param exprs Template expression values.
  */
-export function sql(strings: TemplateStringsArray, ...exprs: TemplateValue[]) {
+export function sql(strings: string[] | TemplateStringsArray, ...exprs: TemplateValue[]): FragmentNode {
   return new FragmentNode(parseSQL(strings, exprs));
 }
 
-function parseSQL(strings: TemplateStringsArray, exprs: TemplateValue[]) {
+function parseSQL(strings: string[] | TemplateStringsArray, exprs: TemplateValue[]): ExprNode[] {
   const spans: (string | ExprNode)[] = [strings[0]];
   const n = exprs.length;
   for (let i = 0, k = 0; i < n;) {
