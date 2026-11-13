@@ -5,13 +5,13 @@ import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv1d } from './util/density.js';
 import { extentX, extentY, xext, yext } from './util/extent.js';
-import { grid1d } from './util/grid.js';
+import { grid1d, type Grid1D } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
-import { Mark, channelOption, markQuery, type PlotMarkSpec } from './Mark.js';
+import { Mark, channelOption, markQuery, type Encodings, type PlotMarkSpec } from './Mark.js';
 import type * as msql from '@uwdata/mosaic-sql';
 import type { CanParam } from '../types.js';
 
-const GROUPBY = { fill: 1, stroke: 1, z: 1 };
+const GROUPBY = { fill: 1, stroke: 1, z: 1 } as Encodings;
 
 type DensityType = 'dot' | 'dotY' | 'circle' | 'hexagon' | 'textX' | 'text' | 'textY' | 'areaX' | 'areaY' | 'lineX' | 'lineY' | 'dotX';
 type Normalize = boolean | 'max' | 'sum' | 'none';
@@ -28,11 +28,11 @@ export class Density1DMark extends Mark {
   dim: 'x' | 'y';
   bins: number;
   bandwidth: number;
-  grids: any;
+  grids?: Grid1D;
   normalize: Normalize;
   stack: boolean;
   extent?: any[];
-  groupby?: any[];
+  groupby?: string[];
   constructor(type: DensityType, source: any, options: Density1DOptions = {}) {
     const {
       bins = 1024,
@@ -82,7 +82,7 @@ export class Density1DMark extends Mark {
       .where(filter.concat(isBetween(bx, extent)));
     const v = this.channelField('weight') ? 'weight' : null;
     const g = this.groupby = channels.flatMap(c => {
-      return (GROUPBY[c.channel] && c.field) ? c.as : [];
+      return (GROUPBY[c.channel] && c.field) ? c.as : [] as string[];
     });
     return binLinear1d(q, x, v, g);
   }
@@ -111,7 +111,7 @@ export class Density1DMark extends Mark {
     const b = this.channelField(dim).as;
     const v = dim === 'x' ? 'y' : 'x';
     const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
-    const neg = cols._grid.some(grid => grid.some(v => v < 0));
+    const neg = cols._grid.some(grid => grid.some((v: any) => v < 0));
     const config = dericheConfig(bandwidth * (bins - 1) / size, neg);
 
     const b0 = +lo;
@@ -120,14 +120,15 @@ export class Density1DMark extends Mark {
     const numRows = bins * numGrids;
     const _b = new Float64Array(numRows);
     const _v = new Float64Array(numRows);
-    const _g = groupby.reduce((m, name) => (m[name] = Array(numRows), m), {});
+    const _g = groupby.reduce((m, name) => (m[name] = Array(numRows), m), {} as Record<string, number[]>);
 
     for (let k = 0, g = 0; g < numGrids; ++g) {
       // fill in groupby values
+      //@ts-expect-error Argument of type 'unknown' is not assignable to parameter of type 'number'.
       groupby.forEach(name => _g[name].fill(cols[name][g], k, k + bins));
 
       // perform smoothing, map smoothed grid values to sample data points
-      const grid = cols._grid[g];
+      const grid = cols._grid[g] as Float64Array;
       const result = dericheConv1d(config, grid, bins);
       const scale = 1 / norm(grid, result, delta, normalize);
       for (let i = 0; i < bins; ++i, ++k) {
