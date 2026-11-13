@@ -30,7 +30,7 @@ export class GeoMark extends Mark {
       }
       const column = this.data.columns[geom];
       if (typeof column[0] === 'string') {
-        column.forEach(s => JSON.parse(s as string));
+        this.data.columns[geom] = column.map(s => JSON.parse(s as string));
       }
     }
 
