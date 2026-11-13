@@ -1,12 +1,14 @@
-import { isNode, isColumnRef, AggregateNode } from '@uwdata/mosaic-sql';
+import { isNode } from '@uwdata/mosaic-sql';
 import type { Field, InteractorMark } from '../../marks/Mark.js';
 import type { ChannelName } from '../../types.js';
 
 function extractField(field: Field | undefined): unknown | undefined {
   if (isNode(field)) {
-    if (isColumnRef(field)) {
+    if (field.type === 'COLUMN_REF') {
+      // @ts-ignore
       return field.column;
-    } else if (field instanceof AggregateNode) {
+    } else if (field.type === 'AGGREGATE') {
+      // @ts-ignore
       return field.args[0] ?? field;
     } else if (field.type === 'CUSTOM' && 'column' in field) {
       // handle custom transforms (like bin) that expose a column
