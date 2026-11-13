@@ -14,6 +14,7 @@ import { Mark, type EncodingName, type Encodings } from './Mark.js';
 import type { Plot } from '../plot.js';
 import type * as msql from '@uwdata/mosaic-sql';
 import type { CanParam } from '../types.js';
+import type { Table } from '@uwdata/flechette';
 
 export const DENSITY = 'density';
 
@@ -187,7 +188,7 @@ export class Grid2DMark extends Mark {
     ];
   }
 
-  queryResult(data: unknown): this {
+  queryResult(data: Table): this {
     const [w, h] = this.bins;
     const interp = maybeInterpolate(this.interpolate);
     // @ts-expect-error Correct the data column type

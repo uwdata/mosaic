@@ -10,6 +10,7 @@ import { handleParam } from './util/handle-param.js';
 import { Mark, channelOption, markQuery, type Encodings, type PlotMarkSpec } from './Mark.js';
 import type * as msql from '@uwdata/mosaic-sql';
 import type { CanParam } from '../types.js';
+import type { Table } from '@uwdata/flechette';
 
 const GROUPBY = { fill: 1, stroke: 1, z: 1 } as Encodings;
 
@@ -87,7 +88,7 @@ export class Density1DMark extends Mark {
     return binLinear1d(q, x, v, g);
   }
 
-  queryResult(data: unknown): this {
+  queryResult(data: Table): this {
     // @ts-expect-error Correct the data column type
     const c = toDataColumns(data).columns;
     this.grids = grid1d(this.bins, c.index, c.density, c, this.groupby);

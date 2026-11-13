@@ -9,6 +9,7 @@ import { qt } from './util/stats.js';
 import { Mark, channelOption, type Encodings, type PlotMarkSpec } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
 import type * as msql from '@uwdata/mosaic-sql';
+import type { Table } from '@uwdata/flechette';
 
 type Columns = { x: number[]; y1: number[]; y2: number[];[name: string]: number[]; };
 type AreaData = { numRows: number; columns: Columns; };
@@ -60,7 +61,7 @@ export class RegressionMark extends Mark {
       .groupby(groupby);
   }
 
-  queryResult(data: unknown): this {
+  queryResult(data: Table): this {
     //@ts-expect-error Type 'DataColumns' is not assignable to type 'ModelFit'.
     this.modelFit = toDataColumns(data);
 

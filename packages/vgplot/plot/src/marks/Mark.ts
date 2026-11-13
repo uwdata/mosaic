@@ -12,6 +12,8 @@ import { Transform } from '../symbols.js';
 import type { Plot } from '../plot.js';
 import type { MarkType, ChannelName } from '../types.js';
 import type { BinTransformNode } from '../transforms/bin.js';
+import { tableColumns } from '../data.js';
+
 
 export type EncodingName = ChannelName | 'tip' | ConstantOption | 'orderby'; // (uwdata/mosaic#266)
 export type Encodings = { [name in EncodingName]?: any };
@@ -281,8 +283,10 @@ export class Mark extends MosaicClient implements InteractorMark {
   /**
    * Provide query result data to the mark.
    */
-  queryResult(data: Table | Record<string, unknown>[]): this {
-    this.data = toDataColumns(data);
+  queryResult(data: Table): this {
+    // TODO @dangotbanned: Split out the data/source part and re-wrap so the query schema can be declared per-mark
+    //@ts-expect-error still using `Arrayish` here
+    this.data = tableColumns(data);
     return this;
   }
 

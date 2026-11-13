@@ -19,7 +19,7 @@ export class GeoMark extends Mark {
     super('geo', source, encodings, reqs);
   }
 
-  queryResult(data: Table | Record<string, unknown>[]): this {
+  queryResult(data: Table): this {
     super.queryResult(data); // map to columns, set this.data
 
     // look for an explicit geometry field
