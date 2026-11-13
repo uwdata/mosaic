@@ -11,12 +11,12 @@ type APIContext = ReturnType<typeof createAPIContext>;
 interface InstantiateContextOptions {
   api?: APIContext;
   baseURL?: string;
-  params?: Map<string, Param<unknown>>;
+  params?: Map<string, Param<unknown> | Selection>;
   plotDefaults?: PlotAttributeNode[];
 }
 
 export class InstantiateContext {
-  activeParams: Map<string, Param<unknown>>;
+  activeParams: Map<string, Param<unknown> | Selection>;
   api: APIContext;
   baseURL: string | undefined;
   coordinator: Coordinator;
