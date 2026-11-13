@@ -1,4 +1,4 @@
-/** @import { ClauseSource } from '@uwdata/mosaic-core' */
+/** @import { ClauseSource, Selection, Param } from '@uwdata/mosaic-core' */
 /** @import { InteractorMark } from '../marks/Mark.js' */
 import { clauseList, clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
 import { select, pointer, min } from 'd3';
@@ -11,15 +11,21 @@ import { getField } from './util/get-field.js';
 export class Nearest {
   /**
    * @param {InteractorMark} mark The mark to interact with.
-   * @param {*} options The interactor options.
+   * @param {object} options The interactor options.
+   * @param {Selection | Param<any>} options.selection
+   * @param {'x' | 'y'  | 'xy'} options.pointer
+   * @param {string[]} [options.channels]
+   * @param {string[]} [options.fields]
+   * @param {number} [options.maxRadius]
+   * @param {'any' | 'all'} [options.listMatch]
    */
   constructor(mark, {
     selection,
     pointer,
-    channels,
-    fields,
+    channels = undefined,
+    fields = undefined,
     maxRadius = 40,
-    listMatch
+    listMatch = undefined
   }) {
     this.mark = mark;
     this.selection = selection;
@@ -75,6 +81,7 @@ export class Nearest {
         const v = i < 0 ? undefined : keys.map(k => columns[k][i]);
         selection.update(
           // provide value for param, clause for selection
+          // @ts-expect-error Argument of type 'unknown' is not assignable to parameter of type 'SelectionClause'.
           param ? (!v || v.length > 1 ? v : v[0]) : that.clause(v)
         );
       }
@@ -96,6 +103,7 @@ export class Nearest {
 
   activate() {
     const v = this.channels.map(() => 0);
+    //@ts-expect-error  Property 'activate' does not exist on type 'Param<any>'
     this.selection.activate(this.clause(v));
   }
 }

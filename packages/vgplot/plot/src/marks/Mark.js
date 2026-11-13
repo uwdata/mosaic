@@ -59,7 +59,7 @@ export const isDataArray = source => Array.isArray(source);
  * @implements {InteractorMark}
  */
 export class Mark extends MosaicClient {
-  constructor(type, source, encodings, reqs = {}) {
+  constructor(type, source, encodings = {}, reqs = {}) {
     super(source?.options?.filterBy);
     this.type = type;
     this.reqs = reqs;

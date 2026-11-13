@@ -1,3 +1,4 @@
+/** @import { InteractorMark } from '../marks/Mark.js' */
 /** @import { ClauseSource } from '@uwdata/mosaic-core' */
 import { Selection, clauseInterval } from '@uwdata/mosaic-core';
 import { select, zoom, ZoomTransform } from 'd3';
@@ -10,6 +11,17 @@ const asc = (a, b) => a - b;
  * @implements {Activatable}
  */
 export class PanZoom {
+  /**
+   * @param {InteractorMark} mark The mark to interact with.
+   * @param {object} options
+   * @param {Selection} [options.x]
+   * @param {Selection} [options.y]
+   * @param {string} [options.xfield]
+   * @param {string} [options.yfield]
+   * @param {boolean} [options.zoom]
+   * @param {boolean} [options.panx]
+   * @param {boolean} [options.pany]
+   */
   constructor(mark, {
     x = new Selection(),
     y = new Selection(),
@@ -81,6 +93,7 @@ export class PanZoom {
         this.xscale = this.svg.scale('x');
         this.yscale = this.svg.scale('y');
       })
+      //@ts-expect-error Property '__zoom' does not exist on type 'HTMLElement'.
       .on('end', () => element.__zoom = new ZoomTransform(1, 0, 0))
       .on('zoom', ({ transform }) => this.publish(transform));
 

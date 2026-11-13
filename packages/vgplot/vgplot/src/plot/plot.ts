@@ -1,10 +1,11 @@
 import { Plot } from '@uwdata/mosaic-plot';
 import { connect } from '../connect.js';
+import type { PlotDirective, PlotElement } from './types.js';
 
-export function plot(...directives) {
+export function plot(...directives: PlotDirective[]): PlotElement {
   const p = new Plot();
-  directives.flat().forEach(dir => dir(p));
-  connect(this, ...p.marks); // this -> optional API context
+  directives.forEach(dir => dir(p));
+  connect(this, ...p.marks);
   p.update(); // request update, needed if no marks are defined
   return p.element;
 }

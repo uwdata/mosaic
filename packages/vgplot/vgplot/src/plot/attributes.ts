@@ -1,11 +1,15 @@
 import { isParam } from '@uwdata/mosaic-core';
 import { setNamedPlot } from './named-plots.js';
+import type { PlotDirective, PickValues, Plot, Value, CanParam, Primitive, FixedType } from './types.js';
 
-export function name(name) {
+
+type AnyValue = Value | object;
+
+export function name(name: string): PlotDirective {
   return plot => setNamedPlot(this, name, plot);
 }
 
-function setAttribute(plot, name, value) {
+function setAttribute(plot: Plot, name: string, value: AnyValue): void {
   if (isParam(value)) {
     value.addEventListener('value', value => {
       plot.setAttribute(name, value);
@@ -19,11 +23,11 @@ function setAttribute(plot, name, value) {
   }
 }
 
-function attribute(name, value) {
+function attribute(name: string, value: AnyValue): PlotDirective {
   return plot => { setAttribute(plot, name, value); };
 }
 
-function attributes(values) {
+function attributes(values: { [s: string]: Value; } | ArrayLike<Value>): PlotDirective {
   return plot => {
     for (const [name, value] of Object.entries(values)) {
       setAttribute(plot, name, value)
@@ -31,9 +35,18 @@ function attributes(values) {
   };
 }
 
-export function margins(object) {
+interface Margins {
+  top?: CanParam<number>;
+  right?: CanParam<number>;
+  bottom?: CanParam<number>;
+  left?: CanParam<number>;
+}
+
+type MarginMargins = { [P in keyof Margins as `margin${Capitalize<string & P>}`]: Margins[P] }
+
+export function margins(object: Margins): PlotDirective {
   const { top, bottom, left, right } = object;
-  const attr = {};
+  const attr: MarginMargins = {};
   if (top !== undefined) attr.marginTop = top;
   if (bottom !== undefined) attr.marginBottom = bottom;
   if (left !== undefined) attr.marginLeft = left;
@@ -41,7 +54,7 @@ export function margins(object) {
   return attributes(attr);
 }
 
-export function margin(value) {
+export function margin(value: CanParam<number>): PlotDirective {
   return attributes({
     marginTop: value,
     marginBottom: value,
@@ -50,29 +63,32 @@ export function margin(value) {
   });
 }
 
-export function xyDomain(value) {
+export function xyDomain(value: Value): PlotDirective {
   return attributes({ xDomain: value, yDomain: value });
 }
 
-const attrf = name => value => attribute(name, value);
+/* TODO @dangotbanned: Replace `name: string` after (https://github.com/uwdata/mosaic/issues/1388#issuecomment-6744099978)*/
+function attrf<V extends Value | object = Value>(name: string): (value: V) => PlotDirective {
+  return (value: V) => attribute(name, value);
+}
 
 // plot-level attributes
-export const style = attrf('style');
-export const width = attrf('width');
-export const height = attrf('height');
-export const marginLeft = attrf('marginLeft');
-export const marginRight = attrf('marginRight');
-export const marginTop = attrf('marginTop');
-export const marginBottom = attrf('marginBottom');
-export const align = attrf('align');
-export const aspectRatio = attrf('aspectRatio');
-export const axis = attrf('axis');
-export const inset = attrf('inset');
-export const grid = attrf('grid');
-export const clip = attrf('clip');
-export const padding = attrf('padding');
-export const ariaLabel = attrf('ariaLabel');
-export const ariaDescription = attrf('ariaDescription');
+export const style = attrf<CanParam<string> | Partial<PickValues<CSSStyleProperties, string>>>('style');
+export const width = attrf<CanParam<number>>('width');
+export const height = attrf<CanParam<number>>('height');
+export const marginLeft = attrf<CanParam<number>>('marginLeft');
+export const marginRight = attrf<CanParam<number>>('marginRight');
+export const marginTop = attrf<CanParam<number>>('marginTop');
+export const marginBottom = attrf<CanParam<number>>('marginBottom');
+export const align = attrf<CanParam<number>>('align');
+export const aspectRatio = attrf<CanParam<number>>('aspectRatio');
+export const axis = attrf<CanParam<'top' | 'right' | 'bottom' | 'left' | 'both' | boolean | null>>('axis');
+export const inset = attrf<CanParam<number>>('inset');
+export const grid = attrf<CanParam<boolean | string>>('grid');
+export const clip = attrf<CanParam<'frame' | 'sphere' | boolean | null>>('clip');
+export const padding = attrf<CanParam<number>>('padding');
+export const ariaLabel = attrf<CanParam<string | null>>('ariaLabel');
+export const ariaDescription = attrf<CanParam<string | null>>('ariaDescription');
 
 
 // x scale attributes
@@ -150,13 +166,13 @@ export const yExponent = attrf('yExponent');
 export const yConstant = attrf('yConstant');
 
 // facet attributes
-export const facetMargin = attrf('facetMargin');
-export const facetMarginTop = attrf('facetMarginTop');
-export const facetMarginBottom = attrf('facetMarginBottom');
-export const facetMarginLeft = attrf('facetMarginLeft');
-export const facetMarginRight = attrf('facetMarginRight');
+export const facetMargin = attrf<CanParam<number>>('facetMargin');
+export const facetMarginTop = attrf<CanParam<number>>('facetMarginTop');
+export const facetMarginBottom = attrf<CanParam<number>>('facetMarginBottom');
+export const facetMarginLeft = attrf<CanParam<number>>('facetMarginLeft');
+export const facetMarginRight = attrf<CanParam<number>>('facetMarginRight');
 export const facetGrid = attrf('facetGrid');
-export const facetLabel = attrf('facetLabel');
+export const facetLabel = attrf<CanParam<string | null>>('facetLabel');
 
 // fx scale attributes
 export const fxDomain = attrf('fxDomain');
@@ -250,9 +266,9 @@ export const opacityExponent = attrf('opacityExponent');
 export const opacityConstant = attrf('opacityConstant');
 
 // symbol scale attributes
-export const symbolScale = attrf('symbolScale');
-export const symbolDomain = attrf('symbolDomain');
-export const symbolRange = attrf('symbolRange');
+export const symbolScale = attrf<CanParam<'identity' | 'ordinal' | null>>('symbolScale');
+export const symbolDomain = attrf<CanParam<Primitive | Primitive[]> | FixedType>('symbolDomain');
+export const symbolRange = attrf<CanParam<Primitive | Primitive[]> | FixedType>('symbolRange');
 
 // r scale attributes
 export const rScale = attrf('rScale');

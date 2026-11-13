@@ -5,6 +5,11 @@ import { Coordinator } from '@uwdata/mosaic-core';
 import { createAPIContext } from '../src/index.js';
 import { clientsReady } from './util/clients-ready.js';
 import { NodeConnector } from '@uwdata/mosaic-core/node-connector';
+import type { APIContext } from '../src/context.js';
+
+interface TestModule {
+  default(vg: APIContext): Promise<HTMLElement>;
+}
 
 const cwd = import.meta.dirname;
 
@@ -20,10 +25,10 @@ describe('render', () => {
   });
 });
 
-async function renderTest(name) {
+async function renderTest(name: string): Promise<void> {
   const specPath = resolve(cwd, `specs/${name}.js`);
   const htmlPath = resolve(cwd, `output/${name}.html`);
-  const { default: run } = await import(specPath);
+  const { default: run } = (await import(specPath)) as TestModule;
   const mc = new Coordinator(await NodeConnector.make(), { logger: null });
   const el = await run(createAPIContext({ coordinator: mc }));
   await clientsReady(el);

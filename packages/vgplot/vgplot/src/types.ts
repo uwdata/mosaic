@@ -1,0 +1,1 @@
+export type { RootElement, ConcatElement, PlotElement, PlotDirective } from './plot/types.js'
