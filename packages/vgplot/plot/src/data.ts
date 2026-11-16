@@ -83,6 +83,9 @@ function isFrom(data: object): data is From {
   return 'table' in data && !Array.isArray(data.table);
 }
 
+export function source(data: From): TableSource<string | mc.Param<string>>;
+export function source(data: Rows | Table | ArrowTable | Values | ColumnsIn, allowEmpty: boolean): InlineSource<ColumnsOut | Values>;
+export function source(data: FromData, allowEmpty: boolean): InlineSource<ColumnsOut | Values> | TableSource<string | mc.Param<string>>;
 export function source(data: FromData, allowEmpty: boolean = false): InlineSource<ColumnsOut | Values> | TableSource<string | mc.Param<string>> {
   if (Array.isArray(data)) {
     return inline(data, allowEmpty);
@@ -113,7 +116,7 @@ abstract class Source<Name extends string | undefined> {
 }
 
 /**A data source that participates in `Mark.{prepare,query}`.*/
-abstract class TableSource<T extends string | mc.Param<string>> extends Source<string> {
+export abstract class TableSource<T extends string | mc.Param<string>> extends Source<string> {
   constructor(
     /**`Mark.source.table` */
     readonly table: T,
