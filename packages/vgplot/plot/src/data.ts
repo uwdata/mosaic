@@ -1,6 +1,8 @@
 import type { Table, TypeMap, ValueArray } from '@uwdata/flechette';
 import type * as mc from '@uwdata/mosaic-core';
 
+import type { Arrayish } from './array.js';
+
 export interface DataColumns<T extends TypeMap = TypeMap> {
   numRows: number;
   columns: { [P in keyof T]: ValueArray<T[P]>; };
@@ -22,9 +24,11 @@ type Rows = Row[];
 type Values = unknown[];
 
 //Don't use `ValueArray` here because `string` satisfies it
-type Columns<T extends TypeMap = TypeMap> = { [P in keyof T]: Array<T[P]>; };
+type ColumnsIn<T extends TypeMap = TypeMap> = { [P in keyof T]: Array<T[P]>; };
 
-export type FromData = From | Rows | Values | Columns;
+type ColumnsOut<T extends TypeMap = TypeMap> = { [P in keyof T]: Arrayish<T[P]>; };
+
+export type FromData = From | Rows | Values | ColumnsIn;
 
 function isArrowTable<T extends TypeMap = TypeMap>(values: unknown): values is Table<T> {
   // @ts-expect-error check property of unknown value
@@ -69,11 +73,11 @@ function inline(data: any[], allowEmpty: boolean = false): InlineValues | Inline
   return new InlineValues(numRows, data);
 }
 
-function isFrom(data: From | Columns): data is From {
+function isFrom(data: From | ColumnsIn): data is From {
   return 'table' in data && !Array.isArray(data.table);
 }
 
-export function source(data: FromData, allowEmpty: boolean = false): InlineSource<Columns | Values> | TableSource<string | mc.Param<string>> {
+export function source(data: FromData, allowEmpty: boolean = false): InlineSource<ColumnsOut | Values> | TableSource<string | mc.Param<string>> {
   if (Array.isArray(data)) {
     return inline(data, allowEmpty);
   }
@@ -133,10 +137,20 @@ abstract class InlineSource<D> extends Source<undefined> {
   tableName(): undefined { return; }
 }
 
-class InlineColumns extends InlineSource<Columns> {
-  constructor(readonly numRows: number, readonly columns: Columns) { super(numRows); }
-  get data(): Columns { return this.columns; }
+class InlineColumns<T extends TypeMap = TypeMap> extends InlineSource<ColumnsOut<T>> {
+  constructor(readonly numRows: number, readonly columns: ColumnsOut<T>) { super(numRows); }
+  get data(): ColumnsOut<T> { return this.columns; }
 
+  static fromArrow(table: unknown): unknown {
+    throw new Error("not yet implemented");
+  }
+
+  static fromFlechette<F extends TypeMap>(table: Table<F>): InlineColumns<F> {
+    // Requires a cast due to upstream typing
+    return new InlineColumns(table.numRows, table.toColumns() as ColumnsOut<F>);
+  }
+
+  //TODO @dangotbanned: can this be typed better?
   static fromRecords(names: string[], rows: Row[]): InlineColumns {
     function* values(name: string): Iterable<unknown> {
       for (const row of rows) {
