@@ -2,7 +2,7 @@
  * @import { Selection } from '@uwdata/mosaic-core'
  * @import { FilterExpr } from '@uwdata/mosaic-sql'
  */
-import { clausePoints, coordinator, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
+import { clausePoints, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { Input, input } from './input.js';
@@ -187,7 +187,7 @@ export class Table extends Input {
     this.requestQuery(query);
 
     // prefetch subsequent data batch
-    coordinator().prefetch(query.clone().offset(offset + this.limit));
+    this.coordinator?.prefetch(query.clone().offset(offset + this.limit));
   }
 
   async prepare() {
