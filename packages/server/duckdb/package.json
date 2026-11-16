@@ -43,7 +43,7 @@
     "@duckdb/node-api": "~2.0.0-r.1"
   },
   "devDependencies": {
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.6",
     "@uwdata/flechette": "catalog:"
   }
 }
