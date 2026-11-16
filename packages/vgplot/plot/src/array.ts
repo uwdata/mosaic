@@ -169,6 +169,19 @@ export interface TypedArrayOnly<T> extends TypedArrayProps, TypedArraySet<T>, Ty
  */
 export interface TypedArrayLike<T extends number | bigint> extends TypedArrayOnly<T>, ArrayFull<T> { }
 
+type Fromable<T> = Iterable<T> | ArrayLike<T>;
+
+interface BaseArrayConstructor<Element, Arr> {
+  // required for typed array, optional for array
+  new(length: number): Arr;
+  new(array: Fromable<Element>): Arr;
+  of(...items: Element[]): Arr;
+  from(arrayLike: Fromable<Element>): Arr;
+  from<V>(arrayLike: Fromable<V>, mapfn: (v: V, k: number) => number, thisArg?: any): Arr;
+}
+
+type TypedArrayConstructor<T extends number | bigint> = BaseArrayConstructor<T, TypedArrayLike<T>>;
+type AnyArrayConstructor<T extends number | bigint> = BaseArrayConstructor<T, ArrayFull<T>>;
 
 /** A 1D numeric {@link Array} or [TypedArray][1].
  * 
@@ -176,3 +189,94 @@ export interface TypedArrayLike<T extends number | bigint> extends TypedArrayOnl
  */
 export type Arrayish<T extends number | bigint> = T[] | TypedArrayLike<T>;
 
+/** 
+ * Get the constructor from an array, typed array or union of both - while preserving the element types. 
+ * @param arr An {@link Array} or [TypedArray][1] instance.
+ * 
+ * [1]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
+ * 
+ * @returns A *reusable* namespace that is `new`-able, and defines {@link Array.from} & {@link Array.of}.
+ * 
+ * ## See also
+ * 
+ * - {@link array}
+ * - {@link array_from}
+ * - {@link array_from_map}
+ * 
+ * ## Examples
+ * 
+ * ```ts
+ * const nums = [1, 2, 3];
+ * const f32 = new Float32Array(nums);
+ * const big64 = BigInt64Array.of(1n, 2n, 3n);
+ * ```
+ * 
+ * {@link Array} does not require `new` and is variadic:
+ * 
+ * ```ts
+ * const ctor_1 = ctor(nums);
+ * ctor_1(5, 6, 7, 8) satisfies number[];
+ * ```
+ * 
+ * TypedArray(s) are less fancy, but support two methods that {@link Array} lacks:
+ * 
+ * ```ts
+ * const ctor_2 = ctor(f32);
+ * const typed_array = new ctor_2(10) satisfies TypedArrayLike<number>;
+ * typed_array.set(typed_array.subarray(3, 7).fill(1));
+ * ```
+ * 
+ * {@link ctor} will also warn you if you mix up element types:
+ * 
+ * ```ts
+ * const ctor_3 = ctor(big64);
+ * ctor_3.of(1, 2, 3);
+ * //        ^ Argument of type 'number' is not assignable to parameter of type 'bigint'.
+ * 
+ * ctor_3.from(big64.reverse().values()) satisfies TypedArrayLike<bigint>;
+ * ```
+ */
+function constructor(arr: Array<any>): ArrayConstructor;
+function constructor<T extends number | bigint>(arr: TypedArrayLike<T>): TypedArrayConstructor<T>;
+function constructor<T extends number | bigint>(arr: ArrayFull<T>): AnyArrayConstructor<T>;
+function constructor(arr: { constructor: unknown; }): unknown {
+  return arr.constructor;
+}
+
+export const ctor = constructor;
+
+
+/** 
+ * Generate a new array with designated size and type.
+ * @param size The size of the array
+ * @param proto A prototype object of the desired array type.
+ *  This may be a typed array or standard array.
+ * @returns The generated array.
+ */
+export function array<T extends number | bigint>(size: number, proto: T[]): T[];
+export function array<T extends number | bigint>(size: number, proto: TypedArrayLike<T>): TypedArrayLike<T>;
+export function array<T extends number | bigint>(size: number, proto: ArrayFull<T>): ArrayFull<T>;
+export function array<T extends number | bigint>(size: number, proto: ArrayFull<T>): ArrayFull<T> {
+  return new (constructor(proto))(size);
+}
+
+/**
+ * Creates an array from an iterable object.
+ * @param iterable An iterable object to convert to an array.
+ * @param proto A prototype object of the desired array type.
+ *  This may be a typed array or standard array.
+ */
+export function array_from<T extends number | bigint>(iterable: Fromable<T>, proto: ArrayFull<T>): ArrayFull<T> {
+  return constructor(proto).from(iterable);
+}
+
+/**
+ * Creates an array from an iterable object.
+ * @param iterable An iterable object to convert to an array.
+ * @param mapfn A mapping function to call on every element of the array.
+ * @param proto A prototype object of the desired array type.
+ *  This may be a typed array or standard array.
+ */
+export function array_from_map<T extends number | bigint, V>(iterable: Fromable<V>, mapfn: (v: V, k: number) => number, proto: ArrayFull<T>): ArrayFull<T> {
+  return constructor(proto).from(iterable, mapfn);
+}
