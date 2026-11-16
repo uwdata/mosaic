@@ -19,6 +19,16 @@ export interface From {
   options: FromOptions;
 }
 
+interface Column<T> {
+  toArray(): ValueArray<T> | undefined;
+}
+
+export interface ArrowTable<T extends TypeMap = TypeMap> {
+  readonly numRows: number;
+  readonly schema: { readonly fields: { readonly name: string; }[]; };
+  getChildAt<R extends T[keyof T]>(index: number): Column<R> | undefined;
+}
+
 type Row = Record<string, unknown>;
 type Rows = Row[];
 type Values = unknown[];
@@ -28,14 +38,14 @@ type ColumnsIn<T extends TypeMap = TypeMap> = { [P in keyof T]: Array<T[P]>; };
 
 type ColumnsOut<T extends TypeMap = TypeMap> = { [P in keyof T]: Arrayish<T[P]>; };
 
-export type FromData = From | Rows | Values | ColumnsIn;
+export type FromData = From | Rows | Table | ArrowTable | Values | ColumnsIn;
 
-function isArrowTable<T extends TypeMap = TypeMap>(values: unknown): values is Table<T> {
+function isArrowTable<T extends TypeMap = TypeMap>(values: unknown): values is Table<T> | ArrowTable<T> {
   // @ts-expect-error check property of unknown value
   return (typeof values?.getChildAt) === 'function';
 }
 
-//TODO @dangotbanned: Replace with `from{Arrow,Flechette}`
+//TODO @dangotbanned: Replace with `fromArrow`
 export function tableColumns<T extends TypeMap = TypeMap>(data: unknown): DataColumns<T> {
   if (!(isArrowTable<T>(data))) {
     throw new Error('Unrecognized data format.');
@@ -45,14 +55,10 @@ export function tableColumns<T extends TypeMap = TypeMap>(data: unknown): DataCo
     return { numRows: data.numRows, columns: data.toColumns() };
   }
 
-  // TODO @dangotbanned: Add a test for non-fletchette and type it that way
-  // Has type 'never' because `isArrowTable` only knows about fletchette
-  // https://github.com/uwdata/mosaic/pull/1148
-  const arrowOther = data as Table<T>;
-  const { numRows, schema } = arrowOther;
+  const { numRows, schema } = data;
   const columns = {} as any;
   schema.fields.forEach(({ name }, i) => {
-    columns[name] = (arrowOther.getChildAt(i)?.toArray() ?? []);
+    columns[name] = (data.getChildAt(i)?.toArray() ?? []);
   });
 
   return { numRows, columns };
@@ -73,7 +79,7 @@ function inline(data: any[], allowEmpty: boolean = false): InlineValues | Inline
   return new InlineValues(numRows, data);
 }
 
-function isFrom(data: From | ColumnsIn): data is From {
+function isFrom(data: object): data is From {
   return 'table' in data && !Array.isArray(data.table);
 }
 
@@ -88,6 +94,9 @@ export function source(data: FromData, allowEmpty: boolean = false): InlineSourc
     const { table, options: { filterBy, optimize, unnest } } = data;
     const unnestNames = typeof unnest === 'string' ? [unnest] : unnest;
     return typeof table === 'string' ? new TableString(table, filterBy, optimize, unnestNames) : new TableParam(table, filterBy, optimize, unnestNames);
+  }
+  if (isArrowTable(data)) {
+    return InlineColumns.fromArrow(data);
   }
 
   const names = Object.keys(data);
@@ -141,8 +150,14 @@ class InlineColumns<T extends TypeMap = TypeMap> extends InlineSource<ColumnsOut
   constructor(readonly numRows: number, readonly columns: ColumnsOut<T>) { super(numRows); }
   get data(): ColumnsOut<T> { return this.columns; }
 
-  static fromArrow(table: unknown): unknown {
-    throw new Error("not yet implemented");
+  static fromArrow<F extends TypeMap>(table: ArrowTable<F> | Table<F>): InlineColumns<F> {
+    if ('toColumns' in table) {
+      return InlineColumns.fromFlechette(table);
+    }
+    const { numRows, schema: { fields } } = table;
+    const columns = {} as any;
+    fields.forEach(({ name }, i) => { columns[name] = (table.getChildAt(i)?.toArray() ?? []); });
+    return new InlineColumns<F>(numRows, columns);
   }
 
   static fromFlechette<F extends TypeMap>(table: Table<F>): InlineColumns<F> {
