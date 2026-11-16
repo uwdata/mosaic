@@ -59,28 +59,40 @@ function scaleLinear(): ScaleTransform<number> {
   };
 }
 
-function scaleLog({ base = null }: {base?: number | null} = { }): ScaleTransform<number> {
+function scaleLog(
+  { base = null, domain }: { base?: number | null, domain?: ScaleDomain } = { }
+): ScaleTransform<number> {
+  // apply folds the sign of x into its result, so invert needs the domain
+  // to tell log(0.5) from -log(2). Without one, assume positive values.
+  const negative = domain != null && Number(domain[0]) < 0;
+  const unfold = negative
+    ? (f: (x: number) => number) => (x: number) => -f(-x)
+    : (f: (x: number) => number) => f;
+  const sqlUnfold = negative
+    ? (f: (c: ExprValue) => ExprNode) => (c: ExprNode) => mul(-1, f(mul(-1, c)))
+    : (f: (c: ExprValue) => ExprNode) => f;
+
   if (!base || base === Math.E) {
     return {
       apply: x => Math.sign(x) * Math.log(Math.abs(x)),
-      invert: x => Math.sign(x) * Math.exp(Math.abs(x)),
+      invert: unfold(Math.exp),
       sqlApply: c => (c = asNode(c), mul(sign(c), ln(abs(nullif(c, 0))))),
-      sqlInvert: c => (c = asNode(c), mul(sign(c), exp(abs(c))))
+      sqlInvert: sqlUnfold(c => exp(c))
     };
   } else if (base === 10) {
     return {
       apply: x => Math.sign(x) * Math.log10(Math.abs(x)),
-      invert: x => Math.sign(x) * Math.pow(10, Math.abs(x)),
+      invert: unfold(x => Math.pow(10, x)),
       sqlApply: c => (c = asNode(c), mul(sign(c), log(abs(nullif(c, 0))))),
-      sqlInvert: c => (c = asNode(c), mul(sign(c), pow(10, abs(c))))
+      sqlInvert: sqlUnfold(c => pow(10, c))
     };
   } else {
     const b = +base;
     return {
       apply: x => Math.sign(x) * Math.log(Math.abs(x)) / Math.log(b),
-      invert: x => Math.sign(x) * Math.pow(b, Math.abs(x)),
+      invert: unfold(x => Math.pow(b, x)),
       sqlApply: c => (c = asNode(c), mul(sign(c), div(ln(abs(nullif(c, 0))), ln(b)))),
-      sqlInvert: c => (c = asNode(c), mul(sign(c), pow(b, abs(c))))
+      sqlInvert: sqlUnfold(c => pow(b, c))
     };
   }
 }
