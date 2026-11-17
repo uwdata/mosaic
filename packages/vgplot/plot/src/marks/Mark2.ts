@@ -7,7 +7,12 @@ import { isColumnRef, unnest } from '@uwdata/mosaic-sql';
 import { type From, source as fromSource, type TableSource } from '../data.js';
 import type { Plot } from '../plot.js';
 import type { MarkType } from '../types.js';
-import { markQuery, type EncodingName, type Encodings, type Reqs } from './Mark.js';
+import { markQuery, type EncodingName } from './Mark.js';
+import type { MarkOptions } from './options.js';
+
+export type OptionName<T extends MarkOptions> = Extract<keyof T, string>;
+
+export type Requirements<T extends MarkOptions> = Partial<Record<OptionName<T>, mc.Stat[]>>;
 
 /**
  * The original code used `for...in`, which behaves [differently][1] to {@link Object.entries}.
@@ -16,16 +21,22 @@ import { markQuery, type EncodingName, type Encodings, type Reqs } from './Mark.
  *
  * [1]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in#iterating_over_own_properties_only
  */
-function* iterItems(encodings: Encodings): Generator<[EncodingName, any]> {
+function* iterItems<O extends MarkOptions>(
+  options: O,
+): Generator<[OptionName<O>, O[OptionName<O>]]> {
   // oxlint-disable-next-line guard-for-in
-  for (const c in encodings) {
-    const channel = c as EncodingName;
-    yield [channel, encodings[channel]] satisfies [EncodingName, any];
+  for (const c in options) {
+    yield [c, options[c]];
   }
 }
 
+// oxlint-disable-next-line no-unused-vars typescript/explicit-function-return-type
+function process(channel: EncodingName | 'channels', entry: any) {
+  return;
+}
+
 /** Experimenting with a more precise `Mark` data model. */
-export class Mark2 extends MosaicClient {
+export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
   /** Inline data is not going to be modeled (at least for now) */
   readonly source: TableSource<string | mc.Param<string>> | undefined;
   private params: Set<mc.Param<any>>;
@@ -36,8 +47,8 @@ export class Mark2 extends MosaicClient {
   constructor(
     public type: MarkType,
     source: From | undefined,
-    encodings: Encodings = {},
-    public reqs: Reqs = {},
+    options: O = {} as O,
+    public reqs: Requirements<O> = {},
   ) {
     super(source?.options?.filterBy);
     this.source = undefined;
@@ -49,7 +60,7 @@ export class Mark2 extends MosaicClient {
       }
     }
 
-    const it = iterItems(encodings);
+    const it = iterItems(options);
     throw new Error(
       `TODO @dangotbanned: handle the 'process' part of the 'Mark' constructor ${it}`,
     );
