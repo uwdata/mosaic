@@ -4,8 +4,6 @@ import type * as mc from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
 // oxlint-enable no-unused-vars
 
-type PickValues<T, U> = Pick<T, { [P in keyof T]: T[P] extends U ? P : never }[keyof T]>;
-
 /**
  * Placeholder for if this'll be generic.
  *
@@ -19,7 +17,7 @@ type OptionName = string;
  * ## Notes
  *
  * - `Mark` _instances_ must not interact with this beyond what's needed in the constructor
- * - `Mark` _subclasses_ are expected to extend their version ({@link OptionsSpec.with}) what else
+ * - `Mark` _subclasses_ are expected to extend their version ({@link OptionsImpl.with}) what else
  *   they allow. This process must always be additive.
  * - The 3 `supports*` properties are a starting point, it might make more sense to use a `Map` later
  */
@@ -79,7 +77,34 @@ export interface OptionsSpec {
    * This **excludes** known classes like {@link mc.Param} & {@link msql.SQLNode} and primitives.
    */
   supportsObject: ReadonlySet<OptionName>;
+}
+
+function setUnion<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): ReadonlySet<T> {
+  const cloned = new Set(left);
+  for (const el of right) {
+    cloned.add(el);
+  }
+  return cloned;
+}
+
+export class OptionsImpl implements OptionsSpec {
+  readonly supportsParam: ReadonlySet<OptionName>;
+  readonly supportsSQLNode: ReadonlySet<OptionName>;
+  readonly supportsObject: ReadonlySet<OptionName>;
+
+  constructor({ supportsParam, supportsSQLNode, supportsObject }: OptionsSpec) {
+    this.supportsParam = supportsParam;
+    this.supportsSQLNode = supportsSQLNode;
+    this.supportsObject = supportsObject;
+  }
 
   /** Return a new instance, extending one or more option sets. */
-  with: (extensions?: Partial<PickValues<this, ReadonlySet<OptionName>>>) => this;
+  with(extensions: Partial<OptionsSpec> = {}): OptionsImpl {
+    // NOTE: Suprisingly painful to do this in TS
+    const options = extensions;
+    for (const name of ['supportsParam', 'supportsSQLNode', 'supportsObject'] as const) {
+      options[name] = options[name] ? setUnion(this[name], options[name]) : this[name];
+    }
+    return new OptionsImpl(options as OptionsSpec);
+  }
 }
