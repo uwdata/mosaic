@@ -109,17 +109,8 @@ interface OrderChannel extends Partial<HasOrder> {
   channel: OrReverse<ChannelName>;
 }
 
-/**
- * Shared options for all marks.
- *
- * ## Note
- *
- * Comments like below are worth investigating for an upper bound to ` CanParam<T>`.\
- * E.g. defining it as a conditional type that keeps complex objects outside of `Param<...>`
- *
- * > _TODO dangotbanned: Review object `Param`_
- */
-export interface MarkOptions {
+/** Shared options for all marks and tip. */
+interface BaseOptions {
   filter?: ChannelValue;
   select?: SelectFilter;
   reverse?: CanParam<boolean>;
@@ -138,8 +129,6 @@ export interface MarkOptions {
   ariaLabel?: ChannelValue;
   pointerEvents?: CanParam<string>;
   title?: ChannelValue;
-  tip?: CanParam<boolean | TipPointer> | TipOptions;
-
   /**
    * Additional named channels, for example to include in a tooltip. Consists of (channel name, data
    * field name) key-value pairs.
@@ -167,6 +156,20 @@ export interface MarkOptions {
   target?: CanParam<string>;
 }
 
+/**
+ * Shared options for all marks.
+ *
+ * ## Note
+ *
+ * Comments like below are worth investigating for an upper bound to ` CanParam<T>`.\
+ * E.g. defining it as a conditional type that keeps complex objects outside of `Param<...>`
+ *
+ * > _TODO dangotbanned: Review object `Param`_
+ */
+export interface MarkOptions extends BaseOptions {
+  tip?: CanParam<boolean | TipPointer> | TipOptions;
+}
+
 export interface TextStyles {
   textAnchor?: CanParam<'start' | 'middle' | 'end'>;
   lineHeight?: CanParam<number>;
@@ -190,7 +193,7 @@ export interface TextStyles {
   fontWeight?: CanParam<string | number>;
 }
 
-export interface TipOptions extends MarkOptions, TextStyles {
+export interface TipOptions extends BaseOptions, TextStyles {
   x?: ChannelValueSpec;
   x1?: ChannelValueSpec;
   x2?: ChannelValueSpec;
