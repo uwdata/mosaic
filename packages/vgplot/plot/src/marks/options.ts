@@ -1,25 +1,22 @@
-import type * as mc from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
 
 import type { bin } from '../transforms/bin.js';
-import type { ChannelName, ScaleName } from '../types.js';
+import type { ChannelName, ScaleName, CanParam } from '../types.js';
 
 type BinReturn = ReturnType<typeof bin>;
 
-export type FrameAnchor =
-  | 'middle'
-  | 'top-left'
-  | 'top'
-  | 'top-right'
-  | 'right'
-  | 'bottom-right'
-  | 'bottom'
-  | 'bottom-left'
-  | 'left';
+type BottomTop = 'bottom' | 'top';
+type LeftRight = 'left' | 'right';
+type Anchor = BottomTop | LeftRight | `${BottomTop}-${LeftRight}`;
+type FacetAnchor = Anchor | 'empty' | `${BottomTop | LeftRight}-empty`;
+export type FrameAnchor = Anchor | 'middle';
 
 type TipPointer = 'x' | 'y' | 'xy';
 
 type Order = 'ascending' | 'descending';
+type ChannelDomainName = ChannelName | 'data' | 'width' | 'height';
+type OrReverse<T extends string> = T | `-${T}`;
+type ChannelDomainValue = OrReverse<ChannelDomainName> | null;
 
 type SelectFilter =
   | 'first'
@@ -57,125 +54,124 @@ type Reducer =
 // https://github.com/microsoft/TypeScript/issues/29729
 type FieldOrLiteralColor = string & Record<never, never>;
 
+type ColumnValues = any[];
+type ChannelConstant = number | boolean | null;
+
 export type ChannelValue =
-  | any[] // Column of values
   | FieldOrLiteralColor
-  | number // Constant
-  | boolean // Constant
-  | null // Constant
+  | ChannelConstant
+  | ColumnValues
   | BinReturn
   | msql.ExprNode;
 
-export type ChannelValueSpec =
-  | ChannelValue
-  | {
-      value: ChannelValue;
-      label?: string; // Todo: either label or scale is required
-      scale?: ScaleName | 'auto' | boolean | null;
-    };
+interface HasValue<T> {
+  value: T;
+}
 
-type ChannelDomainName = ChannelName | 'data' | 'width' | 'height';
-type ChannelDomainValue = ChannelDomainName | `-${ChannelDomainName}` | null;
+interface HasLabel {
+  label: string;
+}
+
+interface HasScale {
+  scale: ScaleName | 'auto' | boolean | null;
+}
+
+interface HasOrder<O = Order> {
+  order: O;
+}
+interface ChannelValueLabel extends HasValue<ChannelValue>, HasLabel, Partial<HasScale> {}
+interface ChannelValueScale extends HasValue<ChannelValue>, HasScale, Partial<HasLabel> {}
+
+export type ChannelValueSpec = ChannelValue | ChannelValueLabel | ChannelValueScale;
 
 /** Options for imputing scale domains from channel values. */
-interface ChannelDomainOptions {
+interface ChannelDomainOptions extends Partial<HasOrder<Order | null>> {
   reduce?: Reducer | boolean | null;
-  order?: Order | null;
   reverse?: boolean;
   limit?: number | [lo?: number, hi?: number];
 }
 
-/** How to derive a scale’s domain from a channel’s values. */
-type ChannelDomainValueSpec =
-  | ChannelDomainValue
-  | ({ value: ChannelDomainValue } & ChannelDomainOptions);
+interface ChannelDomainValueSpec extends HasValue<ChannelDomainValue>, ChannelDomainOptions {}
 
+// oxlint-disable typescript/consistent-indexed-object-style
 /** How to impute scale domains from channel values. */
-type ChannelDomainSort = Partial<Record<ScaleName, ChannelDomainValueSpec>> & ChannelDomainOptions;
+type ChannelDomainSort = {
+  [name in ScaleName]?: ChannelDomainValue | ChannelDomainValueSpec;
+} & ChannelDomainOptions;
 
-type SortOrder =
-  | ChannelValue
-  | { value?: ChannelValue; order?: Order } // Todo: Make at-least `order` required
-  | { channel?: ChannelName | `-${ChannelName}`; order?: Order };
+type FormatOptions = { [name in ChannelName]?: CanParam<boolean | string> };
 
-/** Shared options for all marks. */
+// oxlint-enable typescript/consistent-indexed-object-style
+
+interface OrderValue extends HasOrder, HasValue<ChannelValue> {}
+
+interface OrderChannel extends Partial<HasOrder> {
+  channel: OrReverse<ChannelName>;
+}
+
+/**
+ * Shared options for all marks.
+ *
+ * ## Note
+ *
+ * Comments like below are worth investigating for an upper bound to ` CanParam<T>`.\
+ * E.g. defining it as a conditional type that keeps complex objects outside of `Param<...>`
+ *
+ * > _TODO dangotbanned: Review object `Param`_
+ */
 export interface MarkOptions {
   filter?: ChannelValue;
   select?: SelectFilter;
-  reverse?: boolean | mc.Param<any>;
-  sort?: SortOrder | ChannelDomainSort;
+  reverse?: CanParam<boolean>;
+  sort?: ChannelDomainSort | ChannelValue | OrderValue | OrderChannel;
   fx?: ChannelValue;
   fy?: ChannelValue;
-  facet?: 'auto' | 'include' | 'exclude' | 'super' | boolean | null | mc.Param<any>;
-  facetAnchor?:
-    | 'top'
-    | 'right'
-    | 'bottom'
-    | 'left'
-    | 'top-left'
-    | 'top-right'
-    | 'bottom-left'
-    | 'bottom-right'
-    | 'top-empty'
-    | 'right-empty'
-    | 'bottom-empty'
-    | 'left-empty'
-    | 'empty'
-    | null
-    | mc.Param<any>;
-
-  margin?: number | mc.Param<any>;
-  marginTop?: number | mc.Param<any>;
-  marginRight?: number | mc.Param<any>;
-  marginBottom?: number | mc.Param<any>;
-  marginLeft?: number | mc.Param<any>;
-  ariaDescription?: string | mc.Param<any>;
-  ariaHidden?: string | mc.Param<any>;
+  facet?: CanParam<'auto' | 'include' | 'exclude' | 'super' | boolean | null>;
+  facetAnchor?: CanParam<FacetAnchor | null>;
+  margin?: CanParam<number>;
+  marginTop?: CanParam<number>;
+  marginRight?: CanParam<number>;
+  marginBottom?: CanParam<number>;
+  marginLeft?: CanParam<number>;
+  ariaDescription?: CanParam<string>;
+  ariaHidden?: CanParam<string>;
   ariaLabel?: ChannelValue;
-  pointerEvents?: string | mc.Param<any>;
+  pointerEvents?: CanParam<string>;
   title?: ChannelValue;
-
-  /** Whether to generate a tooltip for this mark, and any tip options. */
-  tip?:
-    | boolean
-    | TipPointer
-    | (TipOptions & /*Todo: move this intersection into `TipOptions` itself*/ {
-        pointer?: TipPointer;
-      })
-    | mc.Param<any>;
+  tip?: CanParam<boolean | TipPointer> | TipOptions;
 
   /**
    * Additional named channels, for example to include in a tooltip. Consists of (channel name, data
    * field name) key-value pairs.
    */
   channels?: Record<string, string>;
-  clip?: 'frame' | 'sphere' | boolean | null | mc.Param<any>;
-  dx?: number | mc.Param<any>;
-  dy?: number | mc.Param<any>;
-  fill?: ChannelValueSpec | mc.Param<any>;
-  fillOpacity?: ChannelValueSpec | mc.Param<any>;
-  stroke?: ChannelValueSpec | mc.Param<any>;
-  strokeDasharray?: string | number | mc.Param<any>;
-  strokeDashoffset?: string | number | mc.Param<any>;
-  strokeLinecap?: string | mc.Param<any>;
-  strokeLinejoin?: string | mc.Param<any>;
-  strokeMiterlimit?: number | mc.Param<any>;
+  clip?: CanParam<'frame' | 'sphere' | boolean | null>;
+  dx?: CanParam<number>;
+  dy?: CanParam<number>;
+  fill?: CanParam<ChannelValueSpec>; // TODO @dangotbanned: Review object `Param`
+  fillOpacity?: CanParam<ChannelValueSpec>; // TODO @dangotbanned: Review object `Param`
+  stroke?: CanParam<ChannelValueSpec>; // TODO @dangotbanned: Review object `Param`
+  strokeDasharray?: CanParam<string | number>;
+  strokeDashoffset?: CanParam<string | number>;
+  strokeLinecap?: CanParam<string>;
+  strokeLinejoin?: CanParam<string>;
+  strokeMiterlimit?: CanParam<number>;
   strokeOpacity?: ChannelValueSpec;
   strokeWidth?: ChannelValueSpec;
   opacity?: ChannelValueSpec;
-  mixBlendMode?: string | mc.Param<any>;
-  imageFilter?: string | mc.Param<any>;
-  paintOrder?: string | mc.Param<any>;
-  shapeRendering?: string | mc.Param<any>;
+  mixBlendMode?: CanParam<string>;
+  imageFilter?: CanParam<string>;
+  paintOrder?: CanParam<string>;
+  shapeRendering?: CanParam<string>;
   href?: ChannelValue;
-  target?: string | mc.Param<any>;
+  target?: CanParam<string>;
 }
 
 export interface TextStyles {
-  textAnchor?: 'start' | 'middle' | 'end' | mc.Param<any>;
-  lineHeight?: number | mc.Param<any>;
-  lineWidth?: number | mc.Param<any>;
-  textOverflow?:
+  textAnchor?: CanParam<'start' | 'middle' | 'end'>;
+  lineHeight?: CanParam<number>;
+  lineWidth?: CanParam<number>;
+  textOverflow?: CanParam<
     | null
     | 'clip'
     | 'ellipsis'
@@ -184,14 +180,14 @@ export interface TextStyles {
     | 'ellipsis-start'
     | 'ellipsis-middle'
     | 'ellipsis-end'
-    | mc.Param<any>;
+  >;
 
-  monospace?: boolean | mc.Param<any>;
-  fontFamily?: string | mc.Param<any>;
-  fontSize?: ChannelValue | mc.Param<any>;
-  fontStyle?: string | mc.Param<any>;
-  fontVariant?: string | mc.Param<any>;
-  fontWeight?: string | number | mc.Param<any>;
+  monospace?: CanParam<boolean>;
+  fontFamily?: CanParam<string>;
+  fontSize?: CanParam<ChannelValue>; // TODO @dangotbanned: Review object `Param`
+  fontStyle?: CanParam<string>;
+  fontVariant?: CanParam<string>;
+  fontWeight?: CanParam<string | number>;
 }
 
 export interface TipOptions extends MarkOptions, TextStyles {
@@ -201,11 +197,12 @@ export interface TipOptions extends MarkOptions, TextStyles {
   y?: ChannelValueSpec;
   y1?: ChannelValueSpec;
   y2?: ChannelValueSpec;
-  frameAnchor?: FrameAnchor | mc.Param<any>;
-  anchor?: FrameAnchor | mc.Param<any>;
-  preferredAnchor?: FrameAnchor | null | mc.Param<any>;
-  format?: Partial<Record<ChannelName, boolean | string | mc.Param<any>>>;
-  pathFilter?: string | mc.Param<any>;
-  pointerSize?: number | mc.Param<any>;
-  textPadding?: number | mc.Param<any>;
+  frameAnchor?: CanParam<FrameAnchor>;
+  anchor?: CanParam<FrameAnchor>;
+  preferredAnchor?: CanParam<FrameAnchor | null>;
+  format?: FormatOptions;
+  pathFilter?: CanParam<string>;
+  pointerSize?: CanParam<number>;
+  textPadding?: CanParam<number>;
+  pointer?: TipPointer;
 }
