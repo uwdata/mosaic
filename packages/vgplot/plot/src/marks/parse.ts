@@ -100,7 +100,6 @@ export class OptionsImpl implements OptionsSpec {
 
   /** Return a new instance, extending one or more option sets. */
   with(extensions: Partial<OptionsSpec> = {}): OptionsImpl {
-    // NOTE: Suprisingly painful to do this in TS
     const options = extensions;
     for (const name of ['supportsParam', 'supportsSQLNode', 'supportsObject'] as const) {
       options[name] = options[name] ? setUnion(this[name], options[name]) : this[name];
