@@ -6,6 +6,7 @@ import { Param } from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
 import { isNode } from '@uwdata/mosaic-sql';
 
+import { chainFromIterable, map } from '../itertools.js';
 import { Transform } from '../symbols.js';
 import type { BinReturn, MarkOptions, OptionName } from './options.js';
 
@@ -102,8 +103,11 @@ function isBinTransform(value: any): value is BinReturn {
   return typeof value === 'function' && value[Transform];
 }
 
-/** Placeholder to provide a reason for why a type is not specified _yet_. */
-type TODO<Message extends string> = Message | any;
+/** TODO: Narrow after finishing recursion cases */
+type EntryKey = string;
+
+/** TODO: Narrow after finishing recursion cases */
+type EntryValue = any;
 
 export class OptionsImpl implements OptionsSpec {
   readonly supportsParam: ReadonlySet<OptionNamePlaceholder>;
@@ -125,14 +129,11 @@ export class OptionsImpl implements OptionsSpec {
     return new OptionsImpl(options as OptionsSpec);
   }
 
-  /** NOTE: `static` until there's some state added */
-  static *iterOptions<O extends MarkOptions>(
-    options: O,
-  ): Generator<[OptionName<O>, O[OptionName<O>]]> {
-    // oxlint-disable-next-line guard-for-in
-    for (const c in options) {
-      yield [c, options[c]];
-    }
+  /** Convert `MarkOptions` into something that's easy to generate queries with. */
+  parse(options: MarkOptions): Map<EntryKey, EntryValue> {
+    const it = this.iterOptions(options);
+    const parseOne = this.parseEntry.bind(this);
+    return new Map(chainFromIterable(map(it, parseOne)));
   }
 
   /**
@@ -140,9 +141,9 @@ export class OptionsImpl implements OptionsSpec {
    *
    * ## Notes
    *
-   * - Producing the iterator and operating on it should be 2 separate functions
+   * - Haven't modelled `params`, `detail` or `channels` yet
    *
-   *   - Will make it easier for subclasses to inject behavior at the beginning
+   *   - That kind of state would belong on `Mark`, not here which is shared between instances
    * - The current flow is "branch `value` type", "possibly constrain on `name`"
    *
    *   - Not easy to extend in one big block
@@ -150,41 +151,58 @@ export class OptionsImpl implements OptionsSpec {
    *   - _Ideally_, narrowing should utilize `Set | Map` more
    *   - Can anything be keyed on `(name, <some type representation>)`?
    */
-  parseMarkOptions(options: MarkOptions): TODO<'this function doesnt have the right shape yet'> {
-    for (const [name, value] of OptionsImpl.iterOptions(options)) {
-      if (isPrimitive(value)) {
-        throw new Error(`todo: handle primitives, got: ${value}`);
-      } else if (value instanceof Param) {
-        // oxlint-disable-next-line unicorn/prefer-ternary
-        if (this.supportsParam.has(name)) {
-          throw new Error(`todo: handle params, got: ${value}`);
-        } else {
-          throw new TypeError(`Params are not supported for '${name}', got: ${value}`);
-        }
-      } else if (isNode(value)) {
-        // oxlint-disable-next-line unicorn/prefer-ternary
-        if (this.supportsSQLNode.has(name)) {
-          throw new Error(`todo: handle SQLNode, got: ${value}`);
-        } else {
-          throw new TypeError(`SQL is not supported for '${name}', got: ${value}`);
-        }
-      } else if (Array.isArray(value)) {
-        throw new Error(`todo: handle ColumnValues, got: ${value}`);
-      } else if (isBinTransform(value)) {
-        // `bin` depends on `Mark.type` to determine if it returns an object with 1 or 2 channels
-        // That logic should probably be defined in the `Mark` subclasses that require it
-        throw new Error(`todo: handle BinReturn, got: ${value}`);
-      } else if (typeof value === 'object') {
-        if (value === undefined) {
-          // oxlint-disable-next-line no-continue
-          continue; // Clearest way to say that `undefined` is being skipped
-        }
-        // `Record<string, string>` needs a check for `name === 'channels'`
-        const todoTypes =
-          'TipOptions | ChannelDomainSort | OrderValue | OrderChannel | Record<string, string> | ChannelValueLabel | ChannelValueScale';
-        throw new Error(`todo: handle object ('${todoTypes}'), got: ${value}`);
+  protected *parseEntry([name, value]: [
+    keyof MarkOptions,
+    MarkOptions[OptionName<MarkOptions>],
+  ]): Iterable<[EntryKey, EntryValue]> {
+    if (isPrimitive(value)) {
+      throw new Error(`todo: handle primitives, got: ${value}`);
+    } else if (value instanceof Param) {
+      // oxlint-disable-next-line unicorn/prefer-ternary
+      if (this.supportsParam.has(name)) {
+        throw new Error(`todo: handle params, got: ${value}`);
       } else {
-        throw new TypeError(`Unsupported data type '${typeof value}', got: ${value}`);
+        throw new TypeError(`Params are not supported for '${name}', got: ${value}`);
+      }
+    } else if (isNode(value)) {
+      // oxlint-disable-next-line unicorn/prefer-ternary
+      if (this.supportsSQLNode.has(name)) {
+        throw new Error(`todo: handle SQLNode, got: ${value}`);
+      } else {
+        throw new TypeError(`SQL is not supported for '${name}', got: ${value}`);
+      }
+    } else if (Array.isArray(value)) {
+      // TODO: remove after one case has been handled (without this everything is unreachable)
+      yield [name, value];
+      throw new Error(`todo: handle ColumnValues, got: ${value}`);
+    } else if (isBinTransform(value)) {
+      // `bin` depends on `Mark.type` to determine if it returns an object with 1 or 2 channels
+      // That logic should probably be defined in the `Mark` subclasses that require it
+      throw new Error(`todo: handle BinReturn, got: ${value}`);
+    } else if (typeof value === 'object') {
+      // `Record<string, string>` needs a check for `name === 'channels'`
+      const todoTypes =
+        'TipOptions | ChannelDomainSort | OrderValue | OrderChannel | Record<string, string> | ChannelValueLabel | ChannelValueScale';
+      throw new Error(`todo: handle object ('${todoTypes}'), got: ${value}`);
+    } else {
+      throw new TypeError(`Unsupported data type '${typeof value}', got: ${value}`);
+    }
+  }
+
+  /**
+   * Yield entries from `options`.
+   *
+   * Intended to be overriden by subclasses, where the `this` value is depended on externally.
+   */
+  // oxlint-disable-next-line class-methods-use-this
+  protected *iterOptions<O extends MarkOptions>(
+    options: O,
+  ): Iterable<[OptionName<O>, O[OptionName<O>]]> {
+    // oxlint-disable-next-line guard-for-in
+    for (const name in options) {
+      const value = options[name];
+      if (value !== undefined) {
+        yield [name, value];
       }
     }
   }
