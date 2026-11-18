@@ -3,7 +3,7 @@ import type * as msql from '@uwdata/mosaic-sql';
 import type { bin } from '../transforms/bin.js';
 import type { ChannelName, ScaleName, CanParam } from '../types.js';
 
-type BinReturn = ReturnType<typeof bin>;
+export type BinReturn = ReturnType<typeof bin>;
 
 type BottomTop = 'bottom' | 'top';
 type LeftRight = 'left' | 'right';

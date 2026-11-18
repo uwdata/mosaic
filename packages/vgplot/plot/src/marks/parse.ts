@@ -1,8 +1,13 @@
 // (used for JSDoc links)
-// oxlint-disable no-unused-vars
+// oxlint-disable-next-line no-unused-vars
 import type * as mc from '@uwdata/mosaic-core';
+import { Param } from '@uwdata/mosaic-core';
+// oxlint-disable-next-line no-unused-vars
 import type * as msql from '@uwdata/mosaic-sql';
-// oxlint-enable no-unused-vars
+import { isNode } from '@uwdata/mosaic-sql';
+
+import { Transform } from '../symbols.js';
+import type { BinReturn, MarkOptions } from './options.js';
 
 /**
  * Placeholder for if this'll be generic.
@@ -87,6 +92,19 @@ function setUnion<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): ReadonlySet<T
   return cloned;
 }
 
+const PRIMTIVE: ReadonlySet<string> = new Set(['string', 'number', 'boolean', 'symbol']);
+
+function isPrimitive(value: unknown): value is string | number | boolean | symbol | null {
+  return PRIMTIVE.has(typeof value) || value === null;
+}
+
+function isBinTransform(value: any): value is BinReturn {
+  return typeof value === 'function' && value[Transform];
+}
+
+/** Placeholder to provide a reason for why a type is not specified _yet_. */
+type TODO<Message extends string> = Message | any;
+
 export class OptionsImpl implements OptionsSpec {
   readonly supportsParam: ReadonlySet<OptionName>;
   readonly supportsSQLNode: ReadonlySet<OptionName>;
@@ -105,5 +123,64 @@ export class OptionsImpl implements OptionsSpec {
       options[name] = options[name] ? setUnion(this[name], options[name]) : this[name];
     }
     return new OptionsImpl(options as OptionsSpec);
+  }
+
+  /**
+   * Rough branching logic to identify the cases in `MarkOptions`.
+   *
+   * ## Notes
+   *
+   * - Producing the iterator and operating on it should be 2 separate functions
+   *
+   *   - Will make it easier for subclasses to inject behavior at the beginning
+   * - The current flow is "branch `value` type", "possibly constrain on `name`"
+   *
+   *   - Not easy to extend in one big block
+   *   - The order of the checks is very sensitive to changes in `MarkOptions` annotations
+   *   - _Ideally_, narrowing should utilize `Set | Map` more
+   *   - Can anything be keyed on `(name, <some type representation>)`?
+   */
+  parseMarkOptions(options: MarkOptions): TODO<'this function doesnt have the right shape yet'> {
+    // oxlint-disable-next-line guard-for-in no-unreachable-loop
+    for (const c in options) {
+      const name = c as keyof MarkOptions;
+
+      const value = options[name];
+
+      if (isPrimitive(value)) {
+        throw new Error(`todo: handle primitives, got: ${value}`);
+      } else if (value instanceof Param) {
+        // oxlint-disable-next-line unicorn/prefer-ternary
+        if (this.supportsParam.has(name)) {
+          throw new Error(`todo: handle params, got: ${value}`);
+        } else {
+          throw new TypeError(`Params are not supported for '${name}', got: ${value}`);
+        }
+      } else if (isNode(value)) {
+        // oxlint-disable-next-line unicorn/prefer-ternary
+        if (this.supportsSQLNode.has(name)) {
+          throw new Error(`todo: handle SQLNode, got: ${value}`);
+        } else {
+          throw new TypeError(`SQL is not supported for '${name}', got: ${value}`);
+        }
+      } else if (Array.isArray(value)) {
+        throw new Error(`todo: handle ColumnValues, got: ${value}`);
+      } else if (isBinTransform(value)) {
+        // `bin` depends on `Mark.type` to determine if it returns an object with 1 or 2 channels
+        // That logic should probably be defined in the `Mark` subclasses that require it
+        throw new Error(`todo: handle BinReturn, got: ${value}`);
+      } else if (typeof value === 'object') {
+        if (value === undefined) {
+          // oxlint-disable-next-line no-continue
+          continue; // Clearest way to say that `undefined` is being skipped
+        }
+        // `Record<string, string>` needs a check for `name === 'channels'`
+        const todoTypes =
+          'TipOptions | ChannelDomainSort | OrderValue | OrderChannel | Record<string, string> | ChannelValueLabel | ChannelValueScale';
+        throw new Error(`todo: handle object ('${todoTypes}'), got: ${value}`);
+      } else {
+        throw new TypeError(`Unsupported data type '${typeof value}', got: ${value}`);
+      }
+    }
   }
 }
