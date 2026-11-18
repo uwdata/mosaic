@@ -170,6 +170,8 @@ export interface MarkOptions extends BaseOptions {
   tip?: CanParam<boolean | TipPointer> | TipOptions;
 }
 
+export type OptionName<T extends MarkOptions> = Extract<keyof T, string>;
+
 export interface TextStyles {
   textAnchor?: CanParam<'start' | 'middle' | 'end'>;
   lineHeight?: CanParam<number>;

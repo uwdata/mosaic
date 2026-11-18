@@ -8,9 +8,7 @@ import { type From, source as fromSource, type TableSource } from '../data.js';
 import type { Plot } from '../plot.js';
 import type { MarkType } from '../types.js';
 import { markQuery, type EncodingName } from './Mark.js';
-import type { MarkOptions } from './options.js';
-
-export type OptionName<T extends MarkOptions> = Extract<keyof T, string>;
+import type { MarkOptions, OptionName } from './options.js';
 
 export type Requirements<T extends MarkOptions> = Partial<Record<OptionName<T>, mc.Stat[]>>;
 

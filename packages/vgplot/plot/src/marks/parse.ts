@@ -7,14 +7,14 @@ import type * as msql from '@uwdata/mosaic-sql';
 import { isNode } from '@uwdata/mosaic-sql';
 
 import { Transform } from '../symbols.js';
-import type { BinReturn, MarkOptions } from './options.js';
+import type { BinReturn, MarkOptions, OptionName } from './options.js';
 
 /**
  * Placeholder for if this'll be generic.
  *
  * A type parameter can't be resolved in a `static`, may need to keep things opaque.
  */
-type OptionName = string;
+type OptionNamePlaceholder = string;
 
 /**
  * A `static` description of what to expect in each option, per `Mark` class.
@@ -67,21 +67,21 @@ export interface OptionsSpec {
    *   - `Mark.requestUpdate`
    *   - A method that returns `this`, then `Mark.update`
    */
-  supportsParam: ReadonlySet<OptionName>;
+  supportsParam: ReadonlySet<OptionNamePlaceholder>;
 
   /**
    * A {@link msql.SQLNode} may be passed to this option.
    *
    * _More precisely_, it should be like a column selection, scalar function or an aggregation.
    */
-  supportsSQLNode: ReadonlySet<OptionName>;
+  supportsSQLNode: ReadonlySet<OptionNamePlaceholder>;
 
   /**
    * An arbitrary object may be passed to this option.
    *
    * This **excludes** known classes like {@link mc.Param} & {@link msql.SQLNode} and primitives.
    */
-  supportsObject: ReadonlySet<OptionName>;
+  supportsObject: ReadonlySet<OptionNamePlaceholder>;
 }
 
 function setUnion<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): ReadonlySet<T> {
@@ -106,9 +106,9 @@ function isBinTransform(value: any): value is BinReturn {
 type TODO<Message extends string> = Message | any;
 
 export class OptionsImpl implements OptionsSpec {
-  readonly supportsParam: ReadonlySet<OptionName>;
-  readonly supportsSQLNode: ReadonlySet<OptionName>;
-  readonly supportsObject: ReadonlySet<OptionName>;
+  readonly supportsParam: ReadonlySet<OptionNamePlaceholder>;
+  readonly supportsSQLNode: ReadonlySet<OptionNamePlaceholder>;
+  readonly supportsObject: ReadonlySet<OptionNamePlaceholder>;
 
   constructor({ supportsParam, supportsSQLNode, supportsObject }: OptionsSpec) {
     this.supportsParam = supportsParam;
@@ -123,6 +123,16 @@ export class OptionsImpl implements OptionsSpec {
       options[name] = options[name] ? setUnion(this[name], options[name]) : this[name];
     }
     return new OptionsImpl(options as OptionsSpec);
+  }
+
+  /** NOTE: `static` until there's some state added */
+  static *iterOptions<O extends MarkOptions>(
+    options: O,
+  ): Generator<[OptionName<O>, O[OptionName<O>]]> {
+    // oxlint-disable-next-line guard-for-in
+    for (const c in options) {
+      yield [c, options[c]];
+    }
   }
 
   /**
@@ -141,12 +151,7 @@ export class OptionsImpl implements OptionsSpec {
    *   - Can anything be keyed on `(name, <some type representation>)`?
    */
   parseMarkOptions(options: MarkOptions): TODO<'this function doesnt have the right shape yet'> {
-    // oxlint-disable-next-line guard-for-in no-unreachable-loop
-    for (const c in options) {
-      const name = c as keyof MarkOptions;
-
-      const value = options[name];
-
+    for (const [name, value] of OptionsImpl.iterOptions(options)) {
       if (isPrimitive(value)) {
         throw new Error(`todo: handle primitives, got: ${value}`);
       } else if (value instanceof Param) {
