@@ -119,9 +119,29 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
       }
     }
 
-    const it = iterItems(options);
+    /**
+     * [`new.target`][1] is quite funky syntax that allows emulating Python's [`@classmethod`][2].
+     *
+     * [1]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new.target#value
+     *
+     * [2]: https://docs.python.org/3/builtins/functions.html#classmethod
+     *
+     * Here, `new.target.parser` _can_ refer to an overriden `static parser`, but otherwise falls
+     * back to `Mark.parser`:
+     *
+     * ```ts
+     * new.target.parser  // ts
+     * ```
+     *
+     * ```python
+     * type(self).parser  # python
+     * ```
+     */
+    // oxlint-disable-next-line no-unused-vars
+    const optionsParsed = new.target.parser.parse(options);
+
     throw new Error(
-      `TODO @dangotbanned: handle the 'process' part of the 'Mark' constructor ${it}`,
+      `TODO @dangotbanned: handle the 'process' part of the 'Mark' constructor ${type}`,
     );
   }
 
