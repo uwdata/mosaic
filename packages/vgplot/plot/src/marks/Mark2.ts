@@ -9,6 +9,7 @@ import type { Plot } from '../plot.js';
 import type { MarkType } from '../types.js';
 import { markQuery, type EncodingName } from './Mark.js';
 import type { MarkOptions, OptionName } from './options.js';
+import { OptionsImpl } from './parse.js';
 
 export type Requirements<T extends MarkOptions> = Partial<Record<OptionName<T>, mc.Stat[]>>;
 
@@ -41,6 +42,66 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
   public channels: object[];
   public plot?: Plot;
   public index?: number;
+
+  protected static parser: OptionsImpl = new OptionsImpl({
+    supportsParam: new Set([
+      'reverse',
+      'facet',
+      'facetAnchor',
+      'margin',
+      'marginTop',
+      'marginRight',
+      'marginBottom',
+      'marginLeft',
+      'ariaDescription',
+      'ariaHidden',
+      'pointerEvents',
+      'clip',
+      'dx',
+      'dy',
+      'fill', // Param & SQLNode & Object
+      'fillOpacity', // Param & SQLNode & Object
+      'stroke', // Param & SQLNode & Object
+      'strokeDasharray',
+      'strokeDashoffset',
+      'strokeLinecap',
+      'strokeLinejoin',
+      'strokeMiterlimit',
+      'mixBlendMode',
+      'imageFilter',
+      'paintOrder',
+      'shapeRendering',
+      'target',
+      'tip', // Param & Object
+    ]),
+    //There's a small intersection w/ the above
+    supportsSQLNode: new Set([
+      'filter',
+      'sort', // SQLNode & Object
+      'fx',
+      'fy',
+      'ariaLabel',
+      'title',
+      'fill', // Param & SQLNode & Object
+      'fillOpacity', // Param & SQLNode & Object
+      'stroke', // Param & SQLNode & Object
+      'strokeOpacity', // SQLNode & Object
+      'strokeWidth', // SQLNode & Object
+      'opacity', // SQLNode & Object
+      'href',
+    ]),
+    supportsObject: new Set([
+      'sort', // SQLNode & Object
+      'channels',
+      'fill', // Param & SQLNode & Object
+      'fillOpacity', // Param & SQLNode & Object
+      'stroke', // Param & SQLNode & Object
+      'strokeOpacity', // SQLNode & Object
+      'strokeWidth', // SQLNode & Object
+      'opacity', // SQLNode & Object
+      'tip', // Param & Object
+    ]),
+  });
 
   constructor(
     public type: MarkType,
