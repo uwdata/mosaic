@@ -95,6 +95,17 @@ function setUnion<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): ReadonlySet<T
   return cloned;
 }
 
+/**
+ * Remove `key` from `mapping` and return the corresponding value.
+ *
+ * If the key is not found, returns `defaultValue`.
+ */
+function mapPop<V, D = undefined>(mapping: Map<any, V>, key: unknown, defaultValue?: D): V | D {
+  const value = mapping.get(key) ?? defaultValue;
+  mapping.delete(key);
+  return value;
+}
+
 const PRIMTIVE: ReadonlySet<string> = new Set(['string', 'number', 'boolean', 'symbol']);
 
 function isPrimitive(value: unknown): value is string | number | boolean | symbol | null {
@@ -243,10 +254,7 @@ export class OptionsImpl implements OptionsSpec {
     const it = this.iterOptions(options);
     const parseOne = this.parseEntry(mark, params);
     const channels = new Map(chainFromIterable(map(it, parseOne)));
-    const channelsExtra: Map<string, msql.ColumnNameRefNode> | undefined =
-      channels.get('channelsExtra');
-    channels.delete('channelsExtra');
-    return { channels, channelsExtra, params };
+    return { channels, channelsExtra: mapPop(channels, 'channelsExtra'), params };
   }
 
   /**
