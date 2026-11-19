@@ -143,13 +143,17 @@ function isParamNode(node: msql.SQLNode): node is msql.ParamNode {
 /** TODO: Narrow after finishing recursion cases */
 export type ChannelKey = string;
 
+interface ParamEntryValue {
+  value: any;
+}
+
 /**
  * TODO: Narrow after finishing recursion cases.
  *
  * - Field vs value
  * - Avoid using primitives directly
  */
-export type ChannelEntryValue = any;
+export type ChannelEntryValue = any | ParamEntryValue;
 
 /**
  * Everything produced/mutated during `Mark`s `process` thing.
@@ -284,11 +288,14 @@ export class OptionsImpl implements OptionsSpec {
       if (isPrimitive(value)) {
         throw new Error(`todo: handle primitives, got: ${String(value)}`);
       } else if (value instanceof Param) {
-        // oxlint-disable-next-line unicorn/prefer-ternary
         if (supportsParam.has(name)) {
-          // oxlint-disable-next-line no-unused-expressions
-          /** I need `mark` and the destination to define the setter binding */
-          throw new Error(`todo: handle params, got: ${value}`);
+          const param = value;
+          const paramDest = { value: param.value };
+          param.addEventListener('value', (updated) => {
+            paramDest.value = updated;
+            return mark.update();
+          });
+          yield [name, paramDest];
         } else {
           throw new TypeError(`Params are not supported for '${name}', got: ${value}`);
         }
