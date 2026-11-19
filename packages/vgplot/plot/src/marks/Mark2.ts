@@ -19,6 +19,19 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
   readonly source: TableSource<string | mc.Param<string>> | undefined;
   private params: Set<mc.Param<any>>;
   public channels: object[];
+  private channelsExtra: Map<string, msql.ColumnNameRefNode> | undefined;
+
+  /**
+   * `Mark.plot` and `Mark.index` are both required, but this is not visible due to multi-stage
+   * initialization.
+   *
+   * ```ts
+   * mark(type, data, options);
+   * (plot) => plot.addMark(new Mark(type, data, options));
+   * mark.setPlot(plot, index);
+   * plot.addParams(mark, mark.params);
+   * ```
+   */
   public plot?: Plot;
   public index?: number;
 
@@ -90,7 +103,7 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
   ) {
     super(source?.options?.filterBy);
     this.source = undefined;
-    const params = (this.params = new Set<mc.Param<any>>());
+    const params = new Set<mc.Param<any>>();
     if (source) {
       this.source = fromSource(source);
       if (typeof this.source.table !== 'string') {
@@ -116,12 +129,9 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
      * type(self).parser  # python
      * ```
      */
-    // oxlint-disable-next-line no-unused-vars
-    const optionsParsed = new.target.parser.parse(options);
 
-    throw new Error(
-      `TODO @dangotbanned: handle the 'process' part of the 'Mark' constructor ${type}`,
-    );
+    const result = new.target.parser.parseOptionsFor(this, options, params);
+    Object.assign(this, result);
   }
 
   setPlot(plot: Plot, index: number): void {
@@ -181,5 +191,11 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
 
     //@ts-expect-error
     return markQuery(channels, this.sourceTable()).where(filter);
+  }
+
+  channelField(_channel: string): any {
+    throw new Error(
+      `TODO @dangotbanned: replace ${this.channelField.name} with using a less ad-hoc data structure`,
+    );
   }
 }

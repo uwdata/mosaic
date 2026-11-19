@@ -4,11 +4,12 @@ import type * as mc from '@uwdata/mosaic-core';
 import { Param } from '@uwdata/mosaic-core';
 // oxlint-disable-next-line no-unused-vars
 import type * as msql from '@uwdata/mosaic-sql';
-import { ColumnNameRefNode, isNode } from '@uwdata/mosaic-sql';
+import { ColumnNameRefNode, isNode, walk } from '@uwdata/mosaic-sql';
 
 import { chainFromIterable, map } from '../itertools.js';
 import { Transform } from '../symbols.js';
-import type { MarkType } from '../types.js';
+import type { TransformScaleName } from '../types.js';
+import type { Mark2 } from './Mark2.js';
 import type { BinReturn, MarkOptions, OptionName } from './options.js';
 
 /**
@@ -104,12 +105,32 @@ function isBinTransform(value: any): value is BinReturn {
   return typeof value === 'function' && value[Transform];
 }
 
+const TRANSFORM_SCALE_NAME: ReadonlySet<string> = new Set([
+  'x',
+  'y',
+  'color',
+  'length',
+  'symbol',
+  'r',
+  'opacity',
+]);
+
+function isTransformScaleName(channel: string): channel is TransformScaleName {
+  return TRANSFORM_SCALE_NAME.has(channel);
+}
+
 function col(name: string): ColumnNameRefNode {
   return new ColumnNameRefNode(name);
 }
 
+const PARAM = 'PARAM';
+
+function isParamNode(node: msql.SQLNode): node is msql.ParamNode {
+  return node.type === PARAM;
+}
+
 /** TODO: Narrow after finishing recursion cases */
-type EntryKey = string;
+export type ChannelKey = string;
 
 /**
  * TODO: Narrow after finishing recursion cases.
@@ -117,18 +138,7 @@ type EntryKey = string;
  * - Field vs value
  * - Avoid using primitives directly
  */
-type EntryValue = any;
-
-/**
- * Dependencies from `Mark.
- *
- * `Mark.update` is a dependency of params that are not collected into `params`.
- */
-export interface ProcessStartState {
-  markType: MarkType;
-
-  params: Set<mc.Param<any>>;
-}
+export type ChannelEntryValue = any;
 
 /**
  * Everything produced/mutated during `Mark`s `process` thing.
@@ -139,7 +149,7 @@ export interface ProcessStartState {
  * - Here, `channelsExtra` is intended to replace that - which ends of being `options.channels`
  * - The regular channels are stored in ... `channels`
  */
-export interface ProcessEndState {
+export interface ParsedState {
   /**
    * Exclusively stores params that are part of queries (e.g. `Source.table` and
    * {@link msql.ParamNode}).
@@ -148,7 +158,7 @@ export interface ProcessEndState {
    */
   params: Set<mc.Param<any>>;
 
-  channels: Map<EntryKey, EntryValue>;
+  channels: Map<ChannelKey, ChannelEntryValue>;
 
   /** Needs to be popped from the result of `parse` */
   channelsExtra: Map<string, msql.ColumnNameRefNode>;
@@ -173,12 +183,70 @@ export class OptionsImpl implements OptionsSpec {
     }
     return new OptionsImpl(options as OptionsSpec);
   }
+  /**
+   * Extract stuff from `options` to complete initialization of `mark`.
+   *
+   * ## Notes
+   *
+   * The way that `Mark`s constructor (on `main`) works is very complex.
+   *
+   * This method is required to ensure dependencies in both directions do not break, as they require
+   * access to `mark`.
+   *
+   * ## Problems
+   *
+   * ### `bin`
+   *
+   * {@link BinReturn} depends on `mark`, which is resolved in `Mark.constructor`.
+   *
+   * The first dependency (`hasExtent`) requires `Mark.type` and `OptionName` (channel). This isn't
+   * a huge problem, but the dependency is before `Mark` has finished being constructed - so
+   * `Mark.type` is not guaranteed to exist yet.
+   *
+   * The second group of dependencies stem from `mark` being stored on 1 or 2 `BinTransformNode`s,
+   * which are then later used for access to `Mark.channelField` and `Mark.plot.getAttribute`.
+   * `Mark.plot` doesn't exist yet when `mark` is passed back to `bin`.
+   *
+   * So this dependency is:
+   *
+   * - `Mark` is stored on `Plot`
+   * - `Plot` is stored on `Mark`
+   * - `Mark` is stored on `BinTransformNode`
+   * - `BinTransformNode` depends on `Mark` itself (in 2 different ways) and that `Plot` is accessible
+   *   on `Mark`
+   *
+   * ### `Param` channels
+   *
+   * {@link OptionsSpec.supportsParam} explains the 3 different ways a `Param` may be handled inside
+   * _a_ mark constructor.
+   *
+   * 2 are inside `Mark` itself, and together depend on:
+   *
+   * - `Mark.channels[*].value`
+   * - `Mark.update`
+   * - `Mark.plot`
+   * - `Mark.plot.update`
+   * - `Mark.params`
+   * - `Mark.setPlot`
+   * - `Plot.addParams`
+   * - `Plot.params`
+   * - `Mark.initialize`
+   * - `Mark.queryPending`
+   * - `Mark.plot.pending`
+   */
 
-  /** Convert `MarkOptions` into something that's easy to generate queries with. */
-  parse(options: MarkOptions): Map<EntryKey, EntryValue> {
+  public parseOptionsFor<O extends MarkOptions>(
+    mark: Mark2<O>,
+    options: O,
+    params: Set<mc.Param<any>>,
+  ): ParsedState {
     const it = this.iterOptions(options);
-    const parseOne = this.parseEntry.bind(this);
-    return new Map(chainFromIterable(map(it, parseOne)));
+    const parseOne = this.parseEntry(mark, params);
+    const channels = new Map(chainFromIterable(map(it, parseOne)));
+    const channelsExtra: Map<string, msql.ColumnNameRefNode> | undefined =
+      channels.get('channelsExtra');
+    channels.delete('channelsExtra');
+    return { channels, channelsExtra, params };
   }
 
   /**
@@ -186,9 +254,6 @@ export class OptionsImpl implements OptionsSpec {
    *
    * ## Notes
    *
-   * - Haven't modelled `params`, `detail` or `channels` yet
-   *
-   *   - That kind of state would belong on `Mark`, not here which is shared between instances
    * - The current flow is "branch `value` type", "possibly constrain on `name`"
    *
    *   - Not easy to extend in one big block
@@ -196,50 +261,85 @@ export class OptionsImpl implements OptionsSpec {
    *   - _Ideally_, narrowing should utilize `Set | Map` more
    *   - Can anything be keyed on `(name, <some type representation>)`?
    */
-  protected *parseEntry([name, value]: [
-    keyof MarkOptions,
-    MarkOptions[OptionName<MarkOptions>],
-  ]): Iterable<[EntryKey, EntryValue]> {
-    if (isPrimitive(value)) {
-      throw new Error(`todo: handle primitives, got: ${value}`);
-    } else if (value instanceof Param) {
-      // oxlint-disable-next-line unicorn/prefer-ternary
-      if (this.supportsParam.has(name)) {
-        throw new Error(`todo: handle params, got: ${value}`);
-      } else {
-        throw new TypeError(`Params are not supported for '${name}', got: ${value}`);
-      }
-    } else if (isNode(value)) {
-      // oxlint-disable-next-line unicorn/prefer-ternary
-      if (this.supportsSQLNode.has(name)) {
-        throw new Error(`todo: handle SQLNode, got: ${value}`);
-      } else {
-        throw new TypeError(`SQL is not supported for '${name}', got: ${value}`);
-      }
-    } else if (Array.isArray(value)) {
-      throw new Error(`todo: handle ColumnValues, got: ${value}`);
-    } else if (isBinTransform(value)) {
-      // `bin` depends on `Mark.type` to determine if it returns an object with 1 or 2 channels
-      // That logic should probably be defined in the `Mark` subclasses that require it
-      throw new Error(`todo: handle BinReturn, got: ${value}`);
-    } else if (typeof value === 'object') {
-      if (name === 'channels') {
-        const channelsExtra = new Map<string, msql.ColumnNameRefNode>();
-        const channels = value as Record<string, string>;
-        // oxlint-disable-next-line guard-for-in
-        for (const fieldName in channels) {
-          // TODO @:dangotbanned: Figure out if this a bug on `main`, but doesn't show because the examples use `{id: "id"}`
-          // It should be `{existingName: "aliased"}` (field, as), which is the opposite of current
-          channelsExtra.set(fieldName, col(channels[fieldName]));
+  protected parseEntry<O extends MarkOptions>(
+    mark: Mark2<O>,
+    params: Set<mc.Param<any>>,
+  ): ([name, value]: [OptionName<O>, O[OptionName<O>]]) => Iterable<
+    [ChannelKey, ChannelEntryValue]
+  > {
+    const { supportsParam, supportsSQLNode, supportsObject } = this;
+
+    // oxlint-disable-next-line max-statements
+    function* iterParse([name, value]: [OptionName<O>, O[OptionName<O>]]): Iterable<
+      [ChannelKey, ChannelEntryValue]
+    > {
+      if (isPrimitive(value)) {
+        throw new Error(`todo: handle primitives, got: ${String(value)}`);
+      } else if (value instanceof Param) {
+        // oxlint-disable-next-line unicorn/prefer-ternary
+        if (supportsParam.has(name)) {
+          // oxlint-disable-next-line no-unused-expressions
+          /** I need `mark` and the destination to define the setter binding */
+          throw new Error(`todo: handle params, got: ${value}`);
+        } else {
+          throw new TypeError(`Params are not supported for '${name}', got: ${value}`);
         }
-        yield ['channelsExtra', channelsExtra];
+      } else if (isNode(value)) {
+        if (supportsSQLNode.has(name)) {
+          /**
+           * Intentionally duplicated from `collectParams`, as this saves creating an additional
+           * `Array` and `Set`
+           */
+          walk(value, (node) => {
+            if (isParamNode(node)) {
+              //@ts-expect-error `ParamLike` is not `Param`
+              params.add(node.param);
+            }
+          });
+
+          yield [name, value];
+        } else {
+          throw new TypeError(`SQL is not supported for '${name}', got: ${value}`);
+        }
+      } else if (Array.isArray(value)) {
+        throw new Error(`todo: handle ColumnValues, got: ${value}`);
+      } else if (isBinTransform(value)) {
+        if (!isTransformScaleName(name)) {
+          throw new TypeError(
+            `A bin transform cannot be applied to a channel without a scale '${name}', got: ${value}`,
+          );
+        }
+        const binResult = value(mark, name);
+        // oxlint-disable-next-line guard-for-in no-unreachable-loop
+        for (const binChannelName in binResult) {
+          const c = binChannelName as keyof typeof binResult;
+          // NOTE: Every example is `vg.bin("column_name")`, but `column` is typed as `ExprValue`
+          const node = binResult[c];
+          throw new Error(`todo: handle inside 'BinNodeTransform', got: ${node}`);
+        }
+      } else if (typeof value === 'object') {
+        if (name === 'channels') {
+          const channelsExtra = new Map<string, msql.ColumnNameRefNode>();
+          const channels = value as Record<string, string>;
+          // oxlint-disable-next-line guard-for-in
+          for (const fieldName in channels) {
+            // TODO @:dangotbanned: Figure out if this a bug on `main`, but doesn't show because the examples use `{id: "id"}`
+            // It should be `{existingName: "aliased"}` (field, as), which is the opposite of current
+            channelsExtra.set(fieldName, col(channels[fieldName]));
+          }
+          yield ['channelsExtra', channelsExtra];
+        } else if (!supportsObject.has(name)) {
+          throw new TypeError(`'${name}' does not support objects, got: ${value}`);
+        } else {
+          const todoTypes =
+            'TipOptions | ChannelDomainSort | OrderValue | OrderChannel | Record<string, string> | ChannelValueLabel | ChannelValueScale';
+          throw new Error(`todo: handle object ('${todoTypes}'), got: ${value}`);
+        }
+      } else {
+        throw new TypeError(`Unsupported data type '${typeof value}', got: ${value}`);
       }
-      const todoTypes =
-        'TipOptions | ChannelDomainSort | OrderValue | OrderChannel | Record<string, string> | ChannelValueLabel | ChannelValueScale';
-      throw new Error(`todo: handle object ('${todoTypes}'), got: ${value}`);
-    } else {
-      throw new TypeError(`Unsupported data type '${typeof value}', got: ${value}`);
     }
+    return iterParse;
   }
 
   /**
