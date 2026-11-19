@@ -134,6 +134,10 @@ function col(name: string): ColumnNameRefNode {
   return new ColumnNameRefNode(name);
 }
 
+function field(node: msql.SQLNode, as: string): FieldEntry {
+  return { field: node, as: node instanceof ColumnNameRefNode ? node.column : as };
+}
+
 const PARAM = 'PARAM';
 
 function isParamNode(node: msql.SQLNode): node is msql.ParamNode {
@@ -143,7 +147,12 @@ function isParamNode(node: msql.SQLNode): node is msql.ParamNode {
 /** TODO: Narrow after finishing recursion cases */
 export type ChannelKey = string;
 
-interface ParamEntryValue {
+export interface FieldEntry {
+  field: msql.SQLNode;
+  as: string;
+}
+
+export interface ParamEntryValue {
   value: any;
 }
 
@@ -153,7 +162,7 @@ interface ParamEntryValue {
  * - Field vs value
  * - Avoid using primitives directly
  */
-export type ChannelEntryValue = any | ParamEntryValue;
+export type ChannelEntryValue = any | ParamEntryValue | FieldEntry;
 
 /**
  * Everything produced/mutated during `Mark`s `process` thing.
@@ -176,7 +185,7 @@ export interface ParsedState {
   channels: Map<ChannelKey, ChannelEntryValue>;
 
   /** Needs to be popped from the result of `parse` */
-  channelsExtra: Map<string, msql.ColumnNameRefNode>;
+  channelsExtra: Map<string, FieldEntry> | undefined;
 }
 
 export class OptionsImpl implements OptionsSpec {
@@ -312,7 +321,7 @@ export class OptionsImpl implements OptionsSpec {
             }
           });
 
-          yield [name, value];
+          yield [name, field(value, name)];
         } else {
           throw new TypeError(`SQL is not supported for '${name}', got: ${value}`);
         }
@@ -334,13 +343,13 @@ export class OptionsImpl implements OptionsSpec {
         }
       } else if (typeof value === 'object') {
         if (name === 'channels') {
-          const channelsExtra = new Map<string, msql.ColumnNameRefNode>();
+          const channelsExtra = new Map<string, FieldEntry>();
           const channels = value as Record<string, string>;
           // oxlint-disable-next-line guard-for-in
           for (const fieldName in channels) {
-            // TODO @:dangotbanned: Figure out if this a bug on `main`, but doesn't show because the examples use `{id: "id"}`
+            // TODO @dangotbanned: Figure out if this a bug on `main`, but doesn't show because the examples use `{id: "id"}`
             // It should be `{existingName: "aliased"}` (field, as), which is the opposite of current
-            channelsExtra.set(fieldName, col(channels[fieldName]));
+            channelsExtra.set(fieldName, field(col(channels[fieldName]), fieldName));
           }
           yield ['channelsExtra', channelsExtra];
         } else if (!supportsObject.has(name)) {

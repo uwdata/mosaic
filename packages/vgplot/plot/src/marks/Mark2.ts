@@ -9,7 +9,7 @@ import type { Plot } from '../plot.js';
 import type { MarkType } from '../types.js';
 import { markQuery } from './Mark.js';
 import type { MarkOptions, OptionName } from './options.js';
-import { OptionsImpl } from './parse.js';
+import { OptionsImpl, type FieldEntry } from './parse.js';
 
 export type Requirements<T extends MarkOptions> = Partial<Record<OptionName<T>, mc.Stat[]>>;
 
@@ -19,7 +19,7 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
   readonly source: TableSource<string | mc.Param<string>> | undefined;
   private params: Set<mc.Param<any>>;
   public channels: object[];
-  private channelsExtra: Map<string, msql.ColumnNameRefNode> | undefined;
+  private channelsExtra: Map<string, FieldEntry> | undefined;
 
   /**
    * `Mark.plot` and `Mark.index` are both required, but this is not visible due to multi-stage
