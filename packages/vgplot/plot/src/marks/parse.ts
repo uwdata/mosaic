@@ -193,6 +193,10 @@ export class OptionsImpl implements OptionsSpec {
    * Yield entries from `options`.
    *
    * Intended to be overriden by subclasses, where the `this` value is depended on externally.
+   *
+   * The original code used `for...in`, which behaves [differently][1] to {@link Object.entries}.
+   *
+   * [1]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in#iterating_over_own_properties_only
    */
   // oxlint-disable-next-line class-methods-use-this
   protected *iterOptions<O extends MarkOptions>(

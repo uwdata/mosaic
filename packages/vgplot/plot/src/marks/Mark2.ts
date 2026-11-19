@@ -7,32 +7,11 @@ import { isColumnRef, unnest } from '@uwdata/mosaic-sql';
 import { type From, source as fromSource, type TableSource } from '../data.js';
 import type { Plot } from '../plot.js';
 import type { MarkType } from '../types.js';
-import { markQuery, type EncodingName } from './Mark.js';
+import { markQuery } from './Mark.js';
 import type { MarkOptions, OptionName } from './options.js';
 import { OptionsImpl } from './parse.js';
 
 export type Requirements<T extends MarkOptions> = Partial<Record<OptionName<T>, mc.Stat[]>>;
-
-/**
- * The original code used `for...in`, which behaves [differently][1] to {@link Object.entries}.
- *
- * Hoping to replace this later if not required.
- *
- * [1]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in#iterating_over_own_properties_only
- */
-function* iterItems<O extends MarkOptions>(
-  options: O,
-): Generator<[OptionName<O>, O[OptionName<O>]]> {
-  // oxlint-disable-next-line guard-for-in
-  for (const c in options) {
-    yield [c, options[c]];
-  }
-}
-
-// oxlint-disable-next-line no-unused-vars typescript/explicit-function-return-type
-function process(channel: EncodingName | 'channels', entry: any) {
-  return;
-}
 
 /** Experimenting with a more precise `Mark` data model. */
 export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
