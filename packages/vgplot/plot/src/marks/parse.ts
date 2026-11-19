@@ -4,7 +4,7 @@ import type * as mc from '@uwdata/mosaic-core';
 import { Param } from '@uwdata/mosaic-core';
 // oxlint-disable-next-line no-unused-vars
 import type * as msql from '@uwdata/mosaic-sql';
-import { isNode } from '@uwdata/mosaic-sql';
+import { ColumnNameRefNode, isNode } from '@uwdata/mosaic-sql';
 
 import { chainFromIterable, map } from '../itertools.js';
 import { Transform } from '../symbols.js';
@@ -103,6 +103,10 @@ function isBinTransform(value: any): value is BinReturn {
   return typeof value === 'function' && value[Transform];
 }
 
+function col(name: string): ColumnNameRefNode {
+  return new ColumnNameRefNode(name);
+}
+
 /** TODO: Narrow after finishing recursion cases */
 type EntryKey = string;
 
@@ -172,15 +176,23 @@ export class OptionsImpl implements OptionsSpec {
         throw new TypeError(`SQL is not supported for '${name}', got: ${value}`);
       }
     } else if (Array.isArray(value)) {
-      // TODO: remove after one case has been handled (without this everything is unreachable)
-      yield [name, value];
       throw new Error(`todo: handle ColumnValues, got: ${value}`);
     } else if (isBinTransform(value)) {
       // `bin` depends on `Mark.type` to determine if it returns an object with 1 or 2 channels
       // That logic should probably be defined in the `Mark` subclasses that require it
       throw new Error(`todo: handle BinReturn, got: ${value}`);
     } else if (typeof value === 'object') {
-      // `Record<string, string>` needs a check for `name === 'channels'`
+      if (name === 'channels') {
+        const channelsExtra = new Map<string, msql.ColumnNameRefNode>();
+        const channels = value as Record<string, string>;
+        // oxlint-disable-next-line guard-for-in
+        for (const fieldName in channels) {
+          // TODO @:dangotbanned: Figure out if this a bug on `main`, but doesn't show because the examples use `{id: "id"}`
+          // It should be `{existingName: "aliased"}` (field, as), which is the opposite of current
+          channelsExtra.set(fieldName, col(channels[fieldName]));
+        }
+        yield ['channelsExtra', channelsExtra];
+      }
       const todoTypes =
         'TipOptions | ChannelDomainSort | OrderValue | OrderChannel | Record<string, string> | ChannelValueLabel | ChannelValueScale';
       throw new Error(`todo: handle object ('${todoTypes}'), got: ${value}`);
