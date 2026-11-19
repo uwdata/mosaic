@@ -8,6 +8,7 @@ import { ColumnNameRefNode, isNode } from '@uwdata/mosaic-sql';
 
 import { chainFromIterable, map } from '../itertools.js';
 import { Transform } from '../symbols.js';
+import type { MarkType } from '../types.js';
 import type { BinReturn, MarkOptions, OptionName } from './options.js';
 
 /**
@@ -110,8 +111,48 @@ function col(name: string): ColumnNameRefNode {
 /** TODO: Narrow after finishing recursion cases */
 type EntryKey = string;
 
-/** TODO: Narrow after finishing recursion cases */
+/**
+ * TODO: Narrow after finishing recursion cases.
+ *
+ * - Field vs value
+ * - Avoid using primitives directly
+ */
 type EntryValue = any;
+
+/**
+ * Dependencies from `Mark.
+ *
+ * `Mark.update` is a dependency of params that are not collected into `params`.
+ */
+export interface ProcessStartState {
+  markType: MarkType;
+
+  params: Set<mc.Param<any>>;
+}
+
+/**
+ * Everything produced/mutated during `Mark`s `process` thing.
+ *
+ * ## Notes
+ *
+ * - On `main`, `detail` looks like book-keeping to make sense of what is in `channels`
+ * - Here, `channelsExtra` is intended to replace that - which ends of being `options.channels`
+ * - The regular channels are stored in ... `channels`
+ */
+export interface ProcessEndState {
+  /**
+   * Exclusively stores params that are part of queries (e.g. `Source.table` and
+   * {@link msql.ParamNode}).
+   *
+   * Params passed directly to a channel (e.g. `x`) get an event listener that's different.
+   */
+  params: Set<mc.Param<any>>;
+
+  channels: Map<EntryKey, EntryValue>;
+
+  /** Needs to be popped from the result of `parse` */
+  channelsExtra: Map<string, msql.ColumnNameRefNode>;
+}
 
 export class OptionsImpl implements OptionsSpec {
   readonly supportsParam: ReadonlySet<OptionNamePlaceholder>;
