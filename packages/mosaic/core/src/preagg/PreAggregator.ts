@@ -1,6 +1,7 @@
 import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, isInDistinct, int32, literal, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
 import type { BinMethod, ClauseDimension, ClauseSource, CompositeMetadata, IntervalDimension, IntervalMetadata, SelectionClause } from '../clause/index.js';
 import type { Coordinator } from '../Coordinator.js';
+import type { Connector } from '../connectors/Connector.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import { fnv_hash } from '../util/hash.js';
@@ -73,6 +74,7 @@ export class PreAggregator {
   private mc: Coordinator;
   private _schema: string;
   private _enabled: boolean;
+  private schemaReady: { db: Connector | null; done: Promise<unknown> } | null;
   private _useSketches: Required<SketchOptions>;
 
   /**
@@ -90,6 +92,7 @@ export class PreAggregator {
     this.mc = coordinator;
     this._schema = schema;
     this._enabled = enabled;
+    this.schemaReady = null;
     this._useSketches = sketchOptions(useSketches);
   }
 
@@ -155,6 +158,7 @@ export class PreAggregator {
     if (this._schema !== schema) {
       this.clear();
       this._schema = schema;
+      this.schemaReady = null;
     }
   }
 
@@ -177,6 +181,7 @@ export class PreAggregator {
    */
   dropSchema(): Promise<unknown> {
     this.clear();
+    this.schemaReady = null;
     return this.mc.exec(`DROP SCHEMA IF EXISTS "${this.schema}" CASCADE`);
   }
 
@@ -265,11 +270,18 @@ export class PreAggregator {
         entries.set(client, null);
         return null;
       }
-      const createQuery = [
-        createSchema(schema),
-        createTable(_info.table, _info.create, { temp: false })
-      ];
-      _info.result = mc.exec(createQuery);
+      const schemaQuery = createSchema(schema);
+      const tableQuery = createTable(_info.table, _info.create, { temp: false });
+      const createQuery = [schemaQuery, tableQuery];
+      const db = mc.databaseConnector();
+      if (this.schemaReady?.db !== db) {
+        const done = mc.exec(schemaQuery).catch((e: Error) => {
+          this.schemaReady = null;
+          throw e;
+        });
+        this.schemaReady = { db, done };
+      }
+      _info.result = this.schemaReady.done.then(() => mc.exec(tableQuery));
       // if create query fails, log and mark as failed
       _info.result.catch((e: Error) => {
         mc.logger().error(new QueryError(e, createQuery.join(';\n')));

@@ -5,7 +5,6 @@ import { voidLogger } from './util/void-logger.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
 import { type Cache, type Logger, type QueryType } from './types.js';
-import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './clause/index.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
@@ -50,6 +49,9 @@ export class Coordinator {
   public clients = new Set<MosaicClient>;
   public filterGroups = new Map<Selection, FilterGroupEntry>;
   protected _logger: Logger = voidLogger();
+  private lastUpdate = new WeakMap<MosaicClient, Promise<unknown>>();
+  /** How many selection updates a client may have in flight. */
+  public maxPendingUpdates: number;
 
   /**
    * @param db Database connector. Defaults to a REST connection.
@@ -63,6 +65,8 @@ export class Coordinator {
    *  a query is sent to the connector. Disabled by default.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
+   * @param options.maxPendingUpdates How many selection updates a client may
+   *  have in flight. Defaults to 1.
    */
   constructor(
     db: Connector = new RestConnector(),
@@ -74,6 +78,7 @@ export class Coordinator {
       timeout?: number;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
+      maxPendingUpdates?: number;
     } = {}
   ) {
     const {
@@ -83,8 +88,10 @@ export class Coordinator {
       ipc,
       timeout,
       consolidate = true,
-      preagg = {}
+      preagg = {},
+      maxPendingUpdates = 1
     } = options;
+    this.maxPendingUpdates = maxPendingUpdates;
     this.manager = manager;
     this.manager.cache(cache);
     if (ipc) this.manager.ipc(ipc);
@@ -148,7 +155,7 @@ export class Coordinator {
    * canceled if they are queued but have not yet been submitted.
    * @param requests An array of query result objects, such as those returned by the `query` method.
    */
-  cancel(requests: QueryResult[]) {
+  cancel(requests: Promise<unknown>[]) {
     this.manager.cancel(requests);
   }
 
@@ -157,14 +164,14 @@ export class Coordinator {
    * @param query The query or an array of queries. Each query should be either a Query builder object or a SQL string.
    * @param options An options object.
    * @param options.priority The query priority, defaults to `Priority.Normal`.
-   * @returns A query result promise.
+   * @returns A promise that resolves when the query completes.
    */
   exec(
     query: MaybeArray<QueryType>,
     options: { priority?: number } = {}
-  ): QueryResult {
+  ): Promise<void> {
     const { priority = Priority.Normal } = options;
-    return this.manager.request({ type: 'exec', query }, priority);
+    return this.manager.request({ type: 'exec', query }, priority) as Promise<void>;
   }
 
   /**
@@ -186,7 +193,7 @@ export class Coordinator {
       priority?: number;
       [key: string]: unknown;
     } = {}
-  ): QueryResult<Table> {
+  ): Promise<Table> {
     const {
       cache = true,
       consolidate = true,
@@ -196,7 +203,7 @@ export class Coordinator {
     return this.manager.request(
       { type: 'arrow', query, cache, consolidate, options: otherOptions },
       priority
-    ) as QueryResult<Table>;
+    ) as Promise<Table>;
   }
 
   /**
@@ -210,7 +217,7 @@ export class Coordinator {
   prefetch(
     query: QueryType,
     options: { [key: string]: unknown } = {}
-  ): QueryResult<Table> {
+  ): Promise<Table> {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 
@@ -218,7 +225,8 @@ export class Coordinator {
 
   /**
    * Update client data by submitting the given query and returning the
-   * data (or error) to the client.
+   * data (or error) to the client. A client receives results in the order
+   * its queries were issued, independent of other clients.
    * @param client A Mosaic client.
    * @param query The data query.
    * @param priority The query priority.
@@ -230,10 +238,15 @@ export class Coordinator {
     priority: number = Priority.Normal
   ): Promise<unknown> {
     client.queryPending();
-    return client._pending = this.query(query, { priority })
+    const prior = this.lastUpdate.get(client);
+    const update = this.query(query, { priority })
       .then(
-        data => client.queryResult(data).update(),
-        err => {
+        async data => {
+          await prior;
+          return client.queryResult(data).update();
+        },
+        async err => {
+          await prior;
           const e = new QueryError(err, query);
           this._logger?.error(e);
           client.queryError(e);
@@ -241,6 +254,8 @@ export class Coordinator {
         }
       )
       .catch(err => this._logger?.error(err));
+    this.lastUpdate.set(client, update);
+    return client._pending = update;
   }
 
   /**
@@ -357,51 +372,86 @@ function activateSelection(
   }
 }
 
+const selectionUpdates = new WeakMap<MosaicClient, { inflight: number; dirty: boolean }>();
+
 /**
- * Process an updated selection value, querying filtered data for any
- * associated clients.
+ * Process an updated selection value by updating each associated client.
  * @param mc The Mosaic coordinator.
  * @param selection A selection.
- * @returns A Promise that resolves when the update completes.
  */
-function updateSelection(
-  mc: Coordinator,
-  selection: Selection
-): Promise<PromiseSettledResult<unknown>[]> {
-  const { preaggregator, filterGroups } = mc;
-  const { clients } = filterGroups!.get(selection)!;
+function updateSelection(mc: Coordinator, selection: Selection): void {
+  const { clients } = mc.filterGroups!.get(selection)!;
+  for (const client of clients) {
+    requestSelectionUpdate(mc, selection, client);
+  }
+}
+
+/**
+ * Update a client for the current value of a selection, keeping at most
+ * `maxPendingUpdates` updates in flight. At the limit the request is
+ * deferred, and only the newest selection value is queried once a slot
+ * frees up. A deferred update is not skipped for a cross-filter
+ * source, as the value it missed came from another source.
+ * @param mc The Mosaic coordinator.
+ * @param selection A selection.
+ * @param client A client filtered by the selection.
+ * @param deferred Whether this update was deferred by the limit.
+ */
+function requestSelectionUpdate(mc: Coordinator, selection: Selection, client: MosaicClient, deferred = false): void {
+  let state = selectionUpdates.get(client);
+  if (!state) {
+    state = { inflight: 0, dirty: false };
+    selectionUpdates.set(client, state);
+  }
+  if (state.inflight >= mc.maxPendingUpdates) {
+    const { active } = selection;
+    if (!active || !selection.skip(client, active)) state.dirty = true;
+    return;
+  }
+  state.inflight += 1;
+  const update = updateClientSelection(mc, selection, client, deferred)
+    .catch(err => mc.logger().error(err))
+    .finally(() => {
+      state.inflight -= 1;
+      if (state.dirty) {
+        state.dirty = false;
+        if (mc.filterGroups.get(selection)?.clients.has(client)) {
+          requestSelectionUpdate(mc, selection, client, true);
+        }
+      }
+    });
+  if (client.initialized) client._pending = update;
+}
+
+/**
+ * Query filtered data for a client, using pre-aggregation when possible.
+ * @param mc The Mosaic coordinator.
+ * @param selection A selection.
+ * @param client A client filtered by the selection.
+ */
+async function updateClientSelection(mc: Coordinator, selection: Selection, client: MosaicClient, deferred = false): Promise<void> {
+  if (!client.enabled) {
+    await client.requestQuery();
+    return;
+  }
+
+  if (!client.initialized) await client.pending;
+
   const { active } = selection;
-  return Promise.allSettled(Array.from(clients, async (client: MosaicClient) => {
-    // if client is not enabled, register a request for later
-    if (!client.enabled) {
-      await client.requestQuery();
-      return;
-    }
+  const info = mc.preaggregator.request(client, selection, active);
 
-    // if client is initializing, wait for it to complete
-    if (!client.initialized) await client.pending;
-
-    // check if we can handle selection update via preaggregation
-    const info = preaggregator.request(client, selection, active);
-
-    if (info?.skip) {
-      // skip due to cross-filtering
-      return;
-    }
-
-    if (info?.result) {  
-      // generate and issue preaggregate update query
-      const query = info.query(active);
-      const result = await mc.updateClient(client, query);
+  if (info?.skip) {
+    if (!deferred) return;
+  } else if (info?.result) {
+    const created = await info.result.then(() => true, () => false);
+    if (created) {
+      const result = await mc.updateClient(client, info.query(active));
       if (!(result instanceof QueryError)) return;
-      // if preaggregate update fails, fall through to standard query
-      // this safeguards against potential preagg bugs
     }
+    // a failed create or select degrades to the standard query rather than an error
+  }
 
-    // generate and issue standard query
-    const filter = selection.predicate(client);
-    // skip due to cross-filtering
-    if (!filter) return; 
-    await mc.updateClient(client, client.query(filter)!);
-  }));
+  const filter = selection.predicate(client, deferred);
+  if (!filter) return;
+  await mc.updateClient(client, client.query(filter)!);
 }
