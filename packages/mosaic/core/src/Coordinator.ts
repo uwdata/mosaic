@@ -59,6 +59,8 @@ export class Coordinator {
    * @param options.cache Boolean flag to enable/disable query caching, or a
    *  custom cache object.
    * @param options.ipc Arrow IPC extraction options.
+   * @param options.timeout Query timeout in milliseconds, measured from when
+   *  a query is sent to the connector. Disabled by default.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
    */
@@ -69,6 +71,7 @@ export class Coordinator {
       manager?: QueryManager;
       cache?: boolean | Cache;
       ipc?: ExtractionOptions;
+      timeout?: number;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
     } = {}
@@ -78,12 +81,14 @@ export class Coordinator {
       manager = new QueryManager(),
       cache = true,
       ipc,
+      timeout,
       consolidate = true,
       preagg = {}
     } = options;
     this.manager = manager;
     this.manager.cache(cache);
     if (ipc) this.manager.ipc(ipc);
+    if (timeout !== undefined) this.manager.timeout(timeout);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);
     this.logger(logger);
@@ -92,7 +97,8 @@ export class Coordinator {
   }
 
   /**
-   * Clear the coordinator state.
+   * Clear the coordinator state. Pending queries are rejected, and in-flight
+   * queries other than exec queries are aborted.
    * @param options Options object.
    * @param options.clients If true, disconnect all clients.
    * @param options.cache If true, clear the query cache.
@@ -168,6 +174,7 @@ export class Coordinator {
    * @param options An options object.
    * @param options.type The query result format type.
    * @param options.cache If true, cache the query result client-side within the QueryManager.
+   * @param options.consolidate If false, exempt the query from query consolidation.
    * @param options.priority The query priority, defaults to `Priority.Normal`.
    * @returns A query result promise.
    */
@@ -175,16 +182,21 @@ export class Coordinator {
     query: QueryType,
     options: {
       cache?: boolean;
+      consolidate?: boolean;
       priority?: number;
       [key: string]: unknown;
     } = {}
   ): QueryResult<Table> {
     const {
       cache = true,
+      consolidate = true,
       priority = Priority.Normal,
       ...otherOptions
     } = options;
-    return this.manager.request({ type: 'arrow', query, cache, options: otherOptions }, priority) as QueryResult<Table>;
+    return this.manager.request(
+      { type: 'arrow', query, cache, consolidate, options: otherOptions },
+      priority
+    ) as QueryResult<Table>;
   }
 
   /**

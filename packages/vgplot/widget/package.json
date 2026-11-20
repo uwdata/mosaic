@@ -1,6 +1,6 @@
 {
   "name": "mosaic-widget",
-  "version": "0.32.1",
+  "version": "0.35.1",
   "private": true,
   "license": "BSD-3-Clause",
   "author": "Dominik Moritz (https://www.domoritz.de)",
@@ -11,9 +11,10 @@
   },
   "scripts": {
     "clean": "rimraf mosaic_widget/static",
-    "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.js",
+    "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.ts",
     "dev": "pnpm run build -- --watch",
     "test": "tsc --build",
+    "typecheck": "tsc --build",
     "lint": "eslint src"
   },
   "dependencies": {

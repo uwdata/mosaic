@@ -31,6 +31,7 @@ details > div {
   padding: 0.5em;
   background-color: white;
   border: 1px solid #ccc;
+  white-space: nowrap;
 }
 
 details > div > div:not(:last-child) {

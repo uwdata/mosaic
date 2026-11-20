@@ -105,6 +105,18 @@ Equivalent to `NOT(lo <= expression AND expression <= hi)`.
 `isIn(expression, values)`
 
 Returns an expression testing if the input _expression_ matches any of the entries in the _values_ array. Maps to `expression IN (...values)`.
+The _expression_ and _values_ may be tuples to test multiple columns at once, as in `isIn(tuple([column('a'), column('b')]), [tuple([1, 2]), tuple([3, 4])])`, which maps to `(a, b) IN ((1, 2), (3, 4))`.
+
+## isInDistinct
+
+`isInDistinct(expression, values)`
+
+Returns a null-safe expression testing if the input _expression_ matches any of the entries in the _values_ array.
+Unlike `isIn`, a `NULL` literal in _values_ matches `NULL` values of _expression_, via an added `expression IS NULL` check.
+
+The _expression_ may also be a tuple, in which case each entry in _values_ must be a tuple of the same length.
+Value tuples without `NULL` literals are tested with a single tuple `IN` operator, while tuples with `NULL` literals are tested with explicit per-column checks.
+For example, `isInDistinct(tuple([column('a'), column('b')]), [tuple([1, 2]), tuple([null, 4])])` maps to `((a, b) IN ((1, 2))) OR (a IS NULL AND b = 4)`.
 
 ## compareAny
 

@@ -17,8 +17,13 @@ export interface ExecQueryRequest extends ConnectorQueryRequest {
   type: 'exec';
 }
 
+export interface ConnectorQueryOptions {
+  /** A signal that aborts when the result is no longer needed. */
+  signal?: AbortSignal;
+}
+
 export interface Connector {
   /** Issue a query and return the result. */
-  query(query: ArrowQueryRequest): Promise<ArrowIPCBytes>;
-  query(query: ExecQueryRequest): Promise<void>;
+  query(query: ArrowQueryRequest, options?: ConnectorQueryOptions): Promise<ArrowIPCBytes>;
+  query(query: ExecQueryRequest, options?: ConnectorQueryOptions): Promise<void>;
 }

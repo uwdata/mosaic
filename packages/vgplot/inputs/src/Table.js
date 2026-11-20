@@ -2,7 +2,7 @@
  * @import { Selection } from '@uwdata/mosaic-core'
  * @import { FilterExpr, TableRefNode } from '@uwdata/mosaic-sql'
  */
-import { clausePoints, coordinator, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
+import { clausePoints, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { Input, input } from './input.js';
@@ -157,7 +157,7 @@ export class Table extends Input {
       });
       this.body.addEventListener('pointerleave', () => {
         this.currentRow = -1;
-        this.selection.update(this.clause());
+        this.selection.update(this.clause(null));
       });
     }
 
@@ -169,10 +169,10 @@ export class Table extends Input {
     return isParam(this.from) ? this.from.value : this.from;
   }
 
-  clause(rows = []) {
+  clause(rows) {
     const { data, limit, schema } = this;
     const fields = schema.map(s => s.column);
-    const values = rows.map(row => {
+    const values = rows?.map(row => {
       const { columns } = data[~~(row / limit)];
       return fields.map(f => columns[f][row % limit]);
     });
@@ -187,7 +187,7 @@ export class Table extends Input {
     this.requestQuery(query);
 
     // prefetch subsequent data batch
-    coordinator().prefetch(query.clone().offset(offset + this.limit));
+    this.coordinator?.prefetch(query.clone().offset(offset + this.limit));
   }
 
   async prepare() {

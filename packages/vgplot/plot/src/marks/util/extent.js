@@ -48,5 +48,7 @@ export function filteredExtent(filter, column) {
     }
   }));
 
-  return lo != null && hi != null && lo !== hi ? [lo, hi] : undefined;
+  return lo != null && hi != null && lo.valueOf() !== hi.valueOf()
+    ? [lo, hi]
+    : undefined;
 }

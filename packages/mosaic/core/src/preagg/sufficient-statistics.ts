@@ -1,6 +1,14 @@
-import type { AggregateNode, ColumnRefNode, ExprNode } from '@uwdata/mosaic-sql';
-import { and, argmax, argmin, coalesce, count, div, exp, isNotNull, ln, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
+import type { ColumnRefNode, ExprNode } from '@uwdata/mosaic-sql';
+import { AggregateNode, FunctionNode, LiteralNode, and, argmax, argmin, asNode, coalesce, count, cpcEstimate, cpcSketch, cpcUnion, div, exp, isNaN, isNotNull, kllQuantile, kllSketch, ln, max, min, mul, not, pow, regrAvgX, regrAvgY, regrCount, round, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
 import { fnv_hash } from '../util/hash.js';
+
+/** Selects which aggregates to approximate using mergeable sketches. */
+export interface SketchOptions {
+  /** Approximate distinct counts using CPC sketches. */
+  distinct?: boolean;
+  /** Approximate median and quantiles using KLL sketches. */
+  quantile?: boolean;
+}
 
 /**
  * Determine sufficient statistics to preaggregate the given node. This
@@ -10,14 +18,22 @@ import { fnv_hash } from '../util/hash.js';
  * @param preagg Map of column names to
  *  expressions to include in the preaggregation table.
  * @param avg Global average query generator.
+ * @param sketches Selects aggregates to approximate using mergeable sketches.
  * @returns Output aggregate expression that uses preaggregated
  *  sufficient statistics to service updates.
  */
 export function sufficientStatistics(
   node: AggregateNode,
   preagg: Record<string, ExprNode>,
-  avg: (field: ColumnRefNode) => ExprNode
+  avg: (field: ColumnRefNode) => ExprNode,
+  sketches: SketchOptions = {}
 ): ExprNode | null {
+  const expr = sketchStatistics(node, preagg, sketches);
+  if (expr) return expr;
+
+  // bail if distinct aggregate
+  if (node.isDistinct) return null;
+
   switch (node.name) {
     case 'count':
     case 'count_star':
@@ -86,9 +102,73 @@ export function sufficientStatistics(
       return sql`${node.name}("${name}")`;
     }
 
+    // sketch aggregates merge per-partition sketches
+    case 'datasketch_cpc':
+    case 'datasketch_cpc_union':
+    case 'datasketch_frequent_items':
+    case 'datasketch_hll':
+    case 'datasketch_hll_union':
+    case 'datasketch_kll':
+    case 'datasketch_quantiles':
+    case 'datasketch_req':
+    case 'datasketch_tdigest':
+    case 'datasketch_theta':
+      return sketchMergeExpr(preagg, node);
+
     // unsupported aggregate, return null to indicate failure
     default: return null;
   }
+}
+
+/**
+ * Determine sketch-based approximations for distinct count and quantile
+ * aggregates. As a side effect, this method adds sketch columns to the
+ * input *preagg* object.
+ * @param node An aggregate function.
+ * @param preagg A map of columns (such as
+ *  sufficient statistics) to pre-aggregate.
+ * @param sketches Selects aggregates to approximate using mergeable sketches.
+ * @returns Output aggregate expression over pre-aggregated sketches, or
+ *  null if the aggregate does not have a sketch approximation.
+ */
+function sketchStatistics(
+  node: AggregateNode,
+  preagg: Record<string, ExprNode>,
+  { distinct, quantile }: SketchOptions
+): ExprNode | null {
+  if (distinct) {
+    switch (node.name) {
+      case 'count':
+        return node.isDistinct && node.args.length === 1
+          ? sketchCountDistinctExpr(preagg, node)
+          : null;
+      case 'approx_count_distinct':
+        return sketchCountDistinctExpr(preagg, node);
+    }
+  }
+  if (!quantile || node.isDistinct) return null;
+  switch (node.name) {
+    case 'median':
+      return sketchQuantileExpr(preagg, node, 0.5);
+    case 'quantile':
+    case 'quantile_cont':
+    case 'quantile_disc':
+    case 'approx_quantile': {
+      const p = node.args[1];
+      return p instanceof LiteralNode && typeof p.value === 'number'
+        ? sketchQuantileExpr(preagg, node, p.value)
+        : null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Determine if the given expression is a sketch aggregate.
+ * @param expr The expression to test.
+ */
+export function isSketchAggregate(expr: ExprNode): boolean {
+  return expr instanceof AggregateNode && expr.name.startsWith('datasketch_');
 }
 
 /**
@@ -522,4 +602,53 @@ function regrInterceptExpr(
   const ay = regrAvgYExpr(preagg, node);
   const m = regrSlopeExpr(preagg, node, avg);
   return sub(ay, mul(m, ax));
+}
+/**
+ * Generate an expression for merging sketches over data dimensions. As a
+ * side effect, this method adds a column to the input *preagg* object to
+ * track a sketch per-partition.
+ * @param preagg A map of columns (such as
+ *  sufficient statistics) to pre-aggregate.
+ * @param node The originating sketch aggregate function call.
+ * @returns An aggregate expression over pre-aggregated dimensions.
+ */
+function sketchMergeExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
+  const name = addStat(preagg, node);
+  const merge = node.name === 'datasketch_hll' ? 'datasketch_hll_union'
+    : node.name === 'datasketch_cpc' ? 'datasketch_cpc_union'
+    : node.name;
+  return new AggregateNode(merge, [...node.args.slice(0, -1), asNode(name)]);
+}
+
+/**
+ * Generate an expression for approximate distinct counts over data
+ * dimensions, using CPC sketches. Input values are hashed so that
+ * any input type can be sketched. As a side effect, this method adds a
+ * column to the input *preagg* object to track a sketch per-partition.
+ * @param preagg A map of columns (such as
+ *  sufficient statistics) to pre-aggregate.
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over pre-aggregated dimensions.
+ */
+function sketchCountDistinctExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
+  const x = node.args[0];
+  const cpc = cpcSketch(new FunctionNode('hash', [x])).where(isNotNull(x));
+  const name = addStat(preagg, cpc, node);
+  return coalesce(round(cpcEstimate(cpcUnion(name))), 0);
+}
+
+/**
+ * Generate an expression for approximate quantiles over data dimensions,
+ * using KLL sketches. As a side effect, this method adds a column to the
+ * input *preagg* object to track a sketch per-partition.
+ * @param preagg A map of columns (such as
+ *  sufficient statistics) to pre-aggregate.
+ * @param node The originating aggregate function call.
+ * @param p The quantile probability.
+ * @returns An aggregate expression over pre-aggregated dimensions.
+ */
+function sketchQuantileExpr(preagg: Record<string, ExprNode>, node: AggregateNode, p: number): ExprNode {
+  const x = node.args[0];
+  const name = addStat(preagg, kllSketch(x).where(not(isNaN(x))), node);
+  return kllQuantile(kllSketch(name), p);
 }

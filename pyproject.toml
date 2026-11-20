@@ -7,6 +7,7 @@ members = [
 
 # https://github.com/charliermarsh/ruff
 [tool.ruff]
+target-version = "py311"
 extend-include = ["*.ipynb"]
 fix = true
 

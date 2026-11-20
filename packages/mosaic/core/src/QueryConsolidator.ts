@@ -10,6 +10,7 @@ interface GroupEntry {
   entry: QueryEntry;
   priority: number;
   index: number;
+  removed?: boolean;
 }
 
 interface QueryGroup extends Array<GroupEntry> {
@@ -31,26 +32,29 @@ function wait(callback: () => void): unknown {
 /**
  * Create a consolidator to combine structurally compatible queries.
  * @param enqueue Query manager enqueue method
- * @param cache Client-side query cache (sql -> data)
+ * @param cache Accessor for the client-side query cache (sql -> data)
  * @returns A consolidator object
  */
 export function consolidator(
   enqueue: (entry: QueryEntry, priority?: number) => void,
-  cache: Cache
+  cache: () => Cache,
+  generation: () => number = () => 0
 ) {
   let pending: GroupEntry[] = [];
   let id: unknown = 0;
+  const awaiting = new Set<QueryGroup>();
 
   function run(): void {
     // group queries into bundles that can be consolidated
-    const groups = entryGroups(pending, cache);
+    const groups = entryGroups(pending, cache());
     pending = [];
     id = 0;
 
     // build and issue consolidated queries
     for (const group of groups) {
       consolidate(group, enqueue);
-      processResults(group, cache);
+      if (group.maps) awaiting.add(group);
+      processResults(group, cache, generation, awaiting);
     }
   }
 
@@ -63,6 +67,21 @@ export function consolidator(
         pending.push({ entry, priority, index: pending.length });
       } else {
         enqueue(entry, priority);
+      }
+    },
+
+    /**
+     * Remove entries that are waiting to be consolidated or for their share
+     * of a consolidated result.
+     * @param test A predicate function to test if an entry should be
+     *  removed (true to drop, false to keep).
+     */
+    remove(test: (entry: QueryEntry) => boolean): void {
+      pending = pending.filter(({ entry }) => !test(entry));
+      for (const group of awaiting) {
+        for (const item of group) {
+          item.removed ||= test(item.entry);
+        }
       }
     }
   };
@@ -256,14 +275,24 @@ function consolidatedQuery(group: QueryGroup): Query {
 /**
  * Process query results, dispatch results to original requests
  * @param group Array of query requests
- * @param cache Client-side query cache (sql -> data)
+ * @param cache Accessor for the client-side query cache (sql -> data)
+ * @param generation Cache generation accessor; results issued under an
+ *  older generation are delivered but not cached
+ * @param awaiting Consolidated groups awaiting their results
  */
-async function processResults(group: QueryGroup, cache: Cache): Promise<void> {
+async function processResults(
+  group: QueryGroup,
+  cache: () => Cache,
+  generation: () => number,
+  awaiting: Set<QueryGroup>
+): Promise<void> {
   const { maps, query, result } = group;
 
   // exit early if no consolidation performed
   // in this case results are passed directly
   if (!maps) return;
+
+  const issued = generation();
 
   // await consolidated query result, pass errors if needed
   let data: Table;
@@ -271,24 +300,27 @@ async function processResults(group: QueryGroup, cache: Cache): Promise<void> {
     data = await result as Table;
   } catch (err) {
     // pass error to consolidated queries
-    for (const { entry } of group) {
-      entry.result.reject(err);
+    for (const { entry, removed } of group) {
+      if (!removed) entry.result.reject(err);
     }
     return;
+  } finally {
+    awaiting.delete(group);
   }
 
   // extract result for each query in the consolidation group
   // update cache and pass extract to original issuer
   const describe = isDescribeQuery(query!);
   const bytes = tableByteLength(data) ?? 0;
-  group.forEach(({ entry }, index) => {
+  group.forEach(({ entry, removed }, index) => {
+    if (removed) return;
     const { request, result } = entry;
     const map = maps[index];
     const extract = describe && map ? filterResult(data, map)
       : map ? projectResult(data, map)
       : data;
-    if (request.cache) {
-      cache.set(String(request.query), extract, bytes);
+    if (request.cache && issued === generation()) {
+      cache().set(String(request.query), extract, bytes);
     }
     result.fulfill(extract);
   });

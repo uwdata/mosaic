@@ -2,12 +2,14 @@
 
 Database connectors issue query requests to a backing data source.
 
-A connector instance should expose a `query(query)` method that returns a Promise.
+A connector instance should expose a `query(query, options)` method that returns a Promise.
 The _query_ argument is an object with the following properties:
 
 - _sql_: The SQL query to evaluate.
 - _type_: The query format type, either `"exec"` (no return value) or `"arrow"`. This property is required; servers reject a request without it.
 - Any additional connector-specific options.
+
+The optional _options_ argument is an object with a _signal_ property: an [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that aborts when the coordinator no longer needs the result, because the coordinator was [cleared](./coordinator#clear) or the query exceeded the coordinator [_timeout_](./coordinator#constructor). A connector can use the signal to stop work early. The coordinator rejects the request either way, so connectors that ignore the signal still work.
 
 For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `ArrowIPCBytes` value, which is an `ArrayBuffer`, a `Uint8Array`, or an array of `Uint8Array` chunks; the coordinator decodes them to an Arrow table.
 
@@ -21,9 +23,28 @@ Decode Arrow IPC bytes to an Arrow table. The _data_ argument is an `ArrowIPCByt
 
 ## restConnector
 
-`restConnector(uri)`
+`restConnector(options)`
 
-Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"http://localhost:3000/"`).
+Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) with the given _options_.
+
+The supported options are:
+
+- _uri_: The URI of the data server (default `"http://localhost:3000/"`).
+- _headers_: Additional request headers, as a `Headers` object, a plain object, or an array of name-value pairs. Alternatively, a function that returns headers, possibly asynchronously, which is called before every request, for example to supply a refreshed access token. POST requests always send the `Content-Type: application/json` header.
+- _fetch_: A [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch) implementation to use instead of the global `fetch`. Requests otherwise use `mode: "cors"` and `credentials: "omit"`; a custom implementation can change these, for example `(input, init) => fetch(input, { ...init, credentials: 'include' })`.
+- _method_: The HTTP method for `"arrow"` queries, either `"POST"` (default) or `"GET"`. A GET request carries the query in `type` and `sql` URL parameters instead of a body, so browsers and proxies can cache the result if the data server accepts GET queries and marks its responses as cacheable. Requests that cannot be sent this way fall back to POST instead of failing: `"exec"` queries, which may change data, and queries with additional connector-specific options, which a GET request cannot carry. As with any HTTP cache, a cached result is not invalidated when the data changes, so it can be stale until it expires. A long query can exceed the URL length limit of a server or proxy, and because browsers cache CORS preflight results per URL, a cross-origin GET request with custom headers needs a preflight for every distinct query.
+- _retries_: The number of times to retry an `"arrow"` query (default `0`) after a network error or an HTTP 502 or 503 response, including a connection lost while downloading the result, waiting between attempts with exponential backoff and jitter. A server may have run the query before the failure, so a retried query can run more than once: only enable retries when your `"arrow"` queries do not modify data. A `Retry-After` response header sets the minimum wait; if it asks for more than five seconds, the query fails instead. A server on a different origin must list `Retry-After` in `Access-Control-Expose-Headers` for the connector to read it. `"exec"` queries are never retried, and retries count toward the coordinator [_timeout_](./coordinator#constructor).
+
+```js
+const connector = restConnector({
+  uri: 'https://example.com/mosaic/',
+  headers: async () => ({ Authorization: `Bearer ${await getToken()}` })
+});
+```
+
+A data server on a different origin must allow these requests in its CORS preflight response. `Access-Control-Allow-Headers: *` covers custom headers such as `X-Api-Key`, but never `Authorization`, which a server must list by name. Requests that include credentials also require the server to allow the specific origin, send `Access-Control-Allow-Credentials: true`, and list the request headers by name, including `Content-Type`, since wildcards do not apply to them; a custom _fetch_ cannot provide these.
+
+When the coordinator aborts a request, the connector aborts its HTTP request, though the data server may still finish running the query.
 
 ## wasmConnector
 

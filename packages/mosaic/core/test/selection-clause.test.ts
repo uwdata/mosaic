@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { clauseList } from '../src/index.js';
+import type { ScaleOptions } from '@uwdata/mosaic-sql';
+import { clauseComposite, clauseList, clausePoints } from '../src/index.js';
 
 describe('clauseList', () => {
   const source = {};
@@ -44,5 +45,112 @@ describe('clauseList', () => {
   it('produces a null predicate for an empty array (clears selection)', () => {
     // an empty list must clear the selection, not filter out every row
     expect(clauseList('tags', [], { source }).predicate).toBe(null);
+  });
+});
+
+describe('clausePoints', () => {
+  const source = {};
+
+  it('uses IN for a single field', () => {
+    const clause = clausePoints(['a'], [[1], [2], [null]], { source });
+    expect(String(clause.predicate)).toBe(
+      '(("a" IN (1, 2)) OR ("a" IS NULL))'
+    );
+  });
+
+  it('uses tuple IN for multiple fields', () => {
+    const clause = clausePoints(['lat', 'lon'], [[12, -5], [90, -110]], { source });
+    expect(String(clause.predicate)).toBe(
+      '(("lat", "lon") IN ((12, -5), (90, -110)))'
+    );
+  });
+
+  it('tests tuples with null values separately', () => {
+    const clause = clausePoints(['a', 'b'], [[1, 'x'], [null, 'y']], { source });
+    expect(String(clause.predicate)).toBe(
+      '((("a", "b") IN ((1, \'x\'))) OR (("a" IS NULL) AND ("b" = \'y\')))'
+    );
+  });
+
+  it('produces a false predicate for an empty array', () => {
+    expect(String(clausePoints(['a'], [], { source }).predicate)).toBe('FALSE');
+    expect(String(clausePoints(['a', 'b'], [], { source }).predicate)).toBe('FALSE');
+  });
+
+  it('produces a null predicate for null values', () => {
+    expect(clausePoints(['a', 'b'], null, { source }).predicate).toBe(null);
+  });
+});
+
+describe('clauseComposite', () => {
+  const source = {};
+  const scale: ScaleOptions = { type: 'linear', domain: [0, 10], range: [0, 100] };
+
+  it('combines interval and point predicates', () => {
+    const clause = clauseComposite([
+      { type: 'interval', field: 'x', value: [1, 3], scale },
+      { type: 'point', field: 'c', value: ['a', 'b'] }
+    ], { source });
+    expect(String(clause.predicate)).toBe(
+      '(("x" BETWEEN 1 AND 3) AND ("c" IN (\'a\', \'b\')))'
+    );
+    expect(clause.value).toStrictEqual([[1, 3], ['a', 'b']]);
+    expect(clause.meta).toStrictEqual({
+      type: 'composite',
+      dims: [
+        { type: 'interval', scale, pixelSize: undefined, bin: undefined },
+        { type: 'point' }
+      ]
+    });
+  });
+
+  it('applies shared binning defaults to interval dimensions', () => {
+    const clause = clauseComposite([
+      { type: 'interval', field: 'x', value: [1, 3], scale },
+      { type: 'interval', field: 'y', value: [1, 3], scale, pixelSize: 1, bin: 'round' }
+    ], { source, pixelSize: 2, bin: 'ceil' });
+    expect(clause.meta).toStrictEqual({
+      type: 'composite',
+      dims: [
+        { type: 'interval', scale, pixelSize: 2, bin: 'ceil' },
+        { type: 'interval', scale, pixelSize: 1, bin: 'round' }
+      ]
+    });
+  });
+
+  it('tests null point values separately', () => {
+    const clause = clauseComposite([
+      { type: 'interval', field: 'x', value: [1, 3] },
+      { type: 'point', field: 'c', value: [null, 'b'] }
+    ], { source });
+    expect(String(clause.predicate)).toBe(
+      '(("x" BETWEEN 1 AND 3) AND (("c" IN (\'b\')) OR ("c" IS NULL)))'
+    );
+  });
+
+  it('produces a false point predicate for an empty array', () => {
+    const clause = clauseComposite([
+      { type: 'interval', field: 'x', value: [1, 3] },
+      { type: 'point', field: 'c', value: [] }
+    ], { source });
+    expect(String(clause.predicate)).toBe('(("x" BETWEEN 1 AND 3) AND FALSE)');
+  });
+
+  it('does not filter null dimensions', () => {
+    const clause = clauseComposite([
+      { type: 'interval', field: 'x', value: null },
+      { type: 'point', field: 'c', value: ['a'] }
+    ], { source });
+    expect(String(clause.predicate)).toBe('("c" IN (\'a\'))');
+    expect(clause.value).toStrictEqual([null, ['a']]);
+  });
+
+  it('produces a null predicate and value if all dimensions are null', () => {
+    const clause = clauseComposite([
+      { type: 'interval', field: 'x' },
+      { type: 'point', field: 'c', value: null }
+    ], { source });
+    expect(clause.predicate).toBe(null);
+    expect(clause.value).toBe(null);
   });
 });

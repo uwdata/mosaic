@@ -29,6 +29,7 @@ import {
   OrderByNode,
   ParamNode,
   PivotQuery,
+  PositionalRefNode,
   QuantifiedOpNode,
   Query,
   DescribeQuery,
@@ -62,7 +63,7 @@ import { quoteIdentifier } from '../../util/string.js';
 import { literalToSQL } from '../../ast/literal.js';
 import { SQLCodeGenerator } from './sql.js';
 import { CURRENT_ROW, FOLLOWING, PRECEDING, UNBOUNDED } from '../../ast/window-frame.js';
-import { COLUMN_PARAM, COLUMN_REF, FUNCTION, LIST, SET_OPERATION, SLICE, SUBSCRIPT, WINDOW_EXTENT_EXPR } from '../../constants.js';
+import { COLUMN_PARAM, COLUMN_REF, FUNCTION, LAMBDA_VAR, LIST, POSITIONAL_REF, SET_OPERATION, SLICE, SUBSCRIPT, WINDOW_EXTENT_EXPR } from '../../constants.js';
 
 /**
  * DuckDB SQL dialect visitor for converting AST nodes to DuckDB-compatible SQL.
@@ -330,6 +331,10 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     return this.visitQuery(node, sql);
   }
 
+  visitPositionalRef(node: PositionalRefNode): string {
+    return `#${node.index}`;
+  }
+
   visitQuantified(node: QuantifiedOpNode): string {
     const { op, expr, quantifier, subquery } = node;
     return `(${this.toString(expr)} ${op} ${quantifier} ${this.toString(subquery)})`;
@@ -583,14 +588,14 @@ function starModifiers(visitor: SQLCodeGenerator, node: StarNode) {
   const { exclude, replace, rename } = node;
   const sql: string[] = [];
   if (exclude.length) {
-    sql.push(`EXCLUDE (${exclude.map(v => quoteIdentifier(v)).join(', ')})`);
+    sql.push(`EXCLUDE (${visitor.mapToString(exclude).join(', ')})`);
   }
   if (replace.length) {
     const list = replace.map(({ expr, alias }) => `${visitor.toString(expr)} AS ${quoteIdentifier(alias)}`);
     sql.push(`REPLACE (${list.join(', ')})`);
   }
   if (rename.length) {
-    const list = rename.map(([from, to]) => `${quoteIdentifier(from)} AS ${quoteIdentifier(to)}`);
+    const list = rename.map(({ expr, alias }) => `${visitor.toString(expr)} AS ${quoteIdentifier(alias)}`);
     sql.push(`RENAME (${list.join(', ')})`);
   }
   return sql.map(s => ` ${s}`).join('');
@@ -604,7 +609,7 @@ function isCompoundQuery(query: Query) {
     || query._offset != null;
 }
 
-const SUBSCRIPTABLE = new Set([COLUMN_PARAM, COLUMN_REF, FUNCTION, LIST, SLICE, SUBSCRIPT]);
+const SUBSCRIPTABLE = new Set([COLUMN_PARAM, COLUMN_REF, FUNCTION, LAMBDA_VAR, LIST, POSITIONAL_REF, SLICE, SUBSCRIPT]);
 
 function subscriptTarget(visitor: SQLCodeGenerator, expr: ExprNode) {
   const s = visitor.toString(expr);

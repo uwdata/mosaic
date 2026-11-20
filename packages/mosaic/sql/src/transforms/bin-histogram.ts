@@ -51,7 +51,9 @@ export function binHistogram(
   // handle degenerate extent
   if (max === min) return offset ? add(offset, floor(field)) : floor(field);
 
-  const { apply, sqlApply, sqlInvert } = transform;
+  const { apply, sqlApply, sqlInvert } = transform.domain
+    ? transform
+    : scaleTransform<number>({ ...transform, domain: extent });
   const b = binSpec(apply(min), apply(max), options);
   const col = sqlApply(field);
   const alpha = ((b.max - b.min) / b.steps) || 1;

@@ -1,6 +1,7 @@
 export const ALL = 'ALL';
 export const COLUMN_REF = 'COLUMN_REF';
 export const COLUMN_PARAM = 'COLUMN_PARAM';
+export const POSITIONAL_REF = 'POSITIONAL_REF';
 export const TABLE_REF = 'TABLE_REF';
 export const LITERAL = 'LITERAL';
 export const INTERVAL = 'INTERVAL';

@@ -22,6 +22,7 @@ export { LogicalOpNode, AndNode, OrNode } from './logical-op.js';
 export { SQLNode, ExprNode, isNode } from './node.js';
 export { OrderByNode } from './order-by.js';
 export { ParamNode } from './param.js';
+export { PositionalRefNode } from './positional-ref.js';
 export { QuantifiedOpNode, type ComparisonOp, type Quantifier } from './quantified-op.js';
 export { CreateQuery, type CreateTableOptions, CreateSchemaQuery, type CreateSchemaOptions, DescribeQuery, PivotQuery, type PivotSource, Query, SelectQuery, SetOperation, isCreateQuery, isCreateSchemaQuery, isDescribeQuery, isPivotQuery, isQuery, isSelectQuery, isSetOperation } from './query.js';
 export { SampleClauseNode } from './sample.js';

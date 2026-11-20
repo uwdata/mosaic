@@ -267,3 +267,68 @@ Create an aggregate function that returns the string concatenation of the input 
 `arrayAgg(expression)`
 
 Create an aggregate function that returns a list of the input _expression_ values.
+
+## Sketch Aggregates
+
+Sketch aggregates compute compact, mergeable summaries for approximate distinct counts and quantiles.
+They require the DuckDB [`datasketches` extension](https://query.farm/products/extensions/datasketches/). See [sketch aggregates](../core/coordinator#sketch-aggregates) for how to load it.
+As sketches can be merged, queries using sketch aggregates support [pre-aggregation](../core/coordinator#sketch-aggregates).
+
+## cpcSketch
+
+`cpcSketch(expression, lgK)`
+
+Create an aggregate function that builds a [Compressed Probabilistic Counting (CPC) sketch](https://datasketches.apache.org/docs/CPC/CpcSketches.html) of the input _expression_ for approximate distinct counting.
+CPC sketches are smaller and faster to merge than [HyperLogLog sketches](#hllsketch) of similar accuracy, and are the recommended choice for distinct counts.
+The optional _lgK_ argument (default `11`) is the log2 of the sketch size parameter; larger values improve accuracy at the cost of larger sketches.
+Use [`cpcEstimate`](#cpcestimate) to extract a distinct count, for example `cpcEstimate(cpcSketch("x"))`.
+
+## cpcUnion
+
+`cpcUnion(sketch, lgK)`
+
+Create an aggregate function that merges CPC sketches produced by [`cpcSketch`](#cpcsketch).
+The optional _lgK_ argument (default `11`) is the log2 of the size parameter of the merged sketch.
+
+## cpcEstimate
+
+`cpcEstimate(sketch)`
+
+Create a function that returns the estimated distinct count of a CPC _sketch_.
+
+## hllSketch
+
+`hllSketch(expression, lgK)`
+
+Create an aggregate function that builds a [HyperLogLog sketch](https://datasketches.apache.org/docs/HLL/HllSketches.html) of the input _expression_ for approximate distinct counting.
+The optional _lgK_ argument (default `12`) is the log2 of the number of sketch buckets; larger values improve accuracy at the cost of larger sketches.
+Use [`hllEstimate`](#hllestimate) to extract a distinct count, for example `hllEstimate(hllSketch("x"))`.
+
+## hllUnion
+
+`hllUnion(sketch, lgK)`
+
+Create an aggregate function that merges HyperLogLog sketches produced by [`hllSketch`](#hllsketch).
+The optional _lgK_ argument (default `12`) is the log2 of the number of buckets in the merged sketch.
+
+## hllEstimate
+
+`hllEstimate(sketch)`
+
+Create a function that returns the estimated distinct count of a HyperLogLog _sketch_.
+
+## kllSketch
+
+`kllSketch(expression, k)`
+
+Create an aggregate function that builds a [KLL sketch](https://datasketches.apache.org/docs/KLL/KLLSketch.html) of the numeric input _expression_ for approximate quantile estimation.
+If the input _expression_ consists of KLL sketches, the sketches are merged.
+The optional _k_ argument (default `200`) trades off sketch size and accuracy.
+Use [`kllQuantile`](#kllquantile) to extract a quantile, for example `kllQuantile(kllSketch("x"), 0.5)`.
+
+## kllQuantile
+
+`kllQuantile(sketch, rank, inclusive)`
+
+Create a function that returns the estimated quantile value for the normalized _rank_ (between 0 and 1) of a KLL _sketch_.
+The optional _inclusive_ flag (default `true`) determines if inclusive or exclusive rank semantics are used.
