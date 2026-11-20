@@ -2,7 +2,7 @@ import type * as mc from '@uwdata/mosaic-core';
 
 import type { InstantiateContext } from '../ast-to-dom.js';
 import type { CodegenContext } from '../ast-to-esm.js';
-import { INCLUDE, INTERSECT, SELECTION } from '../constants.js';
+import { CROSSFILTER, INCLUDE, INTERSECT, SELECTION, SINGLE, UNION } from '../constants.js';
 import type { ParseContext } from '../parse-spec.js';
 import type { ParamRef, Selection } from '../spec/Param.js';
 import { paramRef, toArray } from '../util.js';
@@ -52,8 +52,13 @@ export class IncludeNode extends ASTNode {
   }
 }
 
+const selectionTypes = new Set<string>([CROSSFILTER, INTERSECT, SINGLE, UNION]);
+
 export function parseSelection(spec: Selection, ctx: ParseContext): SelectionNode {
   const { select, include, ...options } = spec;
+  if (!selectionTypes.has(select)) {
+    ctx.error(`Unrecognized param type: ${select}`, spec);
+  }
   const opt = parseOptions(options, ctx);
   if (include) {
     const refs = toArray(include).map((ref) => ctx.selectionRef(paramRef(ref)));
