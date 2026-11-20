@@ -164,6 +164,7 @@ Coerce this query object to a SQL query string.
 
 Select columns and return this query instance.
 The _expressions_ argument may include column name strings, [`column` references](./expressions#column), [`star`](./expressions#star) and [`columns`](./expressions#columns) expressions, and maps from column names to expressions (either as JavaScript `object` values or nested key-value arrays as produced by `Object.entries`).
+A query provided as an expression is included as a scalar subquery.
 
 ## from
 
