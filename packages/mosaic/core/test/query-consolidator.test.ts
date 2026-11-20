@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { type Table, tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { Query, count, literal, sum } from '@uwdata/mosaic-sql';
 import { consolidator } from '../src/QueryConsolidator.js';
@@ -10,7 +10,7 @@ import { decodeIPC } from '../src/util/decode-ipc.js';
 describe('QueryConsolidation', () => {
   async function getConsolidatedQueries(...qs: unknown[]) {
     const consolidated: string[] = [];
-    const c = consolidator(q => consolidated.push(q.request.query.toString()), voidCache());
+    const c = consolidator(q => consolidated.push(q.request.query.toString()), voidCache);
     for(const q of qs) {
       // @ts-expect-error stub entry for test
       c.add({request: { type: 'arrow', query: q }}, Priority.Normal);
@@ -126,7 +126,7 @@ describe('QueryConsolidationCaching', () => {
     };
     const c = consolidator(entry => {
       if (entry.request.cache === false) entry.result.resolve(data);
-    }, cache);
+    }, () => cache);
     for (const entry of entries) {
       c.add(entry, Priority.Normal);
     }
@@ -137,5 +137,59 @@ describe('QueryConsolidationCaching', () => {
       [String(queries[0]), extracts[0], bytes.length],
       [String(queries[1]), extracts[1], bytes.length]
     ]);
+
+    const remove = vi.fn(() => true);
+    c.remove(remove);
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('delivers but does not cache extracts from an older generation', async () => {
+    const data = decodeIPC(tableToIPC(tableFromArrays({ col0: [1, 2], col1: [3, 4] }), {})!);
+    const queries = ['x', 'y'].map(c => Query.from({ source: 'table' }).select({ c }));
+    const entries: QueryEntry[] = queries.map(query => ({
+      request: { type: 'arrow', cache: true, query },
+      result: Promise.withResolvers()
+    }));
+
+    const calls: unknown[][] = [];
+    const cache: Cache = {
+      get: () => undefined,
+      set: (...args) => (calls.push(args), args[1]),
+      clear: () => {},
+      bytes: () => 0
+    };
+    let generation = 0;
+    const combined: QueryEntry[] = [];
+    const c = consolidator(entry => combined.push(entry), () => cache, () => generation);
+    for (const entry of entries) {
+      c.add(entry, Priority.Normal);
+    }
+    await new Promise(resolve => setImmediate(resolve));
+
+    generation += 1;
+    combined[0].result.resolve(data);
+    const extracts = await Promise.all(entries.map(entry => entry.result.promise)) as Table[];
+
+    expect(Array.from(extracts[1])).toEqual([{ c: 3 }, { c: 4 }]);
+    expect(calls).toEqual([]);
+  });
+
+  it('does not deliver to entries removed before their extracts', async () => {
+    const data = decodeIPC(tableToIPC(tableFromArrays({ col0: [1, 2], col1: [3, 4] }), {})!);
+    const entries: QueryEntry[] = ['x', 'y'].map(c => ({
+      request: { type: 'arrow', query: Query.from({ source: 'table' }).select({ c }) },
+      result: Promise.withResolvers()
+    }));
+    const combined: QueryEntry[] = [];
+    const c = consolidator(entry => combined.push(entry), voidCache);
+    for (const entry of entries) {
+      c.add(entry, Priority.Normal);
+    }
+    await new Promise(resolve => setImmediate(resolve));
+
+    const rejected = entries.map(({ result }) => expect(result.promise).rejects.toBe('Cleared'));
+    combined[0].result.resolve(data);
+    c.remove(({ result }) => (result.reject('Cleared'), true));
+    await Promise.all(rejected);
   });
 });

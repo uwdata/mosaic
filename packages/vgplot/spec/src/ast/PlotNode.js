@@ -19,7 +19,7 @@ export function parsePlot(spec, ctx) {
     return isString(spec.mark) ? parseMark(spec, ctx)
       : isString(spec.legend) ? parseLegend(spec, ctx)
       : isString(spec.select) ? parseInteractor(spec, ctx)
-      : ctx.error(`Invalid plot entry.`, spec);
+      : ctx.error('Invalid plot entry.', spec);
   });
 
   return new PlotNode(children, attributes);

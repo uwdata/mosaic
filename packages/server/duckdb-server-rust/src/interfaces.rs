@@ -28,7 +28,6 @@ pub struct QueryParams {
 
 pub enum QueryResponse {
     Arrow(Vec<u8>),
-    Response(Response),
     Empty,
 }
 
@@ -41,7 +40,6 @@ impl IntoResponse for QueryResponse {
                 Bytes::from(bytes),
             )
                 .into_response(),
-            QueryResponse::Response(response) => response,
             QueryResponse::Empty => StatusCode::OK.into_response(),
         }
     }
@@ -50,7 +48,7 @@ impl IntoResponse for QueryResponse {
 #[derive(Debug)]
 pub enum AppError {
     Error(anyhow::Error),
-    BadRequest,
+    BadRequest(&'static str),
 }
 
 impl IntoResponse for AppError {
@@ -64,7 +62,7 @@ impl IntoResponse for AppError {
                 )
                     .into_response()
             }
-            AppError::BadRequest => (StatusCode::BAD_REQUEST).into_response(),
+            AppError::BadRequest(message) => (StatusCode::BAD_REQUEST, message).into_response(),
         }
     }
 }

@@ -1,25 +1,34 @@
+import { readFileSync } from 'node:fs';
 import http from 'node:http';
+import http2 from 'node:http2';
 import url from 'node:url';
-import { WebSocketServer } from 'ws';
+import { findCertificates } from './https.js';
 
 export function dataServer(db, {
   rest = true,
-  socket = true,
   port = 3000
 } = {}) {
   const handleQuery = queryHandler(db);
-  const app = createHTTPServer(handleQuery, rest);
-  if (socket) createSocketServer(app, handleQuery);
+  const certificates = findCertificates();
+  const secure = !!certificates;
+  const app = createHTTPServer(handleQuery, rest, certificates);
 
   const server = app.listen(port);
   console.log(`Data server running on port ${port}`);
-  if (rest) console.log(`  http://localhost:${port}/`);
-  if (socket) console.log(`  ws://localhost:${port}/`);
+  if (secure) console.log(`  TLS certificate: ${certificates.cert}`);
+  if (rest) console.log(`  http${secure ? 's' : ''}://localhost:${port}/`);
   return server;
 }
 
-function createHTTPServer(handleQuery, rest) {
-  return http.createServer((req, resp) => {
+function createHTTPServer(handleQuery, rest, certificates) {
+  const app = certificates
+    ? http2.createSecureServer({
+        cert: readFileSync(certificates.cert),
+        key: readFileSync(certificates.key),
+        allowHTTP1: true
+      })
+    : http.createServer();
+  return app.on('request', (req, resp) => {
     const res = httpResponse(resp);
     if (!rest) {
       res.done();
@@ -52,19 +61,6 @@ function createHTTPServer(handleQuery, rest) {
   });
 }
 
-function createSocketServer(server, handleQuery) {
-  const wss = new WebSocketServer({ server });
-
-  wss.on('connection', socket => {
-    const res = socketResponse(socket);
-    // answer messages in the order received, so clients can match by position
-    let last = Promise.resolve();
-    socket.on('message', data => {
-      last = last.then(() => handleQuery(res, data));
-    });
-  });
-}
-
 export function queryHandler(db) {
   // query request handler
   return async (res, data) => {
@@ -80,7 +76,11 @@ export function queryHandler(db) {
     }
 
     try {
-      const { sql, type = 'arrow' } = query;
+      const { sql, type } = query;
+      if (type == null) {
+        res.error('missing required \'type\' parameter', 400);
+        return;
+      }
       console.log(`> ${String(type).toUpperCase()}${sql ? ` ${sql}` : ''}`);
 
       // process query and return result
@@ -119,28 +119,7 @@ function httpResponse(res) {
     error(err, code) {
       console.error(err);
       res.writeHead(code);
-      res.end();
+      res.end(String(err));
     }
   }
-}
-
-export function socketResponse(ws) {
-  const STRING = { binary: false, fin: true };
-  const BINARY = { binary: true, fin: true };
-
-  return {
-    arrow(data) {
-      ws.send(Buffer.concat(data), BINARY);
-    },
-    json(data) {
-      ws.send(JSON.stringify(data), STRING);
-    },
-    done() {
-      this.json({});
-    },
-    error(err) {
-      console.error(err);
-      this.json({ error: String(err) });
-    }
-  };
 }

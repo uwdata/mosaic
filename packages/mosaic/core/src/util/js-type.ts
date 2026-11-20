@@ -8,6 +8,8 @@ import type { JSType } from '../types.js';
  */
 export function jsType(type: string): JSType {
   switch (type) {
+    case '"NULL"':
+      return 'null';
     case 'BIGINT':
     case 'HUGEINT':
     case 'INTEGER':

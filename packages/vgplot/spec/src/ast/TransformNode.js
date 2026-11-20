@@ -1,12 +1,22 @@
 import { ASTNode } from './ASTNode.js';
-import { TRANSFORM } from '../constants.js';
+import { SQL, TRANSFORM } from '../constants.js';
+import { isObject } from '../util.js';
+import { parseExpression } from './ExpressionNode.js';
 import { parseOptions } from './OptionsNode.js';
 import { parseWindowFrame } from './WindowFrameNode.js';
 
 function toArray(value, ctx) {
   return value == null
     ? []
-    : [value].flat().map(v => ctx.maybeParam(v));
+    : [value].flat().map(v => maybeTransform(v, ctx) || ctx.maybeParam(v));
+}
+
+export function maybeTransform(value, ctx) {
+  if (isObject(value)) {
+    return value[SQL]
+      ? parseExpression(value, ctx)
+      : parseTransform(value, ctx);
+  }
 }
 
 export function parseTransform(spec, ctx) {

@@ -35,14 +35,17 @@ Consider some time-series data with 50,000 sample points, visualized as an area 
 
 <Example spec="/specs/yaml/overview-detail.yaml" />
 
-Interaction with the top chart populates a Mosaic _selection_ with the queried data range. Mosaic's _coordinator_ manages access to the database, handles selection updates, and also caches results.
-But there's more: we don't need to draw all 50,000 points! After all, the chart itself is less than 700 pixels wide. [vgplot](/vgplot/), a Mosaic-based grammar of graphics, includes `area` and `line` marks that automatically apply optimizations to reduce the data to only a few sample points per-pixel, while preserving a perceptually faithful visualization.
+Interaction with the top chart populates a Mosaic _selection_ with the queried data range. Mosaic's _coordinator_ manages access to the database, handles selection updates, and also [caches results](/api/core/coordinator#query-cache).
+
+But there's more: we don't need to draw all 50,000 points! After all, the chart itself is less than 700 pixels wide. [vgplot](/vgplot/), a Mosaic-based grammar of graphics, includes `area` and `line` marks that automatically apply optimizations ([M4](https://www.vldb.org/pvldb/vol7/p797-jugel.pdf)) to reduce the data to only a few sample points per-pixel, while preserving a perceptually faithful visualization.
 
 Next let's visualize over 200,000 flight records. The first histogram shows flight arrival delays, the second shows hour of departure. Selecting intervals in one chart will cross-filter the other. _Try selecting highly delayed flights. Note how much more likely they are to leave later in the day._
 
 <Example spec="/specs/yaml/crossfilter.yaml" />
 
-When the selection changes we need to filter the data and recount the number of records in each bin. The Mosaic coordinator analyzes these queries and automatically optimizes updates by building tables (["materialized views"](https://en.wikipedia.org/wiki/Materialized_view)) of pre-aggregated data in the database, binned at the level of input pixels for the currently active view.
+When the selection changes we need to filter the data and recount the number of records in each bin. The Mosaic coordinator analyzes these queries and automatically optimizes updates by building tables (["materialized views"](https://en.wikipedia.org/wiki/Materialized_view)) of pre-aggregated data in the database, binned at the level of input pixels for the currently active view. For distinct counts and quantiles, which can not be merged exactly, the coordinator can optionally use approximate [sketches](/api/core/coordinator#sketch-aggregates). See the [_preagg_ option](/api/core/coordinator#constructor) for details.
+
+The coordinator also merges queries into a single query when they are issued in the same animation frame and differ only in their selected columns, such as the column statistics that several views request from the same table.
 
 While 200,000 points will stress many web-based visualization tools, Mosaic doesn't break a sweat. Now go ahead and try this with [10 million records](/examples/flights-10m)!
 
@@ -59,7 +62,7 @@ The Mosaic project consists of a suite of packages.
   Declarative specification of Mosaic-powered applications as JSON or YAML files.
   This package provides a parser and code generation framework for reading specifications in a JSON format and generating live Mosaic visualizations and dashboards using the [`vgplot`](/vgplot/) API.
 * [`duckdb-server`](/server/):
-  A Python-based server that runs a local DuckDB instance and supports queries over Web Sockets or HTTP, returning data in [Apache Arrow](https://arrow.apache.org/) or JSON format.
+  A Python-based server that runs a local DuckDB instance and supports queries over HTTP, returning data in [Apache Arrow](https://arrow.apache.org/) or JSON format.
 * [`mosaic-widget`](/jupyter/):
   A Jupyter widget for Mosaic that renders vgplot specifications in Jupyter notebook cells, with data processing by DuckDB in the Python kernel.
 
@@ -67,7 +70,7 @@ The Mosaic project consists of a suite of packages.
 
 * [`mosaic-core`](/core/):
   The core Mosaic components.
-  A central coordinator, parameters, and selections for linking values or query predicates (respectively) across Mosaic clients. The Mosaic coordinator can send queries over the network to a backing server (`socket` and `rest` connectors) or to a client-side [DuckDB-WASM](https://duckdb.org/2021/10/29/duckdb-wasm.html) instance (`wasm` connector). The binary [Apache Arrow](https://arrow.apache.org/) format is used for efficient data transfer.
+  A central coordinator, parameters, and selections for linking values or query predicates (respectively) across Mosaic clients. The Mosaic coordinator can send queries over the network to a backing server (`rest` connector) or to a client-side [DuckDB-WASM](https://duckdb.org/2021/10/29/duckdb-wasm.html) instance (`wasm` connector). The binary [Apache Arrow](https://arrow.apache.org/) format is used for efficient data transfer.
 * [`mosaic-sql`](/sql/):
   An API for convenient construction and analysis of SQL queries.
   Includes support for aggregate functions, window functions, and arbitrary expressions with dynamic parameters. Query objects coerce to SQL query strings.
@@ -88,12 +91,26 @@ For convenience, the `vgplot` package re-exports much of the `mosaic-core`, `mos
 Mosaic is an active research project from the [UW Interactive Data Lab](https://idl.uw.edu/), in collaboration with the [CMU Data Interaction Group](https://dig.cmu.edu/).
 We are interested in unifying advances in scalable visualization methods with languages for interactive visualization.
 This is an exciting area with a number of open challenges!
-For more, read the [TVCG'24 Mosaic research paper](https://idl.uw.edu/papers/mosaic).
 
-There will inevitably be some shortcomings, bugs, and documentation gaps.
-We do not yet consider Mosaic "production-ready", but believe that Mosaic (or something like it) is a valuable next step for interactive data systems.
+For more about the overall architecture, read our [TVCG'24 Mosaic paper](https://idl.uw.edu/papers/mosaic).
+To dive into how Mosaic optimizes selections, read the [TVCG'26 Mosaic Selections paper](https://idl.uw.edu/papers/mosaic-selections).
+
+## In Production Use
+
+Mosaic is used in production by a growing number of companies and projects, including:
+
+* [Apple Embedding Atlas](https://apple.github.io/embedding-atlas/)
+* [Hudson River Trading](https://www.hudsonrivertrading.com/open-source-at-hrt/)
+* [Marimo Studio](https://marimo.io/blog/introducing-marimo-studio)
+* [Nozzle](https://nozzle.io/)
+* [NVidia](https://research.nvidia.com/labs/dbr/blog/sae/)
+* [Observable Notebooks](https://observablehq.com/@observablehq/mosaic)
+* [Ridge AI](https://ridgedata.ai)
+* [SQLRooms](https://github.com/sqlrooms/sqlrooms/tree/main/packages/mosaic)
+
+If you'd like to share a Mosaic project, post to the [Mosaic discussion board](https://github.com/uwdata/mosaic/discussions).
 If you're interested in contributing, please see our [GitHub repository](https://github.com/uwdata/mosaic).
 
 ## Acknowledgments
 
-Mosaic builds on code and ideas from a number of open source efforts, including [DuckDB](https://duckdb.org/), [Apache Arrow](https://arrow.apache.org/), [anywidget](https://anywidget.dev/), [Falcon](https://github.com/vega/falcon), [Vega-Lite](https://vega.github.io/vega-lite/), and [Observable Plot](https://observablehq.com/plot/). Thanks!
+Mosaic builds on code and ideas from a number of open source efforts, including [DuckDB](https://duckdb.org/), [Apache Arrow](https://arrow.apache.org/), [anywidget](https://anywidget.dev/), [Falcon](https://github.com/vega/falcon), [Flechette](https://idl.uw.edu/flechette/), [Vega-Lite](https://vega.github.io/vega-lite/), and [Observable Plot](https://observablehq.com/plot/). Thanks!

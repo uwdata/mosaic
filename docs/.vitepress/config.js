@@ -153,6 +153,7 @@ export default defineConfig({
             { text: 'Linear Regression', link: '/examples/linear-regression' },
             { text: 'Linear Regression 10M', link: '/examples/linear-regression-10m' },
             { text: 'Moving Average', link: '/examples/moving-average' },
+            { text: 'Time-Based Moving Average', link: '/examples/window-frame' },
             { text: 'Line Multi-Series', link: '/examples/line-multi-series' },
             { text: 'Normalized Stock Prices', link: '/examples/normalize' },
             { text: 'Seattle Weather Pivot', link: '/examples/seattle-weather-pivot' },
@@ -186,7 +187,8 @@ export default defineConfig({
             { text: 'Protein Design', link: '/examples/protein-design' },
             { text: 'Pan & Zoom', link: '/examples/pan-zoom' },
             { text: 'Scatter Plot Matrix', link: '/examples/splom' },
-            { text: 'Seattle Weather', link: '/examples/weather' }
+            { text: 'Seattle Weather', link: '/examples/weather' },
+            { text: 'Sketch Aggregates', link: '/examples/sketch-aggregates' }
           ]
         },
         {

@@ -3,10 +3,10 @@ import { asTableRef, deepClone, parseTableRef, TableRefNode } from '../src/index
 
 describe('Table references', () => {
   it('serialize to SQL', async () => {
-    await expect(new TableRefNode('t1')).toBeValidExpr(`"t1"`);
-    await expect(new TableRefNode(['t1'])).toBeValidExpr(`"t1"`);
-    await expect(new TableRefNode(['main', 't1'])).toBeValidExpr(`"main"."t1"`);
-    await expect(new TableRefNode(['memory', 'main', 't1'])).toBeValidExpr(`"memory"."main"."t1"`);
+    await expect(new TableRefNode('t1')).toBeValidExpr('"t1"');
+    await expect(new TableRefNode(['t1'])).toBeValidExpr('"t1"');
+    await expect(new TableRefNode(['main', 't1'])).toBeValidExpr('"main"."t1"');
+    await expect(new TableRefNode(['memory', 'main', 't1'])).toBeValidExpr('"memory"."main"."t1"');
   });
 
   it('are created by asTableRef', () => {

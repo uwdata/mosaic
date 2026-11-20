@@ -1,8 +1,5 @@
 {
   "name": "duckdb-server",
-  "version": "0.31.0",
-  "private": true,
-  "scripts": {
-    "dev": "uv run watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM uv run duckdb-server"
-  }
+  "version": "0.35.1",
+  "private": true
 }

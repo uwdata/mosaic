@@ -7,14 +7,13 @@ export { Priority } from './QueryManager.js';
 
 // deprecated in favor of constructors
 export { restConnector } from './connectors/rest.js';
-export { socketConnector } from './connectors/socket.js';
 export { wasmConnector } from './connectors/wasm.js';
 
 export { RestConnector } from './connectors/rest.js';
-export { SocketConnector } from './connectors/socket.js';
 export { DuckDBWASMConnector } from './connectors/wasm.js';
 
 export {
+  clauseComposite,
   clauseInterval,
   clauseIntervals,
   clauseList,
@@ -23,7 +22,7 @@ export {
   clauseMatch,
   clauseMatchAny,
   clauseNone
-} from './SelectionClause.js';
+} from './clause/index.js';
 
 export { lruCache, voidCache } from './util/cache.js';
 export { decodeIPC } from './util/decode-ipc.js';
@@ -38,8 +37,7 @@ export { jsType } from './util/js-type.js';
 export { isActivatable } from './util/is-activatable.js';
 export { QueryError } from './util/query-error.js';
 
-export * from './types.js';
-
+export type * from './types.js';
+export type * from './clause/index.js';
 export type * from './connectors/Connector.js';
 export type * from './Selection.js';
-export type * from './SelectionClause.js';

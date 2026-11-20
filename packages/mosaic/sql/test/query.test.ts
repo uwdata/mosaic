@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul, unnest, list } from '../src/index.js';
+import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul, unnest, list, deepClone, isDescribeQuery, isPivotQuery, isSelectQuery, isSetOperation } from '../src/index.js';
 import { validateQuery } from './util/validate.js';
 
 describe('Query', () => {
@@ -88,6 +88,25 @@ describe('Query', () => {
         .distinct()
         .from('t1')
     ).toBeValidQuery('SELECT DISTINCT "num1", "num2", "num3" FROM "t1"');
+  });
+
+  it('selects distinct on columns', async () => {
+    await expect(
+      Query
+        .select('num1', 'num2', 'num3')
+        .distinctOn('num1', column('num2'))
+        .from('t1')
+        .orderby('num1', 'num2', desc('num3'))
+    ).toBeValidQuery('SELECT DISTINCT ON ("num1", "num2") "num1", "num2", "num3" FROM "t1" ORDER BY "num1", "num2", "num3" DESC');
+
+    await expect(
+      Query
+        .select('num1', 'num2')
+        .distinct()
+        .distinctOn('num2')
+        .setDistinctOn('num1')
+        .from('t1')
+    ).toBeValidQuery('SELECT DISTINCT ON ("num1") "num1", "num2" FROM "t1"');
   });
 
   it('selects with limit and offset modifiers', async () => {
@@ -411,7 +430,7 @@ describe('Query', () => {
             ['type']
           )
         )
-    ).toBeValidQuery(`SELECT "u"."type" AS "type" FROM UNNEST(['Gold', 'Silver', 'Bronze']) AS "u"("type")`);
+    ).toBeValidQuery('SELECT "u"."type" AS "type" FROM UNNEST([\'Gold\', \'Silver\', \'Bronze\']) AS "u"("type")');
   });
 
   it('selects over windows', async () => {
@@ -518,6 +537,20 @@ describe('Query', () => {
     await expect(Query.exceptAll(...q)).toBeValidQuery(q.join(' EXCEPT ALL '));
   });
 
+  it('parenthesizes compound set operation inputs', async () => {
+    const a = Query.select('num1').from('t1');
+    const b = Query.select('num1').from('t2');
+
+    await expect(Query.intersect(a, Query.union(a, b)))
+      .toBeValidQuery(`${a} INTERSECT (${a} UNION ${b})`);
+    await expect(Query.except(a, Query.except(b, a)))
+      .toBeValidQuery(`${a} EXCEPT (${b} EXCEPT ${a})`);
+    await expect(Query.union(a.clone().orderby('num1').limit(1).offset(1), b))
+      .toBeValidQuery(`(${a} ORDER BY "num1" LIMIT 1 OFFSET 1) UNION ${b}`);
+    await expect(Query.union(a, Query.with({ c: b }).select('num1').from('c')))
+      .toBeValidQuery(`${a} UNION (WITH "c" AS (${b}) SELECT "num1" FROM "c")`);
+  });
+
   it('renders set operation query modifiers', async () => {
     const q = [
       Query.select('num1', 'num2', 'num3').from('t1'),
@@ -544,7 +577,7 @@ describe('Query', () => {
     await expect(Query.describe(u)).toBeValidQuery(`DESC ${u}`);
   });
 
-  it('is cloneable', async () => {
+  it('supports clone()', async () => {
     const q = Query
       .with({
         cte: Query.select('num1', 'num2', 'num3').from('t1')
@@ -559,5 +592,62 @@ describe('Query', () => {
     expect(String(c)).toBe(String(q));
     await validateQuery(c);
     await validateQuery(q);
-  })
+  });
+
+  it('is handled properly by deepClone', async () => {
+    const q = Query
+      .with({
+        cte: Query.select('num1', 'num2', 'num3').from('t1')
+      })
+      .select('num1')
+      .from('cte')
+      .groupby('num1')
+      .orderby('num1')
+      .limit(10);
+    const c = deepClone(q);
+    expect(c).not.toBe(q);
+    expect(c._with).not.toBe(q._with);
+    expect(c._with[0]).not.toBe(q._with[0]);
+    expect(c._with[0].query).not.toBe(q._with[0].query);
+    expect(c._select).not.toBe(q._select);
+    expect(c._from).not.toBe(q._from);
+    expect(c._groupby).not.toBe(q._groupby);
+    expect(c._where).not.toBe(q._where);
+    expect(c._having).not.toBe(q._having);
+    expect(c._qualify).not.toBe(q._qualify);
+    expect(String(c)).toBe(String(q));
+    await validateQuery(c);
+    await validateQuery(q);
+  });
+
+  it('is discriminated by type guard functions', () => {
+    const selectQuery = Query.from('data').select('foo');
+    const setOperation = Query.unionAll(selectQuery, selectQuery);
+    const describeQuery = Query.describe(selectQuery);
+    const pivotQuery = Query.pivot('source');
+
+    expect(isSelectQuery(selectQuery)).toBe(true);
+    expect(isSelectQuery(setOperation)).toBe(false);
+    expect(isSelectQuery(describeQuery)).toBe(false);
+    expect(isSelectQuery(pivotQuery)).toBe(false);
+    expect(isSelectQuery('SELECT 42 AS value')).toBe(false);
+
+    expect(isSetOperation(selectQuery)).toBe(false);
+    expect(isSetOperation(setOperation)).toBe(true);
+    expect(isSetOperation(describeQuery)).toBe(false);
+    expect(isSetOperation(pivotQuery)).toBe(false);
+    expect(isSetOperation('SELECT 42 AS value UNION ALL SELECT 7 AS value')).toBe(false);
+
+    expect(isDescribeQuery(selectQuery)).toBe(false);
+    expect(isDescribeQuery(setOperation)).toBe(false);
+    expect(isDescribeQuery(describeQuery)).toBe(true);
+    expect(isDescribeQuery(pivotQuery)).toBe(false);
+    expect(isDescribeQuery('DESC SELECT 42 AS value')).toBe(false);
+
+    expect(isPivotQuery(selectQuery)).toBe(false);
+    expect(isPivotQuery(setOperation)).toBe(false);
+    expect(isPivotQuery(describeQuery)).toBe(false);
+    expect(isPivotQuery(pivotQuery)).toBe(true);
+    expect(isPivotQuery('PIVOT data ON year USING sum(population)')).toBe(false);
+  });
 });

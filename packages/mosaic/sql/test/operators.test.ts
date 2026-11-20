@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { add, and, column, div, eq, gt, gte, idiv, InOpNode, isBetween, isDistinct, isIn, isInDistinct, isNotBetween, isNotDistinct, isNotNull, isNull, ListNode, literal, lt, lte, mod, mul, neq, not, or, pow, sub } from '../src/index.js';
+import { add, and, column, div, eq, gt, gte, idiv, InOpNode, isBetween, isDistinct, isIn, isInDistinct, isNotBetween, isNotDistinct, isNotNull, isNull, ListNode, literal, lt, lte, mod, mul, neq, not, or, pow, sub, tuple } from '../src/index.js';
 
 describe('Logical operators', () => {
   it('include AND expressions', async () => {
@@ -109,22 +109,36 @@ describe('Binary operators', () => {
 describe('Set inclusion operators', () => {
   it('include IN operator', async () => {
     const set = [literal('a'), literal('b'), literal('c')];
-    await expect(isIn(column('txt1'), set)).toBeValidExpr(`("txt1" IN ('a', 'b', 'c'))`);
-    await expect(isIn('txt1', set)).toBeValidExpr(`("txt1" IN ('a', 'b', 'c'))`);
+    await expect(isIn(column('txt1'), set)).toBeValidExpr('("txt1" IN (\'a\', \'b\', \'c\'))');
+    await expect(isIn('txt1', set)).toBeValidExpr('("txt1" IN (\'a\', \'b\', \'c\'))');
   });
   it('include IN with list values', async () => {
     const values = new ListNode([literal('a'), literal('b'), literal('c')]);
-    const test = new InOpNode(column("txt1"), values);
-    await expect(test).toBeValidExpr(`("txt1" IN ['a', 'b', 'c'])`);
+    const test = new InOpNode(column('txt1'), values);
+    await expect(test).toBeValidExpr('("txt1" IN [\'a\', \'b\', \'c\'])');
   });
   it('include null-safe IN test', async () => {
     const set = [literal('a'), literal('b'), literal('c')];
-    await expect(isInDistinct(column('txt1'), set)).toBeValidExpr(`("txt1" IN ('a', 'b', 'c'))`);
-    await expect(isInDistinct('txt1', set)).toBeValidExpr(`("txt1" IN ('a', 'b', 'c'))`);
-    await expect(isInDistinct(column('txt1'), [...set, literal(null)])).toBeValidExpr(`(("txt1" IN ('a', 'b', 'c')) OR ("txt1" IS NULL))`);
-    await expect(isInDistinct('txt1', [...set, null])).toBeValidExpr(`(("txt1" IN ('a', 'b', 'c')) OR ("txt1" IS NULL))`);
-    await expect(isInDistinct(column('txt1'), [literal(null)])).toBeValidExpr(`("txt1" IS NULL)`);
-    await expect(isInDistinct('txt1', [null])).toBeValidExpr(`("txt1" IS NULL)`);
+    await expect(isInDistinct(column('txt1'), set)).toBeValidExpr('("txt1" IN (\'a\', \'b\', \'c\'))');
+    await expect(isInDistinct('txt1', set)).toBeValidExpr('("txt1" IN (\'a\', \'b\', \'c\'))');
+    await expect(isInDistinct(column('txt1'), [...set, literal(null)])).toBeValidExpr('(("txt1" IN (\'a\', \'b\', \'c\')) OR ("txt1" IS NULL))');
+    await expect(isInDistinct('txt1', [...set, null])).toBeValidExpr('(("txt1" IN (\'a\', \'b\', \'c\')) OR ("txt1" IS NULL))');
+    await expect(isInDistinct(column('txt1'), [literal(null)])).toBeValidExpr('("txt1" IS NULL)');
+    await expect(isInDistinct('txt1', [null])).toBeValidExpr('("txt1" IS NULL)');
+    await expect(isInDistinct('txt1', [])).toBeValidExpr('FALSE');
+  });
+  it('include IN operator with tuples', async () => {
+    const test = tuple([column('num1'), column('num2')]);
+    await expect(isIn(test, [tuple([1, 2]), tuple([3, 4])])).toBeValidExpr('(("num1", "num2") IN ((1, 2), (3, 4)))');
+  });
+  it('include null-safe IN test with tuples', async () => {
+    const test = tuple([column('num1'), column('num2')]);
+    await expect(isInDistinct(test, [tuple([1, 2]), tuple([3, 4])])).toBeValidExpr('(("num1", "num2") IN ((1, 2), (3, 4)))');
+    await expect(isInDistinct(test, [tuple([1, 2]), tuple([null, 4])])).toBeValidExpr('((("num1", "num2") IN ((1, 2))) OR (("num1" IS NULL) AND ("num2" = 4)))');
+    await expect(isInDistinct(test, [tuple([null, null])])).toBeValidExpr('(("num1" IS NULL) AND ("num2" IS NULL))');
+    await expect(isInDistinct(test, [])).toBeValidExpr('FALSE');
+    expect(() => isInDistinct(test, [tuple([1])])).toThrow();
+    expect(() => isInDistinct(test, [1])).toThrow();
   });
 });
 

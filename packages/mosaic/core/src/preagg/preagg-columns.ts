@@ -1,8 +1,9 @@
-import { asNode, collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
-import type { AggregateNode, ColumnRefNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
+import { asNode, collectAggregates, isAggregateExpression, isColumnRef, isSelectQuery, rewrite, sql } from '@uwdata/mosaic-sql';
+import type { AggregateNode, ColumnRefNode, ExprNode, TableRefNode } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
 import { resolvePositional } from '../util/positional.js';
-import { sufficientStatistics } from './sufficient-statistics.js';
+import { baseExpression, baseTable } from './lineage.js';
+import { type SketchOptions, isSketchAggregate, sufficientStatistics } from './sufficient-statistics.js';
 
 // result of determining columns for preaggregation optimization
 export interface PreAggColumnsResult {
@@ -18,36 +19,41 @@ export interface PreAggColumnsResult {
   having: ExprNode[];
   // QUALIFY clause expressions, potentially rewritten for preaggregation
   qualify: ExprNode[];
+  // The base table of the client query
+  source: TableRefNode;
+  // Flag indicating if the preaggregate table contains sketch columns
+  sketches: boolean;
 }
 
 /**
  * Determine pre-aggregation columns for a given Mosaic client.
  * @param client The Mosaic client.
+ * @param sketches Selects aggregates to approximate using mergeable sketches.
  * @returns An object with necessary column data to generate pre-aggregated
  *  columns, or null if the client can't be optimized or the client query
  *  contains an invalid or unsupported expression.
  */
-export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null {
+export function preaggColumns(
+  client: MosaicClient,
+  sketches: SketchOptions = {}
+): PreAggColumnsResult | null {
   if (!client.filterStable) return null;
   const q = client.query();
 
   // bail if query is not analyzable
   if (!isSelectQuery(q)) return null;
 
-  // bail if no base table
-  const from = getBase(q, q => {
-    const node = q._from[0];
-    const ref = node instanceof FromClauseNode && node.expr;
-    return isTableRef(ref) ? ref.name : ref;
-  });
-  if (typeof from !== 'string') return null;
+  // bail if no single base table
+  const source = baseTable(q);
+  if (!source) return null;
 
   // generate a scalar subquery for a global average
   // this may be used to mean-center data in preaggregate calculations
+  // throws if unresolvable, which bails from preaggregation below
   const avg = (ref: ColumnRefNode) => {
-    const name = ref.column;
-    const expr = getBase(q, q => q._select.find(c => c.alias === name)?.expr);
-    return sql`(SELECT avg(${expr ?? ref}) FROM "${from}")`;
+    const expr = baseExpression(q, ref);
+    if (!expr) throw new Error('unresolvable base expression');
+    return sql`(SELECT avg(${expr}) FROM ${source})`;
   };
 
   const aggrs = new Map<AggregateNode, ExprNode>();
@@ -60,7 +66,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
 
     // iterate over select clauses and analyze expressions
     for (const { alias, expr } of select) {
-      const result = analyzeExpression(expr, aggrs, preagg, avg);
+      const result = analyzeExpression(expr, aggrs, preagg, avg, sketches);
       if (result) {
         // rewrite original select clause to use preaggregates
         output[alias] = result;
@@ -74,15 +80,15 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
 
     // analyze any orderby expressions
     const orderby = q._orderby
-      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg, sketches) ?? expr);
 
     // analyze any having expressions
     const having = q._having
-      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg, sketches) ?? expr);
 
     // analyze any qualify expressions
     const qualify = q._qualify
-      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg, sketches) ?? expr);
 
     // bail if query has no aggregates
     if (!aggrs.size) return null;
@@ -106,7 +112,9 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
       preagg,
       output,
       having,
-      qualify
+      qualify,
+      source,
+      sketches: Object.values(preagg).some(isSketchAggregate)
     };
   } catch {
     // bail if unsupported aggregate was encountered
@@ -124,7 +132,8 @@ function analyzeExpression(
   expr: ExprNode,
   aggrs: Map<AggregateNode, ExprNode>,
   preagg: Record<string, ExprNode>,
-  avg: (ref: ColumnRefNode) => ExprNode
+  avg: (ref: ColumnRefNode) => ExprNode,
+  sketches: SketchOptions
 ) {
   // bail if there is an aggregate we can't analyze
   // a value > 1 indicates an aggregate in verbatim text
@@ -133,12 +142,9 @@ function analyzeExpression(
   const nodes = collectAggregates(expr!);
   if (nodes.length) {
     for (const node of nodes) {
-      // bail if distinct aggregate
-      if (node.isDistinct) throw new Error();
-
       // bail if aggregate function is unsupported
       // otherwise add output aggregate to rewrite map
-      const agg = sufficientStatistics(node, preagg, avg);
+      const agg = sufficientStatistics(node, preagg, avg, sketches);
       if (!agg) throw new Error();
       aggrs.set(node, agg);
     }
@@ -146,36 +152,4 @@ function analyzeExpression(
     // rewrite original expression to use preaggregates
     return rewrite(expr!, aggrs)!;
   }
-}
-
-/**
- * Identify a shared base (source) query and extract a value from it.
- * This method is used to find a shared base table name or extract
- * the original column name within a base table.
- * @param query The input query.
- * @param get A getter function to extract
- *  a value from a base query.
- * @returns the base query value, or
- *  `undefined` if there is no source table, or `NaN` if the
- *  query operates over multiple source tables.
- */
-function getBase<T>(
-  query: Query,
-  get: (q: SelectQuery) => T
-): T | number | undefined {
-  const subq = query.subqueries;
-
-  // select query
-  if (isSelectQuery(query) && subq.length === 0) {
-    return get(query);
-  }
-
-  // handle set operations / subqueries
-  const base = getBase(subq[0], get);
-  for (let i = 1; i < subq.length; ++i) {
-    const value = getBase(subq[i], get);
-    if (value === undefined) continue;
-    if (value !== base) return NaN;
-  }
-  return base;
 }

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import path from 'path'
 import { tableFromIPC } from '@uwdata/flechette';
 import { db } from './db.js';
-import { loadArrow, loadJSON } from '../src/index.js';
+import { loadArrow } from '../src/index.js';
 
 describe('DuckDB', () => {
   beforeAll(async () => {
@@ -42,15 +42,6 @@ describe('DuckDB', () => {
       const res = await db.query('SELECT count()::INTEGER AS count FROM arrow');
       expect(res[0]?.count).toBe(342);
       await db.exec('DROP TABLE arrow');
-    });
-  });
-
-  describe('loadJSON', () => {
-    it('loads a json file', async () => {
-      await loadJSON(db, 'json', path.resolve(__dirname, '../../../../data/penguins.json'));
-      const res = await db.query('SELECT count()::INTEGER AS count FROM json');
-      expect(res[0]?.count).toBe(342);
-      await db.exec('DROP TABLE json');
     });
   });
 });

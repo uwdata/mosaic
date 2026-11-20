@@ -1,5 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import { scaleTransform } from '../src/index.js';
+import { queryFixture } from './util/validate.js';
 
 function transformExp(base: number) {
   return base === 10 ? (x: number) => Math.pow(10, x)
@@ -49,17 +50,78 @@ describe('scaleTransform', () => {
   });
 
   it('supports log scale', () => {
-    const values = [-100, -50, -25, -10, -5, 5, 10, 25, 50, 100];
+    const values = [0.004, 0.05, 0.5, 1, 5, 10, 25, 50, 100];
     const bases = [2, Math.E, 10];
     for (const b of bases) {
       const s = scaleTransform<number>({ type: 'log', base: b });
-      const f = wrap(transformLog(b));
-      const i = wrap(transformExp(b));
+      const f = transformLog(b);
+      const i = transformExp(b);
       for (const v of values) {
         expect(s.apply(v)).toBeCloseTo(f(v), 9);
         expect(s.invert(v)).toBeCloseTo(i(v), 9);
+        expect(s.invert(-v)).toBeCloseTo(i(-v), 9);
         expect(s.invert(s.apply(v))).toBeCloseTo(v, 9);
       }
+    }
+  });
+
+  it('supports log scale with a negative domain', () => {
+    const values = [-100, -50, -25, -10, -5, -1, -0.5, -0.05, -0.004];
+    const bases = [2, Math.E, 10];
+    for (const b of bases) {
+      const s = scaleTransform<number>({ type: 'log', base: b, domain: [-100, -0.001] });
+      const f = wrap(transformLog(b));
+      for (const v of values) {
+        expect(s.apply(v)).toBeCloseTo(f(v), 9);
+        expect(s.invert(s.apply(v))).toBeCloseTo(v, 9);
+      }
+    }
+  });
+
+  it('inverts log scale SQL', async () => {
+    const cases: [number[], [number, number] | undefined][] = [
+      [[0.004, 0.5, 1, 5, 100], undefined],
+      [[-100, -5, -1, -0.5, -0.004], [-100, -0.001]]
+    ];
+    for (const b of [2, Math.E, 10]) {
+      for (const [values, domain] of cases) {
+        const s = scaleTransform<number>({ type: 'log', base: b, domain });
+        const rows = await queryFixture(
+          `SELECT ${s.sqlInvert(s.sqlApply('v'))} AS y FROM (VALUES ${values.map(v => `(${v}::DOUBLE)`).join(', ')}) AS t(v)`
+        );
+        values.forEach((v, i) => expect(rows[i].y).toBeCloseTo(v, 9));
+      }
+    }
+  });
+
+  it('supports log scale SQL', async () => {
+    const cases: [number | undefined, string][] = [
+      [undefined, '(sign("num1") * ln(abs(nullif("num1", 0))))'],
+      [Math.E, '(sign("num1") * ln(abs(nullif("num1", 0))))'],
+      [10, '(sign("num1") * log(abs(nullif("num1", 0))))'],
+      [2, '(sign("num1") * (ln(abs(nullif("num1", 0))) / ln(2)))']
+    ];
+    for (const [base, sql] of cases) {
+      const s = scaleTransform<number>({ type: 'log', base });
+      await expect(s.sqlApply('num1')).toBeValidExpr(sql);
+    }
+  });
+
+  it('maps zero to null in log scale SQL', async () => {
+    const values = [-100, -5, 0, 5, 100];
+    for (const b of [2, Math.E, 10]) {
+      const s = scaleTransform<number>({ type: 'log', base: b });
+      const f = wrap(transformLog(b));
+      const rows = await queryFixture(
+        `SELECT ${s.sqlApply('v')} AS y FROM (VALUES ${values.map(v => `(${v}::DOUBLE)`).join(', ')}) AS t(v)`
+      );
+      values.forEach((v, i) => {
+        if (v === 0) {
+          expect(rows[i].y).toBeNull();
+        } else {
+          expect(rows[i].y).toBeCloseTo(f(v), 9);
+        }
+      });
     }
   });
 

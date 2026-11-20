@@ -73,7 +73,7 @@ export function localize(f) {
  */
 function isoformat(date, fallback) {
   if (!(date instanceof Date)) date = new Date(+date);
-  if (isNaN(+date)) return typeof fallback === "function" ? fallback(date) : fallback;
+  if (isNaN(+date)) return typeof fallback === 'function' ? fallback(date) : fallback;
   const hours = date.getUTCHours();
   const minutes = date.getUTCMinutes();
   const seconds = date.getUTCSeconds();
@@ -81,9 +81,9 @@ function isoformat(date, fallback) {
   return `${formatYear(date.getUTCFullYear())}-${pad(date.getUTCMonth() + 1, 2)}-${pad(date.getUTCDate(), 2)}${
     hours || minutes || seconds || milliseconds ? `T${pad(hours, 2)}:${pad(minutes, 2)}${
       seconds || milliseconds ? `:${pad(seconds, 2)}${
-        milliseconds ? `.${pad(milliseconds, 3)}` : ``
-      }` : ``
-    }Z` : ``
+        milliseconds ? `.${pad(milliseconds, 3)}` : ''
+      }` : ''
+    }Z` : ''
   }`;
 }
 
@@ -94,5 +94,5 @@ function formatYear(year) {
 }
 
 function pad(value, width) {
-  return `${value}`.padStart(width, "0");
+  return `${value}`.padStart(width, '0');
 }

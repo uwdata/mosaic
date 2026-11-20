@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { add, cast, column, int32, float32, float64 } from '../src/index.js';
+import { add, cast, column, int32, float32, float64, tryCast } from '../src/index.js';
 
 describe('cast', () => {
   it('performs type casts', async () => {
@@ -8,6 +8,14 @@ describe('cast', () => {
 
     const expr = cast(add('num2', 'num3'), 'INTEGER');
     await expect(expr).toBeValidExpr('(("num2" + "num3"))::INTEGER');
+  });
+
+  it('performs try casts', async () => {
+    await expect(tryCast('txt1', 'INTEGER')).toBeValidExpr('TRY_CAST("txt1" AS INTEGER)');
+    await expect(tryCast(add('num2', 'num3'), 'INTEGER'))
+      .toBeValidExpr('TRY_CAST(("num2" + "num3") AS INTEGER)');
+    expect(tryCast('txt1', 'INTEGER').isTry).toBe(true);
+    expect(cast('txt1', 'INTEGER').isTry).toBe(false);
   });
 
   describe('int32', () => {

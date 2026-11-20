@@ -46,13 +46,6 @@ def test_sql_infers_table_from_spec_data(
     weather_frame: NwDataFrame, request: pytest.FixtureRequest
 ) -> None:
     con = duckdb.connect()
-    request.applymarker(
-        pytest.mark.xfail(
-            weather_frame.implementation.is_modin(),
-            raises=duckdb.InvalidInputException,
-            reason=("`modin.pandas.DataFrame` cannot be registered"),
-        )
-    )
     con.register("weather", weather_frame.to_native())
     widget = MosaicWidget(
         spec={"data": {"weather": {"file": "weather.parquet"}}}, con=con

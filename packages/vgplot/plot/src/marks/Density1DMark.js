@@ -79,8 +79,14 @@ export class Density1DMark extends Mark {
       bins, bandwidth, normalize, dim, grids, groupby, plot, extent: [lo, hi]
     } = this;
 
-    const cols = grids.columns;
     const numGrids = grids.numRows;
+    const cols = grids.columns;
+
+    if (numGrids === 0) {
+      // bail early given an empty selection
+      this.data = { numRows: 0, columns: {} };
+      return this;
+    }
 
     const b = this.channelField(dim).as;
     const v = dim === 'x' ? 'y' : 'x';

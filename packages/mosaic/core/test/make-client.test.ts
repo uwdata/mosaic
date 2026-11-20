@@ -1,10 +1,10 @@
-import { Query } from "@uwdata/mosaic-sql";
-import { describe, expect, it } from "vitest";
-import { Coordinator, makeClient, Selection } from "../src/index.js";
-import { NodeConnector } from "../src/connectors/NodeConnector.js";
+import { Query } from '@uwdata/mosaic-sql';
+import { describe, expect, it } from 'vitest';
+import { Coordinator, makeClient, Selection } from '../src/index.js';
+import { NodeConnector } from '../src/connectors/NodeConnector.js';
 
-describe("makeClient", () => {
-  it("should create a connected client and destroy it", async () => {
+describe('makeClient', () => {
+  it('should create a connected client and destroy it', async () => {
     const mc = new Coordinator(await NodeConnector.make(), {
       logger: null,
     });
@@ -17,7 +17,7 @@ describe("makeClient", () => {
 
     const client = makeClient({
       query: () => {
-        return Query.from("foo").select("*");
+        return Query.from('foo').select('*');
       },
       coordinator: mc,
     });

@@ -3,10 +3,10 @@ import { FunctionNode, timezone, verbatim } from '../src/index.js';
 
 describe('Datetime functions', () => {
   it('include timezone', async () => {
-    const tz1 = timezone('America/Los_Angeles', verbatim(`TIMESTAMP '2001-02-16 20:38:40'`));
+    const tz1 = timezone('America/Los_Angeles', verbatim('TIMESTAMP \'2001-02-16 20:38:40\''));
     expect(tz1).toBeInstanceOf(FunctionNode);
     expect(tz1.name).toBe('timezone');
-    await expect(tz1).toBeValidExpr(`timezone('America/Los_Angeles', TIMESTAMP '2001-02-16 20:38:40')`);
+    await expect(tz1).toBeValidExpr('timezone(\'America/Los_Angeles\', TIMESTAMP \'2001-02-16 20:38:40\')');
 
     const d = new Date(2001, 1, 16, 20, 38, 40);
     const tz2 = timezone('America/Los_Angeles', d);

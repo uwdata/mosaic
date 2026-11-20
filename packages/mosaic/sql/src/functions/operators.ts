@@ -1,10 +1,14 @@
 
 import type { LiteralNode } from '../ast/literal.js';
+import type { ExprNode } from '../ast/node.js';
 import type { ExprValue, ExprVarArgs } from '../types.js';
 import { LITERAL } from '../constants.js';
 import { BetweenOpNode, Extent, NotBetweenOpNode } from '../ast/between-op.js';
 import { BinaryOpNode } from '../ast/binary-op.js';
 import { InOpNode } from '../ast/in-op.js';
+import { type ComparisonOp, QuantifiedOpNode } from '../ast/quantified-op.js';
+import type { Query } from '../ast/query.js';
+import { ScalarSubqueryNode } from '../ast/subquery.js';
 import { AndNode, OrNode } from '../ast/logical-op.js';
 import { UnaryOpNode, UnaryPostfixOpNode } from '../ast/unary-op.js';
 import { asNode } from '../util/ast.js';
@@ -276,19 +280,76 @@ export function isIn(expr: ExprValue, values: ExprValue[]) {
   return new InOpNode(asNode(expr), new TupleNode(values.map(asNode)));
 }
 
+function isNullLiteral(node: ExprNode) {
+  return node.type === LITERAL && (node as LiteralNode).value == null;
+}
+
 /**
  * Null-safe set inclusion. Unlike the IN operator, the returned expression
  * can test for included NULL values. When a NULL literal is included in the
  * set values, it is checked explcity via `OR expr IS NULL`.
+ *
+ * The input expression may also be a tuple, in which case the values should
+ * be tuples of the same length, as in `(a, b) IN ((1, 2), (3, 4))`. Value
+ * tuples that contain NULL literals are instead tested explicitly via
+ * `OR (a IS NULL AND b = 4)`.
  * @param expr The expression to test.
  * @param values The included values.
  */
 export function isInDistinct(expr: ExprValue, values: ExprValue[]) {
   const test = asNode(expr);
+  return test instanceof TupleNode
+    ? isTupleInDistinct(test, values)
+    : isValueInDistinct(test, values);
+}
+
+function isValueInDistinct(test: ExprNode, values: ExprValue[]) {
   const nodes = values.map(asNode)
-    .filter(node => !(node.type === LITERAL && (node as LiteralNode).value == null));
+    .filter(node => !isNullLiteral(node));
   const inOp = isIn(test, nodes);
-  return nodes.length === values.length ? inOp
-    : nodes.length === 0 ? (values.length === 0 ? literal(false) : isNull(test))
+  return values.length === 0 ? literal(false)
+    : nodes.length === values.length ? inOp
+    : nodes.length === 0 ? isNull(test)
     : or(inOp, isNull(test));
+}
+
+function isTupleInDistinct(test: TupleNode, values: ExprValue[]) {
+  const fields = test.values;
+  const tuples: TupleNode[] = [];
+  const nullTuples: TupleNode[] = [];
+  for (const value of values) {
+    const node = asNode(value);
+    if (!(node instanceof TupleNode) || node.values.length !== fields.length) {
+      throw new Error(`Expected tuple value with ${fields.length} entries.`);
+    }
+    (node.values.some(isNullLiteral) ? nullTuples : tuples).push(node);
+  }
+  const clauses: ExprNode[] = nullTuples.map(t => and(fields.map((field, i) => {
+    const v = t.values[i];
+    return isNullLiteral(v) ? isNull(field) : eq(field, v);
+  })));
+  if (tuples.length) clauses.unshift(isIn(test, tuples));
+  return clauses.length === 0 ? literal(false)
+    : clauses.length === 1 ? clauses[0]
+    : or(clauses);
+}
+
+/**
+ * Comparison against any subquery row, as in `expr op ANY (subquery)`.
+ * @param expr The expression to test.
+ * @param op The comparison operator.
+ * @param subquery A subquery returning a single column.
+ */
+export function compareAny(expr: ExprValue, op: ComparisonOp, subquery: Query) {
+  return new QuantifiedOpNode(op, asNode(expr), 'ANY', new ScalarSubqueryNode(subquery));
+}
+
+/**
+ * Comparison against all subquery rows, as in `expr op ALL (subquery)`.
+ * @param expr The expression to test.
+ * @param op The comparison operator.
+ * @param subquery A subquery returning a single column.
+ */
+export function compareAll(expr: ExprValue, op: ComparisonOp, subquery: Query) {
+  return new QuantifiedOpNode(op, asNode(expr), 'ALL', new ScalarSubqueryNode(subquery));
 }

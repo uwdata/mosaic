@@ -2,7 +2,7 @@
  * @import { Selection } from '@uwdata/mosaic-core'
  * @import { FilterExpr } from '@uwdata/mosaic-sql'
  */
-import { clausePoints, coordinator, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
+import { clausePoints, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { Input, input } from './input.js';
@@ -21,10 +21,10 @@ let _id = -1;
  * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
  *  An object that maps column names to horizontal text alignment values. If
  *  unspecified, alignment is determined based on the column data type.
- * @param {{ [name: string]: (value: any) => string }} [options.format] An
+ * @param {{ [name: string]: (value: any) => string | HTMLElement }} [options.format] An
  *  object that maps column names to format functions to use for that
  *  column's data. Each format function takes a value as input and generates
- *  formatted text to show in the table.
+ *  formatted text or an HTML element to show in the table.
  * @param {string} [options.from] The name of a database table to use as a data
  *  source for this widget. Used in conjunction with the *columns* option.
  * @param {string[]} [options.columns] The name of database columns to include
@@ -59,10 +59,10 @@ export class Table extends Input {
    * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
    *  An object that maps column names to horizontal text alignment values. If
    *  unspecified, alignment is determined based on the column data type.
-   * @param {{ [name: string]: (value: any) => string }} [options.format] An
+   * @param {{ [name: string]: (value: any) => string | HTMLElement }} [options.format] An
    *  object that maps column names to format functions to use for that
    *  column's data. Each format function takes a value as input and generates
-   *  formatted text to show in the table.
+   *  formatted text or an HTML element to show in the table.
    * @param {string} [options.from] The name of a database table to use as a data
    *  source for this widget. Used in conjunction with the *columns* option.
    * @param {string[]} [options.columns] The name of database columns to include
@@ -157,7 +157,7 @@ export class Table extends Input {
       });
       this.body.addEventListener('pointerleave', () => {
         this.currentRow = -1;
-        this.selection.update(this.clause());
+        this.selection.update(this.clause(null));
       });
     }
 
@@ -169,10 +169,10 @@ export class Table extends Input {
     return isParam(this.from) ? this.from.value : this.from;
   }
 
-  clause(rows = []) {
+  clause(rows) {
     const { data, limit, schema } = this;
     const fields = schema.map(s => s.column);
-    const values = rows.map(row => {
+    const values = rows?.map(row => {
       const { columns } = data[~~(row / limit)];
       return fields.map(f => columns[f][row % limit]);
     });
@@ -187,7 +187,7 @@ export class Table extends Input {
     this.requestQuery(query);
 
     // prefetch subsequent data batch
-    coordinator().prefetch(query.clone().offset(offset + this.limit));
+    this.coordinator?.prefetch(query.clone().offset(offset + this.limit));
   }
 
   async prepare() {
@@ -260,7 +260,13 @@ export class Table extends Input {
       for (let j = 0; j < nf; ++j) {
         const value = cols[j][i];
         const td = document.createElement('td');
-        td.innerText = value == null ? '' : formats[j](value);
+        const formatted = value == null ? '' : formats[j](value);
+        if (formatted instanceof HTMLElement || formatted instanceof SVGElement) {
+          td.appendChild(formatted);
+        } else {
+          td.innerText = formatted;
+        }
+        
         tr.appendChild(td);
       }
       body.appendChild(tr);
@@ -298,7 +304,7 @@ export class Table extends Input {
     } else {
       if (currentHeader) currentHeader.firstChild.textContent = '';
       this.sortHeader = th;
-      th.firstChild.textContent = this.sortDesc ? "▾"  : "▴";
+      th.firstChild.textContent = this.sortDesc ? '▾'  : '▴';
     }
 
     // issue query for sorted data

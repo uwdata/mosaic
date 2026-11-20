@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "title": "Cumulative Precipitation",
+    "description": "Monthly and cumulative precipitation in Seattle during 2015. The bars sum daily observations within each month. The line uses a nested aggregate to accumulate those monthly totals through the year.\n"
+  },
+  "data": {
+    "seattle_2015": {
+      "file": "data/seattle-weather.parquet",
+      "where": "date >= DATE '2015-01-01' AND date < DATE '2016-01-01'"
+    }
+  },
+  "vconcat": [
+    {
+      "plot": [
+        {
+          "mark": "barY",
+          "data": {
+            "from": "seattle_2015"
+          },
+          "x": {
+            "dateMonth": "date"
+          },
+          "y": {
+            "sum": "precipitation"
+          },
+          "fill": "steelblue"
+        }
+      ],
+      "xScale": "band",
+      "xTickFormat": "%b",
+      "xLabel": null,
+      "yLabel": "Monthly precipitation (mm)",
+      "yGrid": true,
+      "width": 680,
+      "height": 200
+    },
+    {
+      "plot": [
+        {
+          "mark": "lineY",
+          "data": {
+            "from": "seattle_2015"
+          },
+          "x": {
+            "dateMonth": "date"
+          },
+          "y": {
+            "sum": {
+              "sum": "precipitation"
+            },
+            "orderby": {
+              "dateMonth": "date"
+            }
+          },
+          "stroke": "steelblue",
+          "marker": "circle"
+        }
+      ],
+      "xTickFormat": "%b",
+      "xLabel": null,
+      "yLabel": "Cumulative precipitation (mm)",
+      "yGrid": true,
+      "yZero": true,
+      "width": 680,
+      "height": 240
+    }
+  ]
+}

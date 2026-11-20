@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/duckdb-server.svg)](https://crates.io/crates/duckdb-server)
 
-A Rust-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP/HTTPS, returning data in [Apache Arrow](https://arrow.apache.org/) format.
+A Rust-based server that runs a local DuckDB instance and supports queries over HTTP/HTTPS, returning data in [Apache Arrow](https://arrow.apache.org/) format.
 
 _Note:_ This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` in the [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/mosaic-core) package.
 
@@ -34,17 +34,19 @@ The server can reuse existing sockets with `listenfd`.
 systemfd --no-pid -s http::3000 -- duckdb-server
 ```
 
-To use HTTPS and HTTP/2, you need `localhost.pem` and `localhost-key.pem` in the current directory or at the env variable `CARGO_MANIFEST_DIR`.
-
-Create certificates for localhost with [mkcert](https://github.com/FiloSottile/mkcert)
+To set up shared HTTPS/HTTP/2 certificates, run from the repository root:
 
 ```sh
-mkcert localhost
+pnpm mkcert
 ```
+
+Install native mkcert on `PATH` first. The server checks the working directory, then the shared user directory for `localhost.pem` and `localhost-key.pem`. See the [server guide](../README.md) for paths, local overrides, and renewal.
+
+With certificates present, the server accepts both HTTP and HTTPS on the same port.
 
 ## API
 
-The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"arrow"}>).
+The server supports queries via HTTP GET and POST. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"arrow"}>).
 
 Each endpoint takes a JSON object with a command in the `type`. The server supports the following commands.
 

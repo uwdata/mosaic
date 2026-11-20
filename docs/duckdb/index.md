@@ -43,12 +43,11 @@ Unless provided with an explicit web URL (`http://...`), queries that load files
 ## Data Server
 
 The data server provides network access to a server-side DuckDB instance.
-Both WebSocket (`socket`) and HTTP (`rest`) connections are supported.
 The following snippet launches a data server in Node.js:
 
 ``` js
 import { DuckDB, dataServer } from "@uwdata/mosaic-duckdb";
-dataServer(new DuckDB(), { rest: true, socket: true });
+dataServer(new DuckDB(), { rest: true });
 ```
 
 By default the server listens to port 3000.

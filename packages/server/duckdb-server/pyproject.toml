@@ -3,13 +3,15 @@ name = "duckdb-server"
 description = "A DuckDB server for Mosaic"
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-  "duckdb>=1.5.2",
-  "pandas",
+  "duckdb>=2.0.0",
+  "msgspec",
+  "platformdirs>=4.11.14",
   "pyarrow",
-  "socketify",
-  "ujson"
+  "starlette>=1.7.0",
+  "uvicorn>=0.54.0",
+  "zttp>=0.0.35",
 ]
 
 [project.scripts]
@@ -27,10 +29,17 @@ dev = [
   "pytest-cov",
   "pytest",
   "ruff",
-  "types-ujson",
-  "watchdog",
+  "watchfiles",
   "ty",
+  "pyarrow-stubs>=20.0.0.20260819",
+  "httpx2>=2.13.1",
+  "covdefaults>=2.3.0",
 ]
+
+[tool.coverage]
+run.plugins = ["covdefaults"]
+
+report.exclude_lines = ["pytest.skip"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["pkg"]
@@ -41,3 +50,11 @@ pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.ty.src]
 include = ["pkg"]
+
+[tool.pytest]
+filterwarnings = ["error"]
+markers = [
+  "smoke: a subset of tests to run cross-platform in ci",
+]
+strict_markers = true
+strict_xfail = true

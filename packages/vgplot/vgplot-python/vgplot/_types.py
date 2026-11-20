@@ -4,6 +4,8 @@ from collections.abc import Sequence
 from datetime import date
 from typing import Any, TypeAlias
 
+from narwhals.typing import IntoFrame
+
 from vgplot._compat import sentinel
 
 from .data import DataDef
@@ -19,8 +21,17 @@ ChannelValue = (
 AttrValue = (
     str | float | bool | date | dict[str, Any] | Sequence[Any] | _ParamBase | None
 )
-MarkData = str | FromRef | DataDef | dict[str, Any] | Sequence[Any] | _ParamBase | None
-TransformArg = str | float | bool | _ParamBase
+MarkData: TypeAlias = (
+    str
+    | FromRef
+    | DataDef
+    | IntoFrame
+    | dict[str, Any]
+    | Sequence[Any]
+    | _ParamBase
+    | None
+)
+TransformArg = str | float | bool | dict[str, Any] | _ParamBase
 
 UNSET = sentinel("UNSET")
 """Sentinel for mark channels that were not passed (distinct from None)."""

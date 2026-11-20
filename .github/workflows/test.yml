@@ -40,7 +40,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v7
         with:
-          version: ">=0.11.0"
+          version: ">=0.12.0"
           enable-cache: true
           cache-dependency-glob: |
             uv.lock
@@ -61,7 +61,7 @@ jobs:
 
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
       options: --user 1001
 
     steps:
@@ -103,7 +103,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v7
         with:
-          version: ">=0.11.0"
+          version: ">=0.12.0"
           enable-cache: true
           cache-dependency-glob: |
             uv.lock
@@ -123,7 +123,7 @@ jobs:
 
           uv build
           uv run --group dev ty check
-          uv run --group dev pytest --cov-report=term-missing --color=yes --cov=pkg
+          uv run --group dev pytest --color=yes --cov=pkg
 
       - name: Build and test widget
         run: |
@@ -151,22 +151,31 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./packages/server/duckdb-server-rust
+
     steps:
       - uses: actions/checkout@v7
       - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
-          components: clippy, rustfmt
+          rust-src-dir: ./packages/server/duckdb-server-rust
           cache: true
           cache-workspaces: |-
             ./packages/server/duckdb-server-rust
 
+      # rust-cache prunes files but not directories outside cargo profile dirs, so it restores
+      # an empty duckdb-sources tree that makes the libduckdb-sys build script fail with ENOTEMPTY.
+      - name: Remove stale DuckDB sources
+        run: rm -rf target/duckdb-sources
+
       - name: Format
-        run: cargo fmt --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml -- --check
+        run: cargo fmt -- --check
       - name: Clippy
-        run: cargo clippy --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml --all -- -D warnings
+        run: cargo clippy --all -- -D warnings
       - name: Test
-        run: cargo test --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml --verbose
+        run: cargo test --verbose
 
   go:
     name: Test in Go
@@ -179,15 +188,21 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
-          go-version: "1.25"
+          go-version: "1.27"
           cache-dependency-path: ./packages/server/duckdb-server-go/go.sum
+
+      - name: Cache DuckDB extensions
+        uses: actions/cache@v6
+        with:
+          path: ~/.duckdb/extensions
+          key: duckdb-extensions-v3-${{ runner.os }}-${{ hashFiles('packages/server/duckdb-server-go/go.sum') }}
 
       - name: Build
         run: go build -tags=duckdb_arrow -v ./...
         working-directory: ./packages/server/duckdb-server-go
 
       - name: Test
-        run: go test -tags=duckdb_arrow -v ./...
+        run: go test -race -tags=duckdb_arrow -v ./...
         working-directory: ./packages/server/duckdb-server-go
 
       - name: Run golangci-lint

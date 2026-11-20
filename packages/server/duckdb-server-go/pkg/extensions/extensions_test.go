@@ -455,9 +455,7 @@ func TestParseAndInstallIsSafeForConcurrentUse(t *testing.T) {
 	errorsCh := make(chan error, count)
 	var wait sync.WaitGroup
 	for range count {
-		wait.Add(1)
-		go func() {
-			defer wait.Done()
+		wait.Go(func() {
 			execer := &recordingExecer{}
 			if err := extensions.ParseAndInstall(
 				context.Background(),
@@ -471,7 +469,7 @@ func TestParseAndInstallIsSafeForConcurrentUse(t *testing.T) {
 			if got := queries(execer.snapshot()); !reflect.DeepEqual(got, want) {
 				errorsCh <- errors.New("unexpected statements")
 			}
-		}()
+		})
 	}
 	wait.Wait()
 	close(errorsCh)

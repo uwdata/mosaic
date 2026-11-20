@@ -1,7 +1,7 @@
-import { FromClauseNode } from "../ast/from.js";
-import { SampleClauseNode } from "../ast/sample.js";
-import { TableRefNode } from "../ast/table-ref.js";
-import { asTableRef } from "../util/ast.js";
+import { FromClauseNode } from '../ast/from.js';
+import { SampleClauseNode } from '../ast/sample.js';
+import { TableRefNode } from '../ast/table-ref.js';
+import { asTableRef } from '../util/ast.js';
 
 /**
  * Create a new table FROM reference, applicable in a query or join.

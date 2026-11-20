@@ -50,12 +50,6 @@ def _sentinel_backport_pre_typing_extensions_4_16() -> Any:
         def __repr__(self) -> str:
             return self._repr
 
-        if sys.version_info < (3, 11):
-            # The presence of this method convinces typing._type_check that Sentinels are types.
-            def __call__(self, *args: Any, **kwargs: Any) -> Any:
-                msg = f"{type(self).__name__!r} object is not callable"
-                raise TypeError(msg)
-
         def __or__(self, other: Any) -> Any:
             return typing.Union[self, other]  # noqa: UP007
 

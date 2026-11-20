@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import narwhals as nw
 import pytest
 
-from mosaic_widget.frame_interop import frame_to_duckdb_registrable
+from mosaic_widget import MosaicWidget
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -33,7 +33,8 @@ def test_frame_to_duckdb_registrable_eager(
 ) -> None:
     frame = nw.from_arrow(pyarrow_frame, backend=eager.value).to_native()
     with eager.warn.context():
-        assert frame_to_duckdb_registrable(frame) is not None
+        widget = MosaicWidget(None, None, {"tbl": frame})
+        assert widget is not None
 
 
 def test_frame_to_duckdb_registrable_lazy(
@@ -41,4 +42,5 @@ def test_frame_to_duckdb_registrable_lazy(
 ) -> None:
     frame: NativeLazyFrame = pyarrow_frame.lazy(lazy.value).to_native()
     with lazy.warn.context():
-        assert frame_to_duckdb_registrable(frame) is not None
+        widget = MosaicWidget(None, None, {"tbl": frame})
+        assert widget is not None

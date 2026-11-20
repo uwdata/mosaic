@@ -6,7 +6,7 @@ const { isDark } = useData();
 
 # Mosaic Core
 
-The Mosaic `core` API includes a central _coordinator_ as well as _params_ and _selections_ for linking values or query predicates (respectively) across Mosaic _clients_. The coordinator can send queries over the network to a backing server (`socket` and `rest` clients) or to an in-browser DuckDB-WASM instance (`wasm` client).
+The Mosaic `core` API includes a central _coordinator_ as well as _params_ and _selections_ for linking values or query predicates (respectively) across Mosaic _clients_. The coordinator can send queries over the network to a backing server (`rest` client) or to an in-browser DuckDB-WASM instance (`wasm` client).
 
 <img v-if="isDark" src="/architecture-dark.png"/>
 <img v-else src="/architecture.png"/>
@@ -46,9 +46,8 @@ The Coordinator additionally performs optimizations including caching and pre-ag
 ## Data Source
 
 The coordinator submits queries to a _data source_ using an extensible set of database connectors.
-Mosaic uses [DuckDB](/duckdb/) as a backing database and provides connectors for communicating with a DuckDB server via Web Sockets or HTTP calls, with DuckDB-WASM in the browser, or through [Jupyter widgets](/jupyter/) to DuckDB in Python.
+Mosaic uses [DuckDB](/duckdb/) as a backing database and provides connectors for communicating with a DuckDB server via HTTP calls, with DuckDB-WASM in the browser, or through [Jupyter widgets](/jupyter/) to DuckDB in Python.
 To transfer data, Mosaic uses [Apache Arrow](https://arrow.apache.org/) for efficient serialization of query results with no subsequent parsing overhead.
-While the socket and HTTP connectors also support JSON, this is more costly to serialize, results in larger payloads, and must be parsed on the client side.
 
 [Connectors API Reference](/api/core/connectors)
 

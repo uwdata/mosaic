@@ -41,13 +41,13 @@ The resulting API context object exposes the vgplot API methods, along with any 
 
 ```js
 import {
-  Coordinator, createAPIContext, socketConnector
+  Coordinator, createAPIContext, RestConnector
 } from "uwdata/vgplot";
 
 // create a new API context, using a coordinator with
-// a dedicated socket connector to a DuckDB server
+// a dedicated REST connector to a DuckDB server
 const api = createAPIContext({
-  coordinator: new Coordinator(socketConnector("ws://localhost:8001/"))
+  coordinator: new Coordinator(new RestConnector({ uri: "http://localhost:8001/" }))
 });
 
 // use the API context just like normal vgplot exports
