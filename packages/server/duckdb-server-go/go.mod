@@ -5,7 +5,7 @@ go 1.27.0
 require (
 	github.com/apache/arrow-go/v18 v18.8.0
 	github.com/duckdb/duckdb-go/v2 v2.20000.0
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.4
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.12.1
 )
