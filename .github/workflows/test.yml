@@ -54,6 +54,11 @@ jobs:
         env:
           CLICKHOUSE_BIN: /tmp/clickhouse
 
+      - name: Test gallery examples with ClickHouse
+        run: pnpm --filter @uwdata/mosaic-spec test:clickhouse
+        env:
+          CLICKHOUSE_BIN: /tmp/clickhouse
+
       - uses: astral-sh/setup-uv@v7
         with:
           version: ">=0.12.0"

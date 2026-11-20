@@ -131,7 +131,7 @@
   import yaml from '../node_modules/yaml/browser/index.js';
   import { astToDOM, astToESM, clear, parseSpec, setDatabaseConnector, vg } from './setup.ts';
   import { devClickHouseConnector } from './clickhouse/connector.ts';
-  import { clickhouseDatabase, clickhouseExamples } from './clickhouse/examples.mjs';
+  import { clickhouseDatabase, clickhouseSupports } from './clickhouse/examples.mjs';
 
   const view = document.querySelector('#view');
   const connectorMenu = document.querySelector('#connectors');
@@ -180,7 +180,7 @@
     preaggToggle.disabled = clickhouse;
     sketchesToggle.disabled = clickhouse;
     for (const option of exampleMenu.options) {
-      option.disabled = clickhouse && option.value !== 'none' && !clickhouseExamples.includes(option.value);
+      option.disabled = clickhouse && option.value !== 'none' && !clickhouseSupports(option.value);
     }
     reload();
   }
@@ -251,7 +251,7 @@
         await api.coordinator().exec('SELECT 1');
       }
       if (name !== 'none') {
-        if (backend === 'clickhouse' && (dir !== '../specs/yaml' || !clickhouseExamples.includes(name))) {
+        if (backend === 'clickhouse' && (dir !== '../specs/yaml' || !clickhouseSupports(name))) {
           throw new Error('This example is not supported by the ClickHouse demo. Choose an enabled example from the menu.');
         }
         status.textContent = 'Loading…';
