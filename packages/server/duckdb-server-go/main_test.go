@@ -10,6 +10,7 @@ import (
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
 
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
@@ -60,11 +61,24 @@ func TestInitializeDatabaseLocalArtifact(t *testing.T) {
 	require.NoError(t, err)
 	path := filepath.Join(t.TempDir(), "gatekeeper.duckdb_extension")
 	require.NoError(t, os.WriteFile(path, artifact, 0o600))
-	connector := testConnector(t, freshDSN(t), path, defaultPolicy())
-	db, err := query.New(t.Context(), connector, query.WithValidation())
-	require.NoError(t, err)
-	t.Cleanup(db.Close)
-	require.NotEqual(t, "community", scanValue(t, connector, "SELECT installed_from FROM duckdb_extensions() WHERE extension_name='gatekeeper'"))
+
+	t.Run("community signature requires repository origin", func(t *testing.T) {
+		connector := testConnector(t, freshDSN(t), path, defaultPolicy())
+		db, err := query.New(t.Context(), connector, query.WithValidation())
+		require.ErrorIs(t, err, extensions.ErrInstall)
+		require.ErrorContains(t, err, "valid signature")
+		require.Nil(t, db)
+	})
+
+	t.Run("explicit unsigned opt-in", func(t *testing.T) {
+		connector := testConnector(t, freshDSN(t)+"&allow_unsigned_extensions=true", path, defaultPolicy())
+		db, err := query.New(t.Context(), connector, query.WithValidation())
+		require.NoError(t, err)
+		t.Cleanup(db.Close)
+		_, err = db.Query(t.Context(), "SELECT 42", nil)
+		require.NoError(t, err)
+		require.NotEqual(t, "community", scanValue(t, connector, "SELECT installed_from FROM duckdb_extensions() WHERE extension_name='gatekeeper'"))
+	})
 }
 
 func TestInitializeDatabaseFailsClosed(t *testing.T) {

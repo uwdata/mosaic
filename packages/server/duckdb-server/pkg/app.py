@@ -69,7 +69,10 @@ def create_app() -> Starlette:
     )
     # TODO @dangotbanned: Look into compression/tracing equivalent
     middleware = (cors,)
-    routes = (Route("/", Endpoint, methods=("GET", "POST"), middleware=middleware),)
+    routes = (Route("/", Endpoint, methods=("GET", "POST")),)
     return Starlette(
-        routes=routes, exception_handlers=create_exception_handlers(), lifespan=lifespan
+        routes=routes,
+        middleware=middleware,
+        exception_handlers=create_exception_handlers(),
+        lifespan=lifespan,
     )

@@ -62,6 +62,7 @@ class Database:
 
     def execute(self, sql: Sql) -> None:  # pragma: no cover
         self.con.execute(sql)
+        self.con.complete()
 
     def get_arrow(self, sql: Sql) -> pa.Buffer:
         reader = self.con.query(sql).to_arrow_reader()

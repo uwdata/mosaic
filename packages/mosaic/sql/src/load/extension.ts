@@ -1,3 +1,4 @@
-export function loadExtension(name: string) {
-  return `INSTALL ${name}; LOAD ${name}`;
+export function loadExtension(name: string, repository?: string) {
+  const from = repository ? ` FROM ${repository}` : '';
+  return `INSTALL ${name}${from}; LOAD ${name}`;
 }
