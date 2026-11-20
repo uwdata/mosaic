@@ -4,7 +4,7 @@ import { OPTIONS } from '../constants.js';
 /**
  * @param {{ [x: string]: any; }} spec
  * @param {import("../parse-spec.js").ParseContext} ctx
- * @param {Record<string, (key: string, import("../parse-spec.js").ParseContext) => any>} [parsers]
+ * @param {Record<string, (key: string, ctx: import("../parse-spec.js").ParseContext) => any>} [parsers]
  */
 export function parseOptions(spec, ctx, parsers = {}) {
   const options = {};
