@@ -198,4 +198,26 @@ describe('QueryManager', () => {
     expect(data.toArray()).toEqual([{ column: 2 }]);
     expect(cache.get('SELECT 1')).toBe(data);
   });
+
+  it('skips consolidation for requests that opt out', async () => {
+    const queryManager = new QueryManager();
+    const sqls: string[] = [];
+    queryManager.connector({
+      // @ts-expect-error assumes type value
+      query: async ({ sql }) => {
+        sqls.push(sql);
+        return tableToIPC(tableFromArrays({ col0: [1], col1: [2] }), {})!;
+      }
+    });
+    queryManager.consolidate(true);
+
+    const q1 = Query.from('table').select({ c: count() });
+    const q2 = Query.from('table').select({ c: sum('foo') });
+    await Promise.all([
+      queryManager.request({ type: 'arrow', query: q1, consolidate: false }),
+      queryManager.request({ type: 'arrow', query: q2, consolidate: false })
+    ]);
+
+    expect(sqls).toEqual([q1.toString(), q2.toString()]);
+  });
 });
