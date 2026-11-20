@@ -9,20 +9,26 @@ from .params import _ParamBase
 from .util import camelize, omit_none
 
 if TYPE_CHECKING:
-    from vgplot._types import MarkData
+    from vgplot._types import MarkData, TableName
     from vgplot.spec import View
 
 
 class FromRef:
-    def __init__(self, name: str, **opts: Any) -> None:
-        self.name = name
+    def __init__(self, name: TableName, **opts: Any) -> None:
+        self.name = name if isinstance(name, str) else list(name)
         self.opts = {camelize(k): v for k, v in opts.items() if v is not None}
 
     def to_dict(self) -> dict[str, Any]:
         return {"from": self.name, **self.opts}
 
 
-def source(name: str, **opts: Any) -> FromRef:
+def source(name: TableName, **opts: Any) -> FromRef:
+    """Reference a database table as mark or input data.
+
+    A sequence of identifiers names a schema-qualified table, for example
+    ``vg.source(["schema", "table"])``. Keyword options such as ``filter_by``
+    are attached to the reference.
+    """
     return FromRef(name, **opts)
 
 

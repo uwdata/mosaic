@@ -2,11 +2,16 @@
 # generated-spec round-trip suite does not exercise directly.
 from __future__ import annotations
 
+import json
+from collections import deque
 from typing import TYPE_CHECKING
 
 import pytest
 import vgplot as vg
 from vgplot.plot import Mark
+
+if TYPE_CHECKING:
+    from vgplot._types import TableName
 
 
 class TestGeneratedMarks:
@@ -44,6 +49,53 @@ class TestDataHelpers:
 
     def test_json_file(self) -> None:
         assert vg.json(file="x.json").to_dict() == {"type": "json", "file": "x.json"}
+
+
+class TestSource:
+    """`vg.source` names a table as a string or, for a schema-qualified table,
+    as a sequence of identifiers that serializes to a JSON array."""
+
+    def test_string_name(self) -> None:
+        assert vg.source("test_table").to_dict() == {"from": "test_table"}
+        assert vg.source("test_table", filter_by="$sel").to_dict() == {
+            "from": "test_table",
+            "filterBy": "$sel",
+        }
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            ["test_schema", "test_table"],
+            ("test_schema", "test_table"),
+            deque(["test_schema", "test_table"]),
+        ],
+        ids=["list", "tuple", "deque"],
+    )
+    def test_qualified_name_sequences(self, name: TableName) -> None:
+        ref = vg.source(name)
+        # str is itself a Sequence[str]; other sequences are normalized to a
+        # plain list so the reference is JSON-shaped without json.dumps coercion.
+        assert ref.name == ["test_schema", "test_table"]
+        assert isinstance(ref.name, list)
+        assert ref.to_dict() == {"from": ["test_schema", "test_table"]}
+
+    def test_qualified_name_as_mark_data(self) -> None:
+        d = vg.dot(vg.source(("test_schema", "test_table")), x="a").to_dict()
+        assert d["data"] == {"from": ["test_schema", "test_table"]}
+
+    def test_qualified_name_serializes_to_json(self) -> None:
+        ref = vg.source(deque(["test_schema", "test_table"]))
+        view = vg.plot(vg.dot(ref, x="a"))
+        payload = json.loads(json.dumps(view.to_dict()))
+        assert payload["plot"][0]["data"] == {"from": ["test_schema", "test_table"]}
+
+    def test_bare_list_as_mark_data_is_inline_data(self) -> None:
+        rows = [{"a": 1}, {"a": 2}]
+        assert vg.dot(rows, x="a").to_dict()["data"] == rows
+
+    def test_qualified_name_as_input_source(self) -> None:
+        d = vg.menu(source=["test_schema", "test_table"], column="test_column")
+        assert d.to_dict()["from"] == ["test_schema", "test_table"]
 
 
 class TestParams:

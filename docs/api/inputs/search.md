@@ -19,7 +19,7 @@ The supported options are:
   - `"suffix"`: the query string must appear at the end of the text
   - `"regexp"`: the query string is a regular expression the text must match
 - _filterBy_: A selection to filter the database table indicated by the *from* option.
-- _from_: The name of a backing database table to use as an autocomplete data source for this widget. Used in conjunction with the *column* option.
+- _from_: The backing database table to use as an autocomplete data source for this widget, as a table name or a table reference created with `tableRef()`. Used in conjunction with the *column* option.
 - _column_: The name of a database column from which to pull valid search results. The unique column values are used as search autocomplete values. Used in conjunction with the *from* option.
 - _label_: A text label for this input.
 - _element_: The parent DOM element in which to place the search elements. If undefined, a new `div` element is created.
