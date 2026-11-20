@@ -1,9 +1,9 @@
-import type { InstantiateContext } from "../ast-to-dom.js";
-import type { CodegenContext } from "../ast-to-esm.js";
-import { OPTIONS } from "../constants.js";
-import type { ParseContext } from "../parse-spec.js";
-import type { JSONValue } from "../spec/Data.js";
-import { ASTNode } from "./ASTNode.js";
+import type { InstantiateContext } from '../ast-to-dom.js';
+import type { CodegenContext } from '../ast-to-esm.js';
+import { OPTIONS } from '../constants.js';
+import type { ParseContext } from '../parse-spec.js';
+import type { JSONValue } from '../spec/Data.js';
+import { ASTNode } from './ASTNode.js';
 
 export class OptionsNode extends ASTNode<Record<string, unknown>, Record<string, JSONValue>> {
   constructor(readonly options: Record<string, ASTNode>) {
@@ -34,7 +34,7 @@ export class OptionsNode extends ASTNode<Record<string, unknown>, Record<string,
     for (const key in options) {
       opt.push(`${key}: ${options[key].codegen(ctx)}`);
     }
-    return opt.length ? `{${ctx.maybeLineWrap(opt)}}` : "";
+    return opt.length ? `{${ctx.maybeLineWrap(opt)}}` : '';
   }
 
   toJSON(): Record<string, JSONValue> {
