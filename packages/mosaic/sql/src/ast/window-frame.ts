@@ -10,14 +10,6 @@ export type FrameScope = 'PRECEDING' | 'FOLLOWING' | 'CURRENT ROW';
 export type FrameType = 'ROWS' | 'RANGE' | 'GROUPS';
 export type FrameExclude = 'NO OTHERS' | 'CURRENT ROW' | 'TIES' | 'GROUP';
 
-export const ROWS = 'ROWS';
-export const RANGE = 'RANGE';
-export const GROUPS = 'GROUPS';
-export const PRECEDING = 'PRECEDING';
-export const FOLLOWING = 'FOLLOWING';
-export const CURRENT_ROW = 'CURRENT ROW';
-export const UNBOUNDED = 'UNBOUNDED';
-
 export class WindowFrameNode extends SQLNode {
   /** The frame type, one of ROWS, RANGE, or GROUPS. */
   readonly frameType: FrameType;

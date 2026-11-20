@@ -1,6 +1,3 @@
-// Initialize default visitor
-import './init.js';
-
 export * from './ast/index.js';
 
 export { all } from './functions/all.js';

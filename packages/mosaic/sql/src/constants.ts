@@ -59,3 +59,11 @@ export const SET_OPERATION = 'SET_OPERATION';
 export const CREATE_QUERY = 'CREATE_QUERY';
 export const CREATE_SCHEMA_QUERY = 'CREATE_SCHEMA_QUERY';
 export const SCALAR_SUBQUERY = 'SCALAR_SUBQUERY';
+
+export const ROWS = 'ROWS';
+export const RANGE = 'RANGE';
+export const GROUPS = 'GROUPS';
+export const PRECEDING = 'PRECEDING';
+export const FOLLOWING = 'FOLLOWING';
+export const CURRENT_ROW = 'CURRENT ROW';
+export const UNBOUNDED = 'UNBOUNDED';
