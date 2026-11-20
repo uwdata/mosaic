@@ -13,7 +13,7 @@ export interface PendingRequest {
 
 export function preaggResponse(sql: string, suffix = ''): PreaggResponse {
   return {
-    reference: { catalog: 'memory', schema: ['mosaic_scope_test'], table: `preagg_${fnv_hash(sql).toString(16)}${suffix}` },
+    reference: ['memory', 'mosaic_scope_test', `preagg_${fnv_hash(sql).toString(16)}${suffix}`],
     createdAt: new Date().toISOString()
   };
 }

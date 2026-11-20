@@ -1,4 +1,4 @@
-import type { PreaggResponse, TableReference } from './Connector.js';
+import type { PreaggResponse } from './Connector.js';
 
 /** Values of `ConnectorError.code` the coordinator acts on. */
 export const ConnectorErrorCode = Object.freeze({
@@ -16,15 +16,15 @@ export class ConnectorError extends Error {
   code?: string;
   /** The HTTP status code, for requests made over HTTP. */
   status?: number;
-  /** The managed table to rebuild; present only for `table_not_found`. */
-  reference?: TableReference;
+  /** Name parts of the managed table to rebuild; present only for `table_not_found`. */
+  reference?: string[];
 
   constructor(
     message: string,
     fields: {
       code?: string;
       status?: number;
-      reference?: TableReference;
+      reference?: string[];
       cause?: unknown;
     } = {}
   ) {
@@ -72,43 +72,23 @@ export function parseErrorResponse(value: unknown, status?: number): ConnectorEr
   if (code !== undefined && (typeof code !== 'string' || !code)) return null;
   const fields: ConstructorParameters<typeof ConnectorError>[1] = { status };
   if (code) fields.code = code;
-  if (code === ConnectorErrorCode.TableNotFound) {
-    const parsed = parseTableReference(reference);
-    if (parsed) fields.reference = parsed;
+  if (code === ConnectorErrorCode.TableNotFound && isReference(reference)) {
+    fields.reference = reference;
   }
   return new ConnectorError(error, fields);
 }
 
-/**
- * Parse a protocol `TableReference`. Every part is required: a non-empty
- * `catalog`, a `schema` path of one or more non-empty components, and a
- * non-empty `table`. Nothing is defaulted; a partial reference yields null
- * rather than a guess at the server's current catalog or schema.
- */
-function parseTableReference(value: unknown): TableReference | null {
-  const { catalog, schema, table } = (value ?? {}) as Record<string, unknown>;
-  if (
-    typeof catalog !== 'string' || !catalog ||
-    typeof table !== 'string' || !table ||
-    !Array.isArray(schema) || !schema.length || !schema.every(s => typeof s === 'string' && s)
-  ) {
-    return null;
-  }
-  return { catalog, schema: schema as string[], table };
-}
-
-/** Flatten a reference into the `[catalog, ...schema, table]` name parts a `TableRefNode` takes. */
-export function referenceParts(reference: TableReference): string[] {
-  return [reference.catalog, ...reference.schema, reference.table];
+function isReference(value: unknown): value is string[] {
+  return Array.isArray(value) && value.length > 0
+    && value.every(part => typeof part === 'string' && part);
 }
 
 export function parsePreaggResponse(value: unknown): PreaggResponse {
   const { reference, createdAt, rows, bytes } = (value ?? {}) as Record<string, unknown>;
-  const parsed = parseTableReference(reference);
-  if (!parsed || typeof createdAt !== 'string' || Number.isNaN(Date.parse(createdAt))) {
+  if (!isReference(reference) || typeof createdAt !== 'string' || Number.isNaN(Date.parse(createdAt))) {
     throw new ConnectorError('Malformed preagg response');
   }
-  const response: PreaggResponse = { reference: parsed, createdAt };
+  const response: PreaggResponse = { reference, createdAt };
   if (typeof rows === 'number') response.rows = rows;
   if (typeof bytes === 'number') response.bytes = bytes;
   return response;

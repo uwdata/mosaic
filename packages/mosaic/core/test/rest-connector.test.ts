@@ -104,7 +104,7 @@ describe('RestConnector', () => {
   });
 
   it('returns preagg JSON', async () => {
-    const body = { reference: { catalog: 'memory', schema: ['s'], table: 't' }, createdAt: '2026-09-08T20:00:00Z' };
+    const body = { reference: ['memory', 's', 't'], createdAt: '2026-09-08T20:00:00Z' };
     const fetchMock = mockFetch(() => jsonResponse(body));
     expect(await new RestConnector({ fetch: fetchMock }).query(preagg)).toEqual(body);
     expect(fetchMock.mock.calls[0][1]!.body).toBe(JSON.stringify(preagg));
@@ -114,7 +114,7 @@ describe('RestConnector', () => {
     const fetchMock = mockFetch(() => new Response(JSON.stringify({
       error: 'Materialized table is unavailable',
       code: 'table_not_found',
-      reference: { catalog: 'memory', schema: ['mosaic_scope_a7'], table: 'preagg_c92f' }
+      reference: ['memory', 'mosaic_scope_a7', 'preagg_c92f']
     }), { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' } }));
 
     const err = await new RestConnector({ fetch: fetchMock }).query(request).catch(e => e) as ConnectorError;
@@ -123,7 +123,7 @@ describe('RestConnector', () => {
       message: 'Materialized table is unavailable',
       code: 'table_not_found',
       status: 404,
-      reference: { catalog: 'memory', schema: ['mosaic_scope_a7'], table: 'preagg_c92f' }
+      reference: ['memory', 'mosaic_scope_a7', 'preagg_c92f']
     });
   });
 
@@ -144,14 +144,14 @@ describe('RestConnector preagg error responses', () => {
     return new RestConnector({ fetch: fetchMock }).query(preagg).catch(e => e);
   }
 
-  const relation = { catalog: 'c', schema: ['s'], table: 't' };
+  const relation = ['c', 's', 't'];
 
   it.each([
     ['empty object', {}, {}],
     ['non-string code', { error: 'x', code: 5 }, {}],
     ['non-object', 'nope', {}],
     ['message only', { error: 'x' }, { message: 'x', code: undefined }],
-    ['partial reference', { error: 'x', code: 'table_not_found', reference: { catalog: 'c' } },
+    ['malformed reference', { error: 'x', code: 'table_not_found', reference: ['c', ''] },
       { code: 'table_not_found', reference: undefined }],
     ['reference on other code', { error: 'x', code: 'forbidden', reference: relation },
       { code: 'forbidden', reference: undefined }]

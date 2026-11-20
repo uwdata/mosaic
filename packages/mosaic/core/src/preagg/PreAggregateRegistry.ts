@@ -4,14 +4,13 @@ import {
   AbortError,
   ConnectorError,
   isAbortError,
-  parsePreaggResponse,
-  referenceParts
+  parsePreaggResponse
 } from '../connectors/errors.js';
 import type { QueryManager } from '../QueryManager.js';
 
 interface Build {
   entry: Entry;
-  timer: ReturnType<typeof setTimeout>;
+  timer?: ReturnType<typeof setTimeout>;
   promise: Promise<TableRefNode>;
   resolve: (table: TableRefNode) => void;
   reject: (err: unknown) => void;
@@ -28,17 +27,7 @@ interface Failure {
   retryAt: number;
 }
 
-export interface PreAggregateLimits {
-  /** How long to wait for a `preagg` response before giving up on the build (default 120 s). */
-  timeoutMs: number;
-  /** How long after a failed build the same SQL is refused before it may be rebuilt (default 60 s). */
-  cooldownMs: number;
-}
-
-const defaultLimits: Readonly<PreAggregateLimits> = Object.freeze({
-  timeoutMs: 120 * 1000,
-  cooldownMs: 60 * 1000
-});
+const cooldownMs = 60 * 1000;
 
 /**
  * Materializations keyed by exact SELECT text, each holding its
@@ -47,17 +36,12 @@ const defaultLimits: Readonly<PreAggregateLimits> = Object.freeze({
  * consolidation, or exec ordering.
  */
 export class PreAggregateRegistry {
-  private manager: Pick<QueryManager, 'connector' | 'logger' | 'invalidate'>;
+  private manager: Pick<QueryManager, 'connector' | 'logger' | 'invalidate' | 'timeout'>;
   private entries = new Map<string, Entry>();
   private failures = new Map<string, Failure>();
-  limits: Readonly<PreAggregateLimits>;
 
-  constructor(
-    manager: Pick<QueryManager, 'connector' | 'logger' | 'invalidate'>,
-    limits: Partial<PreAggregateLimits> = {}
-  ) {
+  constructor(manager: Pick<QueryManager, 'connector' | 'logger' | 'invalidate' | 'timeout'>) {
     this.manager = manager;
-    this.limits = Object.freeze({ ...defaultLimits, ...limits });
   }
 
   lookup(sql: string): TableRefNode | null {
@@ -67,7 +51,6 @@ export class PreAggregateRegistry {
   invalidate(sql: string, table: TableRefNode): void {
     // A late failure for an older build must not drop its replacement.
     if (this.lookup(sql) === table) this.entries.delete(sql);
-    this.manager.invalidate();
   }
 
   request(sql: string): Promise<TableRefNode> {
@@ -107,11 +90,16 @@ export class PreAggregateRegistry {
     let reject!: (err: unknown) => void;
     const promise = new Promise<TableRefNode>((res, rej) => { resolve = res; reject = rej; });
     promise.catch(() => {});
-    const build: Build = { entry, timer: null!, promise, resolve, reject };
-    build.timer = setTimeout(() => {
-      this.fail(build, new ConnectorError('Preaggregation deadline exceeded'));
-    }, this.limits.timeoutMs);
-    (build.timer as { unref?: () => void }).unref?.();
+    const build: Build = { entry, promise, resolve, reject };
+    const ms = this.manager.timeout();
+    if (ms) {
+      build.timer = setTimeout(() => {
+        const error = new ConnectorError('Preaggregation deadline exceeded');
+        this.manager.logger().warn('Preagg timeout', entry.sql, error);
+        build.reject(error);
+      }, ms);
+      (build.timer as { unref?: () => void }).unref?.();
+    }
     return build;
   }
 
@@ -126,7 +114,7 @@ export class PreAggregateRegistry {
   private complete(build: Build, response: PreaggResponse): void {
     if (!this.claim(build)) return;
     const { entry } = build;
-    entry.table = new TableRefNode(referenceParts(response.reference));
+    entry.table = new TableRefNode(response.reference);
     build.resolve(entry.table);
   }
 
@@ -155,7 +143,7 @@ export class PreAggregateRegistry {
   // the first selection update after that issues a fresh build. Each failure
   // restarts the cooldown, so attempts are paced rather than capped.
   private recordFailure(entry: Entry, error: ConnectorError): void {
-    this.failures.set(entry.sql, { error, retryAt: Date.now() + this.limits.cooldownMs });
+    this.failures.set(entry.sql, { error, retryAt: Date.now() + cooldownMs });
     this.manager.logger().warn('Preagg failure', entry.sql, error);
   }
 }

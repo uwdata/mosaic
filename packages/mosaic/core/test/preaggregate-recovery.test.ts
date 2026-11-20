@@ -4,14 +4,12 @@ import { createSchema, createTable, loadObjects, Query, TableRefNode } from '@uw
 import { clausePoint } from '../src/index.js';
 import { NodeConnector } from '../src/connectors/NodeConnector.js';
 import { ConnectorError } from '../src/connectors/errors.js';
-import type { TableReference } from '../src/connectors/Connector.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { aggregateClient, flush, MockPreaggConnector, preaggCoordinator, preaggResponse } from './util/preagg-connector.js';
 
-function missingTable(table: TableRefNode, overrides: Partial<TableReference> = {}) {
-  const [catalog, schema, name] = table.table;
+function missingTable(table: TableRefNode, reference = table.table) {
   return new ConnectorError('Materialized table is unavailable', {
-    code: 'table_not_found', reference: { catalog, schema: [schema], table: name, ...overrides }
+    code: 'table_not_found', reference
   });
 }
 
@@ -56,7 +54,7 @@ describe('PreAggregator recovery', () => {
     async function build(suffix = '') {
       const { sql } = connector.open[0].request;
       const response = preaggResponse(sql, suffix);
-      const table = new TableRefNode([response.reference.catalog, ...response.reference.schema, response.reference.table]);
+      const table = new TableRefNode(response.reference);
       await db.query({ type: 'exec', sql: String(createTable(table, sql, { temp: false })) });
       connector.complete(suffix);
       return table;
@@ -79,6 +77,23 @@ describe('PreAggregator recovery', () => {
     expect(connector.sql().at(-1)).toContain(`FROM ${replacement}`);
     expect((results.at(-1) as Table).toArray()).toEqual([{ measure: 2 }]);
     expect(connector.preaggRequests).toHaveLength(2);
+  });
+
+  it('keeps unrelated cached results when it rebuilds a table', async () => {
+    const { connector, mc, sel, source, table } = await setup();
+    await mc.query('SELECT 42');
+    let misses = 0;
+    connector.handler = request =>
+      request.sql.includes(String(table)) && ++misses === 1 ? Promise.reject(missingTable(table)) : [];
+
+    sel.update(clausePoint('dim', 'b', { source }));
+    await flush();
+    connector.complete();
+    await sel.pending('value');
+    expect(connector.preaggRequests).toHaveLength(2);
+
+    await mc.query('SELECT 42');
+    expect(connector.sql().filter(sql => sql === 'SELECT 42')).toHaveLength(1);
   });
 
   it.each([false, true])('shares recovery across clients, including late failures (%s)', async late => {
@@ -119,11 +134,11 @@ describe('PreAggregator recovery', () => {
   });
 
   it.each([
-    [{ code: 'forbidden' }, {}],
-    [{ reference: undefined }, {}],
-    [{}, { schema: ['mosaic_scope_test', 'nested'] }],
-    [{}, { table: 'testData' }]
-  ] as [object, Partial<TableReference>][])('does not recover an unrelated or unclassified error: %j %j', async (fields, reference) => {
+    [{ code: 'forbidden' }, undefined],
+    [{ reference: undefined }, undefined],
+    [{}, ['memory', 'mosaic_scope_test', 'nested', 'x']],
+    [{}, ['testData']]
+  ] as [object, string[] | undefined][])('does not recover an unrelated or unclassified error: %j %j', async (fields, reference) => {
     const { connector, sel, source, table } = await setup();
     const error = Object.assign(missingTable(table, reference), fields);
     connector.handler = request => request.sql.includes(String(table)) ? Promise.reject(error) : [];

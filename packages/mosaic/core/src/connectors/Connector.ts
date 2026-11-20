@@ -23,15 +23,9 @@ export interface PreaggRequest extends ConnectorQueryRequest {
   type: 'preagg';
 }
 
-/** Fully qualified table reference; `schema` is a namespace path, outermost first. */
-export interface TableReference {
-  catalog: string;
-  schema: string[];
-  table: string;
-}
-
 export interface PreaggResponse {
-  reference: TableReference;
+  /** Table name parts, outermost first, such as `['memory', 'mosaic', 'preagg_c92f']`. */
+  reference: string[];
   /** RFC 3339 timestamp of the build's completion. */
   createdAt: string;
   /** Row count of the materialized table, when the server reports it. */
@@ -70,5 +64,5 @@ export async function materializeWithExec(
   const table = `preagg_${fnv_hash(sql).toString(16)}`;
   const ref = new TableRefNode(['temp', 'main', table]);
   await connector.query({ type: 'exec', sql: `CREATE TEMP TABLE IF NOT EXISTS ${ref} AS ${sql}` }, options);
-  return { reference: { catalog: 'temp', schema: ['main'], table }, createdAt: new Date().toISOString() };
+  return { reference: ref.table, createdAt: new Date().toISOString() };
 }

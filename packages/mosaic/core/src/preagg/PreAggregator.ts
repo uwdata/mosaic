@@ -3,12 +3,12 @@ import type { BinMethod, ClauseDimension, ClauseSource, CompositeMetadata, Inter
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
-import { ConnectorError, ConnectorErrorCode, PreAggregateModeError, referenceParts } from '../connectors/errors.js';
+import { ConnectorError, ConnectorErrorCode, PreAggregateModeError } from '../connectors/errors.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { QueryError } from '../util/query-error.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
-import { PreAggregateRegistry, type PreAggregateLimits } from './PreAggregateRegistry.js';
+import { PreAggregateRegistry } from './PreAggregateRegistry.js';
 import { subqueryPushdown } from './subquery-pushdown.js';
 import type { SketchOptions } from './sufficient-statistics.js';
 
@@ -39,14 +39,6 @@ export interface PreAggregateOptions {
    * @deprecated 'exec' mode will be removed once 'preagg' becomes the default; new code should set 'preagg'.
    */
   mode?: PreAggregateMode;
-  /**
-   * Time limits for 'preagg' mode builds: `timeoutMs` (default 120000) bounds
-   * how long a selection update waits for a `preagg` response before falling
-   * back to a standard query, and `cooldownMs` (default 60000) is how long a
-   * failed build's SQL is refused before it may be rebuilt. Ignored in
-   * 'exec' mode, where the coordinator `timeout` option applies instead.
-   */
-  limits?: Partial<PreAggregateLimits>;
 }
 
 type ActivePredicate = (clause?: SelectionClause) => MaybeArray<ExprNode>;
@@ -105,8 +97,7 @@ export class PreAggregator {
     schema = 'mosaic',
     enabled = true,
     useSketches = false,
-    mode = 'exec',
-    limits
+    mode = 'exec'
   }: PreAggregateOptions = {}) {
     this.entries = new Map();
     this.active = null;
@@ -115,7 +106,7 @@ export class PreAggregator {
     this._enabled = enabled;
     this._useSketches = sketchOptions(useSketches);
     this.mode = mode;
-    this.registry = mode === 'preagg' ? new PreAggregateRegistry(coordinator.manager, limits) : null;
+    this.registry = mode === 'preagg' ? new PreAggregateRegistry(coordinator.manager) : null;
   }
 
   /**
@@ -367,9 +358,8 @@ export class PreAggregator {
 
 function isMissingTableError(error: unknown, table: TableRefNode): boolean {
   if (!(error instanceof ConnectorError)) return false;
-  if (error.code !== ConnectorErrorCode.TableNotFound || !error.reference) return false;
-  const missing = referenceParts(error.reference);
-  return missing.length === table.table.length
+  const missing = error.code === ConnectorErrorCode.TableNotFound ? error.reference : undefined;
+  return !!missing && missing.length === table.table.length
     && missing.every((part, i) => part === table.table[i]);
 }
 
@@ -611,7 +601,7 @@ function replaceIndices(exprs: ExprNode[], select: SelectClauseNode[]) {
  * active clause and selection state.
  */
 export class PreAggregateInfo {
-  /** Null in preagg mode until `ready` resolves. */
+  /** Null in preagg mode until `result` resolves. */
   table: TableRefNode | null;
   /** The SQL query used to generate the materialized view. */
   create: SelectQuery;

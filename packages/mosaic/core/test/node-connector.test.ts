@@ -19,7 +19,7 @@ describe('NodeConnector preagg', () => {
     expect(table!.table).toEqual(['temp', 'main', expect.stringMatching(/^preagg_[0-9a-f]+$/)]);
 
     const { reference } = await connector.query({ type: 'preagg', sql: create.toString() });
-    expect([reference.catalog, ...reference.schema, reference.table]).toEqual(table!.table);
+    expect(reference).toEqual(table!.table);
     const temporary = decodeIPC(await connector.query({ type: 'arrow', sql: 'SELECT table_name FROM duckdb_tables() WHERE temporary' }));
     expect(temporary.toArray()).toEqual([{ table_name: table!.table.at(-1) }]);
   });

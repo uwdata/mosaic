@@ -31,12 +31,22 @@ describe('PreAggregator preagg mode', () => {
     await expect(mc.preaggregator.dropSchema()).rejects.toBeInstanceOf(PreAggregateModeError);
   });
 
-  it('passes limits to the registry and keeps defaults for unset fields', () => {
-    const mc = new Coordinator(new MockPreaggConnector(), {
-      logger: null,
-      preagg: { mode: 'preagg', limits: { timeoutMs: 5 } }
-    });
-    expect(mc.preaggregator.registry!.limits).toEqual({ timeoutMs: 5, cooldownMs: 60_000 });
+  it('bounds builds by the coordinator timeout only when one is set', async () => {
+    vi.useFakeTimers();
+    try {
+      for (const timeout of [0, Infinity, 2 ** 31]) {
+        const mc = new Coordinator(new MockPreaggConnector(), {
+          logger: null, timeout, preagg: { mode: 'preagg' }
+        });
+        const build = mc.preaggregator.registry!.request('SELECT 1');
+        let settled = false;
+        build.then(() => settled = true, () => settled = true);
+        await vi.advanceTimersByTimeAsync(10 * 60_000);
+        expect(settled).toBe(false);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('waits for the server reference before issuing the update query', async () => {
@@ -57,9 +67,31 @@ describe('PreAggregator preagg mode', () => {
 
     const response = connector.complete();
     await sel.pending('value');
-    expect(info.table!.table).toEqual(['memory', 'mosaic_scope_test', response.reference.table]);
-    expect(connector.sql()[1]).toContain(`FROM "memory"."mosaic_scope_test"."${response.reference.table}" WHERE ("active0" IN ('b'))`);
+    expect(info.table!.table).toEqual(response.reference);
+    expect(connector.sql()[1]).toContain(`FROM "memory"."mosaic_scope_test"."${response.reference.at(-1)}" WHERE ("active0" IN ('b'))`);
     expect(results).toHaveLength(2);
+  });
+
+  it('serves updates from the preagg table with default cache and consolidation', async () => {
+    const connector = new MockPreaggConnector();
+    const mc = new Coordinator(connector, { logger: null, preagg: { mode: 'preagg' } });
+    const { sel, results } = await aggregateClient(mc);
+    const source = {};
+
+    sel.update(clausePoint('dim', 'b', { source }));
+    await flush();
+    const { reference } = connector.complete();
+    await sel.pending('value');
+    sel.update(clausePoint('dim', 'c', { source }));
+    await sel.pending('value');
+    const reads = connector.sql().length;
+    sel.update(clausePoint('dim', 'b', { source }));
+    await sel.pending('value');
+
+    expect(connector.preaggRequests).toHaveLength(1);
+    expect(connector.sql().slice(1).every(sql => sql.includes(reference.at(-1)!))).toBe(true);
+    expect(connector.sql()).toHaveLength(reads);
+    expect(results).toHaveLength(4);
   });
 
   it('shares one build across clients and keeps it alive across clear()', async () => {
