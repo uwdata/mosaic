@@ -1,5 +1,5 @@
 import { TableRefNode } from '@uwdata/mosaic-sql';
-import type { Connector, PreaggResponse } from '../connectors/Connector.js';
+import { QueryResult } from '../util/query-result.js';
 import {
   AbortError,
   ConnectorError,
@@ -9,17 +9,8 @@ import {
 import type { QueryManager } from '../QueryManager.js';
 
 interface Build {
-  entry: Entry;
+  result: QueryResult<TableRefNode>;
   timer?: ReturnType<typeof setTimeout>;
-  promise: Promise<TableRefNode>;
-  resolve: (table: TableRefNode) => void;
-  reject: (err: unknown) => void;
-}
-
-interface Entry {
-  sql: string;
-  table: TableRefNode | null;
-  build: Build | null;
 }
 
 interface Failure {
@@ -36,16 +27,14 @@ const cooldownMs = 60 * 1000;
  * consolidation, or exec ordering.
  */
 export class PreAggregateRegistry {
-  private manager: Pick<QueryManager, 'connector' | 'logger' | 'invalidate' | 'timeout'>;
-  private entries = new Map<string, Entry>();
+  private entries = new Map<string, Build | TableRefNode>();
   private failures = new Map<string, Failure>();
 
-  constructor(manager: Pick<QueryManager, 'connector' | 'logger' | 'invalidate' | 'timeout'>) {
-    this.manager = manager;
-  }
+  constructor(private manager: Pick<QueryManager, 'connector' | 'logger' | 'invalidate' | 'timeout'>) {}
 
   lookup(sql: string): TableRefNode | null {
-    return this.entries.get(sql)?.table ?? null;
+    const entry = this.entries.get(sql);
+    return entry instanceof TableRefNode ? entry : null;
   }
 
   invalidate(sql: string, table: TableRefNode): void {
@@ -66,84 +55,60 @@ export class PreAggregateRegistry {
       this.failures.delete(sql);
     }
 
-    const existing = this.entries.get(sql);
-    if (existing) return existing.build ? existing.build.promise : Promise.resolve(existing.table!);
+    const entry = this.entries.get(sql);
+    if (entry instanceof TableRefNode) return Promise.resolve(entry);
+    if (entry) return entry.result;
 
-    const entry: Entry = { sql, table: null, build: null };
-    this.entries.set(sql, entry);
-    const build = entry.build = this.createBuild(entry);
-    this.dispatch(build, this.manager.connector()!);
-    return build.promise;
+    const build: Build = { result: new QueryResult() };
+    build.result.catch(() => {});
+    this.entries.set(sql, build);
+    const ms = this.manager.timeout();
+    if (ms) {
+      build.timer = setTimeout(() => {
+        const error = new ConnectorError('Preaggregation deadline exceeded');
+        this.manager.logger().warn('Preagg timeout', sql, error);
+        build.result.reject(error);
+      }, ms);
+      (build.timer as { unref?: () => void }).unref?.();
+    }
+    void this.materialize(sql, build);
+    return build.result;
   }
 
   reset(): void {
     for (const entry of this.entries.values()) {
-      if (entry.build) this.fail(entry.build, new AbortError('Preaggregates reset'));
+      if (entry instanceof TableRefNode) continue;
+      clearTimeout(entry.timer);
+      entry.result.reject(new AbortError('Preaggregates reset'));
     }
     this.entries.clear();
     this.failures.clear();
     this.manager.invalidate();
   }
 
-  private createBuild(entry: Entry): Build {
-    let resolve!: (table: TableRefNode) => void;
-    let reject!: (err: unknown) => void;
-    const promise = new Promise<TableRefNode>((res, rej) => { resolve = res; reject = rej; });
-    promise.catch(() => {});
-    const build: Build = { entry, promise, resolve, reject };
-    const ms = this.manager.timeout();
-    if (ms) {
-      build.timer = setTimeout(() => {
-        const error = new ConnectorError('Preaggregation deadline exceeded');
-        this.manager.logger().warn('Preagg timeout', entry.sql, error);
-        build.reject(error);
-      }, ms);
-      (build.timer as { unref?: () => void }).unref?.();
-    }
-    return build;
-  }
-
-  private dispatch(build: Build, db: Connector): void {
-    const request = { type: 'preagg' as const, sql: build.entry.sql };
+  private async materialize(sql: string, build: Build): Promise<void> {
+    const request = { type: 'preagg' as const, sql };
     this.manager.logger().debug('Preagg', request);
-    new Promise<unknown>(resolve => resolve(db.query(request)))
-      .then(parsePreaggResponse)
-      .then(response => this.complete(build, response), err => this.fail(build, err));
-  }
-
-  private complete(build: Build, response: PreaggResponse): void {
-    if (!this.claim(build)) return;
-    const { entry } = build;
-    entry.table = new TableRefNode(response.reference);
-    build.resolve(entry.table);
-  }
-
-  private fail(build: Build, err: unknown): void {
-    if (!this.claim(build)) return;
-    const { entry } = build;
-    this.entries.delete(entry.sql);
-    if (isAbortError(err)) {
-      build.reject(err);
-      return;
+    try {
+      const response = await new Promise<unknown>(resolve => resolve(this.manager.connector()!.query(request)));
+      if (this.entries.get(sql) !== build) return;
+      const table = new TableRefNode(parsePreaggResponse(response).reference);
+      this.entries.set(sql, table);
+      build.result.fulfill(table);
+    } catch (err) {
+      if (this.entries.get(sql) !== build) return;
+      this.entries.delete(sql);
+      if (isAbortError(err)) {
+        build.result.reject(err);
+        return;
+      }
+      const error = err instanceof ConnectorError ? err
+        : new ConnectorError(err instanceof Error ? err.message : String(err), { cause: err });
+      this.failures.set(sql, { error, retryAt: Date.now() + cooldownMs });
+      this.manager.logger().warn('Preagg failure', sql, error);
+      build.result.reject(error);
+    } finally {
+      clearTimeout(build.timer);
     }
-    const error = err instanceof ConnectorError ? err
-      : new ConnectorError(err instanceof Error ? err.message : String(err), { cause: err });
-    this.recordFailure(entry, error);
-    build.reject(error);
-  }
-
-  private claim(build: Build): boolean {
-    if (build.entry.build !== build) return false;
-    clearTimeout(build.timer);
-    build.entry.build = null;
-    return true;
-  }
-
-  // Nothing retries on its own: request() rejects this SQL until retryAt, and
-  // the first selection update after that issues a fresh build. Each failure
-  // restarts the cooldown, so attempts are paced rather than capped.
-  private recordFailure(entry: Entry, error: ConnectorError): void {
-    this.failures.set(entry.sql, { error, retryAt: Date.now() + cooldownMs });
-    this.manager.logger().warn('Preagg failure', entry.sql, error);
   }
 }
