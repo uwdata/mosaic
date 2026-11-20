@@ -1,4 +1,4 @@
-import {
+import type {
   SQLNode,
   ExprNode,
   AggregateNode,
@@ -54,16 +54,12 @@ import {
   WindowFunctionNode,
   WindowFrameNode,
   WindowFrameExprNode,
-  WithClauseNode,
-  isNode,
-  isQuery,
-  isTableRef
+  WithClauseNode
 } from '../../ast/index.js';
+import { isNode } from '../../ast/node.js';
 import { quoteIdentifier } from '../../util/string.js';
-import { literalToSQL } from '../../ast/literal.js';
 import { SQLCodeGenerator } from './sql.js';
-import { CURRENT_ROW, FOLLOWING, PRECEDING, UNBOUNDED } from '../../ast/window-frame.js';
-import { COLUMN_PARAM, COLUMN_REF, FUNCTION, LAMBDA_VAR, LIST, POSITIONAL_REF, SET_OPERATION, SLICE, SUBSCRIPT, WINDOW_EXTENT_EXPR } from '../../constants.js';
+import { COLUMN_PARAM, COLUMN_REF, COLUMNS, CURRENT_ROW, FOLLOWING, FUNCTION, LAMBDA_VAR, LIST, PIVOT_QUERY, POSITIONAL_REF, PRECEDING, SELECT_QUERY, SET_OPERATION, SLICE, SUBSCRIPT, TABLE_REF, UNBOUNDED, WINDOW_EXTENT_EXPR } from '../../constants.js';
 
 /**
  * DuckDB SQL dialect visitor for converting AST nodes to DuckDB-compatible SQL.
@@ -123,8 +119,9 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   visitColumnRef(node: ColumnRefNode): string {
     const { column, table } = node;
     const tref = table ? `${this.toString(table)}.` : '';
-    const id = column === '*' ? '*' : quoteIdentifier(column);
-    return `${tref}${id}${node instanceof StarNode ? starModifiers(this, node) : ''}`;
+    const star = column === '*';
+    const id = star ? '*' : quoteIdentifier(column);
+    return `${tref}${id}${star ? starModifiers(this, node) : ''}`;
   }
 
   visitColumns(node: ColumnsNode): string {
@@ -229,9 +226,38 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     return `[${this.mapToString(values).join(', ')}]`;
   }
 
+  literalToSQL(value: unknown): string {
+    switch (typeof value) {
+      case 'number':
+        return Number.isFinite(value) ? `${value}` : 'NULL';
+      case 'string':
+        return `'${value.replaceAll('\'', '\'\'')}'`;
+      case 'boolean':
+        return value ? 'TRUE' : 'FALSE';
+      default:
+        if (value == null) {
+          return 'NULL';
+        } else if (value instanceof Date) {
+          const ts = +value;
+          if (Number.isNaN(ts)) return 'NULL';
+          const y = value.getUTCFullYear();
+          const m = value.getUTCMonth();
+          const d = value.getUTCDate();
+          return ts === Date.UTC(y, m, d)
+            ? `DATE '${y}-${padZero(m+1)}-${padZero(d)}'` // utc date
+            : `epoch_ms(${ts})`; // timestamp
+        } else if (value instanceof RegExp) {
+          return `'${value.source}'`;
+        } else {
+          // otherwise rely on string coercion
+          return `${value}`;
+        }
+    }
+  }
+
   visitLiteral(node: LiteralNode): string {
     const { value } = node;
-    return literalToSQL(value);
+    return this.literalToSQL(value);
   }
 
   visitLogicalOperator(node: LogicalOpNode<ExprNode>): string {
@@ -265,7 +291,7 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   visitParam(node: ParamNode): string {
     const { param } = node;
     // Get the current value from the parameter and format it as a literal
-    return literalToSQL(param.value);
+    return this.literalToSQL(param.value);
   }
 
   private visitQuery(node: Query, body: string[]): string {
@@ -550,18 +576,39 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   }
 }
 
+function padZero(value: unknown, len = 2) {
+  return `${value}`.padStart(len, '0');
+}
+
+function isQuery(value: unknown): value is Query {
+  return isNode(value) && (
+    value.type === SELECT_QUERY
+    || value.type === PIVOT_QUERY
+    || value.type === SET_OPERATION
+  );
+}
+
+function isTableRef(value: unknown): value is TableRefNode {
+  return isNode(value) && value.type === TABLE_REF;
+}
+
+function isColumnRef(value: unknown): value is ColumnRefNode {
+  return isNode(value)
+    && (value.type === COLUMN_REF || value.type === COLUMN_PARAM);
+}
+
 function isColumnRefFor(expr: unknown, name: string): expr is ColumnRefNode {
-  return expr instanceof ColumnRefNode
+  return isColumnRef(expr)
     && expr.table == null
     && expr.column === name;
 }
 
 function isStarRef(expr: unknown): boolean {
-  return expr instanceof ColumnRefNode && expr.column === '*';
+  return isColumnRef(expr) && expr.column === '*';
 }
 
 function isExpandingColumns(expr: ExprNode): boolean {
-  return expr instanceof ColumnsNode && !expr.unpack;
+  return expr.type === COLUMNS && !(expr as ColumnsNode).unpack;
 }
 
 function betweenToString(
@@ -584,8 +631,8 @@ function formatFrameExpr(visitor: SQLCodeGenerator, value: unknown, scope: strin
     : `${Math.abs(x)} ${scope}`;
 }
 
-function starModifiers(visitor: SQLCodeGenerator, node: StarNode) {
-  const { exclude, replace, rename } = node;
+function starModifiers(visitor: SQLCodeGenerator, node: ColumnRefNode) {
+  const { exclude = [], replace = [], rename = [] } = node as Partial<StarNode>;
   const sql: string[] = [];
   if (exclude.length) {
     sql.push(`EXCLUDE (${visitor.mapToString(exclude).join(', ')})`);

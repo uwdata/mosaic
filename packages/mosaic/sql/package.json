@@ -15,12 +15,7 @@
     "types": "./dist/src/index.d.ts",
     "default": "./dist/src/index.js"
   },
-  "sideEffects": [
-    "./dist/src/index.js",
-    "./dist/src/init.js",
-    "./src/index.ts",
-    "./src/init.ts"
-  ],
+  "sideEffects": false,
   "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",
