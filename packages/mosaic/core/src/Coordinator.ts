@@ -164,14 +164,14 @@ export class Coordinator {
    * @param query The query or an array of queries. Each query should be either a Query builder object or a SQL string.
    * @param options An options object.
    * @param options.priority The query priority, defaults to `Priority.Normal`.
-   * @returns A query result promise.
+   * @returns A promise that resolves when the query completes.
    */
   exec(
     query: MaybeArray<QueryType>,
     options: { priority?: number } = {}
-  ): Promise<unknown> {
+  ): Promise<void> {
     const { priority = Priority.Normal } = options;
-    return this.manager.request({ type: 'exec', query }, priority);
+    return this.manager.request({ type: 'exec', query }, priority) as Promise<void>;
   }
 
   /**
