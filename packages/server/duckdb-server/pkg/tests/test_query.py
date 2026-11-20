@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from typing import Literal as L  # ruff: ignore[camelcase-imported-as-acronym]
 
@@ -24,11 +25,15 @@ LB, RB = "{}"
 
 
 @functools.lru_cache(128)
-def _query_string(sql: LiteralString, type: L["arrow", "exec"], /) -> LiteralString:
+def _query_string(
+    sql: LiteralString, type: L["arrow", "exec", "preagg"], /
+) -> LiteralString:
     return f'{LB}"sql":"{sql}","type":"{type}"{RB}'
 
 
-def q(sql: LiteralString, /, type: L["arrow", "exec"] = "arrow") -> QueryParams:
+def q(
+    sql: LiteralString, /, type: L["arrow", "exec", "preagg"] = "arrow"
+) -> QueryParams:
     return {"query": _query_string(sql, type)}
 
 
@@ -65,3 +70,22 @@ def test_buffer(real_server_session: httpx2.Client) -> None:
         table = reader.read_all()
     expected = pa.table({"b": [2]}, schema=pa.schema({"b": pa.int32()}))
     assert table.equals(expected)
+
+
+def test_query_preagg(client_session: TestClient) -> None:
+    def preagg() -> dict[str, Any]:
+        response = client_session.get("/", params=q("SELECT 42 AS answer", "preagg"))
+        return msgspec.json.decode(raise_for_status(response).content)
+
+    first, second = preagg(), preagg()
+    catalog, schema, table = first["reference"]
+    assert (catalog, schema) == ("memory", "mosaic")
+    assert table.startswith("preagg_")
+    assert second["reference"] == first["reference"]
+    assert datetime.fromisoformat(first["createdAt"]).tzinfo is not None
+
+    sql = f'SELECT answer FROM mosaic."{table}"'
+    query = msgspec.json.encode({"type": "arrow", "sql": sql}).decode()
+    response = client_session.get("/", params={"query": query})
+    with pa.ipc.open_stream(raise_for_status(response).read()) as reader:
+        assert reader.read_all().column("answer").to_pylist() == [42]

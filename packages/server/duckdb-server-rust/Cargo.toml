@@ -16,6 +16,7 @@ exclude = [
 anyhow = "1.0"
 arrow = { version = "60.1", default-features = true, features = ["chrono-tz"] }
 async-trait = "0.1"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 axum = { version = "0.8", features = ["http1", "http2", "json", "tokio", "tracing", "macros"] }
 axum-server-dual-protocol = "0.7"
 clap = { version = "4.6", features = ["derive"] }

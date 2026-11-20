@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import sys
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, final
 
 import pyarrow as pa
 
 from pkg import protocols
 from pkg.protocols import readonly_buffer
-from pkg.responses import ArrowResponse, EmptyResponse, empty_response
+from pkg.responses import ArrowResponse, EmptyResponse, JSONResponse, empty_response
 
 if TYPE_CHECKING:
     from pkg.db import Database
@@ -40,4 +41,17 @@ class ExecRequest(protocols.Command[None], forbid_unknown_fields=False):
         return empty_response()
 
 
-Command = Type("Command", ArrowRequest | ExecRequest)
+@final
+class PreaggRequest(protocols.Command[list[str]], forbid_unknown_fields=False):
+    """Materializes a SELECT query and returns the table's name parts."""
+
+    def _query(self, db: Database, /) -> list[str]:
+        return db.preagg(self.sql)
+
+    def _into_response(self, reference: list[str], /) -> JSONResponse:
+        return JSONResponse(
+            {"reference": reference, "createdAt": datetime.now(UTC).isoformat()}
+        )
+
+
+Command = Type("Command", ArrowRequest | ExecRequest | PreaggRequest)

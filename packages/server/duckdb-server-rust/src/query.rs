@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::interfaces::{AppError, AppState, Command, QueryParams, QueryResponse};
+use crate::interfaces::{AppError, AppState, Command, PreaggResponse, QueryParams, QueryResponse};
 
 pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryResponse, AppError> {
     let command = &params.query_type;
@@ -18,6 +18,17 @@ pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryRespon
             if let Some(sql) = params.sql.as_deref() {
                 state.db.execute(sql).await?;
                 Ok(QueryResponse::Empty)
+            } else {
+                Err(AppError::BadRequest("missing required 'sql' parameter"))
+            }
+        }
+        Some(Command::Preagg) => {
+            if let Some(sql) = params.sql.as_deref() {
+                let reference = state.db.preagg(sql).await?;
+                Ok(QueryResponse::Preagg(PreaggResponse {
+                    reference,
+                    created_at: chrono::Utc::now().to_rfc3339(),
+                }))
             } else {
                 Err(AppError::BadRequest("missing required 'sql' parameter"))
             }

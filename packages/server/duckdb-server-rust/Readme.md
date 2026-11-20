@@ -58,6 +58,10 @@ Executes the SQL query in the `sql` field.
 
 Executes the SQL query in the `sql` field and returns the result in Apache Arrow format.
 
+### `preagg`
+
+Materializes the `SELECT` query in the `sql` field as a table in the `mosaic` schema and returns JSON `{"reference": [catalog, "mosaic", table], "createdAt": timestamp}`. The table name is derived from a hash of the SQL text, so repeated requests reuse the table.
+
 ## Developers
 
 ### Build

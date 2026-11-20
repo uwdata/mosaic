@@ -5,5 +5,5 @@ mod query;
 
 pub use app::app;
 pub use db::{ConnectionPool, Database};
-pub use interfaces::{AppError, AppState, Command, QueryParams, QueryResponse};
+pub use interfaces::{AppError, AppState, Command, PreaggResponse, QueryParams, QueryResponse};
 pub use query::handle;

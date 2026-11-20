@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 from typing import TYPE_CHECKING
@@ -8,13 +9,13 @@ import duckdb
 import pyarrow as pa
 from duckdb import DuckDBPyConnection
 
+from pkg.protocols import Sql
 from pkg.servers.common import ENV_DB_PATH, IN_MEMORY_DB_NAME
 
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Self
 
-    from pkg.protocols import Sql
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,13 @@ class Database:
     def execute(self, sql: Sql) -> None:  # pragma: no cover
         self.con.execute(sql)
         self.con.complete()
+
+    def preagg(self, sql: Sql) -> list[str]:
+        table = f"preagg_{hashlib.sha256(sql.encode()).hexdigest()[:16]}"
+        self.execute(Sql("CREATE SCHEMA IF NOT EXISTS mosaic"))
+        self.execute(Sql(f'CREATE TABLE IF NOT EXISTS mosaic."{table}" AS {sql}'))
+        [(catalog,)] = self.con.execute("SELECT current_database()").fetchall()
+        return [catalog, "mosaic", table]
 
     def get_arrow(self, sql: Sql) -> pa.Buffer:
         reader = self.con.query(sql).to_arrow_reader()

@@ -46,6 +46,7 @@ A command type, discriminates between:
 
 - `arrow`: Execute a single statement and return the result in Apache Arrow format.
 - `exec`: Execute a one or more `";"`-separated statements for their side effects.
+- `preagg`: Materialize a single `SELECT` statement as a table in the `mosaic` schema and return JSON `{"reference": [catalog, "mosaic", table], "createdAt": timestamp}`. The table name is derived from a hash of the SQL text, so repeated requests reuse the table.
 
 ### `sql`
 
