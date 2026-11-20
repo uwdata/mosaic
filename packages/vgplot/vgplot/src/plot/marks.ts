@@ -105,7 +105,7 @@ export const tickY = (...args) => mark('tickY', ...args);
 
 export const vector = (...args) => mark('vector', ...args);
 //@ts-expect-error
-export const vectorX = (...args) => mark('vectoX', ...args);
+export const vectorX = (...args) => mark('vectorX', ...args);
 //@ts-expect-error
 export const vectorY = (...args) => mark('vectorY', ...args);
 //@ts-expect-error
