@@ -61,6 +61,25 @@ def count(col: TransformArg | UNSET = UNSET, **options: Any) -> dict[str, Any]:
     return _transform("count", (col,), options)
 
 
+def cpc_estimate(sketch: TransformArg, **options: Any) -> dict[str, Any]:
+    """Return the estimated distinct count of a Compressed Probabilistic Counting (CPC) sketch."""
+    return _transform("cpcEstimate", (sketch,), options)
+
+
+def cpc_sketch(
+    col: TransformArg, lg_k: TransformArg | UNSET = UNSET, **options: Any
+) -> dict[str, Any]:
+    """Compute a Compressed Probabilistic Counting (CPC) sketch for approximate distinct counting."""
+    return _transform("cpcSketch", (col, lg_k), options)
+
+
+def cpc_union(
+    sketch: TransformArg, lg_k: TransformArg | UNSET = UNSET, **options: Any
+) -> dict[str, Any]:
+    """Merge CPC sketches into a single sketch."""
+    return _transform("cpcUnion", (sketch, lg_k), options)
+
+
 def cume_dist(**options: Any) -> dict[str, Any]:
     """Compute the cumulative distribution value over an ordered window partition."""
     return {"cume_dist": None, **options}
@@ -99,6 +118,42 @@ def first_value(col: TransformArg, **options: Any) -> dict[str, Any]:
 def geojson(col: TransformArg, **options: Any) -> dict[str, Any]:
     """Compute a GeoJSON-formatted string from geometry-typed data."""
     return _transform("geojson", (col,), options)
+
+
+def hll_estimate(sketch: TransformArg, **options: Any) -> dict[str, Any]:
+    """Return the estimated distinct count of a HyperLogLog (HLL) sketch."""
+    return _transform("hllEstimate", (sketch,), options)
+
+
+def hll_sketch(
+    col: TransformArg, lg_k: TransformArg | UNSET = UNSET, **options: Any
+) -> dict[str, Any]:
+    """Compute a HyperLogLog (HLL) sketch for approximate distinct counting."""
+    return _transform("hllSketch", (col, lg_k), options)
+
+
+def hll_union(
+    sketch: TransformArg, lg_k: TransformArg | UNSET = UNSET, **options: Any
+) -> dict[str, Any]:
+    """Merge HyperLogLog (HLL) sketches into a single sketch."""
+    return _transform("hllUnion", (sketch, lg_k), options)
+
+
+def kll_quantile(
+    sketch: TransformArg,
+    rank: TransformArg,
+    inclusive: TransformArg | UNSET = UNSET,
+    **options: Any,
+) -> dict[str, Any]:
+    """Return the estimated quantile value of a KLL sketch at the provided normalized rank between 0 and 1."""
+    return _transform("kllQuantile", (sketch, rank, inclusive), options)
+
+
+def kll_sketch(
+    col: TransformArg, k: TransformArg | UNSET = UNSET, **options: Any
+) -> dict[str, Any]:
+    """Compute a KLL sketch for approximate quantile estimation, or merge input KLL sketches."""
+    return _transform("kllSketch", (col, k), options)
 
 
 def lag(
@@ -223,6 +278,9 @@ __all__ = [
     "centroid_y",
     "column",
     "count",
+    "cpc_estimate",
+    "cpc_sketch",
+    "cpc_union",
     "cume_dist",
     "date_day",
     "date_month",
@@ -231,6 +289,11 @@ __all__ = [
     "first",
     "first_value",
     "geojson",
+    "hll_estimate",
+    "hll_sketch",
+    "hll_union",
+    "kll_quantile",
+    "kll_sketch",
     "lag",
     "last",
     "last_value",

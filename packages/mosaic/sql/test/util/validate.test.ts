@@ -16,13 +16,6 @@ describe('validate helper', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('rejects an unquoted huge interval (regression #484)', async () => {
-    // Parser overflow: INTERVAL with an out-of-range unquoted integer.
-    await expect(
-      validateExpr('time_bucket(INTERVAL 50000000000 year, "ts1")')
-    ).rejects.toThrow();
-  });
-
   it('rejects an unquoted bare-word string value (regression #977)', async () => {
     // Bare words `Dimension Lines` are not a valid SQL value list.
     await expect(

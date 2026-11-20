@@ -149,6 +149,7 @@ class MosaicWidget(anywidget.AnyWidget):
                 self.send({"type": "arrow", "uuid": uuid}, buffers=[buf.to_pybytes()])
             elif command == "exec":
                 self.con.execute(sql)
+                self.con.complete()
                 self.send({"type": "exec", "uuid": uuid})
             else:
                 msg = f"Unknown command {command}"

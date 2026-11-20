@@ -51,6 +51,7 @@
         <option value="protein-design">Protein Design</option>
         <option value="region-tests">Region Tests</option>
         <option value="seattle-temp">Seattle Temperatures</option>
+        <option value="sketch-aggregates">Sketch Aggregates</option>
         <option value="sorted-bars">Sorted Bars</option>
         <option value="splom">Scatter Plot Matrix</option>
         <option value="symbols">Symbols</option>
@@ -88,21 +89,33 @@
           </select>
         </div>
         <div>
-          Log Queries:
-          <input id="query-log" type="checkbox" />
+          <label>
+            Log Queries:
+            <input id="query-log" type="checkbox" />
+          </label>
         </div>
         <div>
-          Cache Queries:
-          <input id="cache" type="checkbox" checked />
+          <label>
+            Cache Queries:
+            <input id="cache" type="checkbox" checked />
+          </label>
           <span id="cache-bytes"></span>
         </div>
         <div>
-          Consolidate Queries:
-          <input id="consolidate" type="checkbox" checked />
+          <label>
+            Consolidate Queries:
+            <input id="consolidate" type="checkbox" checked />
+          </label>
         </div>
         <div>
-          Pre-aggregate:
-          <input id="preagg" type="checkbox" checked />
+          <label>
+            Pre-aggregate:
+            <input id="preagg" type="checkbox" checked />
+          </label>
+        </div>
+        <div>
+          Pre-aggregate Sketches:
+          <input id="preagg-sketches" type="checkbox" />
         </div>
         <div>
           Pre-aggregate State:
@@ -126,6 +139,7 @@
   const consolidateToggle = document.querySelector('#consolidate');
   const preaggToggle = document.querySelector('#preagg');
   const preaggState = document.querySelector('#preagg-state');
+  const sketchesToggle = document.querySelector('#preagg-sketches');
 
   connectorMenu.addEventListener('change', setConnector);
   exampleMenu.addEventListener('change', reload);
@@ -134,6 +148,7 @@
   cacheToggle.addEventListener('input', setCache);
   consolidateToggle.addEventListener('input', setConsolidate);
   preaggToggle.addEventListener('input', setPreAggregate);
+  sketchesToggle.addEventListener('input', setSketches);
   preaggState.addEventListener('click', () => {
     const { entries } = vg.coordinator().preaggregator || {};
     if (entries) {
@@ -159,6 +174,7 @@
 
   async function setConnector() {
     await setDatabaseConnector(connectorMenu.value);
+    setSketches();
     reload();
   }
 
@@ -176,6 +192,10 @@
 
   function setPreAggregate() {
     vg.coordinator().preaggregator.enabled = preaggToggle.checked;
+  }
+
+  function setSketches() {
+    vg.coordinator().preaggregator.useSketches = sketchesToggle.checked;
   }
 
   function reload() {

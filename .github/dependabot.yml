@@ -11,6 +11,9 @@ updates:
 
   - package-ecosystem: npm
     directory: "/"
+    ignore:
+      - dependency-name: "ts-json-schema-generator"
+        versions: ["3.0.0--canary.*"]
     schedule:
       interval: monthly
     groups:
@@ -45,6 +48,11 @@ updates:
       cargo:
         patterns:
           - "*"
+
+  - package-ecosystem: rust-toolchain
+    directory: "/packages/server/duckdb-server-rust"
+    schedule:
+      interval: monthly
 
   - package-ecosystem: gomod
     directory: "/packages/server/duckdb-server-go"

@@ -13,6 +13,7 @@ export { RestConnector } from './connectors/rest.js';
 export { DuckDBWASMConnector } from './connectors/wasm.js';
 
 export {
+  clauseComposite,
   clauseInterval,
   clauseIntervals,
   clauseList,
