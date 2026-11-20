@@ -1,4 +1,6 @@
+import { TableRefNode } from '@uwdata/mosaic-sql';
 import type { ArrowIPCBytes } from '../types.js';
+import { fnv_hash } from '../util/hash.js';
 
 export interface ConnectorQueryRequest {
   /** The query type. */
@@ -17,6 +19,26 @@ export interface ExecQueryRequest extends ConnectorQueryRequest {
   type: 'exec';
 }
 
+export interface PreaggRequest extends ConnectorQueryRequest {
+  type: 'preagg';
+}
+
+export interface PreaggResponse {
+  /** Table name parts, outermost first, such as `['memory', 'mosaic', 'preagg_c92f']`. */
+  reference: string[];
+  /** RFC 3339 timestamp of the build's completion. */
+  createdAt: string;
+  /** Row count of the materialized table, when the server reports it. */
+  rows?: number;
+  /** Approximate size in bytes, when the server reports it. */
+  bytes?: number;
+}
+
+export type ConnectorRequest =
+  | ArrowQueryRequest
+  | ExecQueryRequest
+  | PreaggRequest;
+
 export interface ConnectorQueryOptions {
   /** A signal that aborts when the result is no longer needed. */
   signal?: AbortSignal;
@@ -26,4 +48,21 @@ export interface Connector {
   /** Issue a query and return the result. */
   query(query: ArrowQueryRequest, options?: ConnectorQueryOptions): Promise<ArrowIPCBytes>;
   query(query: ExecQueryRequest, options?: ConnectorQueryOptions): Promise<void>;
+  query(query: PreaggRequest, options?: ConnectorQueryOptions): Promise<PreaggResponse>;
+}
+
+/**
+ * Serve a `preagg` request with the connector's own `exec`, for connectors
+ * that run DuckDB in-process and have no server to delegate to. The table
+ * is temporary and released when the connection closes.
+ */
+export async function materializeWithExec(
+  connector: Connector,
+  sql: string,
+  options?: ConnectorQueryOptions
+): Promise<PreaggResponse> {
+  const table = `preagg_${fnv_hash(sql).toString(16)}`;
+  const ref = new TableRefNode(['temp', 'main', table]);
+  await connector.query({ type: 'exec', sql: `CREATE TEMP TABLE IF NOT EXISTS ${ref} AS ${sql}` }, options);
+  return { reference: ref.table, createdAt: new Date().toISOString() };
 }

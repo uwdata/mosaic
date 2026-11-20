@@ -20,7 +20,7 @@ interface Model {
 }
 
 interface OpenQuery {
-  query: mc.ArrowQueryRequest | mc.ExecQueryRequest;
+  query: mc.ConnectorRequest;
   startTime: number;
   resolve: (value: ArrayBufferLike | Record<string, unknown>) => void;
   reject: (reason?: string) => void;
