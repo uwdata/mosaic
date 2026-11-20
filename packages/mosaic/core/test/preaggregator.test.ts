@@ -377,7 +377,7 @@ describe('PreAggregator', () => {
     const exprs = Object.values(cols!.preagg).map(e => `${e}`).join('\n');
     expect(exprs).toContain('FROM "schema_name"."table_name"');
   });
-  
+
   it('supports grouping column pushdown', async () => {
      const query = (predicate: FilterExpr = []) => {
       return Query.from(

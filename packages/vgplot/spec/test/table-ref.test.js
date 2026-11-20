@@ -2,11 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { isTableRef } from '@uwdata/mosaic-sql';
 import { InputNode, PlotFromNode, TableRefNode, astToESM, parseSpec } from '../src/index.js';
 
-// JSON specs can't carry a TableRefNode, so a schema-qualified table is written
-// as an array of name parts. The parser must turn that array into a proper
-// table reference before it reaches the vgplot API, which otherwise treats a
-// bare array in Query.from as a list of separate tables.
-
 /** @type {any} */
 const spec = {
   vconcat: [

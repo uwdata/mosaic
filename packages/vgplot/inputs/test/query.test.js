@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { Param } from '@uwdata/mosaic-core';
 import { tableRef } from '@uwdata/mosaic-sql';
 import { Menu } from '../src/Menu.js';
 import { Search } from '../src/Search.js';
@@ -25,6 +26,12 @@ describe('input queries', () => {
 
   it('table queries a schema-qualified table', () => {
     const table = new Table({ from, columns: [column] });
+    table.schema = [{ table: from, column, sqlType: 'VARCHAR', type: 'string', nullable: true }];
+    expect(String(table.query())).toContain(qualified);
+  });
+
+  it('table queries a schema-qualified table from a param', () => {
+    const table = new Table({ from: Param.array(['schema_name', 'table_name']), columns: [column] });
     table.schema = [{ table: from, column, sqlType: 'VARCHAR', type: 'string', nullable: true }];
     expect(String(table.query())).toContain(qualified);
   });
