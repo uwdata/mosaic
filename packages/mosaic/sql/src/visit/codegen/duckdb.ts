@@ -1,5 +1,6 @@
 // ast/node.ts imports this module for the default toString visitor. A runtime
-// import of an AST class here creates a cycle that fails when node.ts loads first.
+// import of an AST class here can evaluate its `extends` clause before SQLNode
+// is initialized.
 import type {
   SQLNode,
   ExprNode,
@@ -121,8 +122,9 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   visitColumnRef(node: ColumnRefNode): string {
     const { column, table } = node;
     const tref = table ? `${this.toString(table)}.` : '';
-    const id = column === '*' ? '*' : quoteIdentifier(column);
-    return `${tref}${id}${starModifiers(this, node)}`;
+    const star = column === '*';
+    const id = star ? '*' : quoteIdentifier(column);
+    return `${tref}${id}${star ? starModifiers(this, node) : ''}`;
   }
 
   visitColumns(node: ColumnsNode): string {
