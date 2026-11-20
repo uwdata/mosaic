@@ -17,6 +17,7 @@ export interface QueryRequest {
   type: 'exec' | 'arrow';
   query: MaybeArray<QueryType>;
   cache?: boolean;
+  consolidate?: boolean;
   options?: Record<string, unknown>;
 }
 

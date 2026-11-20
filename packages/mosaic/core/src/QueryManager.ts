@@ -249,7 +249,7 @@ export class QueryManager {
   request(request: QueryRequest, priority: number = Priority.Normal): QueryResult {
     const result = new QueryResult();
     const entry = { request, result };
-    if (this._consolidate && this._consolidating) {
+    if (this._consolidate && this._consolidating && request.consolidate !== false) {
       this._consolidate.add(entry, priority);
     } else {
       this.enqueue(entry, priority);
