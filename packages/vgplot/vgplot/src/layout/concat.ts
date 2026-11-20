@@ -1,6 +1,6 @@
 import type { ConcatElement } from '../plot/types.js';
 
-function concat<Nodes extends Node[]>(children: Nodes, direction: 'horizontal' | 'vertical' = 'vertical', wrap: boolean = false): ConcatElement {
+function concat(children: Node[], direction: 'horizontal' | 'vertical' = 'vertical', wrap: boolean = false): ConcatElement {
   const div = document.createElement('div');
   div.style.display = 'flex';
   div.style.flexDirection = direction === 'vertical' ? 'column' : 'row';
@@ -11,10 +11,10 @@ function concat<Nodes extends Node[]>(children: Nodes, direction: 'horizontal' |
   return Object.assign(div, { value: { element: div } });
 }
 
-export function vconcat<Nodes extends Node[]>(...plots: Nodes): ConcatElement {
-  return concat(plots, 'vertical');
+export function vconcat(...plots: (Node | Node[])[]): ConcatElement {
+  return concat(plots.flat(), 'vertical');
 }
 
-export function hconcat<Nodes extends Node[]>(...plots: Nodes): ConcatElement {
-  return concat(plots, 'horizontal');
+export function hconcat(...plots: (Node | Node[])[]): ConcatElement {
+  return concat(plots.flat(), 'horizontal');
 }
