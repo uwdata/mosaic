@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import inspect
 import logging
 import pathlib
 import time
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
 
 import anywidget
@@ -29,7 +31,7 @@ SLOW_QUERY_THRESHOLD = 5000
 
 
 class _QueryParams(TypedDict):
-    type: Literal["arrow", "exec"]
+    type: Literal["arrow", "exec", "preagg"]
     sql: str
     uuid: str  # name
 
@@ -56,9 +58,6 @@ class MosaicWidget(anywidget.AnyWidget):
 
     # The current params indexed by name
     params = traitlets.Dict({}).tag(sync=True, echo_update=False)
-
-    # Where pre-aggregated materialized views should be created
-    preagg_schema = traitlets.Unicode().tag(sync=True, echo_update=False)
 
     def __init__(
         self,
@@ -151,6 +150,15 @@ class MosaicWidget(anywidget.AnyWidget):
                 self.con.execute(sql)
                 self.con.complete()
                 self.send({"type": "exec", "uuid": uuid})
+            elif command == "preagg":
+                self.send(
+                    {
+                        "type": "preagg",
+                        "uuid": uuid,
+                        "reference": self._preagg(sql),
+                        "createdAt": datetime.now(UTC).isoformat(),
+                    }
+                )
             else:
                 msg = f"Unknown command {command}"
                 raise ValueError(msg)
@@ -163,6 +171,16 @@ class MosaicWidget(anywidget.AnyWidget):
             warn(f"DONE. Slow query {uuid} took {total} ms.\n{sql}")
         else:
             logger.info(f"DONE. Query {uuid} took {total} ms.\n{sql}")
+
+    def _preagg(self, sql: str) -> list[str]:
+        table = f"preagg_{hashlib.sha256(sql.encode()).hexdigest()[:16]}"
+        self.con.execute(
+            "CREATE SCHEMA IF NOT EXISTS mosaic;"
+            f'CREATE TABLE IF NOT EXISTS mosaic."{table}" AS {sql}'
+        )
+        self.con.complete()
+        [(catalog,)] = self.con.execute("SELECT current_database()").fetchall()
+        return [catalog, "mosaic", table]
 
     @property
     def sql(self) -> str | None:

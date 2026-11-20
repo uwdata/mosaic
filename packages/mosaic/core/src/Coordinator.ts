@@ -420,8 +420,8 @@ function updateSelection(
       const result = await pending;
       if (!(result instanceof QueryError)) return;
       if (superseded(pending)) return;
-      // in preagg mode the server may have dropped the table; recover()
-      // rebuilds it when the error names that table, then we retry once
+      // the server may have dropped the table; recover() rebuilds it
+      // when the error names that table, then we retry once
       const recovered = await preaggregator.recover(client, info, table, result.cause);
       if (superseded(pending)) return;
       if (recovered && preaggregator.entries.get(client) === info) {

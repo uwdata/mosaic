@@ -10,12 +10,10 @@ type Params = Record<string, { value: unknown, predicate?: string }>;
 /** Model object.
  *
  * @property spec The current Mosaic specification.
- * @property preagg_schema The database schema in which to store pre-aggregated materialized views (default 'mosaic').
  * @property params The current params.
  */
 interface Model {
   spec: Spec;
-  preagg_schema: string;
   params: Params;
 }
 
@@ -30,17 +28,14 @@ interface Msg {
   uuid: string;
   type: OpenQuery['query']['type'];
   error?: string;
+  reference?: string[];
+  createdAt?: string;
 }
 
 export default {
-  initialize({ model }: aw.InitializeProps<Model>): void {
-    model.set('preagg_schema', coordinator().preaggregator.schema);
-  },
-
   render({ model, el }: aw.RenderProps<Model>): () => void {
     el.classList.add('mosaic-widget');
     const getSpec = () => model.get('spec');
-    const getPreaggSchema = () => model.get('preagg_schema');
     const logger = coordinator().logger();
 
     const openQueries: Map<string, OpenQuery> = new Map();
@@ -126,12 +121,6 @@ export default {
 
     model.on('change:spec', () => updateSpec().catch(showError));
 
-    function configureCoordinator() {
-      coordinator().preaggregator.schema = getPreaggSchema();
-    }
-
-    model.on('change:preagg_schema', () => configureCoordinator());
-
     model.on('msg:custom', (msg: Msg, buffers: DataView[]): void => {
       logger.group(`query ${msg.uuid}`);
       logger.log('received message', msg, buffers);
@@ -146,12 +135,16 @@ export default {
 
       if (msg.error) {
         query.reject(msg.error);
-        showError(msg.error);
+        if (query.query.type !== 'preagg') showError(msg.error);
       } else {
         switch (msg.type) {
           case 'arrow': {
             logger.log('arrow bytes', buffers[0].buffer.byteLength);
             query.resolve(buffers[0].buffer);
+            break;
+          }
+          case 'preagg': {
+            query.resolve({ reference: msg.reference, createdAt: msg.createdAt });
             break;
           }
           default: {
@@ -164,7 +157,6 @@ export default {
     });
 
     coordinator().databaseConnector(connector);
-    configureCoordinator();
     updateSpec().catch(showError);
 
     return (): void => {

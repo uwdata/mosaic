@@ -1,44 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { count, Query, TableRefNode } from '@uwdata/mosaic-sql';
-import { clausePoint, Coordinator, PreAggregateModeError } from '../src/index.js';
+import { clausePoint, Coordinator } from '../src/index.js';
 import { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { aggregateClient, flush, MockPreaggConnector, preaggCoordinator } from './util/preagg-connector.js';
 
-describe('PreAggregator preagg mode', () => {
-  it('only constructs the registry in preagg mode and keeps exec behavior', async () => {
-    const connector = new MockPreaggConnector();
-    const mc = new Coordinator(connector, { logger: null, preagg: { schema: 'custom' } });
-    expect(mc.preaggregator.mode).toBe('exec');
-    expect(mc.preaggregator.registry).toBeNull();
-    mc.preaggregator.schema = 'changed';
-    expect(mc.preaggregator.schema).toBe('changed');
-    await mc.preaggregator.dropSchema();
-    expect(connector.sql('exec')).toEqual(['DROP SCHEMA IF EXISTS "changed" CASCADE']);
-    mc.preaggregator.reset();
-    expect(connector.requests).toHaveLength(1);
-  });
-
-  it('treats schema assignment as a no-op and rejects dropSchema in preagg mode', async () => {
-    const warn = vi.fn();
-    const mc = new Coordinator(new MockPreaggConnector(), {
-      logger: { ...console, warn },
-      preagg: { mode: 'preagg', schema: 'initial' }
-    });
-    expect(mc.preaggregator.registry).toBeTruthy();
-    mc.preaggregator.schema = 'other';
-    expect(mc.preaggregator.schema).toBe('initial');
-    expect(warn).toHaveBeenCalledTimes(1);
-    await expect(mc.preaggregator.dropSchema()).rejects.toBeInstanceOf(PreAggregateModeError);
-  });
-
+describe('PreAggregator preagg requests', () => {
   it('bounds builds by the coordinator timeout only when one is set', async () => {
     vi.useFakeTimers();
     try {
       for (const timeout of [0, Infinity, 2 ** 31]) {
-        const mc = new Coordinator(new MockPreaggConnector(), {
-          logger: null, timeout, preagg: { mode: 'preagg' }
-        });
-        const build = mc.preaggregator.registry!.request('SELECT 1');
+        const mc = new Coordinator(new MockPreaggConnector(), { logger: null, timeout });
+        const build = mc.preaggregator.registry.request('SELECT 1');
         let settled = false;
         build.then(() => settled = true, () => settled = true);
         await vi.advanceTimersByTimeAsync(10 * 60_000);
@@ -74,7 +46,7 @@ describe('PreAggregator preagg mode', () => {
 
   it('serves updates from the preagg table with default cache and consolidation', async () => {
     const connector = new MockPreaggConnector();
-    const mc = new Coordinator(connector, { logger: null, preagg: { mode: 'preagg' } });
+    const mc = new Coordinator(connector, { logger: null });
     const { sel, results } = await aggregateClient(mc);
     const source = {};
 
@@ -108,7 +80,7 @@ describe('PreAggregator preagg mode', () => {
     expect(connector.open).toHaveLength(1);
     connector.complete();
     await flush();
-    expect(mc.preaggregator.registry!.lookup(connector.preaggRequests[0].sql)).toBeInstanceOf(TableRefNode);
+    expect(mc.preaggregator.registry.lookup(connector.preaggRequests[0].sql)).toBeInstanceOf(TableRefNode);
   });
 
   it('delivers a committed value when another source activates during a build', async () => {
@@ -235,7 +207,7 @@ describe('PreAggregator preagg mode', () => {
     expect(connector.open).toHaveLength(1);
     connector.complete();
     await sel.pending('value');
-    expect(mc.preaggregator.registry!.lookup(connector.preaggRequests[0].sql)).toBeInstanceOf(TableRefNode);
+    expect(mc.preaggregator.registry.lookup(connector.preaggRequests[0].sql)).toBeInstanceOf(TableRefNode);
 
     sel.update(clausePoint('dim', 'b', { source }));
     await sel.pending('value');

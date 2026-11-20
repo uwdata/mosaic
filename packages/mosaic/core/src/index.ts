@@ -11,8 +11,8 @@ export { wasmConnector } from './connectors/wasm.js';
 
 export { RestConnector } from './connectors/rest.js';
 export { DuckDBWASMConnector } from './connectors/wasm.js';
-export { ConnectorError, ConnectorErrorCode, PreAggregateModeError } from './connectors/errors.js';
-export type { PreAggregateMode, PreAggregateOptions } from './preagg/PreAggregator.js';
+export { ConnectorError, ConnectorErrorCode } from './connectors/errors.js';
+export type { PreAggregateOptions } from './preagg/PreAggregator.js';
 
 export {
   clauseComposite,
