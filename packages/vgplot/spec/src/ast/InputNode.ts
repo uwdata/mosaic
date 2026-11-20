@@ -1,16 +1,16 @@
-import { isArray } from "../util.js";
-import type { InstantiateContext } from "../ast-to-dom.js";
-import type { CodegenContext } from "../ast-to-esm.js";
-import type { InputName } from "../config/inputs.js";
-import { FROM, INPUT } from "../constants.js";
-import type { ParseContext } from "../parse-spec.js";
-import type { Menu, Search, Slider, Table } from "../spec/Input.js";
-import { ASTNode } from "./ASTNode.js";
-import type { OptionsNode } from "./OptionsNode.js";
-import { parseOptions } from "./OptionsNode.js";
-import { TableRefNode } from "./TableRefNode.js";
-import type { ParamRefNode } from "./ParamRefNode.js";
-import type { LiteralNode } from "./LiteralNode.js";
+import { isArray } from '../util.js';
+import type { InstantiateContext } from '../ast-to-dom.js';
+import type { CodegenContext } from '../ast-to-esm.js';
+import type { InputName } from '../config/inputs.js';
+import { FROM, INPUT } from '../constants.js';
+import type { ParseContext } from '../parse-spec.js';
+import type { Menu, Search, Slider, Table } from '../spec/Input.js';
+import { ASTNode } from './ASTNode.js';
+import type { OptionsNode } from './OptionsNode.js';
+import { parseOptions } from './OptionsNode.js';
+import { TableRefNode } from './TableRefNode.js';
+import type { ParamRefNode } from './ParamRefNode.js';
+import type { LiteralNode } from './LiteralNode.js';
 
 type Input = Menu | Search | Slider | Table;
 
