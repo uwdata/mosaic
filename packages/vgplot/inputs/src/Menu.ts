@@ -1,8 +1,8 @@
-import type * as mc from "@uwdata/mosaic-core";
-import type * as msql from "@uwdata/mosaic-sql";
-import { isParam, isSelection, clausePoint, clauseList } from "@uwdata/mosaic-core";
-import { Query, unnest } from "@uwdata/mosaic-sql";
-import { Input, input } from "./input.js";
+import type * as mc from '@uwdata/mosaic-core';
+import type * as msql from '@uwdata/mosaic-sql';
+import { isParam, isSelection, clausePoint, clauseList } from '@uwdata/mosaic-core';
+import { Query, unnest } from '@uwdata/mosaic-sql';
+import { Input, input } from './input.js';
 
 type Option = { value: any; label?: string };
 
@@ -30,11 +30,11 @@ interface MenuOptions {
   from?: string | msql.TableRefNode;
   column?: string;
   label?: string;
-  listMatch?: "any" | "all";
+  listMatch?: 'any' | 'all';
 }
 
 function isObject(v: unknown): v is Option {
-  return v && typeof v === "object" && !Array.isArray(v);
+  return v && typeof v === 'object' && !Array.isArray(v);
 }
 
 /**
@@ -81,17 +81,17 @@ export class Menu extends Input {
     this.listMatch = listMatch;
     const selection = (this.selection = as);
 
-    const lab = document.createElement("label");
+    const lab = document.createElement('label');
     lab.innerText = label || column;
     this.element.appendChild(lab);
 
-    this.select = document.createElement("select");
+    this.select = document.createElement('select');
     this.element.appendChild(this.select);
 
     // if provided, populate menu options
     if (options) {
       this.data = options.map((opt) => (isObject(opt) ? opt : { value: opt }));
-      this.selectedValue(value === undefined ? "" : value);
+      this.selectedValue(value === undefined ? '' : value);
       this.update();
     }
 
@@ -107,23 +107,23 @@ export class Menu extends Input {
       }
 
       // publish selected value upon menu change
-      this.select.addEventListener("input", () => {
+      this.select.addEventListener('input', () => {
         this.publish(this.selectedValue() ?? null);
       });
 
       // if bound to a scalar param, respond to value updates
       if (isParam) {
-        this.selection.addEventListener("value", (value) => {
+        this.selection.addEventListener('value', (value) => {
           if (value !== this.select.value) {
             this.selectedValue(value);
           }
         });
       } else {
         // trigger selection activation
-        this.select.addEventListener("pointerenter", (evt) => {
+        this.select.addEventListener('pointerenter', (evt) => {
           if (!evt.buttons) this.activate();
         });
-        this.select.addEventListener("focus", () => this.activate());
+        this.select.addEventListener('focus', () => this.activate());
       }
     }
   }
@@ -155,7 +155,7 @@ export class Menu extends Input {
   publish(value: unknown): void {
     const { selection, field, listMatch } = this;
     if (isSelection(selection)) {
-      if (value === "") value = undefined; // 'All' option
+      if (value === '') value = undefined; // 'All' option
       const clause = listMatch
         ? clauseList(field, value, { source: this, listMatch })
         : clausePoint(field, value, { source: this });
@@ -177,7 +177,7 @@ export class Menu extends Input {
 
   queryResult(data: Option[]): this {
     // column option values, with an inserted 'All' value
-    this.data = [{ value: "", label: "All" }, ...data];
+    this.data = [{ value: '', label: 'All' }, ...data];
     return this;
   }
 
@@ -187,8 +187,8 @@ export class Menu extends Input {
     // generate menu item options
     select.replaceChildren();
     for (const { value, label } of data) {
-      const opt = document.createElement("option");
-      opt.setAttribute("value", value);
+      const opt = document.createElement('option');
+      opt.setAttribute('value', value);
       opt.innerText = label ?? format(value);
       this.select.appendChild(opt);
     }
@@ -196,7 +196,7 @@ export class Menu extends Input {
     // update menu value based on param/selection
     if (selection) {
       const value = isSelection(selection) ? selection.valueFor(this) : selection.value;
-      this.selectedValue(value === undefined ? "" : value);
+      this.selectedValue(value === undefined ? '' : value);
     }
 
     return this;
