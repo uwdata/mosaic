@@ -48,6 +48,9 @@ export class AggregateNode extends ExprNode {
    * @returns A new aggregate node.
    */
   distinct(isDistinct: boolean = true) {
+    if (isDistinct && this.args.length === 0) {
+      throw new Error(`AggregateNode.distinct requires an aggregate argument; ${this.name}() without arguments aggregates over all rows.`);
+    }
     return new AggregateNode(this.name, this.args, isDistinct, this.filter, this.order);
   }
 

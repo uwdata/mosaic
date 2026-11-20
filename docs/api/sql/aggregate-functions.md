@@ -12,6 +12,7 @@ Users should not need to instantiate `AggregateNode` instances directly, but ins
 `AggregateNode.distinct()`
 
 Returns a new AggregateNode instance that applies the aggregation over distinct values only.
+Throws an error if the aggregate has no arguments, as in `count()`, which aggregates over all rows.
 
 ### where
 
