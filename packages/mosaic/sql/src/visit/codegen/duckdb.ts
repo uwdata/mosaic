@@ -59,7 +59,7 @@ import type {
   WithClauseNode
 } from '../../ast/index.js';
 import { isNode } from '../../ast/node.js';
-import { literalToSQL, quoteIdentifier } from '../../util/string.js';
+import { quoteIdentifier } from '../../util/string.js';
 import { SQLCodeGenerator } from './sql.js';
 import { COLUMN_PARAM, COLUMN_REF, COLUMNS, CURRENT_ROW, FOLLOWING, FUNCTION, LAMBDA_VAR, LIST, PIVOT_QUERY, POSITIONAL_REF, PRECEDING, SELECT_QUERY, SET_OPERATION, SLICE, SUBSCRIPT, TABLE_REF, UNBOUNDED, WINDOW_EXTENT_EXPR } from '../../constants.js';
 
@@ -227,9 +227,38 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     return `[${this.mapToString(values).join(', ')}]`;
   }
 
+  literalToSQL(value: unknown): string {
+    switch (typeof value) {
+      case 'number':
+        return Number.isFinite(value) ? `${value}` : 'NULL';
+      case 'string':
+        return `'${value.replaceAll('\'', '\'\'')}'`;
+      case 'boolean':
+        return value ? 'TRUE' : 'FALSE';
+      default:
+        if (value == null) {
+          return 'NULL';
+        } else if (value instanceof Date) {
+          const ts = +value;
+          if (Number.isNaN(ts)) return 'NULL';
+          const y = value.getUTCFullYear();
+          const m = value.getUTCMonth();
+          const d = value.getUTCDate();
+          return ts === Date.UTC(y, m, d)
+            ? `DATE '${y}-${padZero(m+1)}-${padZero(d)}'` // utc date
+            : `epoch_ms(${ts})`; // timestamp
+        } else if (value instanceof RegExp) {
+          return `'${value.source}'`;
+        } else {
+          // otherwise rely on string coercion
+          return `${value}`;
+        }
+    }
+  }
+
   visitLiteral(node: LiteralNode): string {
     const { value } = node;
-    return literalToSQL(value);
+    return this.literalToSQL(value);
   }
 
   visitLogicalOperator(node: LogicalOpNode<ExprNode>): string {
@@ -263,7 +292,7 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   visitParam(node: ParamNode): string {
     const { param } = node;
     // Get the current value from the parameter and format it as a literal
-    return literalToSQL(param.value);
+    return this.literalToSQL(param.value);
   }
 
   private visitQuery(node: Query, body: string[]): string {
@@ -546,6 +575,10 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
       : '';
     return `${quoteIdentifier(name)}${aliases} AS ${mat}(${this.toString(query)})`;
   }
+}
+
+function padZero(value: unknown, len = 2) {
+  return `${value}`.padStart(len, '0');
 }
 
 function isQuery(value: unknown): value is Query {
