@@ -45,9 +45,13 @@ export function lineDensity(
     y: int32(floor(y))
   });
 
+  // select group columns not already provided by the base query
+  const groups = groupby.concat(z);
+  const aliases = new Set(q._select.map(node => node.alias));
+  q.select(groups.filter(name => !aliases.has(name)));
+
   // select line segment end point pairs
   // retain only segments within the grid region
-  const groups = groupby.concat(z);
   const pairs = Query
     .from(q)
     .select(groups, {
