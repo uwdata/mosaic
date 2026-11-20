@@ -1,6 +1,3 @@
-// ast/node.ts imports this module for the default toString visitor. A runtime
-// import of an AST class here can evaluate its `extends` clause before SQLNode
-// is initialized.
 import type {
   SQLNode,
   ExprNode,
