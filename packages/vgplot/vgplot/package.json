@@ -18,6 +18,7 @@
     "types": "./dist/src/index.d.ts",
     "default": "./src/index.js"
   },
+  "sideEffects": false,
   "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",

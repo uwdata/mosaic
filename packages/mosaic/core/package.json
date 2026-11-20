@@ -22,6 +22,7 @@
       "default": "./dist/src/connectors/NodeConnector.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",
