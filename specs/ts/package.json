@@ -1,0 +1,12 @@
+{
+  "name": "mosaic-ts-examples",
+  "version": "0.35.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --build"
+  },
+  "dependencies": {
+    "@uwdata/mosaic-spec": "workspace:^"
+  }
+}
