@@ -550,10 +550,3 @@ export type ChannelName =
   | 'y1'
   | 'y2'
   | 'z';
-
-/**
- * An encoding channel to select values from: a built-in channel, `color`
- * (which matches the `fill` or `stroke` channel), or a custom channel that
- * a mark defines with its *channels* option.
- */
-export type SelectChannelName = ChannelName | 'color' | (string & {});

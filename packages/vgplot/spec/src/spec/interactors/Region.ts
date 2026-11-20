@@ -1,5 +1,5 @@
 import { ParamRef } from '../Param.js';
-import { SelectChannelName } from '../PlotTypes.js';
+import { ChannelName } from '../PlotTypes.js';
 import { BrushStyles } from './BrushStyles.js';
 
 /** Options for region interactors. */
@@ -15,7 +15,7 @@ export interface RegionOptions {
    * For a selected mark, selection clauses will cover
    * the backing data fields for each channel.
    */
-  channels: SelectChannelName[];
+  channels: (ChannelName | (string & {}))[];
   /**
    * A flag indicating if peer (sibling) marks are excluded when
    * cross-filtering (default `true`). If set, peer marks will not be
