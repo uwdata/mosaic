@@ -104,7 +104,7 @@ export class Table extends Input {
     rowBatch = 100,
     as,
   }: TableOptions = {}) {
-    super(filterBy, element);
+    super(filterBy, element, null);
 
     this.id = `table-${++_id}`;
     this.element.setAttribute('id', this.id);
