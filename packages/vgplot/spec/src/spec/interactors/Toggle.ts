@@ -1,5 +1,5 @@
 import { ParamRef } from '../Param.js';
-import type { ChannelName } from '../PlotTypes.js';
+import { SelectChannelName } from '../PlotTypes.js';
 
 /** Options for toggle interactors. */
 export interface ToggleOptions {
@@ -26,7 +26,7 @@ export interface Toggle extends ToggleOptions {
    * For a selected mark, selection clauses will cover
    * the backing data fields for each channel.
    */
-  channels: ChannelName[];
+  channels: SelectChannelName[];
 }
 
 /** A toggleX interactor. */

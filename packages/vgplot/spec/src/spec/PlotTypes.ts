@@ -518,28 +518,42 @@ export type CurveName =
   | 'step-after'
   | 'step-before';
 
-/** The set of known channel names. */
+/** The built-in encoding channel names. */
 export type ChannelName =
-  | ScaleName
   | 'ariaLabel'
   | 'fill'
   | 'fillOpacity'
   | 'fontSize'
+  | 'fx'
+  | 'fy'
   | 'geometry'
   | 'height'
   | 'href'
+  | 'length'
+  | 'opacity'
   | 'path'
+  | 'r'
   | 'rotate'
   | 'src'
   | 'stroke'
   | 'strokeOpacity'
   | 'strokeWidth'
+  | 'symbol'
   | 'text'
   | 'title'
   | 'weight'
   | 'width'
+  | 'x'
   | 'x1'
   | 'x2'
+  | 'y'
   | 'y1'
   | 'y2'
   | 'z';
+
+/**
+ * An encoding channel to select values from: a built-in channel, `color`
+ * (which matches the `fill` or `stroke` channel), or a custom channel that
+ * a mark defines with its *channels* option.
+ */
+export type SelectChannelName = ChannelName | 'color' | (string & {});
