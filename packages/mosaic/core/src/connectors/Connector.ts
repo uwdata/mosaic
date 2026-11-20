@@ -54,15 +54,18 @@ export interface Connector {
 /**
  * Serve a `preagg` request with the connector's own `exec`, for connectors
  * that run DuckDB in-process and have no server to delegate to. The table
- * is temporary and released when the connection closes.
+ * is written to the `mosaic` schema, so a persistent database keeps it
+ * across sessions.
  */
 export async function materializeWithExec(
   connector: Connector,
   sql: string,
   options?: ConnectorQueryOptions
 ): Promise<PreaggResponse> {
-  const table = `preagg_${fnv_hash(sql).toString(16)}`;
-  const ref = new TableRefNode(['temp', 'main', table]);
-  await connector.query({ type: 'exec', sql: `CREATE TEMP TABLE IF NOT EXISTS ${ref} AS ${sql}` }, options);
+  const ref = new TableRefNode(['mosaic', `preagg_${fnv_hash(sql).toString(16)}`]);
+  await connector.query({
+    type: 'exec',
+    sql: `CREATE SCHEMA IF NOT EXISTS mosaic; CREATE TABLE IF NOT EXISTS ${ref} AS ${sql}`
+  }, options);
   return { reference: ref.table, createdAt: new Date().toISOString() };
 }

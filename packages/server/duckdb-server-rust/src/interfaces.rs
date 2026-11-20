@@ -1,7 +1,7 @@
 use axum::{
     body::Bytes,
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Json, Response},
 };
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +16,7 @@ pub struct AppState {
 pub enum Command {
     Arrow,
     Exec,
+    Preagg,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -26,8 +27,16 @@ pub struct QueryParams {
     pub name: Option<String>,
 }
 
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct PreaggResponse {
+    pub reference: Vec<String>,
+    pub created_at: String,
+}
+
 pub enum QueryResponse {
     Arrow(Vec<u8>),
+    Preagg(PreaggResponse),
     Empty,
 }
 
@@ -40,6 +49,7 @@ impl IntoResponse for QueryResponse {
                 Bytes::from(bytes),
             )
                 .into_response(),
+            QueryResponse::Preagg(response) => Json(response).into_response(),
             QueryResponse::Empty => StatusCode::OK.into_response(),
         }
     }

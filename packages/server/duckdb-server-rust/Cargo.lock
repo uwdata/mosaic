@@ -949,6 +949,7 @@ dependencies = [
  "async-trait",
  "axum",
  "axum-server-dual-protocol",
+ "chrono",
  "clap",
  "criterion",
  "duckdb",

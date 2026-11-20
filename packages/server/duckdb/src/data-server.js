@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import http from 'node:http';
 import http2 from 'node:http2';
@@ -94,6 +95,9 @@ export function queryHandler(db) {
           // Apache Arrow response format
           res.arrow(await db.arrowBuffer(sql));
           break;
+        case 'preagg':
+          res.json(await preagg(db, sql));
+          break;
         default:
           res.error(`Unrecognized command: ${type}`, 400);
       }
@@ -105,12 +109,23 @@ export function queryHandler(db) {
   };
 }
 
+async function preagg(db, sql) {
+  const table = `preagg_${createHash('sha256').update(sql).digest('hex').slice(0, 16)}`;
+  await db.exec(`CREATE SCHEMA IF NOT EXISTS mosaic; CREATE TABLE IF NOT EXISTS mosaic."${table}" AS ${sql}`);
+  const [{ catalog }] = await db.query('SELECT current_database() AS catalog');
+  return { reference: [catalog, 'mosaic', table], createdAt: new Date().toISOString() };
+}
+
 function httpResponse(res) {
   return {
     arrow(data) {
       res.setHeader('Content-Type', 'application/vnd.apache.arrow.stream');
       for (const chunk of data) res.write(chunk);
       res.end();
+    },
+    json(data) {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(data));
     },
     done() {
       res.writeHead(200);

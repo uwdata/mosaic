@@ -93,8 +93,7 @@ export function preaggCoordinator(connector: Connector) {
   return new Coordinator(connector, {
     logger: null,
     cache: false,
-    consolidate: false,
-    preagg: { mode: 'preagg' }
+    consolidate: false
   });
 }
 

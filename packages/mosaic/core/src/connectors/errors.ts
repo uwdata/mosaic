@@ -35,14 +35,6 @@ export class ConnectorError extends Error {
   }
 }
 
-/** Client-side configuration error, distinct from a server `unsupported_command`. */
-export class PreAggregateModeError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'PreAggregateModeError';
-  }
-}
-
 /**
  * Raised when the client abandons a request it issued, such as a pending
  * materialization dropped by `PreAggregator.reset()`.
