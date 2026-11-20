@@ -14,7 +14,7 @@ The supported options are:
 - _as_: A `Param` or `Selection` that this menu should update. For a `Param`, the selected menu value is set to be the new param value. For a `Selection`, a predicate of the form `column = value` will be added to the selection.
 - _field_: The database column name to use within generated selection clause predicates. Defaults to the *column* option.
 - _filterBy_: An optional selection by which to filter the content of the menu, if drawn from a backing table.
-- _from_: The name of a backing database table to use as a data source of menu options. Used in conjunction with the *column* option.
+- _from_: The backing database table to use as a data source of menu options, as a table name or a table reference created with `tableRef()`. Used in conjunction with the *column* option.
 - _column_: The name of a backing database column from which to pull menu options. The unique column values are used as menu options. Used in conjunction with the *from* option.
 - _label_: A text label for the menu input. If unspecified, the *column* name (if provided) will be used by default.
 - _format_: A format function that takes an option value as input and generates a string label. The format function is not applied when an explicit label is provided in an option object.

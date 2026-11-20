@@ -119,7 +119,7 @@ view
 | Intersect / union selection | `vg.selection.intersect()`, `vg.selection.union()` |
 | Scalar param | `vg.param(value)` |
 | Input widgets | `vg.slider(...)`, `vg.menu(...)`, `vg.select(...)`, `vg.checkbox(...)` |
-| Named data reference | `vg.source("table_name")` |
+| Named data reference | `vg.source("table_name")`, or `vg.source(["schema", "table"])` for a schema-qualified table |
 | Render | `view.show()` or `view` as last cell expression in notebooks |
 
 Option names match the [vgplot API reference](https://uwdata.github.io/mosaic/api/), but in snake_case. For example, `xDomain` → `x_domain`, `colorScheme` → `color_scheme`, `filterBy` → `filter_by`.

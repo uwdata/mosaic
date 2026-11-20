@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr, ScaleOptions } from '@uwdata/mosaic-sql';
-import { Query, add, argmax, argmin, avg, columns, corr, count, covarPop, covariance, cpcEstimate, cpcSketch, cte, desc, eq, filterPushdown, geomean, gt, hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch, literal, loadObjects, max, median, min, mul, neq, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, asTableRef, avg, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, columns, cpcEstimate, cpcSketch, hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch, median, quantile, variance } from '@uwdata/mosaic-sql';
 import { clauseComposite, clauseInterval, clauseIntervals, clausePoint, type CompositeMetadata, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo, PreAggregateOptions } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
@@ -367,6 +367,15 @@ describe('PreAggregator', () => {
       .groupby('cat', 'cat');
     const cols = preaggColumns(new TestClient(query));
     expect(cols?.groupby).toStrictEqual(['cat']);
+  });
+
+  it('contains schema-qualified source table', () => {
+    const query = Query.from(asTableRef(['schema_name', 'table_name'])!)
+      .select({ measure: variance('x') })
+      .groupby('cat');
+    const cols = preaggColumns(new TestClient(query));
+    const exprs = Object.values(cols!.preagg).map(e => `${e}`).join('\n');
+    expect(exprs).toContain('FROM "schema_name"."table_name"');
   });
 
   it('supports grouping column pushdown', async () => {

@@ -3,6 +3,7 @@ import { ASTNode } from './ASTNode.js';
 import { FROM } from '../constants.js';
 import { LiteralNode } from './LiteralNode.js';
 import { parseOptions } from './OptionsNode.js';
+import { TableRefNode } from './TableRefNode.js';
 
 export function parseMarkData(spec, ctx) {
   if (!spec) {
@@ -16,7 +17,8 @@ export function parseMarkData(spec, ctx) {
   }
 
   const { from: table, ...options } = spec;
-  return new PlotFromNode(ctx.maybeParam(table), parseOptions(options, ctx));
+  const ref = isArray(table) ? new TableRefNode(table) : ctx.maybeParam(table);
+  return new PlotFromNode(ref, parseOptions(options, ctx));
 }
 
 export class PlotFromNode extends ASTNode {

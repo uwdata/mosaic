@@ -170,6 +170,9 @@ The remaining top-level keys in the plot object should be attribute names.
 Mark entries include a `mark` key whose value should be the mark type, a `data` key indicating the input data, and the remaining keys should be mark options such as encoding channels.
 Interactors are defined similarly, but using the `select` key.
 
+To use a table in another schema, give `from` as an array of identifiers, as in `"data": { "from": ["schema", "table"] }`.
+Inputs accept the same form for their `from` option.
+
 SQL expressions can be defined as objects with a single `sql` key.
 Param references (as in `"1 + $param"`) will be parsed and resolved.
 By default, param references evaluate to SQL literal values.

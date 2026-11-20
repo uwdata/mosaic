@@ -13,6 +13,7 @@ export {
   Query,
   sql,
   column,
+  tableRef,
   literal,
   cast,
   float32,

@@ -1,9 +1,9 @@
 /**
- * @import { Selection } from '@uwdata/mosaic-core'
- * @import { FilterExpr } from '@uwdata/mosaic-sql'
+ * @import { Param, Selection } from '@uwdata/mosaic-core'
+ * @import { FilterExpr, TableRefNode } from '@uwdata/mosaic-sql'
  */
 import { clausePoints, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
-import { Query, desc } from '@uwdata/mosaic-sql';
+import { Query, asTableRef, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { Input, input } from './input.js';
 
@@ -25,7 +25,7 @@ let _id = -1;
  *  object that maps column names to format functions to use for that
  *  column's data. Each format function takes a value as input and generates
  *  formatted text or an HTML element to show in the table.
- * @param {string} [options.from] The name of a database table to use as a data
+ * @param {string | TableRefNode | Param<string | string[]>} [options.from] The backing table name or `tableRef()` node to use as a data
  *  source for this widget. Used in conjunction with the *columns* option.
  * @param {string[]} [options.columns] The name of database columns to include
  *  in the table component. If unspecified, all columns are included.
@@ -63,7 +63,7 @@ export class Table extends Input {
    *  object that maps column names to format functions to use for that
    *  column's data. Each format function takes a value as input and generates
    *  formatted text or an HTML element to show in the table.
-   * @param {string} [options.from] The name of a database table to use as a data
+   * @param {string | TableRefNode | Param<string | string[]>} [options.from] The backing table name or `tableRef()` node to use as a data
    *  source for this widget. Used in conjunction with the *columns* option.
    * @param {string[]} [options.columns] The name of database columns to include
    *  in the table component. If unspecified, all columns are included.
@@ -166,7 +166,7 @@ export class Table extends Input {
   }
 
   sourceTable() {
-    return isParam(this.from) ? this.from.value : this.from;
+    return asTableRef(isParam(this.from) ? this.from.value : this.from);
   }
 
   clause(rows) {

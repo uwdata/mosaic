@@ -13,7 +13,7 @@ The supported options are:
 
 - _as_: The output selection. A selection clause is added for the currently selected table row.
 - _filterBy_: An optional selection by which to filter the contents of the table view.
-- _from_: The name of the backing database table or view.
+- _from_: The backing database table or view, as a name or a table reference created with `tableRef()`.
 - _columns_: An ordered array of columns to include. If unspecified, all columns will be included.
 - _align_: An object providing optional column -> alignment mappings. The supported alignment values are `"left"`, `"center"`, and `"right"`. If a column's alignment is not specified, a default alignment is chosen based on the data type.
 - _format_: An object providing optional column -> format function mappings. If provided, a format function will be invoked with the column value to produce a string to display. If a column's formatting is not provided, a default format is chosen based on the data type.
