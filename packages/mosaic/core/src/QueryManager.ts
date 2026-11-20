@@ -8,6 +8,7 @@ import { decodeIPC, tableByteLength } from './util/decode-ipc.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
+import { getDefaultVisitor, isNode, type SQLCodeGenerator } from '@uwdata/mosaic-sql';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -26,6 +27,7 @@ export class QueryManager {
   private _logQueries: boolean;
   private _ipc?: ExtractionOptions;
   private _consolidate: ReturnType<typeof consolidator> | null;
+  private _codegen: SQLCodeGenerator;
   private _consolidating: boolean;
   private inflight: Map<string, Flight>;
   private flights: Set<Flight>;
@@ -45,6 +47,7 @@ export class QueryManager {
     this._consolidate = null;
     this._consolidating = false;
     this.inflight = new Map();
+    this._codegen = getDefaultVisitor();
     this.flights = new Set();
     this._timeout = 0;
     this._generation = 0;
@@ -100,7 +103,10 @@ export class QueryManager {
     let sent: Promise<unknown> | undefined;
     try {
       const { query, type, cache = false, options } = request;
-      const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : String(query);
+      const items = (Array.isArray(query) ? query : [query]).filter(x => x);
+      const sql = items.length
+        ? items.map(q => isNode(q) ? q.toString(this._codegen) : String(q)).join(';\n')
+        : String(query);
       const generation = this._generation;
 
       if (cache) {
@@ -221,6 +227,17 @@ export class QueryManager {
   connector(connector: Connector): Connector;
   connector(connector?: Connector): Connector | null {
     return connector ? (this.db = connector) : this.db;
+  }
+
+  /**
+   * Get or set the SQL dialect visitor used to stringify AST nodes.
+   * @param value Codegen to set
+   * @returns Current codegen
+   */
+  codegen(): SQLCodeGenerator;
+  codegen(value: SQLCodeGenerator): SQLCodeGenerator;
+  codegen(value?: SQLCodeGenerator): SQLCodeGenerator {
+    return value ? (this._codegen = value) : this._codegen;
   }
 
   /**

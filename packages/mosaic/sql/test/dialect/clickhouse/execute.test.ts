@@ -1,0 +1,644 @@
+import { beforeAll, describe, expect, it } from 'vitest';
+import {
+  Query,
+  add,
+  all,
+  WindowFunctionNode,
+  WindowNode,
+  argmax,
+  argmin,
+  asof_join,
+  avg,
+  bitAnd,
+  bitLeft,
+  bitNot,
+  bitOr,
+  bitRight,
+  cast,
+  clickHouseCodeGenerator,
+  column,
+  contains,
+  count,
+  createTable,
+  dateBin,
+  dateMonth,
+  desc,
+  div,
+  epoch_ms,
+  eq,
+  first_value,
+  frameRows,
+  geomean,
+  gt,
+  idiv,
+  isFinite,
+  isInfinite,
+  isNaN,
+  join,
+  lag,
+  last_value,
+  lead,
+  list,
+  listContains,
+  listHasAll,
+  listHasAny,
+  literal,
+  log,
+  m4,
+  mad,
+  max,
+  min,
+  mode,
+  mul,
+  nth_value,
+  pow,
+  prefix,
+  product,
+  quantile,
+  regrAvgX,
+  regrAvgY,
+  regrCount,
+  regrIntercept,
+  regrR2,
+  regrSlope,
+  regrSXX,
+  regrSXY,
+  regrSYY,
+  regexp_matches,
+  sql,
+  star,
+  sum,
+  suffix,
+  tryCast,
+  unnest,
+} from '../../../src/index.js';
+import {
+  clickHouseLocalVersion,
+  executeClickHouseLocal,
+  queryClickHouseLocal
+} from '../../util/clickhouse-local.js';
+
+const enabled = process.env.CLICKHOUSE_LOCAL === '1';
+const gen = clickHouseCodeGenerator;
+const query = (value: { toString(generator: typeof gen): string }) =>
+  queryClickHouseLocal(value.toString(gen));
+
+describe.skipIf(!enabled)('ClickHouse execution', { timeout: 15_000 }, () => {
+  beforeAll(async () => {
+    const version = await clickHouseLocalVersion();
+    console.info(`Testing with ClickHouse Local ${version}`);
+    expect(version).toMatch(/^\d+\.\d+\.\d+/);
+  }, 15_000);
+
+  it('executes numeric and bitwise expressions', async () => {
+    const result = await query(Query.select({
+      power: pow(2, 3),
+      quotient: idiv(7, 2),
+      masked: bitAnd(6, 3)
+    }));
+    expect(result).toEqual([{ power: 8, quotient: 3, masked: 2 }]);
+  });
+
+  it('executes bitwise shifts, complement, and casts', async () => {
+    const result = await query(Query.select({
+      complemented: bitNot(bitNot(5)),
+      combined: bitOr(4, 1),
+      shiftedLeft: bitLeft(3, 2),
+      shiftedRight: bitRight(12, 2),
+      castValue: cast(literal('42'), 'Int32')
+    }));
+    expect(result).toEqual([{
+      complemented: 5,
+      combined: 5,
+      shiftedLeft: 12,
+      shiftedRight: 3,
+      castValue: 42
+    }]);
+  });
+
+  it('round-trips string literals with backslashes', async () => {
+    const result = await query(Query.select({
+      trailing: literal('a\\'),
+      escape: literal('it\'s \\n'),
+      regexp: regexp_matches(literal('a\\b'), literal(/\\/))
+    }));
+    expect(result).toEqual([{ trailing: 'a\\', escape: 'it\'s \\n', regexp: 1 }]);
+  });
+
+  it('executes string and list predicates', async () => {
+    const result = await query(Query.select({
+      contains: contains(literal('alphabet'), 'pha'),
+      regexp: regexp_matches(literal('alphabet'), '^alpha'),
+      list: listContains([1, 2, 3], 2)
+    }));
+    expect(result).toEqual([{ contains: 1, regexp: 1, list: 1 }]);
+  });
+
+  it('executes string, list, and numeric functions', async () => {
+    const nan = cast(literal('nan'), 'Float64');
+    const inf = cast(literal('inf'), 'Float64');
+    const result = await query(Query.select({
+      prefix: prefix(literal('alphabet'), 'alpha'),
+      suffix: suffix(literal('alphabet'), 'bet'),
+      any: listHasAny(list([1, 2, 3]), list([3, 4])),
+      all: listHasAll(list([1, 2, 3]), list([1, 3])),
+      nan: isNaN(nan),
+      infinite: isInfinite(inf),
+      finite: isFinite(literal(1.5)),
+      logarithm: log(100)
+    }));
+    expect(result).toEqual([{
+      prefix: 1,
+      suffix: 1,
+      any: 1,
+      all: 1,
+      nan: 1,
+      infinite: 1,
+      finite: 1,
+      logarithm: 2
+    }]);
+  });
+
+  it('unnests lists', async () => {
+    const result = await query(Query.select({
+      value: unnest(list([1, 2, 3]))
+    }));
+    expect(result).toEqual([{ value: 1 }, { value: 2 }, { value: 3 }]);
+  });
+
+  it('zips multiple unnests, padding shorter lists with null', async () => {
+    const result = await query(Query
+      .select({ xs: unnest('xs'), ys: unnest('ys') })
+      .from(sql`(SELECT [1, 2] AS xs, [10, 20, 30] AS ys)`));
+    expect(result).toEqual([
+      { xs: 1, ys: 10 }, { xs: 2, ys: 20 }, { xs: null, ys: 30 }
+    ]);
+  });
+
+  it('zips unnests of nested lists', async () => {
+    const result = await query(Query.select({
+      a: unnest(list([list([1]), list([2])])),
+      b: unnest(list([3, 4]))
+    }));
+    expect(result).toEqual([{ a: [1], b: 3 }, { a: [2], b: 4 }]);
+  });
+
+  it('executes filtered and distinct aggregates', async () => {
+    const source = sql`values('x Int32, keep Bool', (1, true), (2, false), (3, true))`;
+    const result = await query(Query
+      .select({
+        total: sum('x').where('keep'),
+        distinct: count('x').distinct()
+      })
+      .from(source));
+    expect(result).toEqual([{ total: 4, distinct: 3 }]);
+  });
+
+  it('executes rewritten and combined aggregates', async () => {
+    const source = sql`
+      values(
+        'x Int32, score Int32, keep Bool',
+        (2, 10, true),
+        (2, 20, true),
+        (3, 30, true),
+        (4, 40, false)
+      )
+    `;
+    const result = await query(Query
+      .select({
+        argmax: argmax('x', 'score').where('keep'),
+        argmin: argmin('x', 'score').where('keep'),
+        mode: mode('x').where('keep'),
+        product: product('x').where('keep'),
+        distinctProduct: product('x').distinct().where('keep'),
+        mad: mad('x').where('keep'),
+        distinctCount: count('x').distinct().where('keep')
+      })
+      .from(source));
+    expect(result).toEqual([{
+      argmax: 3,
+      argmin: 2,
+      mode: 2,
+      product: 12,
+      distinctProduct: 6,
+      mad: 0,
+      distinctCount: 2
+    }]);
+  });
+
+  it('returns null from empty aggregates, except counts', async () => {
+    const source = sql`values('x Int32, k Int32', (1, 1), (2, 2))`;
+    const keep = gt('x', 1);
+    const result = await query(Query
+      .select('k', {
+        sum: sum('x').where(keep),
+        min: min('x').where(keep),
+        avg: avg('x').where(keep),
+        argmax: argmax('x', 'k').where(keep),
+        median: quantile('x', 0.5).where(keep),
+        count: count('x').where(keep)
+      })
+      .from(source)
+      .groupby('k')
+      .orderby('k'));
+    expect(result).toEqual([
+      { k: 1, sum: null, min: null, avg: null, argmax: null, median: null, count: 0 },
+      { k: 2, sum: 2, min: 2, avg: 2, argmax: 2, median: 2, count: 1 }
+    ]);
+  });
+
+  it('executes geometric means', async () => {
+    const source = sql`values('x Float64', 1, 4)`;
+    const [{ value }] = await query(Query
+      .select({ value: geomean('x') })
+      .from(source));
+    expect(value).toBeCloseTo(2);
+  });
+
+  it('executes filtered regressions with null-pair exclusion', async () => {
+    const source = sql`
+      values(
+        'x Nullable(Float64), y Nullable(Float64), keep Bool',
+        (1, 3, true),
+        (2, 5, true),
+        (3, 7, true),
+        (NULL, 9, true),
+        (4, NULL, true),
+        (4, 100, false)
+      )
+    `;
+    const result = await query(Query
+      .select({
+        count: regrCount('y', 'x').where('keep'),
+        avgx: regrAvgX('y', 'x').where('keep'),
+        avgy: regrAvgY('y', 'x').where('keep'),
+        sxx: regrSXX('y', 'x').where('keep'),
+        syy: regrSYY('y', 'x').where('keep'),
+        sxy: regrSXY('y', 'x').where('keep'),
+        slope: regrSlope('y', 'x').where('keep'),
+        intercept: regrIntercept('y', 'x').where('keep'),
+        r2: regrR2('y', 'x').where('keep')
+      })
+      .from(source));
+    expect(result).toEqual([{
+      count: 3,
+      avgx: 2,
+      avgy: 5,
+      sxx: 2,
+      syy: 8,
+      sxy: 4,
+      slope: 2,
+      intercept: 1,
+      r2: 1
+    }]);
+  });
+
+  it('executes parameterized quantiles', async () => {
+    const source = sql`values('x Int32', 1, 2, 3, 4)`;
+    const result = await query(Query
+      .select({ median: quantile('x', 0.5) })
+      .from(source));
+    expect(result).toEqual([{ median: 2 }]);
+  });
+
+  it('preserves null window defaults', async () => {
+    const source = sql`values('x Int32', 1, 2, 3)`;
+    const result = await query(Query
+      .select('x', {
+        previous: lag('x').orderby('x'),
+        next: lead('x').orderby('x'),
+        fourth: nth_value('x', 4)
+          .orderby('x')
+          .frame(frameRows([null, null]))
+      })
+      .from(source)
+      .orderby('x'));
+    expect(result).toEqual([
+      { x: 1, previous: null, next: 2, fourth: null },
+      { x: 2, previous: 1, next: 3, fourth: null },
+      { x: 3, previous: 2, next: null, fourth: null }
+    ]);
+  });
+
+  it('preserves explicit lag and lead defaults', async () => {
+    const source = sql`values('x Int32', 1, 2, 3)`;
+    const result = await query(Query
+      .select('x', {
+        previous: lag('x', 1, literal(-1)).orderby('x'),
+        next: lead('x', 1, literal(99)).orderby('x')
+      })
+      .from(source)
+      .orderby('x'));
+    expect(result).toEqual([
+      { x: 1, previous: -1, next: 2 },
+      { x: 2, previous: 1, next: 3 },
+      { x: 3, previous: 2, next: 99 }
+    ]);
+  });
+
+  it('executes ignore-nulls window functions', async () => {
+    const source = sql`
+      values(
+        'i Int32, x Nullable(Int32)',
+        (1, NULL),
+        (2, 2),
+        (3, NULL)
+      )
+    `;
+    const first = new WindowNode(new WindowFunctionNode(
+      'first_value',
+      [column('x')],
+      true
+    ))
+      .orderby('i')
+      .frame(frameRows([null, null]));
+    const result = await query(Query
+      .select('i', { first })
+      .from(source)
+      .orderby('i'));
+    expect(result).toEqual([
+      { i: 1, first: 2 },
+      { i: 2, first: 2 },
+      { i: 3, first: 2 }
+    ]);
+  });
+
+  it('respects nulls in first_value and last_value', async () => {
+    const source = sql`values('i Int32, x Nullable(Int32)', (1, NULL), (2, 2), (3, NULL))`;
+    const frame = frameRows([0, 1]);
+    const result = await query(Query
+      .select('i', {
+        first: first_value('x').orderby('i').frame(frame),
+        last: last_value('x').orderby('i').frame(frame)
+      })
+      .from(source)
+      .orderby('i'));
+    expect(result).toEqual([
+      { i: 1, first: null, last: 2 },
+      { i: 2, first: 2, last: null },
+      { i: 3, first: null, last: null }
+    ]);
+  });
+
+  it('executes set operations', async () => {
+    const result = await query(Query
+      .union(
+        Query.select({ value: literal(1) }),
+        Query.select({ value: literal(1) }),
+        Query.select({ value: literal(2) })
+      )
+      .orderby('value'));
+    expect(result).toEqual([{ value: 1 }, { value: 2 }]);
+  });
+
+  it.each(['union', 'unionAll'] as const)('orders the entire %s result', async method => {
+    const combined = Query[method](
+      Query.select('x').from(sql`values('x Int32', 5, 1, 3)`),
+      Query.select('x').from(sql`values('x Int32', 6, 2, 4, 3)`)
+    );
+    const ascending = method === 'union' ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 3, 4, 5, 6];
+    expect(await query(combined.clone().orderby('x')))
+      .toEqual(ascending.map(x => ({ x })));
+    expect(await query(combined.clone().orderby(desc('x'))))
+      .toEqual(ascending.slice().reverse().map(x => ({ x })));
+  });
+
+  it('applies pagination to the combined result', async () => {
+    const combined = Query.unionAll(
+      Query.select('x').from(sql`values('x Int32', 5, 1, 3)`),
+      Query.select('x').from(sql`values('x Int32', 6, 2, 4)`)
+    );
+    expect(await query(combined.clone().orderby('x').limit(3).offset(1)))
+      .toEqual([{ x: 2 }, { x: 3 }, { x: 4 }]);
+    expect(await query(combined.clone().limit(0))).toEqual([]);
+    expect(await query(combined.clone().limit(2))).toHaveLength(2);
+    expect(await query(combined.clone().offset(6))).toEqual([]);
+    expect(await query(combined.clone().offset(0))).toHaveLength(6);
+  });
+
+  it('keeps branch-local ordering and pagination separate', async () => {
+    const combined = Query.unionAll(
+      Query.select('x').from(sql`values('x Int32', 5, 1, 3)`)
+        .orderby(desc('x')).limit(1).offset(1),
+      Query.select('x').from(sql`values('x Int32', 6, 2, 4)`)
+        .orderby('x').limit(2)
+    ).orderby('x');
+    expect(await query(combined)).toEqual([{ x: 2 }, { x: 3 }, { x: 4 }]);
+  });
+
+  it('preserves shared and branch-local CTE scopes', async () => {
+    const combined = Query.with({ t: Query.select({ x: literal(1) }) }).unionAll(
+      Query.select('x').from('t'),
+      Query.with({ t: Query.select({ x: literal(2) }) }).select('x').from('t'),
+      Query.select('x').from('t')
+    );
+    const unordered = await query(combined);
+    expect(unordered).toHaveLength(3);
+    expect(unordered.filter(row => row.x === 1)).toHaveLength(2);
+    expect(unordered.filter(row => row.x === 2)).toHaveLength(1);
+    expect(await query(combined.clone().orderby('x')))
+      .toEqual([{ x: 1 }, { x: 1 }, { x: 2 }]);
+  });
+
+  it.each(['except', 'exceptAll'] as const)('preserves nested %s grouping', async method => {
+    const combined = Query[method](
+      Query.select('x').from(sql`values('x Int32', 1, 2, 3)`),
+      Query[method](
+        Query.select('x').from(sql`values('x Int32', 2, 3)`),
+        Query.select('x').from(sql`values('x Int32', 3)`)
+      )
+    ).orderby(desc('x'));
+    expect(await query(combined)).toEqual([{ x: 3 }, { x: 1 }]);
+  });
+
+  it.each(['intersect', 'intersectAll'] as const)('paginates the entire %s result', async method => {
+    const combined = Query[method](
+      Query.select('x').from(sql`values('x Int32', 1, 2, 3, 4)`),
+      Query.select('x').from(sql`values('x Int32', 2, 3, 4, 5)`)
+    ).orderby(desc('x')).limit(1).offset(1);
+    expect(await query(combined)).toEqual([{ x: 3 }]);
+  });
+
+  it('returns M4 representatives in series and time order', async () => {
+    const input = Query.select('x', 'y', 'series').from(sql`
+      values('x Int32, y Int32',
+        (0, 4), (1, 10), (2, 5), (3, -2), (4, 3), (5, 6),
+        (6, 8), (7, -4), (8, 5), (9, 12), (10, 6), (11, 7)
+      ) AS points CROSS JOIN values('series String', 'b', 'a') AS groups
+    `);
+    const result = await query(m4(input, div('x', 6), 'x', 'y', [column('series')]));
+    const points = [[0, 4], [1, 10], [3, -2], [5, 6], [6, 8], [7, -4], [9, 12], [11, 7]];
+    expect(result).toEqual(['a', 'b'].flatMap(series =>
+      points.map(([x, y]) => ({ x, y, series }))
+    ));
+  });
+
+  it('orders zipped unnests after keys covering the group by', async () => {
+    const source = sql`values('g String, x Int32, y Int32', ('a', 1, 5), ('a', 13, 7), ('b', 0, 2), ('b', 12, 9))`;
+    const result = await query(Query
+      .from(source)
+      .select({ x: unnest(list([min('x'), max('x')])), y: unnest(list([min('y'), max('y')])) }, 'g')
+      .groupby('g')
+      .orderby('g', desc('x')));
+    expect(result).toEqual([
+      { x: 13, y: 7, g: 'a' }, { x: 1, y: 5, g: 'a' },
+      { x: 12, y: 9, g: 'b' }, { x: 0, y: 2, g: 'b' }
+    ]);
+  });
+
+  it('preserves ordering and limits through alias collision rewrites', async () => {
+    const source = sql`values('x Int32', 3, 1, 2)`;
+    const result = await query(Query
+      .select({ x: min('x') })
+      .from(source)
+      .groupby('x')
+      .orderby(desc('x'))
+      .limit(2));
+    expect(result).toEqual([{ x: 3 }, { x: 2 }]);
+  });
+
+  it('orders by aliases that shadow grouped source columns', async () => {
+    const source = sql`values('x Int32', 3, 1, 2, 5)`;
+    const q = Query.select({ x: mul(min('x'), -1) }).from(source).groupby('x');
+    expect(await query(q.clone().orderby('x')))
+      .toEqual([{ x: -5 }, { x: -3 }, { x: -2 }, { x: -1 }]);
+    expect(await query(q.clone().orderby(add('x', 0))))
+      .toEqual([{ x: -1 }, { x: -2 }, { x: -3 }, { x: -5 }]);
+  });
+
+  it('executes alias collision rewrites in having clauses', async () => {
+    const source = sql`values('x Int32', 1, 2, 3)`;
+    const result = await query(Query
+      .select({ x: min('x') })
+      .from(source)
+      .groupby('x')
+      .having(gt('x', 1))
+      .orderby('x'));
+    expect(result).toEqual([{ x: 2 }, { x: 3 }]);
+  });
+
+  it('executes regular joins', async () => {
+    const result = await query(Query
+      .with({
+        left_data: Query.select({
+          id: literal(1),
+          leftValue: literal('left')
+        }),
+        right_data: Query.select({
+          id: literal(1),
+          rightValue: literal('right')
+        })
+      })
+      .select('id', 'leftValue', 'rightValue')
+      .from(join('left_data', 'right_data', { using: ['id'] })));
+    expect(result).toEqual([{
+      id: 1,
+      leftValue: 'left',
+      rightValue: 'right'
+    }]);
+  });
+
+  it('executes as-of joins', async () => {
+    const result = await query(Query
+      .with({
+        trades: Query.select({ id: literal(1), ts: literal(15) }),
+        quotes: Query.unionAll(
+          Query.select({
+            id: literal(1),
+            ts: literal(10),
+            price: literal(100)
+          }),
+          Query.select({
+            id: literal(1),
+            ts: literal(20),
+            price: literal(200)
+          })
+        )
+      })
+      .select({
+        id: column('id', 'trades'),
+        ts: column('ts', 'trades'),
+        price: column('price', 'quotes')
+      })
+      .from(asof_join('trades', 'quotes', {
+        type: 'LEFT',
+        using: ['id', 'ts']
+      })));
+    expect(result).toEqual([{ id: 1, ts: 15, price: 100 }]);
+  });
+
+  it('executes temporary table creation', async () => {
+    const create = createTable(
+      'mosaic_clickhouse_test',
+      Query.select({ value: literal(1) }),
+      { temp: true }
+    );
+    await executeClickHouseLocal(create.toString(gen));
+  });
+
+  it('executes datetime rewrites', async () => {
+    const date = new Date('2024-01-02T03:04:05.678Z');
+    const result = await query(Query.select({
+      bucket: dateBin(literal(date), 'hour'),
+      epoch: epoch_ms(literal(date)),
+      month: dateMonth(literal(date))
+    }));
+    expect(result).toEqual([{
+      bucket: '2024-01-02 03:00:00.000',
+      epoch: +date,
+      month: '2012-01-01'
+    }]);
+  });
+
+  it('computes epoch_ms of dates as UTC regardless of session time zone', async () => {
+    const q = Query.select({ epoch: epoch_ms(cast(literal('2024-01-01'), 'DATE')) });
+    const result = await queryClickHouseLocal(
+      `${q.toString(gen)} SETTINGS session_timezone = 'America/New_York'`
+    );
+    expect(result).toEqual([{ epoch: 1704067200000 }]);
+  });
+
+  it('executes star REPLACE and qualified stars', async () => {
+    const result = await query(Query
+      .with({
+        a: Query.select({ k: literal(1), x: literal(10) }),
+        b: Query.select({ j: literal(1), y: literal(2) })
+      })
+      .select(star('a', { replace: { x: mul('x', 'y') } }), star('b'))
+      .from(join('a', 'b', { on: eq('k', 'j') })));
+    expect(result).toEqual([{ k: 1, x: 20, j: 1, y: 2 }]);
+  });
+
+  it('executes GROUP BY ALL and ORDER BY ALL', async () => {
+    const source = sql`values('a Int32, b Int32', (1, 1), (1, 2), (1, 2), (2, 1))`;
+    const result = await query(Query
+      .select('a', 'b', { n: count() })
+      .from(source)
+      .groupby(all())
+      .orderby(desc(all())));
+    expect(result).toEqual([
+      { a: 2, b: 1, n: 1 },
+      { a: 1, b: 2, n: 2 },
+      { a: 1, b: 1, n: 1 }
+    ]);
+  });
+
+  it('executes DISTINCT ON', async () => {
+    const source = sql`values('k Int32, v Int32', (1, 10), (1, 11), (2, 20))`;
+    const result = await query(Query
+      .select('k', 'v')
+      .distinctOn('k')
+      .from(source)
+      .orderby('k', 'v'));
+    expect(result).toEqual([{ k: 1, v: 10 }, { k: 2, v: 20 }]);
+  });
+
+  it('executes TRY_CAST', async () => {
+    const result = await query(Query.select({
+      good: tryCast(literal('12'), 'INTEGER'),
+      bad: tryCast(literal('abc'), 'INTEGER'),
+      enumValue: tryCast(literal('b'), "Enum8('a' = 1, 'b' = 2)")
+    }));
+    expect(result).toEqual([{ good: 12, bad: null, enumValue: 'b' }]);
+  });
+});

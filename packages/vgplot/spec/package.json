@@ -37,7 +37,8 @@
     "test:visual": "playwright test test/visual.test.js",
     "test:visual:update": "pnpm run test:visual -- --update-snapshots",
     "version": "cd ../../.. && pnpm run docs:schema",
-    "prepublishOnly": "pnpm run build"
+    "prepublishOnly": "pnpm run build",
+    "test:clickhouse": "vitest run --config vitest.clickhouse.config.ts"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "workspace:^",

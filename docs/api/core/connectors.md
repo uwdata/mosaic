@@ -58,3 +58,20 @@ The supported options are:
 - _duckdb_: An existing DuckDB-WASM instance to query. If unspecified, a new instance is created.
 - _connection_: An existing connection to a DuckDB-WASM instance to use. If unspecified, a new connection is created.
 - _log_: A Boolean flag (default `false`) that indicates if DuckDB-WASM logs should be written to the browser console. This option is ignored when an existing _duckdb_ instance option is provided.
+
+## ClickHouseConnector
+
+`new ClickHouseConnector(options)`
+
+Create a new connector to a [ClickHouse](https://clickhouse.com/) server's [HTTP interface](https://clickhouse.com/docs/interfaces/http). Use it with the ClickHouse [code generator](../sql/code-generators): `new Coordinator(connector, { codegen: clickHouseCodeGenerator })`.
+
+The supported options are:
+
+- _uri_: The URI of the HTTP interface (default `"http://localhost:8123/"`).
+- _database_: The database to query (default: the server's default database).
+- _user_, _password_: Credentials, sent in the `X-ClickHouse-User` and `X-ClickHouse-Key` headers.
+- _headers_: Additional request headers, or a function that returns them before each request.
+- _settings_: [ClickHouse settings](https://clickhouse.com/docs/operations/settings/settings) to send with every query, such as `{ max_threads: 4 }`.
+- _fetch_: A `fetch` implementation to use instead of the global `fetch`.
+
+ClickHouse accepts one statement per HTTP request, so `exec` arrays are not supported. Queries set `output_format_arrow_compression_method=none`, which users with `readonly=1` cannot change; use `readonly=2` instead. `DateTime` columns arrive as integer seconds; use `DateTime64` for date-time values. Cross-origin requests with credentials or custom headers require configuring CORS preflight responses on the server.

@@ -11,6 +11,7 @@ export { wasmConnector } from './connectors/wasm.js';
 
 export { RestConnector } from './connectors/rest.js';
 export { DuckDBWASMConnector } from './connectors/wasm.js';
+export { ClickHouseConnector } from './connectors/clickhouse.js';
 
 export {
   clauseComposite,

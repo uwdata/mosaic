@@ -1,8 +1,10 @@
-import { decodeIPC, DuckDBWASMConnector, RestConnector } from '@uwdata/mosaic-core';
+import { Coordinator, decodeIPC, DuckDBWASMConnector, RestConnector } from '@uwdata/mosaic-core';
+import { clickHouseCodeGenerator, duckDBCodeGenerator } from '@uwdata/mosaic-sql';
 import { createAPIContext } from '@uwdata/vgplot';
+import { devClickHouseConnector } from './clickhouse/connector.js';
 
 export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
-export const vg = createAPIContext();
+export let vg = createAPIContext();
 
 // make API accessible for console debugging
 Object.assign(self, { vg });
@@ -18,10 +20,13 @@ Object.assign(self, {
   }
 });
 
-export const { coordinator, namedPlots } = vg.context;
+export let { coordinator, namedPlots } = vg.context;
 
-export function clear() {
+export function clear(api = vg) {
+  const { coordinator, namedPlots } = api.context;
+  for (const client of coordinator.clients) client.destroy();
   coordinator.clear();
+  coordinator.preaggregator.clear();
   namedPlots.clear();
 }
 
@@ -36,6 +41,9 @@ export async function setDatabaseConnector(type) {
     case 'rest_https':
       connector = new RestConnector({ uri: 'https://localhost:3000/' });
       break;
+    case 'clickhouse':
+      connector = devClickHouseConnector();
+      break;
     case 'wasm':
       if (!wasm) {
         wasm = new DuckDBWASMConnector();
@@ -47,7 +55,14 @@ export async function setDatabaseConnector(type) {
       throw new Error(`Unrecognized connector type: ${type}`);
   }
   console.log('Database Connector', type);
-  coordinator.databaseConnector(connector);
+  clear();
+  coordinator = new Coordinator(connector, {
+    codegen: type === 'clickhouse' ? clickHouseCodeGenerator : duckDBCodeGenerator,
+    preagg: { enabled: type !== 'clickhouse' }
+  });
+  vg = createAPIContext({ coordinator });
+  namedPlots = vg.context.namedPlots;
+  Object.assign(self, { vg });
 }
 
 async function installDatasketches(connector) {

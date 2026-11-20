@@ -8,8 +8,8 @@ import { type Cache, type Logger, type QueryType } from './types.js';
 import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './clause/index.js';
-import { MaybeArray } from '@uwdata/mosaic-sql';
 import { type ExtractionOptions, Table } from '@uwdata/flechette';
+import { MaybeArray, type SQLCodeGenerator } from '@uwdata/mosaic-sql';
 import { QueryError } from './util/query-error.js';
 
 interface FilterGroupEntry {
@@ -63,6 +63,7 @@ export class Coordinator {
    *  a query is sent to the connector. Disabled by default.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
+   * @param options.codegen SQL dialect visitor for the backend.
    */
   constructor(
     db: Connector = new RestConnector(),
@@ -74,6 +75,7 @@ export class Coordinator {
       timeout?: number;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
+      codegen?: SQLCodeGenerator;
     } = {}
   ) {
     const {
@@ -83,13 +85,15 @@ export class Coordinator {
       ipc,
       timeout,
       consolidate = true,
-      preagg = {}
+      preagg = {},
+      codegen
     } = options;
     this.manager = manager;
     this.manager.cache(cache);
     if (ipc) this.manager.ipc(ipc);
     if (timeout !== undefined) this.manager.timeout(timeout);
     this.manager.consolidate(consolidate);
+    if (codegen) this.manager.codegen(codegen);
     this.databaseConnector(db);
     this.logger(logger);
     this.clear();
