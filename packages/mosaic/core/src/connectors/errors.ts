@@ -45,20 +45,13 @@ export class PreAggregateModeError extends Error {
 
 /**
  * Raised when the client abandons a request it issued, such as a pending
- * materialization dropped by `PreAggregator.reset()`. Shares its `name` with
- * the `DOMException` a cancelled `fetch` rejects with, so `isAbortError`
- * recognizes both.
+ * materialization dropped by `PreAggregator.reset()`.
  */
 export class AbortError extends Error {
   constructor(message = 'The operation was aborted', options?: ErrorOptions) {
     super(message, options);
     this.name = 'AbortError';
   }
-}
-
-/** Matches by `name`, since the `DOMException` a cancelled `fetch` rejects with is not an `AbortError` instance. */
-export function isAbortError(value: unknown): boolean {
-  return value instanceof Error && value.name === 'AbortError';
 }
 
 /**
@@ -80,7 +73,7 @@ export function parseErrorResponse(value: unknown, status?: number): ConnectorEr
 
 function isReference(value: unknown): value is string[] {
   return Array.isArray(value) && value.length > 0
-    && value.every(part => typeof part === 'string' && part);
+    && Array.from(value).every(part => typeof part === 'string' && part);
 }
 
 export function parsePreaggResponse(value: unknown): PreaggResponse {

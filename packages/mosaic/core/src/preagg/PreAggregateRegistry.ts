@@ -3,7 +3,6 @@ import { QueryResult } from '../util/query-result.js';
 import {
   AbortError,
   ConnectorError,
-  isAbortError,
   parsePreaggResponse
 } from '../connectors/errors.js';
 import type { QueryManager } from '../QueryManager.js';
@@ -98,10 +97,6 @@ export class PreAggregateRegistry {
     } catch (err) {
       if (this.entries.get(sql) !== build) return;
       this.entries.delete(sql);
-      if (isAbortError(err)) {
-        build.result.reject(err);
-        return;
-      }
       const error = err instanceof ConnectorError ? err
         : new ConnectorError(err instanceof Error ? err.message : String(err), { cause: err });
       this.failures.set(sql, { error, retryAt: Date.now() + cooldownMs });

@@ -52,6 +52,7 @@ describe('PreAggregateRegistry', () => {
     ['non-string part', { ...good, reference: ['memory', 's', 7] }],
     ['string reference', { ...good, reference: 'memory.s.t' }],
     ['empty reference', { ...good, reference: [] }],
+    ['sparse reference', { ...good, reference: new Array(1) }],
     ['invalid createdAt', { ...good, createdAt: 'yesterday' }],
     ['missing createdAt', { reference: good.reference }]
   ])('rejects a malformed success response without registering a table: %s', async (_, value) => {
@@ -136,6 +137,15 @@ describe('PreAggregateRegistry', () => {
     await vi.advanceTimersByTimeAsync(0);
     await expect(registry.request(SQL_A)).rejects
       .toThrow('Preaggregation throttled after a recent failure: out of memory');
+  });
+
+  it('starts the cooldown when the connector aborts a build', async () => {
+    const { registry, connector } = setup();
+    const promise = registry.request(SQL_A);
+    connector.fail(new DOMException('The operation was aborted', 'AbortError'));
+    await expect(promise).rejects.toBeInstanceOf(ConnectorError);
+    await expect(registry.request(SQL_A)).rejects.toThrow('Preaggregation throttled');
+    expect(connector.preaggRequests).toHaveLength(1);
   });
 
   it('reset retires entries, clears cooldowns, and fences late responses', async () => {
