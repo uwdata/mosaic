@@ -1,16 +1,16 @@
-import type { Selection, FieldInfo } from "@uwdata/mosaic-core";
-import type * as mc from "@uwdata/mosaic-core";
-import type * as msql from "@uwdata/mosaic-sql";
+import type { Selection, FieldInfo } from '@uwdata/mosaic-core';
+import type * as mc from '@uwdata/mosaic-core';
+import type * as msql from '@uwdata/mosaic-sql';
 import {
   clausePoints,
   isParam,
   isSelection,
   queryFieldInfo,
   toDataColumns,
-} from "@uwdata/mosaic-core";
-import { Query, asTableRef, desc } from "@uwdata/mosaic-sql";
-import { formatDate, formatLocaleAuto, formatLocaleNumber } from "./util/format.js";
-import { Input, input } from "./input.js";
+} from '@uwdata/mosaic-core';
+import { Query, asTableRef, desc } from '@uwdata/mosaic-sql';
+import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
+import { Input, input } from './input.js';
 
 type FormatFn = (value: any) => string | HTMLElement;
 type Align = { [name: string]: 'left' | 'right' | 'center' };
@@ -95,7 +95,7 @@ export class Table extends Input {
     element,
     filterBy,
     from,
-    columns = ["*"],
+    columns = ['*'],
     align = {},
     format = {},
     width = {},
@@ -107,17 +107,17 @@ export class Table extends Input {
     super(filterBy, element);
 
     this.id = `table-${++_id}`;
-    this.element.setAttribute("id", this.id);
+    this.element.setAttribute('id', this.id);
 
     this.from = from;
     this.columns = columns;
     this.format = format;
     this.align = align;
-    this.widths = typeof width === "object" ? width : {};
+    this.widths = typeof width === 'object' ? width : {};
 
     if (isParam(from)) {
       // if data table is a param, re-initialize upon change
-      from.addEventListener("value", () => this.initialize());
+      from.addEventListener('value', () => this.initialize());
     }
 
     this.offset = 0;
@@ -131,13 +131,13 @@ export class Table extends Input {
     this.sortColumn = null;
     this.sortDesc = false;
 
-    if (typeof width === "number") this.element.style.width = `${width}px`;
+    if (typeof width === 'number') this.element.style.width = `${width}px`;
     if (maxWidth) this.element.style.maxWidth = `${maxWidth}px`;
     this.element.style.maxHeight = `${height}px`;
-    this.element.style.overflow = "auto";
+    this.element.style.overflow = 'auto';
 
     let prevScrollTop = -1;
-    this.element.addEventListener("scroll", (evt) => {
+    this.element.addEventListener('scroll', (evt) => {
       const { isPending, loaded } = this;
       // @ts-expect-error unpack event
       const { scrollHeight, scrollTop, clientHeight } = evt.target;
@@ -152,30 +152,30 @@ export class Table extends Input {
       }
     });
 
-    this.tbl = document.createElement("table");
+    this.tbl = document.createElement('table');
     this.element.appendChild(this.tbl);
 
-    this.head = document.createElement("thead");
+    this.head = document.createElement('thead');
     this.tbl.appendChild(this.head);
 
-    this.body = document.createElement("tbody");
+    this.body = document.createElement('tbody');
     this.tbl.appendChild(this.body);
 
     if (this.selection) {
-      this.body.addEventListener("pointerover", (evt) => {
+      this.body.addEventListener('pointerover', (evt) => {
         const row = resolveRow(evt.target);
         if (row > -1 && row !== this.currentRow) {
           this.currentRow = row;
           this.selection.update(this.clause([row]));
         }
       });
-      this.body.addEventListener("pointerleave", () => {
+      this.body.addEventListener('pointerleave', () => {
         this.currentRow = -1;
         this.selection.update(this.clause());
       });
     }
 
-    this.style = document.createElement("style");
+    this.style = document.createElement('style');
     this.element.appendChild(this.style);
   }
 
@@ -214,12 +214,12 @@ export class Table extends Input {
 
     // create table header row
     const thead = this.head;
-    thead.innerHTML = "";
-    const tr = document.createElement("tr");
+    thead.innerHTML = '';
+    const tr = document.createElement('tr');
     for (const { column } of schema) {
-      const th = document.createElement("th");
-      th.addEventListener("click", (evt) => this.sort(evt, column));
-      th.appendChild(document.createElement("span"));
+      const th = document.createElement('th');
+      th.addEventListener('click', (evt) => this.sort(evt, column));
+      th.appendChild(document.createElement('span'));
       th.appendChild(document.createTextNode(column));
       tr.appendChild(th);
     }
@@ -267,7 +267,7 @@ export class Table extends Input {
     const { numRows, columns } = data[n];
     const cols = schema.map((s) => columns[s.column]);
     for (let i = 0; i < numRows; ++i) {
-      const tr = document.createElement("tr");
+      const tr = document.createElement('tr');
       Object.assign(tr, { __row__: rowCount + i });
       for (let j = 0; j < nf; ++j) {
         const value = cols[j][i];
@@ -310,13 +310,13 @@ export class Table extends Input {
     const th: SortEventTarget = event.currentTarget;
     const currentHeader = this.sortHeader;
     if (currentHeader === th && event.metaKey) {
-      currentHeader.firstChild.textContent = "";
+      currentHeader.firstChild.textContent = '';
       this.sortHeader = null;
       this.sortColumn = null;
     } else {
-      if (currentHeader) currentHeader.firstChild.textContent = "";
+      if (currentHeader) currentHeader.firstChild.textContent = '';
       this.sortHeader = th;
-      th.firstChild.textContent = this.sortDesc ? "▾" : "▴";
+      th.firstChild.textContent = this.sortDesc ? '▾' : '▴';
     }
 
     // issue query for sorted data
@@ -332,7 +332,7 @@ export class Table extends Input {
 function resolveRow(element: EventTarget): number {
   //@ts-expect-error
   const p = element.parentElement;
-  return Object.hasOwn(p, "__row__") ? +p.__row__ : -1;
+  return Object.hasOwn(p, '__row__') ? +p.__row__ : -1;
 }
 
 function formatof(base: Format, schema: Schema): FormatFn[] {
@@ -341,9 +341,9 @@ function formatof(base: Format, schema: Schema): FormatFn[] {
       return base[column];
     } else {
       switch (type) {
-        case "number":
+        case 'number':
           return formatLocaleNumber();
-        case "date":
+        case 'date':
           return formatDate;
         default:
           return formatLocaleAuto();
@@ -356,10 +356,10 @@ function alignof(base: Align, schema: Schema): ('left' | 'right' | 'center')[] {
   return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
-    } else if (type === "number") {
-      return "right";
+    } else if (type === 'number') {
+      return 'right';
     } else {
-      return "left";
+      return 'left';
     }
   });
 }
@@ -372,11 +372,11 @@ function tableCSS(id: string, aligns: ('left' | 'right' | 'center')[], widths: n
   const styles: string[] = [];
   aligns.forEach((a, i) => {
     const w = +widths[i];
-    if (a !== "left" || w) {
-      const align = a !== "left" ? `text-align:${a};` : "";
-      const width = w ? `width:${w}px;max-width:${w}px;` : "";
+    if (a !== 'left' || w) {
+      const align = a !== 'left' ? `text-align:${a};` : '';
+      const width = w ? `width:${w}px;max-width:${w}px;` : '';
       styles.push(`#${id} tr>:nth-child(${i + 1}) {${align}${width}}`);
     }
   });
-  return styles.join(" ");
+  return styles.join(' ');
 }
