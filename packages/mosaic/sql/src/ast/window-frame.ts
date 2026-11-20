@@ -1,3 +1,4 @@
+import type { CURRENT_ROW, FOLLOWING, GROUPS, PRECEDING, RANGE, ROWS } from '../constants.js';
 import { WINDOW_EXTENT_EXPR, WINDOW_FRAME } from '../constants.js';
 import { type ParamLike } from '../types.js';
 import { isParamLike } from '../util/type-check.js';
@@ -6,8 +7,8 @@ import { ParamNode } from './param.js';
 
 export type FrameValue =  ExprNode | number | null;
 export type FrameExtent = [FrameValue, FrameValue] | ParamLike;
-export type FrameScope = 'PRECEDING' | 'FOLLOWING' | 'CURRENT ROW';
-export type FrameType = 'ROWS' | 'RANGE' | 'GROUPS';
+export type FrameScope = typeof PRECEDING | typeof FOLLOWING | typeof CURRENT_ROW;
+export type FrameType = typeof ROWS | typeof RANGE | typeof GROUPS;
 export type FrameExclude = 'NO OTHERS' | 'CURRENT ROW' | 'TIES' | 'GROUP';
 
 export class WindowFrameNode extends SQLNode {
