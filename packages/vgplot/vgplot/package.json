@@ -32,7 +32,7 @@
     "prebuild": "pnpm run clean",
     "lint": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
-    "test": "vitest run",
+    "test": "vitest run --root ../../.. --project @uwdata/vgplot",
     "prepublishOnly": "tsc --build"
   },
   "dependencies": {

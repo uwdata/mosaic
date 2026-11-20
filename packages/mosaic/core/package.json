@@ -14,10 +14,12 @@
   "type": "module",
   "exports": {
     ".": {
+      "@uwdata/source": "./src/index.ts",
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
     },
     "./node-connector": {
+      "@uwdata/source": "./src/connectors/NodeConnector.ts",
       "types": "./dist/src/connectors/NodeConnector.d.ts",
       "default": "./dist/src/connectors/NodeConnector.js"
     }
@@ -35,7 +37,7 @@
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
-    "test": "vitest run",
+    "test": "vitest run --root ../../.. --project @uwdata/mosaic-core",
     "prepublishOnly": "tsc --build"
   },
   "dependencies": {

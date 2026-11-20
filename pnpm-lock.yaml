@@ -181,9 +181,15 @@ importers:
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
+      '@uwdata/mosaic-core':
+        specifier: workspace:*
+        version: link:packages/mosaic/core
       '@uwdata/mosaic-spec':
         specifier: workspace:*
         version: link:packages/vgplot/spec
+      '@uwdata/vgplot':
+        specifier: workspace:*
+        version: link:packages/vgplot/vgplot
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -420,9 +426,9 @@ importers:
       anywidget:
         specifier: ~0.11.0
         version: 0.11.0
-      esbuild:
-        specifier: ^0.28.2
-        version: 0.28.2
+      vite:
+        specifier: ^8.3.8
+        version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1)
 
   specs/ts:
     dependencies:
@@ -7375,6 +7381,7 @@ snapshots:
       '@esbuild/win32-arm64': 0.28.2
       '@esbuild/win32-ia32': 0.28.2
       '@esbuild/win32-x64': 0.28.2
+    optional: true
 
   escalade@3.2.0: {}
 
