@@ -30,7 +30,7 @@
     "prebuild": "pnpm run clean",
     "lint": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
-    "test": "vitest run --root ../../.. --project @uwdata/mosaic-plot",
+    "test": "vitest run --root ../../.. --project plot",
     "prepublishOnly": "tsc --build"
   },
   "dependencies": {

@@ -27,7 +27,7 @@
     "prebuild": "pnpm run clean",
     "lint": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
-    "test": "vitest run --root ../../.. --project @uwdata/mosaic-inputs",
+    "test": "vitest run --root ../../.. --project inputs",
     "prepublishOnly": "tsc --build"
   },
   "dependencies": {

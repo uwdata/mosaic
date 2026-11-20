@@ -37,7 +37,7 @@
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
-    "test": "vitest run --root ../../.. --project @uwdata/mosaic-core",
+    "test": "vitest run --root ../../.. --project core",
     "prepublishOnly": "tsc --build"
   },
   "dependencies": {
