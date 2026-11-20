@@ -5,7 +5,8 @@ import type {
   ConnectorQueryRequest,
   ExecQueryRequest
 } from './Connector.js';
-import { abortable, sleep } from '../util/abort.js';
+import { sleep } from '../util/abort.js';
+import { type HeadersOption, resolveHeaders, withParams } from '../util/http.js';
 
 interface RestOptions {
   /** The URI for the DuckDB REST server. */
@@ -14,7 +15,7 @@ interface RestOptions {
    * Request headers as a Headers object, a plain object, or name-value pairs,
    * or a function that returns them before each request.
    */
-  headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>);
+  headers?: HeadersOption;
   /** A fetch implementation to use instead of the global fetch. */
   fetch?: typeof fetch;
   /**
@@ -87,16 +88,11 @@ export class RestConnector implements Connector {
     const get = this._method === 'GET' && query.type === 'arrow'
       && Object.keys(query).every(key => key === 'type' || key === 'sql');
     const retries = query.type === 'arrow' ? this._retries : 0;
-    const url = get ? queryURL(this._uri, query) : this._uri;
+    const url = get ? withParams(this._uri, { type: query.type, sql: query.sql }) : this._uri;
     const body = get ? undefined : JSON.stringify(query);
 
     for (let attempt = 0; ; ++attempt) {
-      signal?.throwIfAborted();
-      const init = typeof this._headers === 'function' ? this._headers() : this._headers;
-      const headers = new Headers(
-        await (signal ? abortable(Promise.resolve(init), signal) : init)
-      );
-      signal?.throwIfAborted();
+      const headers = await resolveHeaders(this._headers, signal);
       if (get) {
         headers.delete('Content-Type');
       } else {
@@ -138,16 +134,6 @@ export class RestConnector implements Connector {
       throw new Error(`Query failed with HTTP status ${res.status}: ${await res.text()}`);
     }
   }
-}
-
-function queryURL(uri: string, { type, sql }: ConnectorQueryRequest): string {
-  const end = uri.includes('#') ? uri.indexOf('#') : uri.length;
-  const start = uri.indexOf('?');
-  const search = start >= 0 && start < end;
-  const params = new URLSearchParams(search ? uri.slice(start + 1, end) : '');
-  params.set('type', type);
-  params.set('sql', sql);
-  return `${uri.slice(0, search ? start : end)}?${params}${uri.slice(end)}`;
 }
 
 function backoff(attempt: number): number {

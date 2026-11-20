@@ -5,14 +5,14 @@ import type {
   ConnectorQueryRequest,
   ExecQueryRequest
 } from './Connector.js';
-import { abortable } from '../util/abort.js';
+import { type HeadersOption, resolveHeaders, withParams } from '../util/http.js';
 
 interface ClickHouseOptions {
   uri?: string;
   database?: string;
   user?: string;
   password?: string;
-  headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>);
+  headers?: HeadersOption;
   settings?: Record<string, string | number | boolean>;
   fetch?: typeof fetch;
 }
@@ -47,12 +47,7 @@ export class ClickHouseConnector implements Connector {
   async query(query: ArrowQueryRequest, options?: ConnectorQueryOptions): Promise<ArrayBuffer>;
   async query(query: ExecQueryRequest, options?: ConnectorQueryOptions): Promise<void>;
   async query({ type, sql }: ConnectorQueryRequest, { signal }: ConnectorQueryOptions = {}): Promise<unknown> {
-    signal?.throwIfAborted();
-    const init = typeof this._headers === 'function' ? this._headers() : this._headers;
-    const headers = new Headers(
-      await (signal ? abortable(Promise.resolve(init), signal) : init)
-    );
-    signal?.throwIfAborted();
+    const headers = await resolveHeaders(this._headers, signal);
     if (this._user != null) headers.set('X-ClickHouse-User', this._user);
     if (this._password != null) headers.set('X-ClickHouse-Key', this._password);
 
@@ -84,13 +79,4 @@ export class ClickHouseConnector implements Connector {
     }
     return res.arrayBuffer();
   }
-}
-
-function withParams(uri: string, params: URLSearchParams): string {
-  const end = uri.includes('#') ? uri.indexOf('#') : uri.length;
-  const start = uri.indexOf('?');
-  const search = start >= 0 && start < end;
-  const merged = new URLSearchParams(search ? uri.slice(start + 1, end) : '');
-  for (const [key, value] of params) merged.set(key, value);
-  return `${uri.slice(0, search ? start : end)}?${merged}${uri.slice(end)}`;
 }
