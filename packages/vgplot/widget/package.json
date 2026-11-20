@@ -11,8 +11,8 @@
   },
   "scripts": {
     "clean": "rimraf mosaic_widget/static",
-    "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.ts",
-    "dev": "pnpm run build -- --watch",
+    "build": "vite build",
+    "dev": "vite build --watch",
     "test": "tsc --build",
     "typecheck": "tsc --build",
     "lint": "eslint src"
@@ -24,6 +24,6 @@
   },
   "devDependencies": {
     "anywidget": "~0.11.0",
-    "esbuild": "^0.28.2"
+    "vite": "^8.3.8"
   }
 }

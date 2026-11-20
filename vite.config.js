@@ -1,29 +1,40 @@
-import path from 'path';
+import { basename } from 'node:path';
+import { defaultClientConditions, defaultServerConditions } from 'vite';
+import { configDefaults, defineConfig } from 'vitest/config';
 
-const dirname = import.meta.dirname;
+export const sourceCondition = '@uwdata/source';
 
-/** @type {import('vite').UserConfig} */
-export default {
+// Vitest resolves with Vite's server conditions minus `module` in every
+// environment, jsdom included; setting conditions replaces that default.
+const conditions = process.env.VITEST
+  ? defaultServerConditions.filter(c => c !== 'module')
+  : defaultClientConditions;
+
+/** @param {string} root */
+function project(root, test = {}) {
+  return { extends: true, test: { name: basename(root), root, ...test } };
+}
+
+export default defineConfig({
   server: {
     open: '/dev/index.html',
   },
   resolve: {
-    alias: {
-      // Define aliases so that vite picks up the source files.
-      '@uwdata/mosaic-core/node-connector': path.resolve(dirname, './packages/mosaic/core/src/connectors/NodeConnector.ts'),
-      '@uwdata/mosaic-core': path.resolve(dirname, './packages/mosaic/core/src/index.ts'),
-      '@uwdata/mosaic-sql': path.resolve(dirname, './packages/mosaic/sql/src/index.ts'),
-      '@uwdata/vgplot': path.resolve(dirname, './packages/vgplot/vgplot/src/index.js'),
-      '@uwdata/mosaic-spec': path.resolve(dirname, './packages/vgplot/spec/src/index.ts'),
-      '@uwdata/mosaic-inputs': path.resolve(dirname, './packages/vgplot/inputs/src/index.js'),
-      '@uwdata/mosaic-plot': path.resolve(dirname, './packages/vgplot/plot/src/index.js'),
-    }
+    conditions: [sourceCondition, ...conditions],
+  },
+  ssr: {
+    resolve: { conditions: [sourceCondition, ...conditions] },
   },
   test: {
+    exclude: [...configDefaults.exclude, '**/visual.test.js'],
     projects: [
-      'packages/mosaic/*',
-      'packages/vgplot/*',
-      'packages/server/*/vitest.config.*',
-    ]
-  }
-};
+      project('packages/mosaic/core'),
+      project('packages/mosaic/sql', { setupFiles: ['./test/util/matchers.ts'] }),
+      project('packages/server/duckdb'),
+      project('packages/vgplot/inputs'),
+      project('packages/vgplot/plot'),
+      project('packages/vgplot/spec'),
+      project('packages/vgplot/vgplot'),
+    ],
+  },
+});

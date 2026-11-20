@@ -11,6 +11,7 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
+    "@uwdata/source": "./src/index.ts",
     "types": "./dist/src/index.d.ts",
     "default": "./dist/src/index.js"
   },
@@ -27,7 +28,7 @@
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
-    "test": "vitest run",
+    "test": "vitest run --root ../../.. --project sql",
     "prepublishOnly": "tsc --build"
   },
   "devDependencies": {
