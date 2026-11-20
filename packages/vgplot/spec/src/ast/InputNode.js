@@ -1,13 +1,19 @@
+import { isArray } from '../util.js';
 import { ASTNode } from './ASTNode.js';
-import { INPUT } from '../constants.js';
+import { FROM, INPUT } from '../constants.js';
 import { parseOptions } from './OptionsNode.js';
+import { TableRefNode } from './TableRefNode.js';
+
+const parseFrom = (value, ctx) => isArray(value)
+  ? new TableRefNode(value)
+  : ctx.maybeSelection(value);
 
 export function parseInput(spec, ctx) {
   const { [INPUT]: name, ...options } = spec;
   if (!ctx.inputs?.has(name)) {
     ctx.error(`Unrecognized input type: ${name}`, spec);
   }
-  return new InputNode(name, parseOptions(options, ctx));
+  return new InputNode(name, parseOptions(options, ctx, { [FROM]: parseFrom }));
 }
 
 export class InputNode extends ASTNode {

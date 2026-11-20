@@ -17,6 +17,7 @@ Marks are added to a [`Plot`](./plot) using the mark directive functions listed 
 
 Most mark functions take two arguments: a _data_ source and an _options_ object that specifies encoding channels or constant values.
 To visualize data from a backing database, the `from()` method should be used to specify the data source. For example, `from("data", { filterBy: sel })` indicates that data should be drawn from the database table `"data"`, interactively filtered by the selection `sel`.
+For a schema-qualified table, pass a table reference instead of a name: `from(tableRef("schema", "table"))`.
 
 ``` js
 import { barY, from, plot } from "@uwdata/vgplot";
@@ -297,6 +298,7 @@ Marks are added to a [`Plot`](./plot) using mark directives from `vgplot` (for e
 
 Most mark functions take a _data_ source and an _options_ object that specifies encoding channels or constant values.
 To visualize data from a backing database, pass a `DataDef` object (from `vg.parquet()`, `vg.csv()`, etc.) or a `vg.source("table")` reference as the first positional argument. Interactive filtering is expressed via the `filter_by` keyword (see the [Python vgplot README](https://pypi.org/project/vgplot/) for details on selection wiring).
+For a schema-qualified table, pass the identifiers as a list: `vg.source(["schema", "table"])`.
 
 ``` python
 import vgplot as vg

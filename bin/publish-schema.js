@@ -42,4 +42,4 @@ await link(schemaFile, join(publishDir, `v${v[0]}.${v[1]}.json`));
 await link(schemaFile, join(publishDir, `v${v[0]}.json`));
 
 // symlink latest
-await link(schemaFile, join(publishDir, `latest.json`));
+await link(schemaFile, join(publishDir, 'latest.json'));

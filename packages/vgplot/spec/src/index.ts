@@ -32,6 +32,7 @@ export { PlotMarkNode } from './ast/PlotMarkNode.js';
 export { PlotNode } from './ast/PlotNode.js';
 export { SelectionNode } from './ast/SelectionNode.js';
 export { SpecNode } from './ast/SpecNode.js';
+export { TableRefNode } from './ast/TableRefNode.js';
 export { TransformNode } from './ast/TransformNode.js';
 export { VConcatNode } from './ast/VConcatNode.js';
 export { VSpaceNode } from './ast/VSpaceNode.js';

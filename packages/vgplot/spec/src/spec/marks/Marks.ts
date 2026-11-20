@@ -1,41 +1,8 @@
 import { AggregateExpression, SQLExpression } from '../Expression.js';
 import { ParamRef } from '../Param.js';
 import { PlotMarkData } from '../PlotFrom.js';
-import { CurveName, FrameAnchor, Interval, Reducer, ScaleName } from '../PlotTypes.js';
+import { ChannelName, CurveName, FrameAnchor, Interval, Reducer, ScaleName } from '../PlotTypes.js';
 import { Transform } from '../Transform.js';
-
-/** The set of known channel names. */
-export type ChannelName =
-  | 'ariaLabel'
-  | 'fill'
-  | 'fillOpacity'
-  | 'fontSize'
-  | 'fx'
-  | 'fy'
-  | 'geometry'
-  | 'height'
-  | 'href'
-  | 'length'
-  | 'opacity'
-  | 'path'
-  | 'r'
-  | 'rotate'
-  | 'src'
-  | 'stroke'
-  | 'strokeOpacity'
-  | 'strokeWidth'
-  | 'symbol'
-  | 'text'
-  | 'title'
-  | 'weight'
-  | 'width'
-  | 'x'
-  | 'x1'
-  | 'x2'
-  | 'y'
-  | 'y1'
-  | 'y2'
-  | 'z';
 
 type ChannelScale = ScaleName | 'auto' | boolean | null;
 
