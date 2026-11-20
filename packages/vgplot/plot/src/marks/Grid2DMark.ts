@@ -108,7 +108,7 @@ export class Grid2DMark extends Mark {
     return xdom && ydom && !xdom[Transient] && !ydom[Transient];
   }
 
-  query(filter: msql.FilterExpr = []): msql.SelectQuery {
+  query(filter: msql.FilterExpr = []): msql.SelectQuery | null {
     const { interpolate, pad, channels, densityMap } = this;
     filter = [filter].flat();
     const [x0, x1] = this.extentX = extentX(this, filter);
