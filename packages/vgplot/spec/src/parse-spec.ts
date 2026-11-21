@@ -5,6 +5,7 @@ import { parseParam, ParamNode } from './ast/ParamNode.js';
 import { ParamRefNode } from './ast/ParamRefNode.js';
 import type { PlotAttributeNode } from './ast/PlotAttributeNode.js';
 import { parseAttribute } from './ast/PlotAttributeNode.js';
+import { parseComponent } from './ast/PlotNode.js';
 import { SelectionNode } from './ast/SelectionNode.js';
 import type { RootNode } from './ast/SpecNode.js';
 import { SpecNode } from './ast/SpecNode.js';
@@ -88,7 +89,7 @@ export class ParseContext {
     }
 
     return new SpecNode(
-      this.parseComponent(root),
+      parseComponent(root, this),
       meta,
       config,
       Object.fromEntries(this.datasets),

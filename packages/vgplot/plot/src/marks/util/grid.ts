@@ -7,7 +7,7 @@ export interface Grid {
   columns: { [key: string]: Arrayish; };
 }
 
-export type Grid1D = Grid & { columns: { _grid?: Arrayish[];[key: string]: Arrayish; }; };
+export type Grid1D = Grid & { columns: { _grid?: Arrayish[] } };
 
 /**
  * Generate a new array with designated size and type.
