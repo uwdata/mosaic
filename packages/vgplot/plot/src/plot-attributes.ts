@@ -229,14 +229,15 @@ function setProperty(object: Spec, path: string | any[], value: any): void {
 
 export function setAttributes(attributes: Attributes, spec: Spec, symbols: AttrName[]): void {
   // populate top-level and scale properties
-  for (const key in attributes) {
-    const specKey = attributeMap.get(key as AttrName);
+  for (const k in attributes) {
+    const key = k as AttrName;
+    const specKey = attributeMap.get(key);
     if (specKey == null) {
       throw new Error(`Unrecognized plot attribute: ${key}`);
     }
     const value = attributes[key];
     if (typeof value === 'symbol') {
-      symbols.push(key as AttrName);
+      symbols.push(key);
     } else if (value !== undefined) {
       setProperty(spec, specKey.split('.'), value);
     }

@@ -57,8 +57,8 @@ export class ContourMark extends Grid2DMark {
     const sy = (y1 - y0) / ny;
     const xo = +x0;
     const yo = +y0;
-    const x = v => xo + v * sx;
-    const y = v => yo + v * sy;
+    const x = (v: number) => xo + v * sx;
+    const y = (v: number) => yo + v * sy;
     const contour = contours().size(bins);
 
     // generate contours
@@ -83,7 +83,7 @@ export class ContourMark extends Grid2DMark {
 
   plotSpecs(): PlotMarkSpec[] {
     const { type, channels, densityMap, contourData: data } = this;
-    const options = {};
+    const options = {} as Record<string, ReturnType<typeof channelOption>>;
     for (const c of channels) {
       const { channel } = c;
       if (channel !== 'x' && channel !== 'y') {
@@ -92,9 +92,10 @@ export class ContourMark extends Grid2DMark {
     }
     // d3-contour adds a threshold "value" property
     // here we ensure requested density values are encoded
-    for (const channel in densityMap) {
+    for (const c in densityMap) {
+      const channel = c as EncodingName;
       if (!densityMap[channel]) continue;
-      options[channel] = channelOption({ channel: (channel as EncodingName), as: 'value' });
+      options[channel] = channelOption({ channel: channel, as: 'value' });
     }
     return [{ type, data, options }];
   }

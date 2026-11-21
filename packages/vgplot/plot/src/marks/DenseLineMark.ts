@@ -31,7 +31,7 @@ export class DenseLineMark extends RasterMark {
       .where(stripXY(this, filter));
 
     this.aggr = ['density'];
-    const groupby = this.groupby = [];
+    const groupby = this.groupby = [] as string[];
     const z = [];
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
@@ -63,14 +63,14 @@ function stripXY(mark: DenseLineMark, filter: msql.FilterExpr): msql.FilterExpr 
   const yc = mark.channelField('y').column;
 
   // test if a range predicate filters the x or y channels
-  const test = p => {
+  const test = (p: any) => {
     const col = `${p.expr}`;
     return p.type !== 'BETWEEN' || (col !== xc && col !== yc);
   };
 
   // filter boolean 'and' operations
-  const filterAnd = p => p.op === 'AND'
-    ? and(p.clauses.filter(c => test(c)))
+  const filterAnd = (p: any) => p.op === 'AND'
+    ? and(p.clauses.filter((c: unknown) => test(c)))
     : p;
 
   return Array.isArray(filter)

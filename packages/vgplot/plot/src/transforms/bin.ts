@@ -45,7 +45,7 @@ function hasTimeScale(mark: Mark, channel: TransformScaleName): boolean {
   return scale === 'utc' || scale === 'time';
 }
 
-class BinTransformNode extends ExprNode {
+export class BinTransformNode extends ExprNode {
   constructor(public column: Column, public mark: Mark, public channel: TransformScaleName, public options: Options) {
     super('CUSTOM');
   }

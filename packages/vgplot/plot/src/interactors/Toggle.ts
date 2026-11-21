@@ -69,7 +69,7 @@ export class Toggle implements Interactor, mc.Activatable {
     selector ??= `[data-index="${mark.index}"]`;
     const groups = Array.from(svg.querySelectorAll(selector));
 
-    svg.addEventListener('pointerdown', (evt: PointerEvent) => {
+    svg.addEventListener('pointerdown', evt => {
       const state = selection.single ? selection.value as any[] | undefined : this.value;
       const target = evt.target;
       let value: any | any[] | null = null;
@@ -93,7 +93,7 @@ export class Toggle implements Interactor, mc.Activatable {
       }
     });
 
-    svg.addEventListener('pointerenter', (evt: PointerEvent) => {
+    svg.addEventListener('pointerenter', evt => {
       if (!evt.buttons) this.activate();
     });
   }
@@ -103,6 +103,6 @@ export class Toggle implements Interactor, mc.Activatable {
   }
 }
 
-function isTargetElement(groups, node) {
+function isTargetElement(groups: Element[], node: any): boolean {
   return groups.some(g => g.contains(node));
 }

@@ -1,6 +1,7 @@
 import { geojson } from '@uwdata/mosaic-sql';
 import { Mark, isDataArray, type Encodings, type Reqs } from './Mark.js';
 import type { Table } from '@uwdata/flechette';
+import type { DataColumns } from '@uwdata/mosaic-core';
 
 // default geometry column created by st_read
 // warning: if another "geom" column exists this default
@@ -24,10 +25,12 @@ export class GeoMark extends Mark {
     // look for an explicit geometry field
     const geom = this.channelField('geometry')?.as;
     if (geom) {
-      // @ts-expect-error Correct the data column type
-      const { columns } = this.data;
-      if (typeof columns[geom][0] === 'string') {
-        columns[geom] = columns[geom].map(s => JSON.parse(s));
+      if (!('columns' in this.data)) {
+        throw new TypeError(`Missing columns in ${data}`);
+      }
+      const column = this.data.columns[geom];
+      if (typeof column[0] === 'string') {
+        this.data.columns[geom] = column.map(s => JSON.parse(s as string));
       }
     }
 
