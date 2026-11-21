@@ -1,8 +1,9 @@
 import { isParam } from '@uwdata/mosaic-core';
 import { setNamedPlot } from './named-plots.js';
-import type { PlotDirective, PickValues, Plot, Value, CanParam, Primitive, FixedType } from './types.js';
+import { PlotDirective, PickValues, Plot, Value, CanParam, Primitive, FixedType } from './types.js';
 import type { APIContext } from '../context.js';
 
+type AttrName = Parameters<Plot['setAttribute']>[0];
 
 type AnyValue = Value | object;
 
@@ -10,7 +11,7 @@ export function name(this: ThisType<APIContext>, name: string): PlotDirective {
   return plot => setNamedPlot(this, name, plot);
 }
 
-function setAttribute(plot: Plot, name: string, value: AnyValue): void {
+function setAttribute(plot: Plot, name: AttrName, value: AnyValue): void {
   if (isParam(value)) {
     value.addEventListener('value', value => {
       plot.setAttribute(name, value);
@@ -24,14 +25,14 @@ function setAttribute(plot: Plot, name: string, value: AnyValue): void {
   }
 }
 
-function attribute(name: string, value: AnyValue): PlotDirective {
+function attribute(name: AttrName, value: AnyValue): PlotDirective {
   return plot => { setAttribute(plot, name, value); };
 }
 
-function attributes(values: { [s: string]: Value; } | ArrayLike<Value>): PlotDirective {
+function attributes(values: { [name in AttrName]?: Value; } | ArrayLike<Value>): PlotDirective {
   return plot => {
     for (const [name, value] of Object.entries(values)) {
-      setAttribute(plot, name, value)
+      setAttribute(plot, name as AttrName, value);
     }
   };
 }
@@ -43,7 +44,7 @@ interface Margins {
   left?: CanParam<number>;
 }
 
-type MarginMargins = { [P in keyof Margins as `margin${Capitalize<string & P>}`]: Margins[P] }
+type MarginMargins = { [P in keyof Margins as `margin${Capitalize<string & P>}`]: Margins[P] };
 
 export function margins(object: Margins): PlotDirective {
   const { top, bottom, left, right } = object;
@@ -69,7 +70,7 @@ export function xyDomain(value: Value): PlotDirective {
 }
 
 /* TODO @dangotbanned: Replace `name: string` after (https://github.com/uwdata/mosaic/issues/1388#issuecomment-6744099978)*/
-function attrf<V extends Value | object = Value>(name: string): (value: V) => PlotDirective {
+function attrf<V extends Value | object = Value>(name: AttrName): (value: V) => PlotDirective {
   return (value: V) => attribute(name, value);
 }
 
