@@ -10,7 +10,10 @@ import {
   indentLine,
 } from './python-codegen.js';
 
-/** Build snake_cased, keyword-safe kwargs for an options object. */
+/** Build snake_cased, keyword-safe kwargs for an options object. 
+ * 
+ * @param {Record<string,string> | null} [keyMap=null] 
+*/
 function buildArgs(opts, ctx, keyMap = null) {
   return Object.entries(opts)
     .filter(([, v]) => v !== undefined)
