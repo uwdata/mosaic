@@ -65,12 +65,8 @@ const re =
   /^(?:[-+]\d{2})?\d{4}(?:-\d{2}(?:-\d{2})?)?(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?(?:Z|[-+]\d{2}:?\d{2})?)?$/;
 
 // Adapted from https://github.com/mbostock/isoformat/
-export function isoparse<T>(string: string, fallback: T): T | Date {
-  // oxlint-disable-next-line no-param-reassign no-implicit-coercion
-  if (!re.test((string += ''))) {
-    return fallback;
-  }
-  return new Date(string);
+export function isISO8601(string: string): boolean {
+  return Boolean(string && re.test(string));
 }
 
 export function camelCaseToSnake(name: string): string {
@@ -80,3 +76,21 @@ export function camelCaseToSnake(name: string): string {
   // oxlint-disable-next-line prefer-named-capture-group
   return name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
 }
+
+export function mapTuple<T1, T2, R>(tuple: [T1, T2], fn: (v: T1 | T2) => R): [R, R] {
+  return tuple.map(fn) as [R, R];
+}
+
+// oxlint-disable typescript/no-explicit-any
+/**
+ * Rewrap a {@link Set} or {@link Map} so it can be used as a typeguard.
+ *
+ * @returns A predicate function
+ */
+export function makeIsIn<T extends string>(
+  collection: ReadonlySet<T> | ReadonlyMap<T, unknown>,
+): (value: any) => value is T {
+  return (value: any): value is T => collection.has(value);
+}
+
+// oxlint-enable typescript/no-explicit-any
