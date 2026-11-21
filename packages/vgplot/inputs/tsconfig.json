@@ -2,8 +2,11 @@
   "extends": "../../../tsconfig.base.json",
   "include": ["src/**/*"],
   "compilerOptions": {
-    "emitDeclarationOnly": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "allowJs": false,
+    "checkJs": false,
+    "strict": true,
+    "strictNullChecks": false
   },
   "references": [
     { "path": "../../mosaic/core" },
