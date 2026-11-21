@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["*.js"],
+  "compilerOptions": {
+    "noEmit": true,
+  },
+  "references": [
+    { "path": "../../packages/vgplot/vgplot" },
+    { "path": "../../packages/mosaic/core" },
+    { "path": "../../packages/mosaic/sql" },
+    { "path": "../../packages/vgplot/inputs" },
+    { "path": "../../packages/vgplot/plot" }
+  ]
+}

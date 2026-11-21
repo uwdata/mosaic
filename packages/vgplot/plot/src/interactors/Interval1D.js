@@ -1,4 +1,5 @@
 /** @import { InteractorMark } from '../marks/Mark.js' */
+/** @import { Selection } from '@uwdata/mosaic-core' */
 import { clauseInterval } from '@uwdata/mosaic-core';
 import { ascending, min, max } from 'd3';
 import { brushGroups, brushX, brushY } from './util/brush.js';
@@ -14,7 +15,13 @@ import { sanitizeStyles } from './util/sanitize-styles.js';
 export class Interval1D {
   /**
    * @param {InteractorMark} mark The mark to interact with.
-   * @param {*} options The interactor options.
+   * @param {object} options
+   * @param {string} options.channel
+   * @param {Selection} options.selection
+   * @param {string} [options.field]
+   * @param {number} [options.pixelSize]
+   * @param {boolean} [options.peers]
+   * @param {Record<string, string | number>} [options.brush]
    */
   constructor(mark, {
     channel,
@@ -22,7 +29,7 @@ export class Interval1D {
     field = undefined,
     pixelSize = 1,
     peers = true,
-    brush: style
+    brush: style = undefined
   }) {
     this.mark = mark;
     this.channel = channel;

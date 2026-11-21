@@ -1,4 +1,4 @@
-/** @import { ClauseSource } from '@uwdata/mosaic-core' */
+/** @import { ClauseSource, Selection } from '@uwdata/mosaic-core' */
 /** @import { InteractorMark } from '../marks/Mark.js' */
 import { clauseList, clausePoints } from '@uwdata/mosaic-core';
 import { getDatum } from './util/get-datum.js';
@@ -11,13 +11,17 @@ import { neq, neqSome } from './util/neq.js';
 export class Toggle {
   /**
    * @param {InteractorMark} mark The mark to interact with.
-   * @param {*} options The interactor options.
+   * @param {object} options The interactor options.
+   * @param {Selection} options.selection
+   * @param {string[]} options.channels
+   * @param {boolean} [options.peers]
+   * @param {'any' | 'all'} [options.listMatch]
    */
   constructor(mark, {
     selection,
     channels,
     peers = true,
-    listMatch
+    listMatch = undefined
   }) {
     this.mark = mark;
     this.value = null;

@@ -6,6 +6,7 @@ packages:
   - "packages/vgplot/*"
   - "packages/examples/*"
   - "specs/ts"
+  - "specs/esm"
 allowBuilds:
   esbuild: false
   nx: false
