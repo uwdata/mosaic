@@ -2,7 +2,7 @@ import type { InteractorMark } from '../marks/Mark.js';
 import { Selection, type SelectionClause } from '@uwdata/mosaic-core';
 import { clauseInterval } from '@uwdata/mosaic-core';
 import { ascending, min, max } from 'd3';
-import { brushGroups, brushX, brushY } from './util/brush.js';
+import { brushGroups, brushX, brushY, type WrapBrush } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
@@ -19,8 +19,8 @@ export class Interval1D implements Interactor, mc.Activatable {
   peers: boolean;
   field: any;
   style: Record<string, string | number>;
-  brush: any;
-  value: any;
+  brush: WrapBrush;
+  value?: any;
   g: any;
   scale: any;
 
@@ -53,11 +53,11 @@ export class Interval1D implements Interactor, mc.Activatable {
   }
 
   publish(extent: Extent): void {
-    let range = undefined;
+    let range: Extent | undefined = undefined;
     if (extent) {
       range = extent
         .map(v => invert(v, this.scale, this.pixelSize))
-        .sort((a, b) => a - b);
+        .sort((a, b) => a - b) as Extent;
     }
     if (!closeTo(range, this.value)) {
       this.value = range;
@@ -77,7 +77,7 @@ export class Interval1D implements Interactor, mc.Activatable {
     });
   }
 
-  init(svg: SVG, root?: any): void {
+  init(svg: SVG, root?: SVGGElement | undefined | null): void {
     const { brush, channel, style } = this;
     this.scale = svg.scale(channel);
     const range = this.value?.map(this.scale.apply).sort(ascending);
@@ -95,7 +95,7 @@ export class Interval1D implements Interactor, mc.Activatable {
       }
     }
 
-    svg.addEventListener('pointerenter', (evt: PointerEvent) => {
+    svg.addEventListener('pointerenter', evt => {
       if (!evt.buttons) this.activate();
     });
   }

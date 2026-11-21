@@ -10,7 +10,7 @@ import { dericheConfig, dericheConv2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { grid2d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
-import { Mark, type Encodings } from './Mark.js';
+import { Mark, type EncodingName, type Encodings } from './Mark.js';
 import type { Plot } from '../plot.js';
 import type * as msql from '@uwdata/mosaic-sql';
 import type { CanParam } from '../types.js';
@@ -53,7 +53,7 @@ export class Grid2DMark extends Mark {
   groupby?: string[];
   aggr?: string[];
   grids0?: Grids;
-  constructor(type: 'dot' | 'geo' | 'image', source: any, options: Grid2DOptions) {
+  constructor(type: 'dot' | 'geo' | 'image' | 'circle' | 'hexagon' | 'cell' | 'text', source: any, options: Grid2DOptions) {
     const {
       bandwidth = 0,
       interpolate = 'none',
@@ -219,7 +219,7 @@ export class Grid2DMark extends Mark {
       const w = plot.innerWidth();
       const h = plot.innerHeight();
       const [nx, ny] = bins;
-      const neg = g.some(grid => grid.some(v => v < 0));
+      const neg = g.some((grid: any) => grid.some((v: number) => v < 0));
       const configX = dericheConfig(bandwidth * (nx - 1) / w, neg);
       const configY = dericheConfig(bandwidth * (ny - 1) / h, neg);
       this.grids = {
@@ -239,9 +239,10 @@ export class Grid2DMark extends Mark {
 /**
  * Extract channels that explicitly encode computed densities.
  */
-function createDensityMap(channels: { [x: string]: any; x?: unknown; y?: unknown; }): Encodings {
+function createDensityMap(channels: Encodings): Encodings {
   const densityMap: Encodings = {};
-  for (const key in channels) {
+  for (const k in channels) {
+    const key = k as EncodingName;
     if (channels[key] === 'density') {
       delete channels[key];
       densityMap[key] = true;

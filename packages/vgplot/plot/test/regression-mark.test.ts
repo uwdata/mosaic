@@ -1,9 +1,11 @@
 import { expect, describe, it } from 'vitest';
 import { areaPoints } from '../src/marks/RegressionMark.js';
 
+type Columns = Record<string, number[]>;
+
 // Compute fit columns as RegressionMark.query does with DuckDB's regr_*
 // aggregates, where ssy (regr_syy) is the total sum of squares.
-function fitColumns(x, y) {
+function fitColumns(x: number[], y: number[]): Columns {
   const n = x.length;
   const xm = x.reduce((a, b) => a + b) / n;
   const ym = y.reduce((a, b) => a + b) / n;
@@ -18,7 +20,7 @@ function fitColumns(x, y) {
   };
 }
 
-function band(columns, ci = 0.95) {
+function band(columns: Columns, ci = 0.95): { x: any[]; y1: any[]; y2: any[]; } {
   return areaPoints({ numRows: 1, columns }, ci, 4, 400).columns;
 }
 

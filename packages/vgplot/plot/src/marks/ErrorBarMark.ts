@@ -9,7 +9,7 @@ export class ErrorBarMark extends Mark {
   dim: 'x' | 'y';
   field: Field;
   ci: number;
-  constructor(type: 'ruleX' | 'ruleY', source: any, options) {
+  constructor(type: 'ruleX' | 'ruleY', source: any, options: Record<string, any> = {}) {
     const dim = type.endsWith('X') ? 'y' : 'x';
     const { ci = 0.95, ...channels } = options;
     super(type, source, channels);
@@ -46,8 +46,8 @@ export class ErrorBarMark extends Mark {
     // @ts-expect-error Correct the data column type
     const { columns: { __avg__: u, __se__: s } } = data;
     const options = {
-      [`${dim}1`]: u.map((u, i) => u - p * s[i]),
-      [`${dim}2`]: u.map((u, i) => u + p * s[i])
+      [`${dim}1`]: u.map((u: number, i: number) => u - p * s[i]),
+      [`${dim}2`]: u.map((u: number, i: number) => u + p * s[i])
     };
 
     return markPlotSpec(type, detail, channels, data, options);

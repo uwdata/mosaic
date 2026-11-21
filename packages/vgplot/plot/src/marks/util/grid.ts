@@ -2,6 +2,13 @@ import type { Arrayish } from '@uwdata/mosaic-core';
 import { InternSet, ascending } from 'd3';
 import * as ObPlot from '@observablehq/plot';
 
+export interface Grid {
+  numRows: number;
+  columns: { [key: string]: Arrayish; };
+}
+
+export type Grid1D = Grid & { columns: { _grid?: Arrayish[];[key: string]: Arrayish; }; };
+
 /**
  * Generate a new array with designated size and type.
  * @param size The size of the array
@@ -23,10 +30,7 @@ export function array(size: number, proto: Arrayish = []): Arrayish {
  * @param groupby The names of columns to group by.
  * @returns Named column arrays of generated grid values.
  */
-export function grid1d(size: number, index: Arrayish, value: Arrayish, columns: Record<string, Arrayish>, groupby: string[]): {
-  numRows: number;
-  columns: { [key: string]: Arrayish; };
-} {
+export function grid1d(size: number, index: Arrayish, value: Arrayish, columns: Record<string, Arrayish>, groupby: string[]): Grid1D {
   if (!index?.length) return { numRows: 0, columns: {} };
   const numRows = index.length;
   const result: { [key: string]: Arrayish; } = {};
@@ -76,16 +80,13 @@ export function grid1d(size: number, index: Arrayish, value: Arrayish, columns: 
  *  By default sample values are directly copied to output grid arrays.
  * @returns Named column arrays of generated grid values.
  */
-export function grid2d(w: number, h: number, index: Arrayish, columns: Record<string, Arrayish>, aggregates: string[], groupby: string[], interpolate: ObPlot.RasterInterpolateFunction): {
-  numRows: number;
-  columns: { [key: string]: Arrayish; };
-} {
+export function grid2d(w: number, h: number, index: Arrayish, columns: Record<string, Arrayish>, aggregates: string[], groupby: string[], interpolate: ObPlot.RasterInterpolateFunction): Grid {
   if (!index?.length) return { numRows: 0, columns: {} };
   const numRows = index.length;
   const size = w * h;
   const values = aggregates.map(name => columns[name]);
   const result: { [key: string]: Arrayish; } = {};
-  const cells = [];
+  const cells: any[] = [];
   const group = new Int32Array(numRows);
 
   // if grouped, generate per-row group indices
@@ -106,9 +107,9 @@ export function grid2d(w: number, h: number, index: Arrayish, columns: Record<st
 
   if (interpolate) {
     // prepare index arrays, then interpolate grid values
-    const X = index.map(k => k % w);
-    const Y = index.map(k => Math.floor(k / w));
-    const I = cells.map(() => []);
+    const X = index.map((k: any) => k % w);
+    const Y = index.map((k: any) => Math.floor(k / w));
+    const I = cells.map((): any[] => []);
     for (let row = 0; row < numRows; ++row) {
       I[group[row]].push(row);
     }
@@ -131,9 +132,9 @@ export function grid2d(w: number, h: number, index: Arrayish, columns: Record<st
   return { numRows: cells.length, columns: result };
 }
 
-export function gridDomainContinuous(grids) {
+export function gridDomainContinuous(grids: Arrayish): number[] {
   let lo = Infinity, hi = -Infinity;
-  grids.forEach(G => {
+  grids.forEach((G: any) => {
     const n = G.length;
     for (let i = 0; i < n; ++i) {
       const v = G[i];
@@ -144,10 +145,10 @@ export function gridDomainContinuous(grids) {
   return (Number.isFinite(lo) && Number.isFinite(hi)) ? [lo, hi] : [0, 1];
 }
 
-export function gridDomainDiscrete(grids) {
+export function gridDomainDiscrete(grids: Arrayish): any[] {
   // TODO: sort options?
   const values = new InternSet();
-  grids.forEach(G => {
+  grids.forEach((G: any) => {
     const n = G.length;
     for (let i = 0; i < n; ++i) {
       values.add(G[i]);

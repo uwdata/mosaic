@@ -28,7 +28,7 @@ describe('plotRenderer', () => {
     const options = { x: 'x', y: 'y', select: 'nearestY' };
     const mark = {
       index: -1,
-      channelField: () => undefined,
+      channelField: (): void => undefined,
       plotSpecs: () => [{ type: 'dot', data, options }]
     };
 
