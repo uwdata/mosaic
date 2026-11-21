@@ -8,8 +8,7 @@ export function input<T extends new (...args: any) => Input>(
   InputClass: T,
   ...params: ConstructorParameters<T>
 ): HTMLElement {
-  // TODO @dangotbanned: Figure out how to test this without 'document is not defined'
-  const input = new InputClass(params);
+  const input = new InputClass(...params);
   coordinator().connect(input);
   return input.element;
 }
@@ -23,7 +22,7 @@ export class Input extends MosaicClient implements Activatable {
    * @param [element] Optional container HTML element to use.
    * @param [className] A class name to set on the container element.
    */
-  constructor(filterBy?: Selection, element?: HTMLElement, readonly className: string = 'input') {
+  constructor(filterBy?: Selection, element?: HTMLElement, readonly className: string | null = 'input') {
     super(filterBy);
     this.element = element || document.createElement('div');
     if (className) this.element.setAttribute('class', className);
