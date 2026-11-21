@@ -1,26 +1,26 @@
 import { describe, it, expect, assert } from 'vitest';
 import { InstantiateContext, astToESM, parseSpec } from '../src/index.js';
+import { WindowOptions } from '../src/index.js';
 
-// A window transform's frame (`rows`, `range`, `groups`) is a pair of offsets
-// that can be plain numbers, null (unbounded), or interval transforms such as
-// { days: 6 }. The example specs only exercise a frame supplied by a param
+type Frame = Pick<WindowOptions, 'rows' | 'range' | 'groups' | 'exclude'>;
+type Case = { name: string, frame: Frame, esm: string, sql?: string };
+
+
+// The example specs only exercise a frame supplied by a param
 // (moving-average) or one made entirely of intervals (window-frame), so
 // literal offsets written directly in a spec need their own coverage.
 
-/**
- * A spec whose `y` channel is an average over the given window frame options.
- * @param {object} frame Window frame options: rows, range, or groups, and exclude.
- * @returns {any} A spec, left loosely typed as in the other tests.
- */
-const spec = frame => ({
-  data: { t: { file: 'data.csv' } },
-  plot: [{
-    mark: 'dot',
-    data: { from: 't' },
-    x: 'd',
-    y: { avg: 'v', orderby: 'd', ...frame }
-  }]
-});
+function spec<F extends Frame>(frame: F) {
+  return {
+    data: { t: { file: 'data.csv'  as const } },
+    plot: [{
+      mark: 'dot' as const,
+      data: { from: 't' },
+      x: 'd',
+      y: { avg: 'v', orderby: 'd', ...frame }
+    }]
+  }
+};
 
 // depth-first search of the AST for the first node satisfying a predicate
 function find(node, test, seen = new Set()) {
@@ -37,7 +37,7 @@ function find(node, test, seen = new Set()) {
 // Offsets are distances from the current row: the first offset reaches
 // backward (PRECEDING), the second forward (FOLLOWING). The sign of a number
 // is ignored, 0 is CURRENT ROW, and null is UNBOUNDED.
-const cases = [
+const cases: Case[] = [
   {
     name: 'numeric rows offsets',
     frame: { rows: [-6, 0] },
@@ -92,7 +92,7 @@ const cases = [
     frame: { rows: [-6, 0], exclude: 'CURRENT ROW' },
     esm: "vg.frameRows([-6, 0], 'CURRENT ROW')"
   }
-];
+] as const;
 
 describe('Window frames', () => {
   for (const { name, frame, esm, sql } of cases) {

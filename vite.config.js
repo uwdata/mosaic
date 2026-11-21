@@ -26,7 +26,7 @@ export default defineConfig({
     resolve: { conditions: [sourceCondition, ...conditions] },
   },
   test: {
-    exclude: [...configDefaults.exclude, '**/visual.test.js'],
+    exclude: [...configDefaults.exclude, '**/visual.test.ts'],
     projects: [
       project('packages/mosaic/core'),
       project('packages/mosaic/sql', { setupFiles: ['./test/util/matchers.ts'] }),

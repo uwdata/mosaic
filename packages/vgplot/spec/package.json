@@ -36,7 +36,7 @@
     "preschema": "tsc --build",
     "schema": "ts-json-schema-generator -f tsconfig.json -p src/spec/Spec.ts -t Spec --no-type-check --no-ref-encode --functions hide > dist/mosaic-schema.json",
     "test": "pnpm run schema && vitest run --root ../../.. --project spec",
-    "test:visual": "playwright test test/visual.test.js",
+    "test:visual": "playwright test test/visual.test.ts",
     "test:visual:update": "pnpm run test:visual -- --update-snapshots",
     "version": "cd ../../.. && pnpm run docs:schema",
     "prepublishOnly": "pnpm run build",

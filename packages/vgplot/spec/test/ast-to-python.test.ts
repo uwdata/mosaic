@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { astToPython } from '../src/ast-to-python.js';
-import { parseSpec } from '../src/index.js';
+import { parseSpec, SpecNode } from '../src/index.js';
 
 // Build a minimal AST stand-in: astToPython only calls ast.toJSON().
-const ast = json => ({ toJSON: () => json });
+function ast(json): SpecNode {
+  //@ts-expect-error
+  return ({ toJSON: () => json });
+}
 
 describe('astToPython literals', () => {
   it('emits valid Python for non-finite numbers', () => {
