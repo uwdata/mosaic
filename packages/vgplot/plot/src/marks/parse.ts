@@ -157,12 +157,43 @@ export interface ParamEntryValue {
 }
 
 /**
+ * Represents channel values that are wrapped in a questionable way.
+ *
+ * ## Notes
+ *
+ * On `main`, all `MarkOptions` are stored as either `field: ...` or `value: ...`:
+ *
+ * ```ts
+ * const channels = [{channel: 'x', field: ...}, {channel: 'y', value: ...}]
+ * ```
+ *
+ * However, that _should_ only be accepted upstream in the subset of `MarkOptions` that supports
+ * `{value: ...}`.
+ *
+ * Yet it [appears to work][1] for any channel, including things like `tip` where Observable Plot
+ * [doesn't declare support][2] for it.
+ *
+ * [1]: https://github.com/uwdata/mosaic/blob/2c8176525f5e8b0b09c3d617872bc23797b1a161/specs/esm/wnba-shots.js#L34-L35
+ *
+ * [2]: https://github.com/observablehq/plot/blob/2245188895e95ef2043f0ad12c2f900d6e48ef1a/src/mark.d.ts#L292-L293
+ *
+ * ```ts
+ * const passedToMark = { tip: { format: { x: false, y: false } } };
+ *
+ * const becomes = [{ channel: 'tip', value: { format: { x: false, y: false } } }];
+ * ```
+ */
+export interface ObjectEntryValue {
+  value: Record<string, any>;
+}
+
+/**
  * TODO: Narrow after finishing recursion cases.
  *
  * - Field vs value
  * - Avoid using primitives directly
  */
-export type ChannelEntryValue = any | ParamEntryValue | FieldEntry;
+export type ChannelEntryValue = any | ParamEntryValue | ObjectEntryValue | FieldEntry;
 
 /**
  * Everything produced/mutated during `Mark`s `process` thing.
