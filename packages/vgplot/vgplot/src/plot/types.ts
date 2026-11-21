@@ -21,7 +21,7 @@ export type PickValues<T, U> = Pick<T, { [P in keyof T]: T[P] extends U ? P : ne
 
 export type Primitive = number | string | boolean | null;
 export type FixedType = typeof Fixed;
-export type Value = Param<unknown> | Primitive | Primitive[] | FixedType;
+export type Value = Param<any> | Primitive | Primitive[] | FixedType;
 export type CanParam<T extends Primitive | Primitive[]> = T | Param<T>;
 
 type Children = { readonly children: HTMLCollection & { [index: number]: Element | PlotElement | SpaceElement | ConcatElement } };
