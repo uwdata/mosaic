@@ -15,7 +15,7 @@ interface Context extends Record<string, unknown> {
   namedPlots: NamedPlots;
 }
 
-type APIContext = VgPlot & Extensions & { coordinator: () => Coordinator; context: Context };
+export type APIContext = VgPlot & Extensions & { coordinator: () => Coordinator; context: Context };
 
 export function createAPIContext({
   coordinator = _coordinator(),
