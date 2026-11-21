@@ -1,11 +1,12 @@
 import { isParam } from '@uwdata/mosaic-core';
 import { setNamedPlot } from './named-plots.js';
 import type { PlotDirective, PickValues, Plot, Value, CanParam, Primitive, FixedType } from './types.js';
+import type { APIContext } from '../context.js';
 
 
 type AnyValue = Value | object;
 
-export function name(name: string): PlotDirective {
+export function name(this: ThisType<APIContext>, name: string): PlotDirective {
   return plot => setNamedPlot(this, name, plot);
 }
 

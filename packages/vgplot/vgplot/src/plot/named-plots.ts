@@ -1,13 +1,20 @@
 import type { PlotDirective, Plot } from './types.js';
 
 export class NamedPlots extends Map<string, Plot> {
-  waiting: Map<string, PlotDirective[]>;
+  private waiting: Map<string, PlotDirective[]>;
+
+  constructor(iterable?: Iterable<readonly [string, Plot]> | null) {
+    super(iterable)
+    this.waiting = new Map
+  }
+
   request(name: string, callback: PlotDirective): void {
-    if (this.has(name)) {
-      callback(this.get(name));
+    let plot: Plot | undefined;
+    if ((plot = this.get(name))) {
+      callback(plot);
     } else {
-      const waiting: Map<string, PlotDirective[]> = this.waiting || (this.waiting = new Map);
-      const list = waiting.get(name) || [];
+      const waiting = this.waiting;
+      const list = waiting.get(name) ?? [];
       waiting.set(name, list.concat(callback));
     }
   }
@@ -16,14 +23,15 @@ export class NamedPlots extends Map<string, Plot> {
       console.warn(`Overwriting named plot "${name}".`);
     }
     const { waiting } = this;
-    if (waiting?.has(name)) {
-      waiting.get(name).forEach(fn => fn(plot));
+    let old: PlotDirective[] | undefined;
+    if ((old = waiting.get(name))) {
+      old.forEach(fn => fn(plot));
       waiting.delete(name);
     }
     return super.set(name, plot);
   }
   clear(): void {
-    this.waiting?.clear();
+    this.waiting.clear();
     return super.clear();
   }
 }
