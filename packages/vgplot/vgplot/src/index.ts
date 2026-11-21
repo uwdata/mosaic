@@ -26,3 +26,5 @@ export * as attributeDirectives from './plot/attributes.js';
 export * as markDirectives from './plot/marks.js';
 export * as interactorDirectives from './plot/interactors.js';
 export * as legendDirectives from './plot/legends.js';
+
+export type * as types from './types.js'

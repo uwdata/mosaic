@@ -46,8 +46,8 @@ export class PlotNode extends ParentNode<HTMLElement, Plot> {
       ...(this.attributes)
     ];
     return ctx.api[PLOT](
-      this.children.map(c => c.instantiate(ctx)),
-      attrs.map(a => a.instantiate(ctx))
+      ...this.children.map(c => c.instantiate(ctx)),
+      ...attrs.map(a => a.instantiate(ctx))
     );
   }
 

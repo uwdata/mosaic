@@ -1,6 +1,7 @@
 import { dataPath } from '../util/data-path.js';
+import type { APIContext } from '../../src/context.js';
 
-export default async function(vg) {
+export default async function (vg: APIContext): Promise<HTMLElement> {
   await vg.context.coordinator.exec([
     vg.loadParquet('travelers', dataPath('travelers.parquet')),
     'CREATE TABLE IF NOT EXISTS endpoint AS SELECT * FROM travelers ORDER BY date DESC LIMIT 1'

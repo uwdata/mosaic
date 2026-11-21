@@ -19,7 +19,7 @@ export class VConcatNode extends ParentNode<HTMLDivElement, VConcat> {
   }
 
   instantiate(ctx: InstantiateContext): HTMLDivElement {
-    return ctx.api[VCONCAT](this.children.map(c => c.instantiate(ctx)));
+    return ctx.api[VCONCAT](...this.children.map(c => c.instantiate(ctx)));
   }
 
   codegen(ctx: CodegenContext): string {
