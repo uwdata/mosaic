@@ -57,6 +57,11 @@ export class Toggle {
     return clausePoints(fields, value, opt);
   }
 
+  /**
+   * @param {*} svg
+   * @param {string} [selector]
+   * @param {(target: any) => any[]} [accessor]
+   */
   init(svg, selector, accessor) {
     const { mark, as, selection } = this;
     const columns = mark.data && 'columns' in mark.data ? mark.data.columns : {};
