@@ -10,7 +10,7 @@ import { chainFromIterable, map } from '../itertools.js';
 import { Transform } from '../symbols.js';
 import type { TransformScaleName } from '../types.js';
 import type { Mark2 } from './Mark2.js';
-import type { BinReturn, MarkOptions, OptionName } from './options.js';
+import type { BinReturn, FieldOrLiteralColor, MarkOptions, OptionName } from './options.js';
 
 /**
  * Placeholder for if this'll be generic.
@@ -106,9 +106,9 @@ function mapPop<V, D = undefined>(mapping: Map<any, V>, key: unknown, defaultVal
   return value;
 }
 
-const PRIMTIVE: ReadonlySet<string> = new Set(['string', 'number', 'boolean', 'symbol']);
+const PRIMTIVE: ReadonlySet<string> = new Set(['string', 'number', 'boolean']);
 
-function isPrimitive(value: unknown): value is string | number | boolean | symbol | null {
+function isPrimitive(value: unknown): value is string | number | boolean | null {
   return PRIMTIVE.has(typeof value) || value === null;
 }
 
@@ -148,8 +148,8 @@ export interface FieldEntry {
   as: string;
 }
 
-export interface ParamEntryValue {
-  value: any;
+export interface ValueEntry<T = any> {
+  value: T;
 }
 
 /**
@@ -179,7 +179,7 @@ export interface ParamEntryValue {
  * const becomes = [{ channel: 'tip', value: { format: { x: false, y: false } } }];
  * ```
  */
-export interface ObjectEntryValue {
+export interface ObjectValueEntry {
   value: Record<string, any>;
 }
 
@@ -189,7 +189,7 @@ export interface ObjectEntryValue {
  * - Field vs value
  * - Avoid using primitives directly
  */
-export type ChannelEntryValue = any | ParamEntryValue | ObjectEntryValue | FieldEntry;
+export type ChannelEntry = any | ValueEntry | ObjectValueEntry | FieldEntry;
 
 /**
  * Everything produced/mutated during `Mark`s `process` thing.
@@ -209,7 +209,7 @@ export interface ParsedState {
    */
   params: Set<mc.Param<any>>;
 
-  channels: Map<ChannelKey, ChannelEntryValue>;
+  channels: Map<ChannelKey, ChannelEntry>;
 
   /** Needs to be popped from the result of `parse` */
   channelsExtra: Map<string, FieldEntry> | undefined;
@@ -296,6 +296,29 @@ export class OptionsImpl implements OptionsSpec {
     const channels = new Map(chainFromIterable(map(it, parseOne)));
     return { channels, channelsExtra: mapPop(channels, 'channelsExtra'), params };
   }
+  // oxlint-disable-next-line class-methods-use-this
+  protected parseString<C extends ChannelKey>(
+    // oxlint-disable-next-line no-unused-vars
+    channel: C,
+    // oxlint-disable-next-line no-unused-vars
+    value: FieldOrLiteralColor,
+  ): [C, FieldEntry] | [C, ValueEntry<string>] {
+    throw new Error("TODO: 'parseString' is not yet implemented");
+  }
+
+  protected parsePrimitive<C extends ChannelKey>(
+    channel: C,
+    value: string | number | boolean | FieldOrLiteralColor,
+  ): [C, FieldEntry] | [C, ValueEntry<number | boolean | string>] {
+    switch (typeof value) {
+      case 'string': {
+        return this.parseString(channel, value);
+      }
+      default: {
+        return [channel, { value }];
+      }
+    }
+  }
 
   /**
    * Rough branching logic to identify the cases in `MarkOptions`.
@@ -312,9 +335,7 @@ export class OptionsImpl implements OptionsSpec {
   protected parseEntry<O extends MarkOptions>(
     mark: Mark2<O>,
     params: Set<mc.Param<any>>,
-  ): ([name, value]: [OptionName<O>, O[OptionName<O>]]) => Iterable<
-    [ChannelKey, ChannelEntryValue]
-  > {
+  ): ([name, value]: [OptionName<O>, O[OptionName<O>]]) => Iterable<[ChannelKey, ChannelEntry]> {
     const { supportsParam, supportsSQLNode, supportsObject } = this;
 
     /** Duplicated from `collectParams` to reuse existing `Set<mc.Param<any>>` */
@@ -328,11 +349,12 @@ export class OptionsImpl implements OptionsSpec {
     }
 
     // oxlint-disable-next-line max-statements
-    function* iterParse([name, value]: [OptionName<O>, O[OptionName<O>]]): Iterable<
-      [ChannelKey, ChannelEntryValue]
-    > {
+    function* iterParse<T extends OptionsImpl>(
+      this: T & ThisType<T>,
+      [name, value]: [OptionName<O>, O[OptionName<O>]],
+    ): Iterable<[ChannelKey, ChannelEntry]> {
       if (isPrimitive(value)) {
-        throw new Error(`todo: handle primitives, got: ${String(value)}`);
+        yield this.parsePrimitive(name, value);
       } else if (value instanceof Param) {
         if (supportsParam.has(name)) {
           const param = value;
@@ -391,7 +413,7 @@ export class OptionsImpl implements OptionsSpec {
         throw new TypeError(`Unsupported data type '${typeof value}', got: ${value}`);
       }
     }
-    return iterParse;
+    return iterParse.bind(this);
   }
 
   /**

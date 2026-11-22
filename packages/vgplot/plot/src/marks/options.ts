@@ -52,7 +52,7 @@ type Reducer =
   | ReducerPercentile;
 
 // https://github.com/microsoft/TypeScript/issues/29729
-type FieldOrLiteralColor = string & Record<never, never>;
+export type FieldOrLiteralColor = string & Record<never, never>;
 
 type ColumnValues = any[];
 type ChannelConstant = number | boolean | null;
