@@ -357,7 +357,7 @@ export class OptionsImpl implements OptionsSpec {
           throw new TypeError(`SQL is not supported for '${name}', got: ${value}`);
         }
       } else if (Array.isArray(value)) {
-        throw new Error(`todo: handle ColumnValues, got: ${value}`);
+        yield [name, { value }];
       } else if (isBinTransform(value)) {
         if (!isTransformScaleName(name)) {
           throw new TypeError(
