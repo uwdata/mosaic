@@ -140,10 +140,6 @@ function field(node: msql.SQLNode, as: string): FieldEntry {
 
 const PARAM = 'PARAM';
 
-function isParamNode(node: msql.SQLNode): node is msql.ParamNode {
-  return node.type === PARAM;
-}
-
 /** TODO: Narrow after finishing recursion cases */
 export type ChannelKey = string;
 
@@ -321,6 +317,16 @@ export class OptionsImpl implements OptionsSpec {
   > {
     const { supportsParam, supportsSQLNode, supportsObject } = this;
 
+    /** Duplicated from `collectParams` to reuse existing `Set<mc.Param<any>>` */
+    function parseSQLNode(channel: ChannelKey, node: msql.SQLNode): [ChannelKey, FieldEntry] {
+      walk(node, (child) => {
+        if (child.type === PARAM) {
+          params.add((child as msql.ParamNode).param as mc.Param<any>);
+        }
+      });
+      return [channel, field(node, channel)];
+    }
+
     // oxlint-disable-next-line max-statements
     function* iterParse([name, value]: [OptionName<O>, O[OptionName<O>]]): Iterable<
       [ChannelKey, ChannelEntryValue]
@@ -341,18 +347,7 @@ export class OptionsImpl implements OptionsSpec {
         }
       } else if (isNode(value)) {
         if (supportsSQLNode.has(name)) {
-          /**
-           * Intentionally duplicated from `collectParams`, as this saves creating an additional
-           * `Array` and `Set`
-           */
-          walk(value, (node) => {
-            if (isParamNode(node)) {
-              //@ts-expect-error `ParamLike` is not `Param`
-              params.add(node.param);
-            }
-          });
-
-          yield [name, field(value, name)];
+          yield parseSQLNode(name, value);
         } else {
           throw new TypeError(`SQL is not supported for '${name}', got: ${value}`);
         }
@@ -365,12 +360,10 @@ export class OptionsImpl implements OptionsSpec {
           );
         }
         const binResult = value(mark, name);
-        // oxlint-disable-next-line guard-for-in no-unreachable-loop
+        // oxlint-disable-next-line guard-for-in
         for (const binChannelName in binResult) {
           const c = binChannelName as keyof typeof binResult;
-          // NOTE: Every example is `vg.bin("column_name")`, but `column` is typed as `ExprValue`
-          const node = binResult[c];
-          throw new Error(`todo: handle inside 'BinNodeTransform', got: ${node}`);
+          yield parseSQLNode(c, binResult[c]);
         }
       } else if (typeof value === 'object') {
         if (name === 'channels') {

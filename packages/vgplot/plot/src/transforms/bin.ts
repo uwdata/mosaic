@@ -1,5 +1,5 @@
 import type { SQLCodeGenerator, ExprValue, BinDateOptions } from '@uwdata/mosaic-sql';
-import { ExprNode, binDate, binHistogram, duckDBCodeGenerator } from '@uwdata/mosaic-sql';
+import { ExprNode, binDate, binHistogram, duckDBCodeGenerator, asNode } from '@uwdata/mosaic-sql';
 import { Transform } from '../symbols.js';
 import { channelScale } from '../marks/util/channel-scale.js';
 import type { MarkType, TransformScaleName } from '../types.js';
@@ -21,9 +21,6 @@ export interface BinNumericOptions {
 }
 
 export type BinOptions = BinNumericOptions | BinDateOptions;
-
-
-type Column = ExprValue;
 
 type ChannelExtent = 'x1' | 'y1' | 'x2' | 'y2';
 type BinChannels = Partial<Record<ChannelExtent | TransformScaleName, BinTransformNode>>;
@@ -49,17 +46,18 @@ function isMarkTypeExtent(type: MarkType): type is MarkTypeExtent{
   return EXTENT_MARK.has(type);
 }
 
-export function bin(field: Column, options: BinOptions = {}): BinReturn {
+export function bin(field: ExprValue, options: BinOptions = {}): BinReturn {
+  const column = asNode(field)
   const fn = (mark: MarkDeps, channel: TransformScaleName): BinChannels => {
     const type = mark.type;
     if (isMarkTypeExtent(type) && (hasExtent(type, channel))) {
       return {
-        [`${channel}1`]: binNode(mark, channel, field, options),
-        [`${channel}2`]: binNode(mark, channel, field, { ...options, offset: 1 })
+        [`${channel}1`]: binNode(mark, channel, column, options),
+        [`${channel}2`]: binNode(mark, channel, column, { ...options, offset: 1 })
       };
     } else {
       return {
-        [channel]: binNode(mark, channel, field, options)
+        [channel]: binNode(mark, channel, column, options)
       };
     }
   };
@@ -67,7 +65,7 @@ export function bin(field: Column, options: BinOptions = {}): BinReturn {
   return fn;
 }
 
-function binNode(mark: MarkDeps, channel: TransformScaleName, column: Column, options: BinOptions): BinTransformNode {
+function binNode(mark: MarkDeps, channel: TransformScaleName, column: ExprNode, options: BinOptions): BinTransformNode {
   return new BinTransformNode(column, mark, channel, options);
 }
 
@@ -78,11 +76,11 @@ function hasTimeScale(mark: MarkDeps, channel: TransformScaleName): boolean {
 }
 
 export class BinTransformNode extends ExprNode {
-  constructor(public column: Column, public mark: MarkDeps, public channel: TransformScaleName, public options: BinOptions) {
+  constructor(public column: ExprNode, public mark: MarkDeps, public channel: TransformScaleName, public options: BinOptions) {
     super('CUSTOM');
   }
 
-  get stats(): { column: Column; stats: ['min', 'max']; } {
+  get stats(): { column: ExprNode; stats: ['min', 'max']; } {
     return { column: this.column, stats: ['min', 'max'] };
   }
 
