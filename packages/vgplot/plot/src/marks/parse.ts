@@ -386,9 +386,13 @@ export class OptionsImpl implements OptionsSpec {
         } else if (!supportsObject.has(name)) {
           throw new TypeError(`'${name}' does not support objects, got: ${value}`);
         } else {
-          const todoTypes =
-            'TipOptions | ChannelDomainSort | OrderValue | OrderChannel | Record<string, string> | ChannelValueLabel | ChannelValueScale';
-          throw new Error(`todo: handle object ('${todoTypes}'), got: ${value}`);
+          /**
+           * (Mainly) matches `main`, which also doesn't handle things like params inside `tip` or
+           * existing `{value: ...}` objects.
+           *
+           * Skips `isFieldObject`, will add back later if the removal explains what it allowed.
+           */
+          yield [name, { value }];
         }
       } else {
         throw new TypeError(`Unsupported data type '${typeof value}', got: ${value}`);
