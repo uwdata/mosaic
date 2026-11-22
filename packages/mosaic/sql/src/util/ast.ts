@@ -9,6 +9,11 @@ import { literal, verbatim } from '../functions/literal.js';
 import { tableRef } from '../functions/table-ref.js';
 import { parseIdentifier } from './string.js';
 import { isArray, isParamLike, isString } from './type-check.js';
+import type { LiteralNode } from '../ast/literal.js';
+
+function paramOrLiteral(value: unknown): ParamNode | LiteralNode {
+  return isParamLike(value) ? new ParamNode(value) : literal(value)
+}
 
 /**
  * Interpret a value as a SQL AST node. String values are assumed to be
@@ -18,7 +23,7 @@ import { isArray, isParamLike, isString } from './type-check.js';
  * @param value The value to interpret as a SQL AST node.
  */
 export function asNode(value: unknown): ExprNode {
-  return isString(value) ? column(value) : asLiteral(value);
+  return value instanceof ExprNode ? value : isString(value) ? column(value) : paramOrLiteral(value);
 }
 
 /**
@@ -27,7 +32,7 @@ export function asNode(value: unknown): ExprNode {
  * @param value The value to interpret as a column reference AST node.
  */
 export function asColumnRef(value: string | ColumnRefNode): ColumnRefNode {
-  return isString(value) ? column(value) : value;
+  return value instanceof ExprNode ? value : column(value);
 }
 
 /**
@@ -38,9 +43,9 @@ export function asColumnRef(value: string | ColumnRefNode): ColumnRefNode {
  * @param value The value to interpret as a verbatim AST node.
  */
 export function asVerbatim(value: unknown): ExprNode {
-  return isString(value)
+  return value instanceof ExprNode ? value : isString(value)
     ? verbatim(value)
-    : asLiteral(value);
+    : paramOrLiteral(value);
 }
 
 /**
@@ -50,9 +55,7 @@ export function asVerbatim(value: unknown): ExprNode {
  * @param value The value to interpret as a literal AST node.
  */
 export function asLiteral(value: unknown): ExprNode {
-  return value instanceof ExprNode ? value
-    : isParamLike(value) ? new ParamNode(value)
-    : literal(value);
+  return value instanceof ExprNode ? value : paramOrLiteral(value)
 }
 
 /**
