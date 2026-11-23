@@ -29,8 +29,8 @@ interface ValidatingMatchers<T> {
 
 declare module 'vitest' {
   // The type parameters must match Vitest's own Matchers declaration so the interfaces merge.
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars
   interface Matchers<R extends void | Promise<void> = void | Promise<void>, T = unknown>
+    // oxlint-disable-next-line typescript/no-empty-object-type
     extends ValidatingMatchers<T> {}
 }
 
