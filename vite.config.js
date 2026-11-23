@@ -18,6 +18,13 @@ function project(root, test = {}) {
 export default defineConfig({
   server: {
     open: '/dev/index.html',
+    proxy: {
+      '/clickhouse/': {
+        target: 'http://127.0.0.1:8124',
+        rewrite: url => url.replace(/^\/clickhouse/, ''),
+        headers: { 'X-ClickHouse-User': 'demo' }
+      }
+    },
   },
   resolve: {
     conditions: [sourceCondition, ...conditions],

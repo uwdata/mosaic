@@ -187,6 +187,9 @@ importers:
       '@uwdata/mosaic-spec':
         specifier: workspace:*
         version: link:packages/vgplot/spec
+      '@uwdata/mosaic-sql':
+        specifier: workspace:*
+        version: link:packages/mosaic/sql
       '@uwdata/vgplot':
         specifier: workspace:*
         version: link:packages/vgplot/vgplot
@@ -332,6 +335,9 @@ importers:
 
   packages/mosaic/sql:
     devDependencies:
+      '@types/node':
+        specifier: ^26.0.0
+        version: 26.6.6
       '@uwdata/mosaic-duckdb':
         specifier: workspace:^
         version: link:../../server/duckdb

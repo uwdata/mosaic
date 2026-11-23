@@ -1,4 +1,6 @@
-import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, MaybeArray, Query, TableRefNode } from '@uwdata/mosaic-sql';
+import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, JSType, MaybeArray, Query, TableRefNode } from '@uwdata/mosaic-sql';
+
+export type { ColumnDescription, JSType } from '@uwdata/mosaic-sql';
 
 /** Arrow IPC bytes as returned by a connector. */
 export type ArrowIPCBytes = ArrayBuffer | Uint8Array | Uint8Array[];
@@ -25,16 +27,6 @@ export interface QueryEntry {
   request: QueryRequest;
   result: PromiseWithResolvers<unknown>;
 }
-
-/** String indicating a JavaScript data type. */
-export type JSType =
-  | 'null'
-  | 'number'
-  | 'date'
-  | 'boolean'
-  | 'string'
-  | 'array'
-  | 'object';
 
 /** String indicating a requested summary statistic. */
 export type Stat =
@@ -65,13 +57,6 @@ export interface FieldInfo extends Partial<Record<Stat, number>> {
   sqlType: string,
   type: JSType,
   nullable: boolean
-}
-
-/** A result row from a DESCRIBE query. */
-export interface ColumnDescription {
-  column_name: string,
-  column_type: string,
-  null: 'YES' | 'NO'
 }
 
 /**

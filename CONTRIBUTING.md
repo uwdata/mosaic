@@ -26,6 +26,20 @@ See the `scripts` in [`package.json`](package.json) for other available commands
 * Run `pnpm dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. We recommend using Firefox since it remembers the selected dropdown across browser reloads.
 * For greater performance, run `pnpm server` to launch the [`duckdb-server`](packages/server/duckdb-server) and connect to it from the examples. This runs the server in development mode, so the server restarts if you change its code.
 
+### ClickHouse demo
+
+Install ClickHouse using the [official installation instructions](https://clickhouse.com/docs/install), or use [Homebrew on macOS](https://formulae.brew.sh/formula/clickhouse):
+
+``` sh
+brew install clickhouse
+```
+
+The browser demo requires `server` support; check that `clickhouse server --help` works with your installation. The SQL execution tests require `local` support.
+
+In one terminal, run `pnpm server:clickhouse`. In another, run `pnpm dev` and open `/dev/index.html` at the URL Vite prints. Choose **ClickHouse**, then an enabled example.
+
+The demo supports a subset of examples with pre-aggregation disabled.
+
 ## Documentation
 
 The documentation site is built with [VitePress](https://vitepress.dev/) from the `docs/` directory. Run `pnpm docs:dev` for a dev server with hot reload, or `pnpm docs:build` and `pnpm docs:preview` to build and inspect the production site.

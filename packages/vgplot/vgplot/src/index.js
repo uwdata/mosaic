@@ -3,6 +3,7 @@ export {
   MosaicClient,
   RestConnector,
   DuckDBWASMConnector,
+  ClickHouseConnector,
   restConnector, // deprecated
   wasmConnector // deprecated
 } from '@uwdata/mosaic-core';

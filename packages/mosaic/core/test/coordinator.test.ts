@@ -1,7 +1,8 @@
 import { type Table, tableFromArrays, tableToIPC } from '@uwdata/flechette';
-import { count, Query } from '@uwdata/mosaic-sql';
+import { clickHouseCodeGenerator, count, duckDBCodeGenerator, Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect } from 'vitest';
 import { type ArrowQueryRequest, clausePoint, type Connector, Coordinator, coordinator, makeClient, Selection } from '../src/index.js';
+import { QueryManager } from '../src/QueryManager.js';
 import { heldConnector } from './util/held-connector.js';
 import { TestClient } from './util/test-client.js';
 
@@ -27,6 +28,18 @@ describe('coordinator', () => {
     expect(coordinator()).toBe(mc2);
   });
 
+  it('preserves a configured query manager code generator', () => {
+    const connector = { async query() {} } as unknown as Connector;
+    const manager = new QueryManager();
+    expect(manager.codegen()).toBe(duckDBCodeGenerator);
+    manager.codegen(clickHouseCodeGenerator);
+
+    new Coordinator(connector, { manager });
+    expect(manager.codegen()).toBe(clickHouseCodeGenerator);
+
+    new Coordinator(connector, { manager, codegen: duckDBCodeGenerator });
+    expect(manager.codegen()).toBe(duckDBCodeGenerator);
+  });
 
   it('applies results per client in request order', async () => {
     const { connector, requests } = heldConnector();

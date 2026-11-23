@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isDescribeQuery, tableRef } from '@uwdata/mosaic-sql';
+import { duckDBCodeGenerator, isDescribeQuery, tableRef } from '@uwdata/mosaic-sql';
 import type { Coordinator, FieldInfoRequest } from '../src/index.js';
 import { queryFieldInfo } from '../src/index.js';
 
@@ -9,6 +9,9 @@ import { queryFieldInfo } from '../src/index.js';
  */
 function stubCoordinator(describe: () => unknown): Coordinator {
   return {
+    manager: {
+      codegen: () => duckDBCodeGenerator
+    },
     query: () => Promise.resolve(describe())
   } as unknown as Coordinator;
 }
@@ -37,6 +40,7 @@ describe('queryFieldInfo', () => {
   it('requests table info as a describe query node', async () => {
     const queries: unknown[] = [];
     const mc = {
+      manager: { codegen: () => duckDBCodeGenerator },
       query: (query: unknown) => {
         queries.push(query);
         return Promise.resolve([
@@ -53,7 +57,10 @@ describe('queryFieldInfo', () => {
 
   it('queries a schema-qualified table', async () => {
     const queries: string[] = [];
-    const mc = { query: (q: unknown) => (queries.push(`${q}`), Promise.resolve([])) } as unknown as Coordinator;
+    const mc = {
+      manager: { codegen: () => duckDBCodeGenerator },
+      query: (q: unknown) => (queries.push(`${q}`), Promise.resolve([]))
+    } as unknown as Coordinator;
     const table = tableRef('schema_name', 'table_name')!;
     await queryFieldInfo(mc, [{ table, column: 'my_column', stats: ['min'] }]);
     expect(queries[1]).toContain('FROM "schema_name"."table_name"');

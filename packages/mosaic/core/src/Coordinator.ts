@@ -7,8 +7,8 @@ import { type Selection } from './Selection.js';
 import { type Cache, type Logger, type QueryType } from './types.js';
 import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './clause/index.js';
-import { MaybeArray } from '@uwdata/mosaic-sql';
 import { type ExtractionOptions, Table } from '@uwdata/flechette';
+import { MaybeArray, type SQLCodeGenerator } from '@uwdata/mosaic-sql';
 import { QueryError } from './util/query-error.js';
 
 interface FilterGroupEntry {
@@ -67,6 +67,7 @@ export class Coordinator {
    * @param options.preagg Options for the Pre-aggregator.
    * @param options.maxPendingUpdates How many selection updates a client may
    *  have in flight. Defaults to 1.
+   * @param options.codegen SQL dialect visitor for the backend.
    */
   constructor(
     db: Connector = new RestConnector(),
@@ -79,6 +80,7 @@ export class Coordinator {
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
       maxPendingUpdates?: number;
+      codegen?: SQLCodeGenerator;
     } = {}
   ) {
     const {
@@ -89,7 +91,8 @@ export class Coordinator {
       timeout,
       consolidate = true,
       preagg = {},
-      maxPendingUpdates = 1
+      maxPendingUpdates = 1,
+      codegen
     } = options;
     this.maxPendingUpdates = maxPendingUpdates;
     this.manager = manager;
@@ -97,6 +100,7 @@ export class Coordinator {
     if (ipc) this.manager.ipc(ipc);
     if (timeout !== undefined) this.manager.timeout(timeout);
     this.manager.consolidate(consolidate);
+    if (codegen) this.manager.codegen(codegen);
     this.databaseConnector(db);
     this.logger(logger);
     this.clear();

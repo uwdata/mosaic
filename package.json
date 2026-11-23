@@ -29,6 +29,7 @@
     "server:rust": "cd packages/server/duckdb-server-rust && cargo run",
     "server:go": "cd packages/server/duckdb-server-go && go run -tags=duckdb_arrow .",
     "server:node": "nodemon packages/server/duckdb/bin/run-server.js",
+    "server:clickhouse": "node bin/clickhouse-demo.mjs",
     "dev": "vite"
   },
   "devDependencies": {
@@ -37,6 +38,7 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "@uwdata/mosaic-core": "workspace:*",
     "@uwdata/mosaic-spec": "workspace:*",
+    "@uwdata/mosaic-sql": "workspace:*",
     "@uwdata/vgplot": "workspace:*",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
