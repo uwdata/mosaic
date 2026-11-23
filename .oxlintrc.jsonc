@@ -1,7 +1,4 @@
 {
-  "plugins": [
-    "typescript"
-  ],
   "categories": {
     "correctness": "error"
   },
@@ -47,6 +44,14 @@
       "rules": {
         "no-var": "off",
         "prefer-const": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/mosaic/sql/src/ast/case.ts",
+      ],
+      "rules": {
+        "unicorn/no-thenable": "off"
       }
     }
   ]
