@@ -1,16 +1,19 @@
 {
+  // TODO @dangotbanned: replace all refs to `eslint` commands
+  // TODO @dangotbanned: remove all `eslint` config
+  // TODO @dangotbanned: remove `eslint` from deps
   "categories": {
-    "correctness": "error"
+    "correctness": "error",
   },
   "env": {
     "builtin": true,
     "es2024": true,
     "browser": true,
     "jest": true,
-    "node": true
+    "node": true,
   },
   "options": {
-    "reportUnusedDisableDirectives": "warn"
+    "reportUnusedDisableDirectives": "warn",
   },
   "rules": {
     "no-case-declarations": "error",
@@ -39,20 +42,20 @@
   "overrides": [
     {
       "files": [
-        "**/*.js",
+        "**/*.js"
       ],
       "rules": {
         "no-var": "off",
-        "prefer-const": "off"
-      }
+        "prefer-const": "off",
+      },
     },
     {
       "files": [
-        "packages/mosaic/sql/src/ast/case.ts",
+        "packages/mosaic/sql/src/ast/case.ts"
       ],
       "rules": {
-        "unicorn/no-thenable": "off"
-      }
-    }
-  ]
+        "unicorn/no-thenable": "off",
+      },
+    },
+  ],
 }
