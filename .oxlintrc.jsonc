@@ -9,6 +9,9 @@
     "jest": true,
     "node": true
   },
+  "options": {
+    "reportUnusedDisableDirectives": "warn"
+  },
   "rules": {
     "no-case-declarations": "error",
     "no-empty": "error",
