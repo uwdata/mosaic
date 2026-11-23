@@ -17,7 +17,7 @@ export async function startClickHouse({ port, signal }) {
   let exited;
   let stopped = false;
 
-  async function query(sql, database = 'default') {
+  async function query(sql, database = 'default', timeout = 10_000) {
     const response = await fetch(`http://127.0.0.1:${port}/?database=${database}`, {
       method: 'POST',
       headers: {
@@ -25,7 +25,7 @@ export async function startClickHouse({ port, signal }) {
         'X-ClickHouse-Key': password
       },
       body: sql,
-      signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)].filter(Boolean))
+      signal: AbortSignal.any([signal, AbortSignal.timeout(timeout)].filter(Boolean))
     });
     const text = await response.text();
     if (!response.ok) throw new Error(text);

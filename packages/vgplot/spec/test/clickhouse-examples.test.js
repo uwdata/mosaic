@@ -7,8 +7,8 @@ import { createAPIContext } from '@uwdata/vgplot';
 import { astToDOM, parseSpec } from '../src/index.js';
 import { clientsReady } from '../../vgplot/test/util/clients-ready.js';
 import { loadSpec } from './load-specs.js';
-import { clickhouseDatabase, clickhouseSupports, clickhouseUnsupported } from '../../../../dev/clickhouse/examples.mjs';
-import { exampleNames, loadClickHouseExample } from '../../../../dev/clickhouse/fixtures.mjs';
+import { clickhouseDatabase, clickhouseRemoteExamples, clickhouseSupports, clickhouseUnsupported } from '../../../../dev/clickhouse/examples.mjs';
+import { exampleNames, loadClickHouseExample, remoteTimeout } from '../../../../dev/clickhouse/fixtures.mjs';
 import { startClickHouse } from '../../../../dev/clickhouse/server.mjs';
 
 const enabled = process.env.CLICKHOUSE_EXAMPLES === '1';
@@ -57,7 +57,7 @@ describe.skipIf(!enabled)('gallery examples on ClickHouse', () => {
         if (result.status === 'rejected') errors.push(result.reason);
       }
       expect(errors).toEqual([]);
-    });
+    }, clickhouseRemoteExamples.includes(name) ? remoteTimeout : undefined);
   }
 });
 

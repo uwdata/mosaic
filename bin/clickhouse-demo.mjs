@@ -14,6 +14,8 @@ try {
   await loadClickHouseFixtures(server.query);
 
   console.log(`ClickHouse demo ready on http://127.0.0.1:${port}.\nRun pnpm dev, then choose ClickHouse in the gallery. Ctrl-C stops the server and removes its data.`);
+  console.log('Loading remote examples in the background...');
+  await loadClickHouseFixtures(server.query, { remote: true });
   await Promise.race([
     server.exited.then(code => { throw new Error(`ClickHouse exited unexpectedly (${code}).`); }),
     new Promise(resolve => {
