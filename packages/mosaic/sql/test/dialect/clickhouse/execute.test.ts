@@ -105,14 +105,18 @@ describe.skipIf(!enabled)('ClickHouse execution', { timeout: 15_000 }, () => {
       combined: bitOr(4, 1),
       shiftedLeft: bitLeft(3, 2),
       shiftedRight: bitRight(12, 2),
-      castValue: cast(literal('42'), 'Int32')
+      castValue: cast(literal('42'), 'Int32'),
+      rounded: cast(literal(2.7), 'INTEGER'),
+      roundedNegative: cast(literal(-2.7), 'INTEGER')
     }));
     expect(result).toEqual([{
       complemented: 5,
       combined: 5,
       shiftedLeft: 12,
       shiftedRight: 3,
-      castValue: 42
+      castValue: 42,
+      rounded: 3,
+      roundedNegative: -3
     }]);
   });
 

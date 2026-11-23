@@ -61,9 +61,11 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
 
   visitCast(node: CastNode): string {
     const { expr, cast, isTry } = node;
-    return isTry
-      ? `accurateCastOrNull(${this.toString(expr)}, ${this.literalToSQL(cast)})`
-      : `CAST(${this.toString(expr)} AS ${cast})`;
+    if (isTry) return `accurateCastOrNull(${this.toString(expr)}, ${this.literalToSQL(cast)})`;
+    const value = INTEGER_TYPE.test(cast.trim()) && !isWholeOrString(expr)
+      ? `round(${this.toString(expr)})`
+      : this.toString(expr);
+    return `CAST(${value} AS ${cast})`;
   }
 
   visitBinary(node: BinaryOpNode): string {
@@ -510,6 +512,16 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
       null: row.type.startsWith('Nullable(') ? 'YES' : 'NO'
     }));
   }
+}
+
+const INTEGER_TYPE = /^U?(INT(EGER|\d+)?|TINYINT|SMALLINT|BIGINT|HUGEINT)$/i;
+
+function isWholeOrString(expr: ExprNode): boolean {
+  if (expr instanceof LiteralNode) {
+    return typeof expr.value === 'string' || Number.isInteger(expr.value);
+  }
+  return expr instanceof FunctionNode && expr.args.length === 1
+    && ['floor', 'ceil', 'round', 'trunc'].includes(expr.name.toLowerCase());
 }
 
 const NOT_NULL_ON_EMPTY = new Set(['count', 'uniq', 'entropy', 'grouparray', 'topk', 'array_agg']);
