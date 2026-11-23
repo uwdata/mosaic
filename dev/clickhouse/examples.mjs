@@ -4,6 +4,7 @@ export const clickhouseUnsupported = {
   'mark-types': 'inline data in spec',
   'nyc-taxi-rides': 'remote data file',
   'observable-latency': 'remote data file',
+  'presidential-opinion': 'dates before 1900',
   'region-tests': 'spatial data',
   'seattle-weather-pivot': 'PIVOT is not supported',
   unemployment: 'spatial data',
