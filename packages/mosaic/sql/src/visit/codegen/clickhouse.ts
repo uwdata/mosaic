@@ -68,18 +68,12 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
     return `CAST(${value} AS ${cast})`;
   }
 
+
+  static binaryOps = new Map([['**', 'pow'], ['//', 'intDiv'], ['&', 'bitAnd'], ['|', 'bitOr'], ['<<', 'bitShiftLeft'], ['>>', 'bitShiftRight']]);
+
   visitBinary(node: BinaryOpNode): string {
-    const left = this.toString(node.left);
-    const right = this.toString(node.right);
-    switch (node.op) {
-      case '**':  return `pow(${left}, ${right})`;
-      case '//':  return `intDiv(${left}, ${right})`;
-      case '&':   return `bitAnd(${left}, ${right})`;
-      case '|':   return `bitOr(${left}, ${right})`;
-      case '<<':  return `bitShiftLeft(${left}, ${right})`;
-      case '>>':  return `bitShiftRight(${left}, ${right})`;
-    }
-    return super.visitBinary(node);
+    const name = ClickHouseCodeGenerator.binaryOps.get(node.op);
+    return name ? `${name}(${this.toString(node.left)}, ${this.toString(node.right)})` : super.visitBinary(node);
   }
 
   visitUnary(node: UnaryOpNode): string {
