@@ -5,6 +5,7 @@
       "docs/public/specs/yaml/*"
     ]
   },
+  "js/ts.preferences.quoteStyle": "single",
   "json.schemas": [{
     "fileMatch": [
       "specs/json/*",
