@@ -9,9 +9,6 @@
     "jest": true,
     "node": true
   },
-  "globals": {
-    "TemplateStringsArray": "writable"
-  },
   "rules": {
     "no-case-declarations": "error",
     "no-empty": "error",
