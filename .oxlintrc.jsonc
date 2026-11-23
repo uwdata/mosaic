@@ -1,6 +1,5 @@
 {
   // TODO @dangotbanned: replace all refs to `eslint` commands
-  // TODO @dangotbanned: remove all `eslint` config
   // TODO @dangotbanned: remove `eslint` from deps
   "categories": {
     "correctness": "error",
