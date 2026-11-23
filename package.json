@@ -38,6 +38,7 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "@uwdata/mosaic-core": "workspace:*",
     "@uwdata/mosaic-spec": "workspace:*",
+    "@uwdata/mosaic-sql": "workspace:*",
     "@uwdata/vgplot": "workspace:*",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",

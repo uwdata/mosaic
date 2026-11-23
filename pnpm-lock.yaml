@@ -187,6 +187,9 @@ importers:
       '@uwdata/mosaic-spec':
         specifier: workspace:*
         version: link:packages/vgplot/spec
+      '@uwdata/mosaic-sql':
+        specifier: workspace:*
+        version: link:packages/mosaic/sql
       '@uwdata/vgplot':
         specifier: workspace:*
         version: link:packages/vgplot/vgplot
