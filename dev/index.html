@@ -180,7 +180,7 @@
   setConnector();
 
   async function setConnector() {
-    await setDatabaseConnector(connectorMenu.value);
+    if (!await setDatabaseConnector(connectorMenu.value)) return;
     setSketches();
     const clickhouse = connectorMenu.value === 'clickhouse';
     preaggToggle.disabled = clickhouse;

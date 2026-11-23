@@ -31,8 +31,10 @@ export function clear(api = vg) {
 }
 
 let wasm;
+let latestConnectorRequest = 0;
 
 export async function setDatabaseConnector(type) {
+  const request = ++latestConnectorRequest;
   let connector;
   switch (type) {
     case 'rest':
@@ -54,6 +56,7 @@ export async function setDatabaseConnector(type) {
     default:
       throw new Error(`Unrecognized connector type: ${type}`);
   }
+  if (request !== latestConnectorRequest) return false;
   console.log('Database Connector', type);
   clear();
   coordinator = new Coordinator(connector, {
@@ -63,6 +66,7 @@ export async function setDatabaseConnector(type) {
   vg = createAPIContext({ coordinator });
   namedPlots = vg.context.namedPlots;
   Object.assign(self, { vg });
+  return true;
 }
 
 async function installDatasketches(connector) {
