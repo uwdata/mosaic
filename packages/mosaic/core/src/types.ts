@@ -1,5 +1,4 @@
-import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, JSType, MaybeArray, Query } from '@uwdata/mosaic-sql';
-import type { QueryResult } from './util/query-result.js';
+import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, JSType, MaybeArray, Query, TableRefNode } from '@uwdata/mosaic-sql';
 
 export type { ColumnDescription, JSType } from '@uwdata/mosaic-sql';
 
@@ -19,13 +18,14 @@ export interface QueryRequest {
   type: 'exec' | 'arrow';
   query: MaybeArray<QueryType>;
   cache?: boolean;
+  consolidate?: boolean;
   options?: Record<string, unknown>;
 }
 
 /** Type for an entry within a query manager. */
 export interface QueryEntry {
   request: QueryRequest;
-  result: QueryResult;
+  result: PromiseWithResolvers<unknown>;
 }
 
 /** String indicating a requested summary statistic. */
@@ -43,7 +43,7 @@ export type FieldRef = string | ExprNode;
  * A request for metadata information about a database column.
  */
 export interface FieldInfoRequest {
-  table: string;
+  table: string | TableRefNode;
   column: FieldRef;
   stats?: Stat[];
 }
@@ -52,7 +52,7 @@ export interface FieldInfoRequest {
  * A response with metadata information about a database column.
  */
 export interface FieldInfo extends Partial<Record<Stat, number>> {
-  table: string,
+  table: string | TableRefNode,
   column: string,
   sqlType: string,
   type: JSType,

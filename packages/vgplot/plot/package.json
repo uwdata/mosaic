@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-plot",
-  "version": "0.35.0",
+  "version": "0.35.1",
   "description": "A Mosaic-powered plotting framework based on Observable Plot.",
   "keywords": [
     "data",
@@ -16,6 +16,7 @@
     "types": "./dist/src/index.d.ts",
     "default": "./src/index.js"
   },
+  "sideEffects": false,
   "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",
@@ -30,7 +31,7 @@
     "prebuild": "pnpm run clean",
     "lint": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
-    "test": "vitest run",
+    "test": "vitest run --root ../../.. --project plot",
     "prepublishOnly": "tsc --build"
   },
   "dependencies": {

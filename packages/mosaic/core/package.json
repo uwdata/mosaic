@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-core",
-  "version": "0.35.0",
+  "version": "0.35.1",
   "description": "Scalable and extensible linked data views.",
   "keywords": [
     "mosaic",
@@ -14,14 +14,17 @@
   "type": "module",
   "exports": {
     ".": {
+      "@uwdata/source": "./src/index.ts",
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
     },
     "./node-connector": {
+      "@uwdata/source": "./src/connectors/NodeConnector.ts",
       "types": "./dist/src/connectors/NodeConnector.d.ts",
       "default": "./dist/src/connectors/NodeConnector.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",
@@ -35,11 +38,11 @@
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
-    "test": "vitest run",
+    "test": "vitest run --root ../../.. --project core",
     "prepublishOnly": "tsc --build"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "1.33.1-dev114.0",
+    "@duckdb/duckdb-wasm": "1.33.1-dev118.0",
     "@uwdata/flechette": "catalog:",
     "@uwdata/mosaic-sql": "workspace:^"
   },

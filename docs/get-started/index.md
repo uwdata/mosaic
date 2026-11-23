@@ -64,5 +64,5 @@ After installation, you can run examples locally, using either DuckDB-WASM or a 
 
 To launch a local DuckDB server:
 
-* Install [hatch](https://hatch.pypa.io/latest/install/), if not already present.
+* Install [uv](https://docs.astral.sh/uv/getting-started/installation/), if not already present.
 * Run `pnpm server` to launch the [`duckdb-server`](/server/). This runs the server in development mode, so the server will restart if you change its code.

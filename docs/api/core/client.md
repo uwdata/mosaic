@@ -90,6 +90,12 @@ Called by the [coordinator](./coordinator) to report that an _error_ occurred du
 The `MosaicClient` base class reports the error to `console.error`.
 Subclasses should override this method as needed.
 
+## pending
+
+`client.pending`
+
+A promise that resolves when the client's most recent update completes: its initialization, or the latest query the coordinator issued for it.
+
 ## update
 
 `client.update()`

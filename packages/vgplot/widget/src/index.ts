@@ -1,40 +1,51 @@
 import { coordinator, isSelection } from '@uwdata/mosaic-core';
-import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
+import { parseSpec, astToDOM, Spec } from '@uwdata/mosaic-spec';
+import type * as mc from '@uwdata/mosaic-core';
+import type * as aw from 'anywidget/types';
 import './style.css';
 import { v4 as uuidv4 } from 'uuid';
 
-/**
- * @typedef {Record<string, {value: unknown, predicate?: string}>} Params
- *
- * @typedef Model
- * @property {import('@uwdata/mosaic-spec').Spec} spec
- *  The current Mosaic specification.
- * @property {string} preagg_schema The database schema in which to store
- *  pre-aggregated materialized views (default 'mosaic').
- * @property {Params} params The current params.
- */
+type Params = Record<string, { value: unknown, predicate?: string }>;
 
-/** @type {import('anywidget/types').AnyWidget<Model>} */
+/** Model object.
+ *
+ * @property spec The current Mosaic specification.
+ * @property preagg_schema The database schema in which to store pre-aggregated materialized views (default 'mosaic').
+ * @property params The current params.
+ */
+interface Model {
+  spec: Spec;
+  preagg_schema: string;
+  params: Params;
+}
+
+interface OpenQuery {
+  query: mc.ArrowQueryRequest | mc.ExecQueryRequest;
+  startTime: number;
+  resolve: (value: ArrayBufferLike | Record<string, unknown>) => void;
+  reject: (reason?: string) => void;
+}
+
+interface Msg {
+  uuid: string;
+  type: OpenQuery['query']['type'];
+  error?: string;
+}
+
 export default {
-  initialize(view) {
-    view.model.set('preagg_schema', coordinator().preaggregator.schema);
+  initialize({ model }: aw.InitializeProps<Model>): void {
+    model.set('preagg_schema', coordinator().preaggregator.schema);
   },
 
-  render(view) {
-    view.el.classList.add('mosaic-widget');
-    const getSpec = () => view.model.get('spec');
-    const getPreaggSchema = () => view.model.get('preagg_schema');
+  render({ model, el }: aw.RenderProps<Model>): () => void {
+    el.classList.add('mosaic-widget');
+    const getSpec = () => model.get('spec');
+    const getPreaggSchema = () => model.get('preagg_schema');
     const logger = coordinator().logger();
 
-    /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
-    const openQueries = new Map();
+    const openQueries: Map<string, OpenQuery> = new Map();
 
-    /**
-     * @param {Record<any, unknown>} query the query to send
-     * @param {(value: any) => void} resolve the promise resolve callback
-     * @param {(reason?: any) => void} reject the promise reject callback
-     */
-    function send(query, resolve, reject) {
+    function send({ query, resolve, reject }: Omit<OpenQuery, 'startTime'>): void {
       const uuid = uuidv4();
 
       openQueries.set(uuid, {
@@ -43,35 +54,33 @@ export default {
         resolve,
         reject,
       });
-      view.model.send({ ...query, uuid });
+      model.send({ ...query, uuid });
     }
 
-    /** @type {import('@uwdata/mosaic-core').Connector} */
-    const connector = {
-      query(query) {
-        return new Promise((resolve, reject) => send(query, resolve, reject));
+
+    const connector: mc.Connector = {
+      query(query: OpenQuery['query']): Promise<any> {
+        return new Promise((resolve, reject) => send({ query, resolve, reject }));
       },
     };
 
-    function reset() {
+    function reset(): void {
       coordinator().clear();
     }
 
     /**
      * Serialize a selection's resolved predicate — a single expression or an
      * implicitly conjunctive array — to a SQL string.
-     * @param {import('@uwdata/mosaic-core').Selection} selection
-     * @returns {string}
      */
-    function predicateSQL(selection) {
+    function predicateSQL(selection: mc.Selection): string {
       const predicate = selection.predicate(undefined) ?? [];
       const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
       return parts.length > 1 ? parts.map(s => `(${s})`).join(' AND ') : (parts[0] ?? '');
     }
 
-    let appliedSpecJSON;
+    let appliedSpecJSON = '';
 
-    async function updateSpec() {
+    async function updateSpec(): Promise<void> {
       const spec = getSpec();
       const specJSON = JSON.stringify(spec);
       if (specJSON === appliedSpecJSON) return;
@@ -79,10 +88,9 @@ export default {
       reset();
       logger.log('Setting spec:', spec);
       const dom = await instantiateSpec(spec);
-      view.el.replaceChildren(dom.element);
+      el.replaceChildren(dom.element);
 
-      /** @type Params */
-      let params = {};
+      let params: Params = {};
 
       for (const [name, param] of dom.params) {
         params[name] = {
@@ -98,37 +106,40 @@ export default {
               ...(isSelection(param) ? { predicate: predicateSQL(param) } : {})
             }
           })
-          view.model.set('params', params);
-          view.model.save_changes();
+          model.set('params', params);
+          model.save_changes();
         });
       }
 
       params = Object.freeze(params);
-      view.model.set('params', params);
-      view.model.save_changes();
+      model.set('params', params);
+      model.save_changes();
     }
 
-    function showError(error) {
+    function showError(error: unknown): void {
       logger.error(error);
       const pre = document.createElement('pre');
       pre.className = 'error';
       pre.textContent = String(error);
-      view.el.replaceChildren(pre);
+      el.replaceChildren(pre);
     }
 
-    view.model.on('change:spec', () => updateSpec().catch(showError));
+    model.on('change:spec', () => updateSpec().catch(showError));
 
     function configureCoordinator() {
       coordinator().preaggregator.schema = getPreaggSchema();
     }
 
-    view.model.on('change:preagg_schema', () => configureCoordinator());
+    model.on('change:preagg_schema', () => configureCoordinator());
 
-    view.model.on('msg:custom', (msg, buffers) => {
+    model.on('msg:custom', (msg: Msg, buffers: DataView[]): void => {
       logger.group(`query ${msg.uuid}`);
       logger.log('received message', msg, buffers);
 
       const query = openQueries.get(msg.uuid);
+      if (typeof query === 'undefined') {
+        throw new Error(`Query ${msg.uuid} not found`);
+      }
       openQueries.delete(msg.uuid);
 
       logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
@@ -156,14 +167,14 @@ export default {
     configureCoordinator();
     updateSpec().catch(showError);
 
-    return () => {
+    return (): void => {
       // cleanup
       reset();
     };
   },
-};
+} satisfies aw.AnyWidget<Model>;
 
-function instantiateSpec(spec) {
+function instantiateSpec(spec: Spec): ReturnType<typeof astToDOM> {
   // parse specification, and instantiate it
   // astToDOM creates a new vgplot API context with the
   // standard coordinator and a custom namedPlots map

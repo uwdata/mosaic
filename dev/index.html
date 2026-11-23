@@ -122,6 +122,10 @@
           Pre-aggregate State:
           <button id="preagg-state">Log</button>
         </div>
+        <div>
+          Max Pending Updates:
+          <input id="max-pending" type="number" min="1" step="1" value="1" style="width: 4em" />
+        </div>
       </div>
     </details>
   </header>
@@ -145,6 +149,7 @@
   const preaggState = document.querySelector('#preagg-state');
   const sketchesToggle = document.querySelector('#preagg-sketches');
   const status = document.querySelector('#status');
+  const maxPendingInput = document.querySelector('#max-pending');
 
   connectorMenu.addEventListener('change', setConnector);
   exampleMenu.addEventListener('change', reload);
@@ -154,6 +159,7 @@
   consolidateToggle.addEventListener('input', setConsolidate);
   preaggToggle.addEventListener('input', setPreAggregate);
   sketchesToggle.addEventListener('input', setSketches);
+  maxPendingInput.addEventListener('input', setMaxPendingUpdates);
   preaggState.addEventListener('click', () => {
     const { entries } = vg.coordinator().preaggregator || {};
     if (entries) {
@@ -203,6 +209,10 @@
 
   function setSketches() {
     vg.coordinator().preaggregator.useSketches = sketchesToggle.checked;
+  }
+
+  function setMaxPendingUpdates() {
+    vg.coordinator().maxPendingUpdates = +maxPendingInput.value || 1;
   }
 
   function reload() {

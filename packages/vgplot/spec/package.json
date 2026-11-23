@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-spec",
-  "version": "0.35.0",
+  "version": "0.35.1",
   "description": "Declarative specification of Mosaic-powered applications.",
   "keywords": [
     "mosaic",
@@ -13,9 +13,11 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
+    "@uwdata/source": "./src/index.ts",
     "types": "./dist/src/index.d.ts",
     "default": "./dist/src/index.js"
   },
+  "sideEffects": false,
   "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",
@@ -33,7 +35,7 @@
     "typecheck": "tsc -p test/tsconfig.json",
     "preschema": "tsc --build",
     "schema": "ts-json-schema-generator -f tsconfig.json -p src/spec/Spec.ts -t Spec --no-type-check --no-ref-encode --functions hide > dist/mosaic-schema.json",
-    "test": "pnpm run schema && vitest run",
+    "test": "pnpm run schema && vitest run --root ../../.. --project spec",
     "test:visual": "playwright test test/visual.test.js",
     "test:visual:update": "pnpm run test:visual -- --update-snapshots",
     "version": "cd ../../.. && pnpm run docs:schema",

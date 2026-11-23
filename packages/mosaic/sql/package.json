@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-sql",
-  "version": "0.35.0",
+  "version": "0.35.1",
   "description": "SQL query construction and analysis.",
   "keywords": [
     "sql",
@@ -11,9 +11,11 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
+    "@uwdata/source": "./src/index.ts",
     "types": "./dist/src/index.d.ts",
     "default": "./dist/src/index.js"
   },
+  "sideEffects": false,
   "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",
@@ -27,7 +29,7 @@
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
-    "test": "vitest run",
+    "test": "vitest run --root ../../.. --project sql",
     "test:clickhouse": "vitest run --config vitest.clickhouse.config.ts",
     "prepublishOnly": "tsc --build"
   },

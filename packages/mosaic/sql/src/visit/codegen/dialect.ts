@@ -1,4 +1,4 @@
-import {
+import type {
   SQLNode,
   ExprNode,
   BetweenOpNode,
@@ -38,14 +38,11 @@ import {
   WindowDefNode,
   WindowFrameExprNode,
   WindowFrameNode,
-  WithClauseNode,
-  isNode,
-  isQuery,
-  isTableRef
+  WithClauseNode
 } from '../../ast/index.js';
+import { isNode } from '../../ast/node.js';
 import { SQLCodeGenerator } from './sql.js';
-import { CURRENT_ROW, FOLLOWING, PRECEDING, UNBOUNDED } from '../../ast/window-frame.js';
-import { SET_OPERATION, WINDOW_EXTENT_EXPR } from '../../constants.js';
+import { COLUMN_PARAM, COLUMN_REF, COLUMNS, CURRENT_ROW, FOLLOWING, PIVOT_QUERY, PRECEDING, SELECT_QUERY, SET_OPERATION, TABLE_REF, UNBOUNDED, WINDOW_EXTENT_EXPR } from '../../constants.js';
 import { quoteIdentifier } from '../../util/string.js';
 
 /**
@@ -82,8 +79,9 @@ export abstract class SQLDialectCodeGenerator extends SQLCodeGenerator {
   visitColumnRef(node: ColumnRefNode): string {
     const { column, table } = node;
     const tref = table ? `${this.toString(table)}.` : '';
-    const id = column === '*' ? '*' : quoteIdentifier(column);
-    return `${tref}${id}${node instanceof StarNode ? starModifiers(this, node) : ''}`;
+    const star = column === '*';
+    const id = star ? '*' : quoteIdentifier(column);
+    return `${tref}${id}${star ? starModifiers(this, node) : ''}`;
   }
 
   visitDescribeQuery(node: DescribeQuery): string {
@@ -422,18 +420,35 @@ function padZero(value: unknown, len = 2) {
   return `${value}`.padStart(len, '0');
 }
 
+export function isQuery(value: unknown): value is Query {
+  return isNode(value) && (
+    value.type === SELECT_QUERY
+    || value.type === PIVOT_QUERY
+    || value.type === SET_OPERATION
+  );
+}
+
+function isTableRef(value: unknown): value is TableRefNode {
+  return isNode(value) && value.type === TABLE_REF;
+}
+
+function isColumnRef(value: unknown): value is ColumnRefNode {
+  return isNode(value)
+    && (value.type === COLUMN_REF || value.type === COLUMN_PARAM);
+}
+
 function isColumnRefFor(expr: unknown, name: string): expr is ColumnRefNode {
-  return expr instanceof ColumnRefNode
+  return isColumnRef(expr)
     && expr.table == null
     && expr.column === name;
 }
 
 export function isStarRef(expr: unknown): boolean {
-  return expr instanceof ColumnRefNode && expr.column === '*';
+  return isColumnRef(expr) && expr.column === '*';
 }
 
 function isExpandingColumns(expr: ExprNode): boolean {
-  return expr instanceof ColumnsNode && !expr.unpack;
+  return expr.type === COLUMNS && !(expr as ColumnsNode).unpack;
 }
 
 function betweenToString(
@@ -456,8 +471,8 @@ function formatFrameExpr(visitor: SQLCodeGenerator, value: unknown, scope: strin
     : `${Math.abs(x)} ${scope}`;
 }
 
-function starModifiers(visitor: SQLCodeGenerator, node: StarNode) {
-  const { exclude, replace, rename } = node;
+function starModifiers(visitor: SQLCodeGenerator, node: ColumnRefNode) {
+  const { exclude = [], replace = [], rename = [] } = node as Partial<StarNode>;
   const sql: string[] = [];
   if (exclude.length) {
     sql.push(`EXCLUDE (${visitor.mapToString(exclude).join(', ')})`);

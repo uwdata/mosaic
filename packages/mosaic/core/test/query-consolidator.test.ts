@@ -6,7 +6,6 @@ import { Priority } from '../src/QueryManager.js';
 import type { Cache, QueryEntry } from '../src/types.js';
 import { voidCache } from '../src/util/cache.js';
 import { decodeIPC } from '../src/util/decode-ipc.js';
-import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 describe('QueryConsolidation', () => {
   async function getConsolidatedQueries(...qs: unknown[]) {
@@ -115,7 +114,7 @@ describe('QueryConsolidationCaching', () => {
     const queries = ['x', 'y'].map(c => Query.from({ source: 'table' }).select({ c }));
     const entries: QueryEntry[] = queries.map(query => ({
       request: { type: 'arrow', cache: true, query },
-      result: new QueryResult()
+      result: Promise.withResolvers()
     }));
 
     const calls: unknown[][] = [];
@@ -126,12 +125,12 @@ describe('QueryConsolidationCaching', () => {
       bytes: () => 0
     };
     const c = consolidator(entry => {
-      if (entry.request.cache === false) entry.result.fulfill(data);
+      if (entry.request.cache === false) entry.result.resolve(data);
     }, () => cache);
     for (const entry of entries) {
       c.add(entry, Priority.Normal);
     }
-    const extracts = await Promise.all(entries.map(entry => entry.result)) as Table[];
+    const extracts = await Promise.all(entries.map(entry => entry.result.promise)) as Table[];
 
     expect(Array.from(extracts[1])).toEqual([{ c: 3 }, { c: 4 }]);
     expect(calls).toEqual([
@@ -149,7 +148,7 @@ describe('QueryConsolidationCaching', () => {
     const queries = ['x', 'y'].map(c => Query.from({ source: 'table' }).select({ c }));
     const entries: QueryEntry[] = queries.map(query => ({
       request: { type: 'arrow', cache: true, query },
-      result: new QueryResult()
+      result: Promise.withResolvers()
     }));
 
     const calls: unknown[][] = [];
@@ -168,8 +167,8 @@ describe('QueryConsolidationCaching', () => {
     await new Promise(resolve => setImmediate(resolve));
 
     generation += 1;
-    combined[0].result.fulfill(data);
-    const extracts = await Promise.all(entries.map(entry => entry.result)) as Table[];
+    combined[0].result.resolve(data);
+    const extracts = await Promise.all(entries.map(entry => entry.result.promise)) as Table[];
 
     expect(Array.from(extracts[1])).toEqual([{ c: 3 }, { c: 4 }]);
     expect(calls).toEqual([]);
@@ -179,7 +178,7 @@ describe('QueryConsolidationCaching', () => {
     const data = decodeIPC(tableToIPC(tableFromArrays({ col0: [1, 2], col1: [3, 4] }), {})!);
     const entries: QueryEntry[] = ['x', 'y'].map(c => ({
       request: { type: 'arrow', query: Query.from({ source: 'table' }).select({ c }) },
-      result: new QueryResult()
+      result: Promise.withResolvers()
     }));
     const combined: QueryEntry[] = [];
     const c = consolidator(entry => combined.push(entry), voidCache);
@@ -188,12 +187,9 @@ describe('QueryConsolidationCaching', () => {
     }
     await new Promise(resolve => setImmediate(resolve));
 
-    const rejected = entries.map(({ result }) => expect(result).rejects.toBe('Cleared'));
-    combined[0].result.fulfill(data);
+    const rejected = entries.map(({ result }) => expect(result.promise).rejects.toBe('Cleared'));
+    combined[0].result.resolve(data);
     c.remove(({ result }) => (result.reject('Cleared'), true));
     await Promise.all(rejected);
-    await new Promise(resolve => setImmediate(resolve));
-
-    expect(entries.map(({ result }) => result.state)).toEqual([QueryState.error, QueryState.error]);
   });
 });

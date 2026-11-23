@@ -174,7 +174,7 @@ Even with billions of rows, Mosaic with a server-side DuckDB instance maintains 
 <div style="display: flex; flex-flow: row nowrap; justify-content: flex-start; align-items: flex-start;"><span style="display: inline-block; width: 40px;"></span><div class="legend"><div class="plot-why-swatches plot-why-swatches-wrap"><span class="plot-why-swatch"><svg width="15" height="15" fill="#ff9da6"><rect width="100%" height="100%"></rect></svg>VegaFusion</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#4e79a7"><rect width="100%" height="100%"></rect></svg>Mosaic WASM</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#76b7b2"><rect width="100%" height="100%"></rect></svg>Mosaic Local</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#59a14f"><rect width="100%" height="100%"></rect></svg>Mosaic Remote</span></div></div></div>
 
 If not already present, Mosaic will build pre-aggregated data tables when the mouse cursor enters a view.
-For very large data sets with longer pre-aggregation times, precomputation and server-side caching are supported.
+Mosaic names each table by a hash of its query and keeps it in a dedicated database schema, so with a persistent database, later sessions use the existing tables.
 
 Other tasks, like changing a color encoding or adjusting a smoothing parameter, can be carried out quickly in the browser alone, including over aggregated data. Mosaic clients have the flexibility of choosing what works best.
 

@@ -1,6 +1,3 @@
-// Initialize default visitor
-import './init.js';
-
 export * from './ast/index.js';
 
 export { all } from './functions/all.js';
@@ -28,6 +25,7 @@ export { columns, star, type StarOptions } from './functions/star.js';
 export { cpcEstimate, cpcSketch, cpcUnion, hllEstimate, hllSketch, hllUnion, kllQuantile, kllSketch } from './functions/sketch.js';
 export { regexp_matches, contains, prefix, suffix, lower, upper, length } from './functions/string.js';
 export { slice, subscript } from './functions/subscript.js';
+export { tableRef } from './functions/table-ref.js';
 export { unnest } from './functions/unnest.js';
 export { coalesce, nullif } from './functions/util.js';
 export { tuple, values } from './functions/values.js';

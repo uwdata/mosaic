@@ -45,11 +45,34 @@ describe('Binning transforms', () => {
     it('creates non-linear bins', async () => {
       const log10 = scaleTransform<number>({ type: 'log', base: 10 })!;
       await expect(binHistogram('num1', [1, 1000], { steps: 5 }, log10))
-        .toBeValidExpr('(sign(floor((sign("num1") * log(abs(nullif("num1", 0)))))) * (10 ** abs(floor((sign("num1") * log(abs(nullif("num1", 0))))))))');
+        .toBeValidExpr('(10 ** floor((sign("num1") * log(abs(nullif("num1", 0))))))');
 
       const log2 = scaleTransform<number>({ type: 'log', base: 2 })!;
       await expect(binHistogram('num1', [1, 64], { steps: 10 }, log2))
-        .toBeValidExpr('(sign(floor((sign("num1") * (ln(abs(nullif("num1", 0))) / ln(2))))) * (2 ** abs(floor((sign("num1") * (ln(abs(nullif("num1", 0))) / ln(2)))))))');
+        .toBeValidExpr('(2 ** floor((sign("num1") * (ln(abs(nullif("num1", 0))) / ln(2)))))');
+    });
+
+    it('creates log bins for values below one', async () => {
+      const log10 = scaleTransform<number>({ type: 'log', base: 10 })!;
+      const cases: [[number, number], number[], number[]][] = [
+        [
+          [0.001, 100],
+          [0.004, 0.05, 0.3, 0.9, 1, 2, 7.5, 40, 99],
+          [0.001, 0.01, 0.1, 0.1, 1, 1, 1, 10, 10]
+        ],
+        [
+          [-100, -0.001],
+          [-0.004, -0.05, -0.3, -0.9, -1, -2, -7.5, -40, -99],
+          [-0.01, -0.1, -1, -1, -1, -10, -10, -100, -100]
+        ]
+      ];
+      for (const [extent, values, bins] of cases) {
+        const expr = binHistogram('v', extent, { steps: 5 }, log10);
+        const rows = await queryFixture(
+          `SELECT ${expr} AS b FROM (VALUES ${values.map(v => `(${v}::DOUBLE)`).join(', ')}) AS t(v)`
+        );
+        expect(rows.map(r => +Number(r.b).toPrecision(12))).toEqual(bins);
+      }
     });
 
     it('handles degenerate span', async () => {

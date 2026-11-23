@@ -32,10 +32,8 @@ export async function astToDOM(ast, options) {
     if (query) queries.push(query);
   }
 
-  // perform extension and data loading, if needed
-  if (queries.length > 0) {
-    await ctx.coordinator.exec(queries);
-  }
+  // the coordinator holds each plot's queries until the tables they read exist
+  const loading = Promise.all(queries.map(query => ctx.coordinator.exec(query)));
 
   // process param/selection definitions
   // skip definitions with names already defined
@@ -46,10 +44,9 @@ export async function astToDOM(ast, options) {
     }
   }
 
-  return {
-    element: ast.root.instantiate(ctx),
-    params: ctx.activeParams
-  };
+  const element = ast.root.instantiate(ctx);
+  await loading;
+  return { element, params: ctx.activeParams };
 }
 
 export class InstantiateContext {

@@ -1,5 +1,6 @@
 import type { FrameExclude, FrameExtent, FrameValue } from '../ast/window-frame.js';
-import { CURRENT_ROW, FOLLOWING, GROUPS, PRECEDING, RANGE, ROWS, WindowFrameExprNode, WindowFrameNode } from '../ast/window-frame.js';
+import { WindowFrameExprNode, WindowFrameNode } from '../ast/window-frame.js';
+import { CURRENT_ROW, FOLLOWING, GROUPS, PRECEDING, RANGE, ROWS } from '../constants.js';
 
 /**
  * Return an updated window definition with the given rows frame.

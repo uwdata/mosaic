@@ -1,4 +1,4 @@
-import {
+import type {
   AggregateNode,
   CastNode,
   CollateNode,
@@ -16,12 +16,11 @@ import {
   SliceNode,
   SubscriptNode,
   UnnestNode,
-  WindowFunctionNode,
-  isQuery
+  WindowFunctionNode
 } from '../../ast/index.js';
 import { COLUMN_PARAM, COLUMN_REF, FUNCTION, LAMBDA_VAR, LIST, POSITIONAL_REF, SLICE, SUBSCRIPT } from '../../constants.js';
 import { quoteIdentifier } from '../../util/string.js';
-import { SQLDialectCodeGenerator } from './dialect.js';
+import { SQLDialectCodeGenerator, isQuery } from './dialect.js';
 import type { SQLCodeGenerator } from './sql.js';
 import type { ColumnDescription, JSType } from '../../types.js';
 

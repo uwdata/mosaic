@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitepress'
 import llmstxt from 'vitepress-plugin-llms'
-import viteConfig from '../../vite.config.js';
+import { sourceCondition } from '../../vite.config.js';
 
 /**
  * Derives llm-only/llm-exclude markers for vitepress-plugin-llms from the
@@ -38,7 +38,8 @@ export default defineConfig({
   description: 'Scalable, interactive data visualization',
   base: '/mosaic/',
   vite: {
-    resolve: viteConfig.resolve,
+    resolve: { conditions: [sourceCondition] },
+    ssr: { resolve: { conditions: [sourceCondition] } },
     plugins: [
       langToggleLLMMarkers(),
       llmstxt({

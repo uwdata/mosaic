@@ -1,14 +1,14 @@
 catalog:
-  "@uwdata/flechette": ^2.7.1
+  "@uwdata/flechette": ^2.8.1
 packages:
   - "packages/mosaic/*"
   - "packages/server/*"
   - "packages/vgplot/*"
   - "packages/examples/*"
+  - "specs/ts"
 allowBuilds:
   esbuild: false
   nx: false
 minimumReleaseAgeExclude:
   - "@uwdata/flechette"
   - "@uwdata/wk-geojson"
-  - "@duckdb/duckdb-wasm@1.33.1-dev114.0"

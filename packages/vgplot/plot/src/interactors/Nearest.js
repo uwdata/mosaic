@@ -2,7 +2,7 @@
 /** @import { InteractorMark } from '../marks/Mark.js' */
 import { clauseList, clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
 import { select, pointer, min } from 'd3';
-import { getField } from './util/get-field.js';
+import { getFields } from './util/get-field.js';
 
 /**
  * @import {Activatable} from '@uwdata/mosaic-core'
@@ -29,7 +29,9 @@ export class Nearest {
     this.channels = channels || (
       pointer === 'x' ? ['x'] : pointer === 'y' ? ['y'] : ['x', 'y']
     );
-    this.fields = fields || this.channels.map(c => getField(mark, [c]));
+    const channelFields = getFields(mark, this.channels);
+    this.fields = fields || channelFields.fields;
+    this.as = channelFields.as;
     this.maxRadius = maxRadius;
     this.valueIndex = -1;
   }
@@ -53,9 +55,8 @@ export class Nearest {
   init(svg) {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this;
-    const { mark, channels, selection, maxRadius } = this;
+    const { mark, as, selection, maxRadius } = this;
     const columns = mark.data && 'columns' in mark.data ? mark.data.columns : {};
-    const keys = channels.map(c => mark.channelField(c).as);
     const param = !isSelection(selection);
 
     // extract x, y coordinates for data values and determine scale factors
@@ -72,7 +73,7 @@ export class Nearest {
       const i = findNearest(X, Y, px, py, sx, sy, maxRadius);
       if (i !== this.valueIndex) {
         this.valueIndex = i;
-        const v = i < 0 ? undefined : keys.map(k => columns[k][i]);
+        const v = i < 0 ? undefined : as.map(k => columns[k][i]);
         selection.update(
           // provide value for param, clause for selection
           param ? (!v || v.length > 1 ? v : v[0]) : that.clause(v)

@@ -1,4 +1,5 @@
 import type { SQLCodeGenerator } from '../visit/codegen/sql.js';
+import { duckDBCodeGenerator } from '../visit/codegen/duckdb.js';
 
 /**
  * Check if a value is a SQL AST node.
@@ -6,27 +7,6 @@ import type { SQLCodeGenerator } from '../visit/codegen/sql.js';
  */
 export function isNode(value: unknown): value is SQLNode {
   return value instanceof SQLNode;
-}
-
-let _defaultVisitor: SQLCodeGenerator | undefined;
-
-/**
- * Set the default visitor for toString operations.
- * This is used when no visitor is explicitly provided.
- */
-export function setDefaultVisitor(visitor: SQLCodeGenerator) {
-  _defaultVisitor = visitor;
-}
-
-/**
- * Get the current default visitor.
- * @returns The current default visitor.
- */
-export function getDefaultVisitor(): SQLCodeGenerator {
-  if (!_defaultVisitor) {
-    throw new Error('No default visitor set.');
-  }
-  return _defaultVisitor;
 }
 
 export class SQLNode {
@@ -59,13 +39,10 @@ export class SQLNode {
   /**
    * Generate a SQL query string for this node using a specific dialect visitor.
    * @param visitor Optional SQL visitor to use for string generation.
-   *  If not provided, uses the default visitor.
+   *  If not provided, uses the DuckDB visitor.
    * @returns The SQL string representation.
    */
-  toString(visitor: SQLCodeGenerator | undefined = _defaultVisitor): string {
-    if (!visitor) {
-      throw new Error('No visitor provided and no default visitor set.');
-    }
+  toString(visitor: SQLCodeGenerator = duckDBCodeGenerator): string {
     return visitor.toString(this);
   }
 }
