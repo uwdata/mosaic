@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { column, count, cross_join, div, eq, filterPushdown, FromClauseNode, gt, join, Query, ScalarSubqueryNode, sum, TableRefNode } from '../src/index.js';
+import { column, count, cross_join, cte, div, eq, filterPushdown, FromClauseNode, gt, join, Query, ScalarSubqueryNode, sum, TableRefNode } from '../src/index.js';
 
 describe('filterPushdown', () => {
   it('does nothing given empty filter', async () => {
@@ -130,6 +130,39 @@ describe('filterPushdown', () => {
     const f = filterPushdown(q, 't1', gt('num2', 2));
     await expect(f).toBeValidQuery(
       'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1" JOIN "t2" ON ("t1"."num3" = "t2"."num3")'
+    );
+  });
+
+  it('updates tables defined as CTEs', async () => {
+    const q = Query
+      .with({ mycte: Query.select('*').from('t1') })
+      .select('*').from('mycte');
+    const f = filterPushdown(q, 'mycte', gt('num1', 1));
+    await expect(f).toBeValidQuery(
+      'WITH "mycte" AS (SELECT * FROM "t1"), "_mycte" AS (SELECT * FROM "mycte" WHERE ("num1" > 1)) SELECT * FROM "_mycte" AS "mycte"'
+    );
+  });
+
+  it('updates tables defined as CTEs with dependent CTEs', async () => {
+    const q = Query
+      .with({
+        mycte: Query.select('*').from('t1'),
+        derived: Query.select('num1').from('mycte')
+      })
+      .select('*').from('derived');
+    const f = filterPushdown(q, 'mycte', gt('num1', 1));
+    await expect(f).toBeValidQuery(
+      'WITH "mycte" AS (SELECT * FROM "t1"), "_mycte" AS (SELECT * FROM "mycte" WHERE ("num1" > 1)), "derived" AS (SELECT "num1" FROM "_mycte" AS "mycte") SELECT * FROM "derived"'
+    );
+  });
+
+  it('updates tables defined as CTEs with column aliases', async () => {
+    const q = Query
+      .with(cte('mycte', Query.select('num1').from('t1'), null, ['val']))
+      .select('*').from('mycte');
+    const f = filterPushdown(q, 'mycte', gt('val', 1));
+    await expect(f).toBeValidQuery(
+      'WITH "mycte"("val") AS (SELECT "num1" FROM "t1"), "_mycte" AS (SELECT * FROM "mycte" WHERE ("val" > 1)) SELECT * FROM "_mycte" AS "mycte"'
     );
   });
 
