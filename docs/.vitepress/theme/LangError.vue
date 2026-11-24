@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps({ language: { type: String, required: true } });
+const props = defineProps<{language: string}>();
 </script>
 
 <template>

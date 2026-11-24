@@ -1,15 +1,15 @@
-<script lang="ts">
+<script setup lang="ts">
+import { onMounted, useTemplateRef } from 'vue'
 import { hconcat, slider } from '@uwdata/vgplot';
 import { Param } from '@uwdata/mosaic-core';
-export default {
-  mounted: function(): void {
-    const param = Param.value(5);
-    const s1 = slider({ label: 'Param', min: 0, max: 10, step: 1, as: param });
-    const s2 = slider({ min: 0, max: 15, step: 1, as: param });
-    // @ts-expect-error ('el') Object is of type 'unknown'.
-    this.$refs.el.replaceChildren(hconcat(s1, s2));
-  }
-};
+
+onMounted((): void => {
+  const param = Param.value(5);
+  const s1 = slider({ label: 'Param', min: 0, max: 10, step: 1, as: param });
+  const s2 = slider({ min: 0, max: 15, step: 1, as: param });
+  const el = useTemplateRef<HTMLElement>('el');
+  el.value!.replaceChildren(hconcat(s1, s2));
+})
 </script>
 
 <style>

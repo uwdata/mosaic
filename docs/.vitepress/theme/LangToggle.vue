@@ -1,9 +1,12 @@
 <script setup lang="ts">
-defineProps({
-  modelValue: { type: String, default: 'js' },
-  ariaLabel: { type: String, default: 'Documentation language' },
-});
-defineEmits(['update:modelValue']);
+
+interface Props {
+  modelValue?: string;
+  ariaLabel?: string; 
+}
+
+const { modelValue = 'js', ariaLabel = 'Documentation language' } = defineProps<Props>();
+const emit = defineEmits(['update:modelValue']);
 </script>
 
 <template>

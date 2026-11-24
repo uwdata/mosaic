@@ -1,8 +1,12 @@
-<script lang="ts">
+<script setup lang="ts">
 import { withBase } from 'vitepress';
+import { onMounted, useTemplateRef } from 'vue'
 import yaml from 'yaml';
 import { astToDOM, parseSpec } from '@uwdata/mosaic-spec';
 import { coordinator, createAPIContext, loadParquet, wasmConnector } from '@uwdata/vgplot';
+
+const props = defineProps<{ spec: string }>();
+const viewRef = useTemplateRef('view');
 
 let ready: boolean = false;
 
@@ -28,8 +32,7 @@ function loadSpatial(table: string, file: string, options: NonNullable<Parameter
   return 'INSTALL spatial; LOAD spatial; ' + loadParquet(table, redirect, opt);
 }
 
-export default {
-  async mounted(): Promise<void> {
+onMounted(async (): Promise<void> => {
     try {
       init();
       const api = createAPIContext({ extensions: { loadSpatial } });
@@ -38,23 +41,17 @@ export default {
       // to instead load data from the same domain as the docs, use this:
       //   location.origin + import.meta.env.BASE_URL;
       const baseURL = 'https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/';
-      const text = await fetch(withBase(this.spec)).then(r => r.text());
+      const text = await fetch(withBase(props.spec)).then(r => r.text());
       const spec = yaml.parse(text);
       const view = await astToDOM(parseSpec(spec), { api, baseURL });
-      // @ts-expect-error ('view') Object is of type 'unknown'.
-      this.$refs.view.replaceChildren(view.element);
+      viewRef.value!.replaceChildren(view.element);
     } catch (err) {
       console.error(err);
-      if (this.$refs?.view) {
-        // @ts-expect-error ('view') Property 'innerHTML' does not exist on type '{}'.
-        this.$refs.view.innerHTML = '<em>Example failed to load.</em> 😭';
+      if (viewRef.value) {
+        viewRef.value.innerHTML = '<em>Example failed to load.</em> 😭';
       }
     }
-  },
-  props: {
-    spec: { type: String, required: true }
-  }
-}
+  })
 </script>
 
 <style>
