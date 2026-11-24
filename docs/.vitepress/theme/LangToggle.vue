@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 defineProps({
   modelValue: { type: String, default: 'js' },
   ariaLabel: { type: String, default: 'Documentation language' },

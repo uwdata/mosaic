@@ -1,12 +1,12 @@
-<script>
+<script lang="ts">
 import { withBase } from 'vitepress';
 import yaml from 'yaml';
 import { astToDOM, parseSpec } from '@uwdata/mosaic-spec';
 import { coordinator, createAPIContext, loadParquet, wasmConnector } from '@uwdata/vgplot';
 
-let ready;
+let ready: boolean = false;
 
-function init() {
+function init(): true {
   if (!ready) {
     coordinator().logger(null);
     coordinator().databaseConnector(wasmConnector());
@@ -20,7 +20,7 @@ function init() {
  * loading (Geo/TopoJSON) text files from GitHub pages in Firefox.
  * Assumes the corresponding parquet files exist!
  */
-function loadSpatial(table, file, options) {
+function loadSpatial(table: string, file: string, options: NonNullable<Parameters<(typeof loadParquet)>[2]> & {layer?: string}): string {
   const { layer, ...opt } = options;
   const dot = file.lastIndexOf('.');
   const redirect = `${file.slice(0, dot)}${ layer ? '-' + layer : '' }.parquet`;
@@ -29,7 +29,7 @@ function loadSpatial(table, file, options) {
 }
 
 export default {
-  async mounted() {
+  async mounted(): Promise<void> {
     try {
       init();
       const api = createAPIContext({ extensions: { loadSpatial } });
@@ -41,16 +41,18 @@ export default {
       const text = await fetch(withBase(this.spec)).then(r => r.text());
       const spec = yaml.parse(text);
       const view = await astToDOM(parseSpec(spec), { api, baseURL });
+      // @ts-expect-error ('view') Object is of type 'unknown'.
       this.$refs.view.replaceChildren(view.element);
     } catch (err) {
       console.error(err);
       if (this.$refs?.view) {
+        // @ts-expect-error ('view') Property 'innerHTML' does not exist on type '{}'.
         this.$refs.view.innerHTML = '<em>Example failed to load.</em> 😭';
       }
     }
   },
   props: {
-    spec: String
+    spec: { type: String, required: true }
   }
 }
 </script>
