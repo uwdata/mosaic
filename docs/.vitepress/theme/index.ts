@@ -4,14 +4,15 @@ import LangToggle from './LangToggle.vue';
 import LangError from './LangError.vue';
 import Layout from "./Layout.vue";
 import './custom.css';
+import type { EnhanceAppContext, Theme } from 'vitepress';
 
 const LANG_PARAM = 'lang';
 
-function applyLangFromURL() {
+function applyLangFromURL(): void {
   const lang = new URLSearchParams(window.location.search).get(LANG_PARAM);
   if (!lang) return;
   requestAnimationFrame(() => {
-    document.querySelectorAll('.vp-code-group .tabs label').forEach(label => {
+    document.querySelectorAll<HTMLLabelElement>('.vp-code-group .tabs label').forEach(label => {
       if (label.textContent.trim().toLowerCase() === lang.toLowerCase()) label.click();
     });
   });
@@ -20,7 +21,7 @@ function applyLangFromURL() {
 export default {
   extends: DefaultTheme,
   Layout: Layout,
-  enhanceApp(ctx) {
+  enhanceApp(ctx: EnhanceAppContext): void {
     ctx.app.component('Example', Example);
     ctx.app.component('LangToggle', LangToggle);
     ctx.app.component('LangError', LangError);
@@ -30,8 +31,9 @@ export default {
     applyLangFromURL();
     window.addEventListener('vitepress:contentUpdated', applyLangFromURL);
 
-    document.addEventListener('click', (e) => {
-      const label = e.target.closest('.vp-code-group .tabs label');
+    document.addEventListener('click', (e): void => {
+      //@ts-expect-error Property 'closest' does not exist on type 'EventTarget'.
+      const label = e.target?.closest('.vp-code-group .tabs label');
       if (!label) return;
       const url = new URL(window.location.href);
       const lang = label.textContent.trim().toLowerCase();
@@ -43,4 +45,4 @@ export default {
       history.replaceState(null, '', url.toString());
     }, true);
   }
-};
+} satisfies Theme;
