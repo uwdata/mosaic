@@ -1,3 +1,4 @@
+// oxlint-disable class-methods-use-this
 import { MosaicClient } from '@uwdata/mosaic-core';
 import type * as mc from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
@@ -227,9 +228,20 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
     return markQuery(channels, source.tableName()).where(filter);
   }
 
-  channelField(_channel: string): any {
-    throw new Error(
-      `TODO @dangotbanned: replace ${this.channelField.name} with using a less ad-hoc data structure`,
-    );
+  channel(name: ChannelKey): Entry | undefined {
+    return this.channels.get(name) ?? this.channelsExtra.get(name);
+  }
+
+  channelField(name: ChannelKey): FieldEntry | undefined {
+    const c = this.channel(name);
+    return c && isField(c) ? c : undefined;
+  }
+
+  /**
+   * Default behavior of `Mark.channelField` scans the list twice, the second time permitting a
+   * substring match.
+   */
+  channelFieldInexact(_name: ChannelKey): FieldEntry | undefined {
+    throw new Error("'channelFieldInexact' is not yet implemented");
   }
 }
