@@ -2,7 +2,7 @@
 title: Plot
 ---
 <script setup>
-  import { useLang } from '../../.vitepress/theme/useLang.js';
+  import { useLang } from '../../.vitepress/theme/useLang.ts';
   const { language, setLanguage } = useLang();
 </script>
 
