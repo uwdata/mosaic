@@ -1,24 +1,58 @@
-// oxlint-disable unicorn/no-nested-ternary
 import { MosaicClient } from '@uwdata/mosaic-core';
 import type * as mc from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
 import { isColumnRef, unnest } from '@uwdata/mosaic-sql';
 
 import { type From, source as fromSource, type TableSource } from '../data.js';
+import { map } from '../itertools.js';
 import type { Plot } from '../plot.js';
 import type { MarkType } from '../types.js';
-import { markQuery } from './Mark.js';
 import type { MarkOptions, OptionName } from './options.js';
-import { OptionsImpl, type FieldEntry } from './parse.js';
+import {
+  OptionsImpl,
+  type ChannelKey,
+  type FieldEntry,
+  type ObjectValueEntry,
+  type ValueEntry,
+} from './parse.js';
 
 export type Requirements<T extends MarkOptions> = Partial<Record<OptionName<T>, mc.Stat[]>>;
+
+type Entry = ValueEntry | ObjectValueEntry | FieldEntry;
+type Channels = Map<ChannelKey, Entry>;
+
+// oxlint-disable-next-line no-unused-vars
+function markQuery(channels: Channels, table: string | undefined): msql.SelectQuery {
+  throw new Error('TODO @dangotbanned: `markQuery` is not yet implemented');
+}
+
+function isField(entry: Entry): entry is FieldEntry {
+  return 'field' in entry;
+}
+
+/**
+ * Return a closure that unnests only fields named in `targets`, passing through all other entries
+ * unchanged.
+ */
+function unnestTargets(
+  targets: Iterable<string>,
+): ([c, e]: [ChannelKey, Entry]) => [ChannelKey, Entry] {
+  const names = new Set(targets);
+  return ([c, e]: [ChannelKey, Entry]): [ChannelKey, Entry] => {
+    const expanded =
+      isField(e) && isColumnRef(e.field) && names.has(e.field.column)
+        ? { as: e.as, field: unnest(e.field) }
+        : e;
+    return [c, expanded];
+  };
+}
 
 /** Experimenting with a more precise `Mark` data model. */
 export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
   /** Inline data is not going to be modeled (at least for now) */
   readonly source: TableSource<string | mc.Param<string>> | undefined;
   private params: Set<mc.Param<any>>;
-  public channels: object[];
+  public channels: Channels;
   private channelsExtra: Map<string, FieldEntry> | undefined;
 
   /**
@@ -131,7 +165,9 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
      */
 
     const result = new.target.parser.parseOptionsFor(this, options, params);
-    Object.assign(this, result);
+    this.params = result.params;
+    this.channels = result.channels;
+    this.channelsExtra = result.channelsExtra;
   }
 
   setPlot(plot: Plot, index: number): void {
@@ -163,34 +199,11 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
     if (!source) {
       return;
     }
-    const { unnest: unnestFields } = source;
-    // oxlint-disable unicorn/no-null
-    const channels =
-      unnestFields.length === 0
-        ? this.channels
-        : this.channels.map((c) => {
-            /*This whole thing would be simpler if fields were stored separately*/
-
-            //@ts-expect-error Every error is about `field` being optional
-            const name = isColumnRef(c.field)
-              ? //@ts-expect-error
-                c.field.column
-              : //@ts-expect-error
-                typeof c.field === 'string'
-                ? //@ts-expect-error
-                  c.field
-                : null;
-            // oxlint-disable-next-line no-eq-null
-            return name != null && unnestFields.includes(name)
-              ? //@ts-expect-error
-                { ...c, field: unnest(c.field) }
-              : c;
-          });
-
-    // oxlint-enable unicorn/no-null
-
-    //@ts-expect-error
-    return markQuery(channels, this.sourceTable()).where(filter);
+    const { unnest: targets } = source;
+    const channels = targets.length
+      ? new Map(map(this.channels.entries(), unnestTargets(targets)))
+      : this.channels;
+    return markQuery(channels, source.tableName()).where(filter);
   }
 
   channelField(_channel: string): any {
