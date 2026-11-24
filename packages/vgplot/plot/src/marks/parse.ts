@@ -11,6 +11,9 @@ import { Transform } from '../symbols.js';
 import type { TransformScaleName } from '../types.js';
 import type { Mark2 } from './Mark2.js';
 import type { BinReturn, FieldOrLiteralColor, MarkOptions, OptionName } from './options.js';
+import { isColor } from './util/is-color.js';
+import { isConstantOption } from './util/is-constant-option.js';
+import { isSymbol } from './util/is-symbol.js';
 
 /**
  * Placeholder for if this'll be generic.
@@ -298,12 +301,17 @@ export class OptionsImpl implements OptionsSpec {
   }
   // oxlint-disable-next-line class-methods-use-this
   protected parseString<C extends ChannelKey>(
-    // oxlint-disable-next-line no-unused-vars
     channel: C,
-    // oxlint-disable-next-line no-unused-vars
     value: FieldOrLiteralColor,
   ): [C, FieldEntry] | [C, ValueEntry<string>] {
-    throw new Error("TODO: 'parseString' is not yet implemented");
+    if (
+      isConstantOption(channel) ||
+      ((channel === 'stroke' || channel === 'fill') && isColor(value)) ||
+      (channel === 'symbol' && isSymbol(value))
+    ) {
+      return [channel, { value }];
+    }
+    return [channel, field(col(value), value)];
   }
 
   protected parsePrimitive<C extends ChannelKey>(
