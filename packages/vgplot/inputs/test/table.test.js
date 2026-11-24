@@ -54,6 +54,20 @@ describe('Table', () => {
     mc.clear();
   });
 
+  it('renders SVG element header labels', async () => {
+    const mc = new Coordinator(await NodeConnector.make(), { logger: null });
+    await mc.exec('CREATE TABLE t AS SELECT 1 AS a');
+
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const table = new Table({ from: 't', header: { a: icon } });
+    mc.connect(table);
+    await vi.waitFor(() => expect(table.initialized).toBe(true));
+
+    expect(table.element.querySelector('th svg')).toBe(icon);
+
+    mc.clear();
+  });
+
   it('falls back to the column name for nullish header labels', async () => {
     const mc = new Coordinator(await NodeConnector.make(), { logger: null });
     await mc.exec('CREATE TABLE t AS SELECT 1 AS a, 2 AS b, 3 AS c');

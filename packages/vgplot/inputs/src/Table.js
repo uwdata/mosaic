@@ -25,7 +25,7 @@ let _id = -1;
  *  object that maps column names to format functions to use for that
  *  column's data. Each format function takes a value as input and generates
  *  formatted text or an HTML element to show in the table.
- * @param {{ [name: string]: string | HTMLElement }} [options.header] An
+ * @param {{ [name: string]: string | HTMLElement | SVGElement }} [options.header] An
  *  object that maps column names to header labels, given as text or an HTML
  *  element. If unspecified, the column name is used.
  * @param {string | TableRefNode | Param<string | string[]>} [options.from] The backing table name or `tableRef()` node to use as a data
@@ -66,7 +66,7 @@ export class Table extends Input {
    *  object that maps column names to format functions to use for that
    *  column's data. Each format function takes a value as input and generates
    *  formatted text or an HTML element to show in the table.
-   * @param {{ [name: string]: string | HTMLElement }} [options.header] An
+   * @param {{ [name: string]: string | HTMLElement | SVGElement }} [options.header] An
    *  object that maps column names to header labels, given as text or an HTML
    *  element. If unspecified, the column name is used.
    * @param {string | TableRefNode | Param<string | string[]>} [options.from] The backing table name or `tableRef()` node to use as a data
@@ -214,7 +214,9 @@ export class Table extends Input {
       th.addEventListener('click', evt => this.sort(evt, column));
       th.appendChild(document.createElement('span'));
       const label = Object.hasOwn(this.header, column) ? (this.header[column] ?? column) : column;
-      th.appendChild(label instanceof Node ? label : document.createTextNode(String(label)));
+      th.appendChild(label instanceof HTMLElement || label instanceof SVGElement
+        ? label
+        : document.createTextNode(String(label)));
       tr.appendChild(th);
     }
     thead.appendChild(tr);
