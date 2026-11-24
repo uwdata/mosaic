@@ -554,6 +554,7 @@ def table_input(
     max_width: Any = None,
     row_batch: Any = None,
     align: Any = None,
+    header: Any = None,
     **opts: Any,
 ) -> View:
     return input(
@@ -567,5 +568,6 @@ def table_input(
         max_width=max_width,
         row_batch=row_batch,
         align=align,
+        header=header,
         **opts,
     )
