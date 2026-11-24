@@ -1,7 +1,7 @@
 import { MosaicClient } from '@uwdata/mosaic-core';
 import type * as mc from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
-import { isColumnRef, unnest } from '@uwdata/mosaic-sql';
+import { isAggregateExpression, isColumnRef, Query, unnest } from '@uwdata/mosaic-sql';
 
 import { type From, source as fromSource, type TableSource } from '../data.js';
 import { map } from '../itertools.js';
@@ -21,13 +21,34 @@ export type Requirements<T extends MarkOptions> = Partial<Record<OptionName<T>, 
 type Entry = ValueEntry | ObjectValueEntry | FieldEntry;
 type Channels = Map<ChannelKey, Entry>;
 
-// oxlint-disable-next-line no-unused-vars
-function markQuery(channels: Channels, table: string | undefined): msql.SelectQuery {
-  throw new Error('TODO @dangotbanned: `markQuery` is not yet implemented');
-}
-
 function isField(entry: Entry): entry is FieldEntry {
   return 'field' in entry;
+}
+
+function markQuery(channels: Channels, table: string): msql.SelectQuery {
+  // - `markQuery(..., skip)` is only used by `Density1DMark`
+  //   - Not going to do that yet, pretending it doesn't exist
+  // - `channel: 'orderby' (uwdata/mosaic#266) is handled here
+  //   - `Highlight` adds that during `configureMark`
+  const q = Query.from({ source: table });
+  const dims = new Set<string>();
+  let aggr = false;
+  for (const entry of channels.values()) {
+    if (isField(entry)) {
+      const { field, as } = entry;
+      if (isAggregateExpression(field)) {
+        aggr = true;
+      } else {
+        if (dims.has(as)) {
+          // oxlint-disable-next-line no-continue
+          continue;
+        }
+        dims.add(as);
+      }
+      q.select({ [as]: field });
+    }
+  }
+  return aggr ? q.groupby([...dims]) : q;
 }
 
 /**
