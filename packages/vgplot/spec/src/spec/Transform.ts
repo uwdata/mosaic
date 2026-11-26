@@ -21,6 +21,17 @@ export interface WindowOptions {
 
 /** Aggregate transform options. */
 export interface AggregateOptions {
+  /**
+   * Whether to apply the aggregate over distinct values only.
+   *
+   * This is typically used to get the number of distinct elements:
+   *
+   * ```json
+   * { "count": "column_name", "distinct": true }
+   * ```
+   *
+   * Duplicate-insensitive aggregates (e.g., `'min'`, `'max'`) ignore this option.
+   */
   distinct?: boolean;
 }
 
