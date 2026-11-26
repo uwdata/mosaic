@@ -4,7 +4,7 @@ import type * as mc from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
 import { isAggregateExpression, isColumnRef, Query, unnest } from '@uwdata/mosaic-sql';
 
-import { type From, source as fromSource, type TableSource } from '../data.js';
+import { type From, source as fromSource, type TableSource, fromArrow, type Table, type InlineColumns } from '../data.js';
 import { map } from '../itertools.js';
 import type { Plot } from '../plot.js';
 import type { MarkType } from '../types.js';
@@ -89,6 +89,8 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
   private params: Set<mc.Param<any>>;
   public channels: Channels;
   private channelsExtra: Map<string, FieldEntry> | undefined;
+
+  public data?: InlineColumns
 
   /**
    * `Mark.plot` and `Mark.index` are both required, but this is not visible due to multi-stage
@@ -224,6 +226,12 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
     this.plot?.pending(this);
     return this;
   }
+
+  queryResult(data: Table): this {
+    this.data = fromArrow(data)
+    return this;
+  }
+
   update(): Promise<void> {
     //@ts-expect-error
     return this.plot?.update(this);

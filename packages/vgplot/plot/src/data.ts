@@ -1,7 +1,9 @@
-import type { Table, TypeMap, ValueArray } from '@uwdata/flechette';
+// oxlint-disable no-use-before-define
+import type { Table as FlechetteTable, TypeMap, ValueArray } from '@uwdata/flechette';
 import type * as mc from '@uwdata/mosaic-core';
 
-import type { Arrayish } from './array.js';
+// oxlint-disable-next-line no-unused-vars
+import type { Arrayish, TypedArrayLike } from './array.js';
 
 export interface DataColumns<T extends TypeMap = TypeMap> {
   numRows: number;
@@ -23,11 +25,18 @@ interface Column<T> {
   toArray(): ValueArray<T> | undefined;
 }
 
+/** A table that looks like a [`apache-arrow::Table`][1].
+ * 
+ * [1]: https://arrow.apache.org/js/current/classes/Arrow.dom.Table.html
+ */
 export interface ArrowTable<T extends TypeMap = TypeMap> {
   readonly numRows: number;
   readonly schema: { readonly fields: { readonly name: string; }[]; };
   getChildAt<R extends T[keyof T]>(index: number): Column<R> | undefined;
 }
+
+/** Either a {@link FlechetteTable} (first-party connectors) or an {@link ArrowTable}. */
+export type Table<T extends TypeMap = TypeMap> = FlechetteTable<T> | ArrowTable<T>;
 
 type Row = Record<string, unknown>;
 type Rows = Row[];
@@ -38,9 +47,9 @@ type ColumnsIn<T extends TypeMap = TypeMap> = { [P in keyof T]: Array<T[P]>; };
 
 type ColumnsOut<T extends TypeMap = TypeMap> = { [P in keyof T]: Arrayish<T[P]>; };
 
-export type FromData = From | Rows | Table | ArrowTable | Values | ColumnsIn;
+export type FromData = From | Rows | FlechetteTable | ArrowTable | Values | ColumnsIn;
 
-function isArrowTable<T extends TypeMap = TypeMap>(values: unknown): values is Table<T> | ArrowTable<T> {
+function isArrowTable<T extends TypeMap = TypeMap>(values: unknown): values is Table<T> {
   // @ts-expect-error check property of unknown value
   return (typeof values?.getChildAt) === 'function';
 }
@@ -84,7 +93,7 @@ function isFrom(data: object): data is From {
 }
 
 export function source(data: From): TableSource<string | mc.Param<string>>;
-export function source(data: Rows | Table | ArrowTable | Values | ColumnsIn, allowEmpty: boolean): InlineSource<ColumnsOut | Values>;
+export function source(data: Rows | Table | Values | ColumnsIn, allowEmpty: boolean): InlineSource<ColumnsOut | Values>;
 export function source(data: FromData, allowEmpty: boolean): InlineSource<ColumnsOut | Values> | TableSource<string | mc.Param<string>>;
 export function source(data: FromData, allowEmpty: boolean = false): InlineSource<ColumnsOut | Values> | TableSource<string | mc.Param<string>> {
   if (Array.isArray(data)) {
@@ -149,11 +158,11 @@ abstract class InlineSource<D> extends Source<undefined> {
   tableName(): undefined { return; }
 }
 
-class InlineColumns<T extends TypeMap = TypeMap> extends InlineSource<ColumnsOut<T>> {
+export class InlineColumns<T extends TypeMap = TypeMap> extends InlineSource<ColumnsOut<T>> {
   constructor(readonly numRows: number, readonly columns: ColumnsOut<T>) { super(numRows); }
   get data(): ColumnsOut<T> { return this.columns; }
 
-  static fromArrow<F extends TypeMap>(table: ArrowTable<F> | Table<F>): InlineColumns<F> {
+  static fromArrow<F extends TypeMap>(table: Table<F>): InlineColumns<F> {
     if ('toColumns' in table) {
       return InlineColumns.fromFlechette(table);
     }
@@ -163,7 +172,7 @@ class InlineColumns<T extends TypeMap = TypeMap> extends InlineSource<ColumnsOut
     return new InlineColumns<F>(numRows, columns);
   }
 
-  static fromFlechette<F extends TypeMap>(table: Table<F>): InlineColumns<F> {
+  static fromFlechette<F extends TypeMap>(table: FlechetteTable<F>): InlineColumns<F> {
     // Requires a cast due to upstream typing
     return new InlineColumns(table.numRows, table.toColumns() as ColumnsOut<F>);
   }
@@ -194,3 +203,24 @@ Hints:
 - If data is required, but this represents a 0-row result, spell it as '{column_1: [], ..., column_n: []}'`
   );
 }
+
+
+/**
+ * Convert an Arrow table to a set of named column arrays.
+ *
+ * This operation _may_ be zero-copy on a per-column basis:
+ *
+ * - The presence of nulls always copies and the result will be an {@link Array}
+ * - Any batch type that requires coercion to a {@link TypedArrayLike} or is only representable using
+ *   an {@link Array}, such as:
+ *
+ *   - Decimal
+ *   - String
+ *   - Nested types
+ *   - Most temporal types
+ *   - Boolean
+ *   - Float16
+ *   - Geojson
+ */
+// oxlint-disable-next-line prefer-destructuring
+export const fromArrow = InlineColumns.fromArrow
