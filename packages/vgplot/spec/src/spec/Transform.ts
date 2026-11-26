@@ -5,7 +5,18 @@ import { ParamRef } from './Param.js';
 /** A field argument to a data transform. */
 export type TransformField = string | ParamRef | SQLExpression | Transform;
 
-export type FrameExclude = 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS';
+type Exclude = 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS';
+
+/**
+ * How `exclude` should treat the current row.
+ *
+ * - `'CURRENT ROW'` – exclude just the current row
+ * - `'GROUP'` – exclude the current row and all its peers (those that are tied according to the
+ *   `orderby` criteria)
+ * - `'TIES'` – exclude all peer rows, but _not_ the current row (this makes a hole on either side)
+ * - `'NO OTHERS'` – don't exclude anything (the default)
+ */
+export type FrameExclude = Exclude | Lowercase<Exclude>;
 
 export type FrameValue = number | IntervalTransform | null;
 
@@ -16,7 +27,7 @@ export interface WindowOptions {
   rows?: [FrameValue, FrameValue] | ParamRef;
   range?: [FrameValue, FrameValue] | ParamRef;
   groups?: [FrameValue, FrameValue] | ParamRef;
-  exclude?: Uppercase<FrameExclude> | Lowercase<FrameExclude>;
+  exclude?: FrameExclude;
 }
 
 /** Aggregate transform options. */
