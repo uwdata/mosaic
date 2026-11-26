@@ -22,6 +22,19 @@ export type Requirements<T extends MarkOptions> = Partial<Record<OptionName<T>, 
 type Entry = ValueEntry | ObjectValueEntry | FieldEntry;
 type Channels = Map<ChannelKey, Entry>;
 
+type AtLeast2<T> = [T, T, ...T[]];
+
+/**
+ * Decide what terminates a search in {@link Mark2.channelFieldInexact}.
+ *
+ * - `'field'` - current behavior on `main`, where we continue if a channel exists but is not a field
+ * - `'channel'` - only the first channel that exists is tested if it is a field
+ *
+ *   - Cheaper as it can stop early
+ *   - Implementing this speculatively, may remove later if unused or another case emerges
+ */
+type Inexact = 'first-field' | 'first-channel';
+
 function isField(entry: Entry): entry is FieldEntry {
   return 'field' in entry;
 }
@@ -238,10 +251,53 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
   }
 
   /**
-   * Default behavior of `Mark.channelField` scans the list twice, the second time permitting a
-   * substring match.
+   * A replacement for `Mark.channelField(names, { exact = false })`.
+   *
+   * ## What was wrong before?
+   *
+   * - Default behavior would scan the list twice per `channel`, the second time permitting a
+   *   `startsWith` match.
+   *
+   *   - The default should've been the more performant option
+   * - User-defined channels were included in the search
+   *
+   *   - Seems unintentional, and that `startsWith` was a shortcut to `'x'` -> `'x'`, `'x1'`, `'x2'`
+   * - The failure case for a channel that exists but is not a field, and nonexistent channels are not
+   *   distinguishable
+   * - **Many** use cases will loop over `names` from the outside
+   *
+   * ## Solution
+   *
+   * - A distinct method, with a more awkward name that makes it clear you may want to take a closer
+   *   look
+   * - No usage of substring matching
+   * - User-defined channels don't participate
+   * - You must pass in a list of at-least 2 names, and they all must be be possible in `MarkOptions`
+   *
+   *   - There is no reason to call with a single name
+   *   - If the channel isn't an option on the `Mark`, you should be warned that you're wasting time
+   *     searching for it
+   * - `how` can be provided to change what terminates the search
    */
-  channelFieldInexact(_name: ChannelKey): FieldEntry | undefined {
-    throw new Error("'channelFieldInexact' is not yet implemented");
+  channelFieldInexact(
+    names: AtLeast2<OptionName<O>>,
+    how: Inexact = 'first-field',
+  ): FieldEntry | undefined {
+    const { channels } = this;
+    if (how === 'first-field') {
+      for (const name of names) {
+        const c = channels.get(name);
+        if (c && isField(c)) {
+          return c;
+        }
+      }
+    } else {
+      for (const name of names) {
+        const c = channels.get(name);
+        if (c) {
+          return isField(c) ? c : undefined;
+        }
+      }
+    }
   }
 }
