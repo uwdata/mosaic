@@ -7,7 +7,7 @@ import type { Arrayish, TypedArrayLike } from './array.js';
 
 export interface DataColumns<T extends TypeMap = TypeMap> {
   numRows: number;
-  columns: { [P in keyof T]: ValueArray<T[P]>; };
+  columns: { [P in keyof T]: ValueArray<T[P]> };
 }
 
 export interface FromOptions {
@@ -25,13 +25,14 @@ interface Column<T> {
   toArray(): ValueArray<T> | undefined;
 }
 
-/** A table that looks like a [`apache-arrow::Table`][1].
- * 
+/**
+ * A table that looks like a [`apache-arrow::Table`][1].
+ *
  * [1]: https://arrow.apache.org/js/current/classes/Arrow.dom.Table.html
  */
 export interface ArrowTable<T extends TypeMap = TypeMap> {
   readonly numRows: number;
-  readonly schema: { readonly fields: { readonly name: string; }[]; };
+  readonly schema: { readonly fields: { readonly name: string }[] };
   getChildAt<R extends T[keyof T]>(index: number): Column<R> | undefined;
 }
 
@@ -43,20 +44,20 @@ type Rows = Row[];
 type Values = unknown[];
 
 //Don't use `ValueArray` here because `string` satisfies it
-type ColumnsIn<T extends TypeMap = TypeMap> = { [P in keyof T]: Array<T[P]>; };
+type ColumnsIn<T extends TypeMap = TypeMap> = { [P in keyof T]: T[P][] };
 
-type ColumnsOut<T extends TypeMap = TypeMap> = { [P in keyof T]: Arrayish<T[P]>; };
+type ColumnsOut<T extends TypeMap = TypeMap> = { [P in keyof T]: Arrayish<T[P]> };
 
 export type FromData = From | Rows | FlechetteTable | ArrowTable | Values | ColumnsIn;
 
 function isArrowTable<T extends TypeMap = TypeMap>(values: unknown): values is Table<T> {
   // @ts-expect-error check property of unknown value
-  return (typeof values?.getChildAt) === 'function';
+  return typeof values?.getChildAt === 'function';
 }
 
 //TODO @dangotbanned: Replace with `fromArrow`
 export function tableColumns<T extends TypeMap = TypeMap>(data: unknown): DataColumns<T> {
-  if (!(isArrowTable<T>(data))) {
+  if (!isArrowTable<T>(data)) {
     throw new Error('Unrecognized data format.');
   }
 
@@ -66,8 +67,9 @@ export function tableColumns<T extends TypeMap = TypeMap>(data: unknown): DataCo
 
   const { numRows, schema } = data;
   const columns = {} as any;
+  // oxlint-disable-next-line unicorn/no-array-for-each
   schema.fields.forEach(({ name }, i) => {
-    columns[name] = (data.getChildAt(i)?.toArray() ?? []);
+    columns[name] = data.getChildAt(i)?.toArray() ?? [];
   });
 
   return { numRows, columns };
@@ -81,6 +83,7 @@ function inline(data: any[], allowEmpty: boolean = false): InlineValues | Inline
     }
     throw noDataError(data);
   }
+  // oxlint-disable-next-line prefer-destructuring
   const row1 = data[0];
   if (typeof row1 === 'object') {
     return InlineColumns.fromRecords(Object.keys(row1), data);
@@ -93,9 +96,18 @@ function isFrom(data: object): data is From {
 }
 
 export function source(data: From): TableSource<string | mc.Param<string>>;
-export function source(data: Rows | Table | Values | ColumnsIn, allowEmpty: boolean): InlineSource<ColumnsOut | Values>;
-export function source(data: FromData, allowEmpty: boolean): InlineSource<ColumnsOut | Values> | TableSource<string | mc.Param<string>>;
-export function source(data: FromData, allowEmpty: boolean = false): InlineSource<ColumnsOut | Values> | TableSource<string | mc.Param<string>> {
+export function source(
+  data: Rows | Table | Values | ColumnsIn,
+  allowEmpty: boolean,
+): InlineSource<ColumnsOut | Values>;
+export function source(
+  data: FromData,
+  allowEmpty: boolean,
+): InlineSource<ColumnsOut | Values> | TableSource<string | mc.Param<string>>;
+export function source(
+  data: FromData,
+  allowEmpty: boolean = false,
+): InlineSource<ColumnsOut | Values> | TableSource<string | mc.Param<string>> {
   if (Array.isArray(data)) {
     return inline(data, allowEmpty);
   }
@@ -103,9 +115,14 @@ export function source(data: FromData, allowEmpty: boolean = false): InlineSourc
     throw new TypeError(`Invalid data source: ${data}`);
   }
   if (isFrom(data)) {
-    const { table, options: { filterBy, optimize, unnest } } = data;
+    const {
+      table,
+      options: { filterBy, optimize, unnest },
+    } = data;
     const unnestNames = typeof unnest === 'string' ? [unnest] : unnest;
-    return typeof table === 'string' ? new TableString(table, filterBy, optimize, unnestNames) : new TableParam(table, filterBy, optimize, unnestNames);
+    return typeof table === 'string'
+      ? new TableString(table, filterBy, optimize, unnestNames)
+      : new TableParam(table, filterBy, optimize, unnestNames);
   }
   if (isArrowTable(data)) {
     return InlineColumns.fromArrow(data);
@@ -118,57 +135,80 @@ export function source(data: FromData, allowEmpty: boolean = false): InlineSourc
   return new InlineColumns(data[names[0]].length, data);
 }
 
-/**Any kind of data source for a Mark.*/
+/** Any kind of data source for a Mark. */
 abstract class Source<Name extends string | undefined> {
-  /**`Mark.sourceTable` */
+  /** `Mark.sourceTable` */
   abstract tableName(): Name;
 }
 
-/**A data source that participates in `Mark.{prepare,query}`.*/
+/** A data source that participates in `Mark.{prepare,query}`. */
 export abstract class TableSource<T extends string | mc.Param<string>> extends Source<string> {
   constructor(
-    /**`Mark.source.table` */
+    /** `Mark.source.table` */
     readonly table: T,
-    /**`Mark.{filterBy,_filterBy,source.options.filterBy}` */
+    /** `Mark.{filterBy,_filterBy,source.options.filterBy}` */
     readonly filterBy: mc.Selection = undefined,
-    /**`Mark.source.options.optimize` */
+    /** `Mark.source.options.optimize` */
     readonly optimize: boolean = true,
-    /**`Mark.unnestFields` */
-    readonly unnest: string[] = []
-  ) { super(); }
+    /** `Mark.unnestFields` */
+    readonly unnest: string[] = [],
+  ) {
+    super();
+  }
 }
 
 class TableParam extends TableSource<mc.Param<string>> {
   // `this.table` goes to `Mark.params`
-  tableName(): string { return this.table.value; }
+  tableName(): string {
+    return this.table.value;
+  }
 }
 
 class TableString extends TableSource<string> {
-  tableName(): string { return this.table; }
+  tableName(): string {
+    return this.table;
+  }
 }
 
 /**
  * An inline data source, which bypasses most of Mosaic.
- * 
+ *
  * Represents `Mark.hasOwnData() === true`.
-*/
+ */
 abstract class InlineSource<D> extends Source<undefined> {
-  constructor(readonly numRows: number) { super(); }
+  constructor(readonly numRows: number) {
+    super();
+  }
   abstract get data(): D;
-  tableName(): undefined { return; }
+  tableName(): undefined {
+    return;
+  }
 }
 
 export class InlineColumns<T extends TypeMap = TypeMap> extends InlineSource<ColumnsOut<T>> {
-  constructor(readonly numRows: number, readonly columns: ColumnsOut<T>) { super(numRows); }
-  get data(): ColumnsOut<T> { return this.columns; }
+  constructor(
+    readonly numRows: number,
+    readonly columns: ColumnsOut<T>,
+  ) {
+    super(numRows);
+  }
+  get data(): ColumnsOut<T> {
+    return this.columns;
+  }
 
   static fromArrow<F extends TypeMap>(table: Table<F>): InlineColumns<F> {
     if ('toColumns' in table) {
       return InlineColumns.fromFlechette(table);
     }
-    const { numRows, schema: { fields } } = table;
+    const {
+      numRows,
+      schema: { fields },
+    } = table;
     const columns = {} as any;
-    fields.forEach(({ name }, i) => { columns[name] = (table.getChildAt(i)?.toArray() ?? []); });
+    // oxlint-disable-next-line unicorn/no-array-for-each
+    fields.forEach(({ name }, i) => {
+      columns[name] = table.getChildAt(i)?.toArray() ?? [];
+    });
     return new InlineColumns<F>(numRows, columns);
   }
 
@@ -184,26 +224,30 @@ export class InlineColumns<T extends TypeMap = TypeMap> extends InlineSource<Col
         yield row[name];
       }
     }
-    const from = Array.from;
-    const columns = Object.fromEntries(names.map(name => [name, from(values(name))] as const));
+    const { from } = Array;
+    const columns = Object.fromEntries(names.map((name) => [name, from(values(name))] as const));
     return new InlineColumns(rows.length, columns);
-
   }
 }
 
 class InlineValues extends InlineSource<Values> {
-  constructor(readonly numRows: number, readonly values: Values) { super(numRows); }
-  get data(): Values { return this.values; }
+  constructor(
+    readonly numRows: number,
+    readonly values: Values,
+  ) {
+    super(numRows);
+  }
+  get data(): Values {
+    return this.values;
+  }
 }
 
 function noDataError(data: unknown): TypeError {
   return new TypeError(`This context does not support specifying empty inline arrays, got: ${data}.\n
 Hints:
 - If data is not required for this mark, omit this argument
-- If data is required, but this represents a 0-row result, spell it as '{column_1: [], ..., column_n: []}'`
-  );
+- If data is required, but this represents a 0-row result, spell it as '{column_1: [], ..., column_n: []}'`);
 }
-
 
 /**
  * Convert an Arrow table to a set of named column arrays.
@@ -223,4 +267,4 @@ Hints:
  *   - Geojson
  */
 // oxlint-disable-next-line prefer-destructuring
-export const fromArrow = InlineColumns.fromArrow
+export const fromArrow = InlineColumns.fromArrow;
