@@ -1,5 +1,5 @@
 // oxlint-disable class-methods-use-this
-import { MosaicClient } from '@uwdata/mosaic-core';
+import { MosaicClient, queryFieldInfo } from '@uwdata/mosaic-core';
 import type * as mc from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
 import { isAggregateExpression, isColumnRef, Query, unnest } from '@uwdata/mosaic-sql';
@@ -250,16 +250,9 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
     return this.plot?.update(this);
   }
 
-  async prepare(): Promise<void> {
-    const { source, channels, reqs } = this;
-    if (!source) {
-      return;
-    }
-
-    /**
-     * TODO @dangotbanned: Move into a private method that just returns the shape expected by
-     * mosaic-core
-     */
+  private fieldInfoRequests(table: string): mc.FieldInfoRequest[] {
+    const { channels, reqs } = this;
+    // NOTE: 1st pass handles unique nodes in a `Map`, 2nd transforms into AoS w/ table name
     const nodesStats = new Map<msql.SQLNode, Set<mc.Stat>>();
     for (const [c, entry] of channels.entries()) {
       if (isField(entry)) {
@@ -284,14 +277,26 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
         }
       }
     }
+    return Array.from(nodesStats, ([column, s]) => ({ table, column, stats: [...s] }));
+  }
 
+  async prepare(): Promise<void> {
+    const { source } = this;
+    if (!source) {
+      return;
+    }
     // 1 - collect table name (may have been a param)
-    // 2 (do this earlier?)- build *another* representation accepted by `queryFieldInfo`
+    // 2 - build the representation accepted by `queryFieldInfo`
+    const requests = this.fieldInfoRequests(source.tableName());
+
     // 3 - await that, passing in coordinator too
+    // oxlint-disable-next-line no-unused-vars
+    const infos = await queryFieldInfo(this.coordinator, requests);
+
     // 4 (not sure) - create a "lookup" from the result
     // 5 (replace) - update `this.channels` in-place, assigning stats to top-level of each entry
     // 6 (remove) - assign to (uninitialized) `this._fieldInfo`, to indicate the state change
-    throw new Error('FieldInfo query in prepare() is not yet implemented');
+    throw new Error('FieldInfo result handling in prepare() is not yet implemented');
   }
 
   public query(filter: msql.FilterExpr = []): msql.SelectQuery | undefined {
