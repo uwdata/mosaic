@@ -1,23 +1,26 @@
-<script setup lang="ts">
-import { withBase } from 'vitepress';
-import { onMounted, useTemplateRef } from 'vue'
-import yaml from 'yaml';
-import { astToDOM, parseSpec } from '@uwdata/mosaic-spec';
-import { coordinator, createAPIContext, loadParquet, wasmConnector } from '@uwdata/vgplot';
+<script lang="ts">
+import { coordinator, wasmConnector } from '@uwdata/vgplot';
 
-const props = defineProps<{ spec: string }>();
-const viewRef = useTemplateRef('view');
+let ready = false;
 
-let ready: boolean = false;
-
-function init(): true {
+function init() {
   if (!ready) {
     coordinator().logger(null);
     coordinator().databaseConnector(wasmConnector());
     ready = true;
   }
-  return ready;
 }
+</script>
+
+<script setup lang="ts">
+import { withBase } from 'vitepress';
+import { onMounted, useTemplateRef } from 'vue';
+import yaml from 'yaml';
+import { astToDOM, parseSpec } from '@uwdata/mosaic-spec';
+import { createAPIContext, loadParquet } from '@uwdata/vgplot';
+
+const props = defineProps<{ spec: string }>();
+const viewRef = useTemplateRef('view');
 
 /**
  * Replacement method to sidestep HTTP range errors that arise when
