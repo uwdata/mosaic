@@ -6,6 +6,7 @@ import { Param } from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
 import { ColumnNameRefNode, isNode, walk } from '@uwdata/mosaic-sql';
 
+import { mapPop, setUnion } from '../collections.js';
 import { chainFromIterable, map } from '../itertools.js';
 import { Transform } from '../symbols.js';
 import type { TransformScaleName } from '../types.js';
@@ -88,25 +89,6 @@ export interface OptionsSpec {
    * This **excludes** known classes like {@link mc.Param} & {@link msql.SQLNode} and primitives.
    */
   supportsObject: ReadonlySet<OptionNamePlaceholder>;
-}
-
-function setUnion<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): ReadonlySet<T> {
-  const cloned = new Set(left);
-  for (const el of right) {
-    cloned.add(el);
-  }
-  return cloned;
-}
-
-/**
- * Remove `key` from `mapping` and return the corresponding value.
- *
- * If the key is not found, returns `defaultValue`.
- */
-function mapPop<V, D = undefined>(mapping: Map<any, V>, key: unknown, defaultValue?: D): V | D {
-  const value = mapping.get(key) ?? defaultValue;
-  mapping.delete(key);
-  return value;
 }
 
 const PRIMTIVE: ReadonlySet<string> = new Set(['string', 'number', 'boolean']);
