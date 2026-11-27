@@ -4,7 +4,7 @@ import type * as mc from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
 import { isAggregateExpression, isColumnRef, Query, unnest } from '@uwdata/mosaic-sql';
 
-import { mapGetOrInsertLazy } from '../collections.js';
+import { mapGetOrInsertLazy, setUpdate } from '../collections.js';
 import {
   type From,
   source as fromSource,
@@ -256,32 +256,42 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
       return;
     }
 
+    /**
+     * TODO @dangotbanned: Move into a private method that just returns the shape expected by
+     * mosaic-core
+     */
     const nodesStats = new Map<msql.SQLNode, Set<mc.Stat>>();
-
-    for (const [channel, entry] of channels.entries()) {
+    for (const [c, entry] of channels.entries()) {
       if (isField(entry)) {
+        const channel = c as OptionName<O>;
+        const requires = reqs[channel];
         const { field } = entry;
-        // On main there's a fiddly bit of code that is only reachable via `BinTransform.stats`
+        // oxlint-disable-next-line init-declarations
+        let columnStats: Set<mc.Stat>;
+        // TODO @dangotbanned: These blocks could be simplified by aiming to assign `mapGetOrInsertLazy(key=...)` and `setUpdate(others=...)
         if (field instanceof BinTransformNode) {
+          // No other node does anything like this
           const { column } = field;
           const { stats } = field.stats;
-          const columnStats = mapGetOrInsertLazy(nodesStats, column, newSet<mc.Stat>);
-          for (const stat of stats) {
-            columnStats.add(stat);
-          }
-          const requires = reqs[channel as OptionName<O>];
-          if (requires) {
-            for (const req of requires) {
-              columnStats.add(req);
-            }
-          }
+          columnStats = mapGetOrInsertLazy(nodesStats, column, newSet<mc.Stat>);
+          // oxlint-disable-next-line no-unused-expressions
+          requires ? setUpdate(columnStats, stats, requires) : setUpdate(columnStats, stats);
         } else {
-          // This path doesn't need to do most of those steps
-          throw new Error('prepare() is not yet implemented');
+          columnStats = mapGetOrInsertLazy(nodesStats, field, newSet<mc.Stat>);
+          if (requires) {
+            setUpdate(columnStats, requires);
+          }
         }
       }
     }
-    throw new Error('prepare() is not yet implemented');
+
+    // 1 - collect table name (may have been a param)
+    // 2 (do this earlier?)- build *another* representation accepted by `queryFieldInfo`
+    // 3 - await that, passing in coordinator too
+    // 4 (not sure) - create a "lookup" from the result
+    // 5 (replace) - update `this.channels` in-place, assigning stats to top-level of each entry
+    // 6 (remove) - assign to (uninitialized) `this._fieldInfo`, to indicate the state change
+    throw new Error('FieldInfo query in prepare() is not yet implemented');
   }
 
   public query(filter: msql.FilterExpr = []): msql.SelectQuery | undefined {

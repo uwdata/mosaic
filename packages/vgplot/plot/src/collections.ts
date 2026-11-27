@@ -1,3 +1,10 @@
+/**
+ * Return a new set with elements from either set.
+ *
+ * ```py
+ * result = left | right
+ * ```
+ */
 export function setUnion<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): ReadonlySet<T> {
   let [big, small] = [left, right];
   if (big.size < small.size) {
@@ -5,10 +12,29 @@ export function setUnion<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): Readon
     big = small;
   }
   const cloned = new Set(big);
+  const { add } = cloned;
   for (const el of small) {
-    cloned.add(el);
+    add(el);
   }
   return cloned;
+}
+
+/**
+ * Update `self` in-place, adding the elements of all `others`.
+ *
+ * ```py
+ * self |= set().union(*others)  # or `self.update(*others)`
+ * result = self
+ * ```
+ */
+export function setUpdate<T>(self: Set<T>, ...others: Iterable<NoInfer<T>>[]): Set<T> {
+  const { add } = self;
+  for (const other of others) {
+    for (const el of other) {
+      add(el);
+    }
+  }
+  return self;
 }
 
 /**
