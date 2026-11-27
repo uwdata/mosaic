@@ -100,6 +100,24 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
   /** Inline data is not going to be modeled (at least for now) */
   readonly source: TableSource<string | mc.Param<string>> | undefined;
   private params: Set<mc.Param<any>>;
+
+  /**
+   * TODO dangotbanned: Split `channels*` further into **private** `this.fields` and `this.values`
+   * mappings.
+   *
+   * All of these only care about fields:
+   *
+   * - `Mark.channelField(Inexact)`
+   * - `Mark.fieldInfoRequests`
+   * - `Mark.prepare`
+   * - `markQuery` (meaning that `Mark.query` only needs fields, but currently preserves before
+   *   dropping later)
+   *
+   * When we get `FieldInfo[]` in `Mark.prepare`:
+   *
+   * - That can be stored as a mapping (rather than patching onto the channel)
+   * - Then compute a reverse mapping from that to field channels (1: M)
+   */
   public channels: Channels;
   private channelsExtra: Map<string, FieldEntry> | undefined;
 
