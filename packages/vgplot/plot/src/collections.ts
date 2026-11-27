@@ -28,10 +28,12 @@ export function setUnion<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): Readon
  * ```
  */
 export function setUpdate<T>(self: Set<T>, ...others: Iterable<NoInfer<T>>[]): Set<T> {
-  const { add } = self;
-  for (const other of others) {
-    for (const el of other) {
-      add(el);
+  if (others.length) {
+    const { add } = self;
+    for (const other of others) {
+      for (const el of other) {
+        add(el);
+      }
     }
   }
   return self;
