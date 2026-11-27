@@ -4,6 +4,7 @@ import type * as mc from '@uwdata/mosaic-core';
 import type * as msql from '@uwdata/mosaic-sql';
 import { isAggregateExpression, isColumnRef, Query, unnest } from '@uwdata/mosaic-sql';
 
+import { mapGetOrInsertLazy } from '../collections.js';
 import {
   type From,
   source as fromSource,
@@ -14,6 +15,7 @@ import {
 } from '../data.js';
 import { map } from '../itertools.js';
 import type { Plot } from '../plot.js';
+import { BinTransformNode } from '../transforms/bin.js';
 import type { MarkType } from '../types.js';
 import type { MarkOptions, OptionName } from './options.js';
 import {
@@ -87,6 +89,10 @@ function unnestTargets(
         : e;
     return [c, expanded];
   };
+}
+
+function newSet<T>(): Set<T> {
+  return new Set<T>();
 }
 
 /** Experimenting with a more precise `Mark` data model. */
@@ -242,6 +248,40 @@ export class Mark2<O extends MarkOptions = MarkOptions> extends MosaicClient {
   update(): Promise<void> {
     //@ts-expect-error
     return this.plot?.update(this);
+  }
+
+  async prepare(): Promise<void> {
+    const { source, channels, reqs } = this;
+    if (!source) {
+      return;
+    }
+
+    const nodesStats = new Map<msql.SQLNode, Set<mc.Stat>>();
+
+    for (const [channel, entry] of channels.entries()) {
+      if (isField(entry)) {
+        const { field } = entry;
+        // On main there's a fiddly bit of code that is only reachable via `BinTransform.stats`
+        if (field instanceof BinTransformNode) {
+          const { column } = field;
+          const { stats } = field.stats;
+          const columnStats = mapGetOrInsertLazy(nodesStats, column, newSet<mc.Stat>);
+          for (const stat of stats) {
+            columnStats.add(stat);
+          }
+          const requires = reqs[channel as OptionName<O>];
+          if (requires) {
+            for (const req of requires) {
+              columnStats.add(req);
+            }
+          }
+        } else {
+          // This path doesn't need to do most of those steps
+          throw new Error('prepare() is not yet implemented');
+        }
+      }
+    }
+    throw new Error('prepare() is not yet implemented');
   }
 
   public query(filter: msql.FilterExpr = []): msql.SelectQuery | undefined {
