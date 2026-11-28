@@ -1,16 +1,18 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, type Ref } from 'vue';
 
 const STORAGE_KEY = 'mosaic-docs-lang';
 
-export function useLang() {
-  const language = ref('js');
+type Lang = 'js' | 'python';
 
-  function parseLang(search) {
+export function useLang(): { language: Ref<Lang>; setLanguage: (lang: Lang) => void; } {
+  const language = ref<Lang>('js');
+
+  function parseLang(search: string): Lang {
     const q = new URLSearchParams(search || '').get('lang');
     return q === 'python' ? 'python' : 'js';
   }
 
-  function storedLang() {
+  function storedLang(): Lang | null {
     try {
       const v = sessionStorage.getItem(STORAGE_KEY);
       return v === 'python' ? 'python' : v === 'js' ? 'js' : null;
@@ -19,7 +21,7 @@ export function useLang() {
     }
   }
 
-  function storeLang(lang) {
+  function storeLang(lang: Lang): void {
     try {
       sessionStorage.setItem(STORAGE_KEY, lang);
     } catch {
@@ -27,7 +29,7 @@ export function useLang() {
     }
   }
 
-  function applyLangToUrl(lang) {
+  function applyLangToUrl(lang: Lang): void {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     url.searchParams.set('lang', lang);
@@ -38,17 +40,17 @@ export function useLang() {
     }
   }
 
-  function setLanguage(lang) {
+  function setLanguage(lang: Lang): void {
     language.value = lang;
     storeLang(lang);
     applyLangToUrl(lang);
   }
 
-  function onPopState() {
+  function onPopState(): void {
     language.value = parseLang(window.location.search);
   }
 
-  onMounted(() => {
+  onMounted((): void => {
     const search = window.location.search;
     // An explicit ?lang= wins (e.g. shared links); otherwise use the stored preference.
     language.value = new URLSearchParams(search).has('lang')
@@ -59,7 +61,7 @@ export function useLang() {
     window.addEventListener('popstate', onPopState);
   });
 
-  onUnmounted(() => {
+  onUnmounted((): void => {
     window.removeEventListener('popstate', onPopState);
   });
 

@@ -1,10 +1,7 @@
-<script>
-import { withBase } from 'vitepress';
-import yaml from 'yaml';
-import { astToDOM, parseSpec } from '@uwdata/mosaic-spec';
-import { coordinator, createAPIContext, loadParquet, wasmConnector } from '@uwdata/vgplot';
+<script lang="ts">
+import { coordinator, wasmConnector } from '@uwdata/vgplot';
 
-let ready;
+let ready = false;
 
 function init() {
   if (!ready) {
@@ -12,15 +9,25 @@ function init() {
     coordinator().databaseConnector(wasmConnector());
     ready = true;
   }
-  return ready;
 }
+</script>
+
+<script setup lang="ts">
+import { withBase } from 'vitepress';
+import { onMounted, useTemplateRef } from 'vue';
+import yaml from 'yaml';
+import { astToDOM, parseSpec } from '@uwdata/mosaic-spec';
+import { createAPIContext, loadParquet } from '@uwdata/vgplot';
+
+const props = defineProps<{ spec: string }>();
+const viewRef = useTemplateRef('view');
 
 /**
  * Replacement method to sidestep HTTP range errors that arise when
  * loading (Geo/TopoJSON) text files from GitHub pages in Firefox.
  * Assumes the corresponding parquet files exist!
  */
-function loadSpatial(table, file, options) {
+function loadSpatial(table: string, file: string, options: NonNullable<Parameters<(typeof loadParquet)>[2]> & {layer?: string}): string {
   const { layer, ...opt } = options;
   const dot = file.lastIndexOf('.');
   const redirect = `${file.slice(0, dot)}${ layer ? '-' + layer : '' }.parquet`;
@@ -28,8 +35,7 @@ function loadSpatial(table, file, options) {
   return 'INSTALL spatial; LOAD spatial; ' + loadParquet(table, redirect, opt);
 }
 
-export default {
-  async mounted() {
+onMounted(async (): Promise<void> => {
     try {
       init();
       const api = createAPIContext({ extensions: { loadSpatial } });
@@ -38,21 +44,17 @@ export default {
       // to instead load data from the same domain as the docs, use this:
       //   location.origin + import.meta.env.BASE_URL;
       const baseURL = 'https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/';
-      const text = await fetch(withBase(this.spec)).then(r => r.text());
+      const text = await fetch(withBase(props.spec)).then(r => r.text());
       const spec = yaml.parse(text);
       const view = await astToDOM(parseSpec(spec), { api, baseURL });
-      this.$refs.view.replaceChildren(view.element);
+      viewRef.value!.replaceChildren(view.element);
     } catch (err) {
       console.error(err);
-      if (this.$refs?.view) {
-        this.$refs.view.innerHTML = '<em>Example failed to load.</em> 😭';
+      if (viewRef.value) {
+        viewRef.value.innerHTML = '<em>Example failed to load.</em> 😭';
       }
     }
-  },
-  props: {
-    spec: String
-  }
-}
+  })
 </script>
 
 <style>

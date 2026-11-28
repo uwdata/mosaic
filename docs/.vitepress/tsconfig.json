@@ -1,0 +1,21 @@
+{
+  "include": [
+    "config.ts",
+    "theme/*.ts",
+    "theme/*.vue",
+    "../../vite.config.js"
+  ],
+  "compilerOptions": {
+    // Adapted from https://github.com/vuejs/tsconfig/blob/dc7af0b6a1e8a66239950a65423c5456ef5ba739/tsconfig.json
+    "noEmit": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "allowJs": true,
+    "checkJs": true,
+    "skipLibCheck": true
+  }
+}
