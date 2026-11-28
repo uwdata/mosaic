@@ -5,22 +5,119 @@ import { ParamRef } from './Param.js';
 /** A field argument to a data transform. */
 export type TransformField = string | ParamRef | SQLExpression | Transform;
 
-export type FrameExclude = 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS';
+type Exclude = 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS';
+
+/**
+ * How `exclude` should treat the current row.
+ *
+ * - `'CURRENT ROW'` – exclude just the current row
+ * - `'GROUP'` – exclude the current row and all its peers (those that are tied according to the
+ *   `orderby` criteria)
+ * - `'TIES'` – exclude all peer rows, but _not_ the current row (this makes a hole on either side)
+ * - `'NO OTHERS'` – don't exclude anything (the default)
+ */
+export type FrameExclude = Exclude | Lowercase<Exclude>;
 
 export type FrameValue = number | IntervalTransform | null;
 
 /** Window transform options. */
 export interface WindowOptions {
-  orderby?: TransformField | TransformField[];
+  /**
+   * Column(s) or expression(s) to group by.
+   *
+   * If unspecified, the entire relation is treated as a single partition.
+   */
   partitionby?: TransformField | TransformField[];
+
+  /**
+   * Column(s) or expression(s) to order rows within each partition.
+   *
+   * `orderby` corresponds to the _window ordering_:
+   *
+   * ```json
+   * { "avg": "Close", "orderby": "Date" }
+   * ```
+   *
+   * ```sql
+   * SELECT avg("Close") OVER (ORDER BY "Date") FROM tbl;
+   * ```
+   *
+   * If unspecified, the results of the following are not well-defined:
+   *
+   * - [General-purpose window functions][1] (e.g. `'row_number'`, `'rank'`, `'first_value'`)
+   * - Order-sensitive aggregates (`'first'`, `'last'`)
+   * - The order of [framing][2] (`rows`, `range`, `groups` and `exclude`)
+   *
+   * [1]: https://duckdb.org/docs/2.0/sql/functions/window_functions#general-purpose-window-functions
+   *
+   * [2]: https://duckdb.org/docs/2.0/sql/functions/window_functions#framing
+   */
+  orderby?: TransformField | TransformField[];
+
+  /**
+   * A "rows" window frame is insensitive to peer rows (those that are tied according to the
+   * `orderby` criteria).
+   *
+   * The frame expression should evaluate to a two-element array indicating the number of preceding
+   * or following rows.
+   *
+   * A zero value (`0`) indicates the current row.
+   *
+   * A `null` indicates either unbounded preceding row (for the first array entry) or unbounded
+   * following rows (for the second array entry).
+   */
   rows?: [FrameValue, FrameValue] | ParamRef;
+
+  /**
+   * A "range" window grows to include peer rows (those that are tied according to the `orderby`
+   * criteria).
+   *
+   * The frame expression should evaluate to a two-element array indicating the number of preceding
+   * or following rows.
+   *
+   * A zero value (`0`) indicates the current row.
+   *
+   * A `null` indicates either unbounded preceding row (for the first array entry) or unbounded
+   * following rows (for the second array entry).
+   */
   range?: [FrameValue, FrameValue] | ParamRef;
+
+  /**
+   * A "groups" window frame grows to include peer groups (a set of rows that are tied according to
+   * the `orderby` criteria).
+   *
+   * The frame expression should evaluate to a two-element array indicating the number of preceding
+   * or following peer groups.
+   *
+   * A zero value (`0`) indicates the current row's peer group.
+   *
+   * A `null` indicates either unbounded preceding row (for the first array entry) or unbounded
+   * following rows (for the second array entry).
+   */
   groups?: [FrameValue, FrameValue] | ParamRef;
-  exclude?: Uppercase<FrameExclude> | Lowercase<FrameExclude>;
+
+  /**
+   * Modify the framing by excluding rows around the current row.
+   *
+   * This is useful when you want to compute some aggregate value of nearby rows to see how the
+   * current row compares to it.
+   */
+  exclude?: FrameExclude;
 }
 
 /** Aggregate transform options. */
 export interface AggregateOptions {
+  /**
+   * Whether to apply the aggregate over distinct values only.
+   *
+   * This is typically used to get the number of distinct elements:
+   *
+   * ```json
+   * { "count": "column_name", "distinct": true }
+   * ```
+   *
+   * Duplicate-insensitive aggregates (e.g., `'min'`, `'max'`) ignore this option.
+   */
   distinct?: boolean;
 }
 
