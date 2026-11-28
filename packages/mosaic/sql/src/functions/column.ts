@@ -16,7 +16,7 @@ export function column(
   name: string | ParamLike,
   table?: string | string[] | TableRefNode
 ): ColumnRefNode {
-  const tref = asTableRef(table);
+  const tref = table !== undefined ? asTableRef(table) : table;
   return isParamLike(name)
     ? new ColumnParamNode(new ParamNode(name), tref)
     : new ColumnNameRefNode(name, tref);
