@@ -34,7 +34,8 @@
   },
   "scripts": {
     "clean": "rimraf dist && mkdir dist",
-    "lint": "eslint src test",
+    "lint": "oxlint src test",
+    "format": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
     "server": "node bin/run-server.js",
     "test": "vitest run --root ../../.. --project duckdb",

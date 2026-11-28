@@ -15,7 +15,8 @@
     "dev": "vite build --watch",
     "test": "tsc --build",
     "typecheck": "tsc --build",
-    "lint": "eslint src"
+    "lint": "oxlint src",
+    "format": "eslint src"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "workspace:^",

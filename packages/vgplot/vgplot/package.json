@@ -31,7 +31,8 @@
   "scripts": {
     "clean": "rimraf dist && mkdir dist",
     "prebuild": "pnpm run clean",
-    "lint": "eslint src test",
+    "lint": "oxlint src test",
+    "format": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
     "test": "vitest run --root ../../.. --project vgplot",
     "prepublishOnly": "tsc --build"

@@ -1,0 +1,58 @@
+{
+  "categories": {
+    "correctness": "error",
+  },
+  "env": {
+    "builtin": true,
+    "es2024": true,
+    "browser": true,
+    "jest": true,
+    "node": true,
+  },
+  "options": {
+    "reportUnusedDisableDirectives": "warn",
+  },
+  "rules": {
+    "no-case-declarations": "error",
+    "no-empty": "error",
+    "no-fallthrough": "error",
+    "no-prototype-builtins": "error",
+    "no-redeclare": "error",
+    "no-regex-spaces": "error",
+    "no-unused-vars": "warn",
+    "no-var": "error",
+    "preserve-caught-error": "error",
+    "prefer-const": "error",
+    "prefer-rest-params": "error",
+    "prefer-spread": "error",
+    "no-array-constructor": "error",
+    "no-unused-expressions": "warn",
+    "typescript/ban-ts-comment": "warn",
+    "typescript/no-empty-object-type": "error",
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-namespace": "error",
+    "typescript/no-require-imports": "error",
+    "typescript/no-this-alias": "warn",
+    "typescript/no-unnecessary-type-constraint": "error",
+    "typescript/no-unsafe-function-type": "error",
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.js"
+      ],
+      "rules": {
+        "no-var": "off",
+        "prefer-const": "off",
+      },
+    },
+    {
+      "files": [
+        "packages/mosaic/sql/src/ast/case.ts"
+      ],
+      "rules": {
+        "unicorn/no-thenable": "off",
+      },
+    },
+  ],
+}

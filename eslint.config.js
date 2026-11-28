@@ -1,32 +1,18 @@
-import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import globals from 'globals';
 
 /** @type {import('@types/eslint').Linter.Config[]} */
 export default tseslint.config(
-  js.configs.recommended,
-  tseslint.configs.recommended,
   {
+    files: ['**/*.ts', '**/*.js'],
+    plugins: { '@typescript-eslint': tseslint.plugin },
+    linterOptions: { 'reportUnusedDisableDirectives': 'off' },
     languageOptions: {
-      ecmaVersion: 2022,
+      ecmaVersion: 2024,
       sourceType: 'module',
-      globals: {
-        ...globals.browser,
-        ...globals.jest,
-        ...globals.node,
-        ...globals.es6,
-        globalThis: false,
-        TemplateStringsArray: true,
-      }
+      parser: tseslint.parser,
     },
     rules: {
       quotes: ['error', 'single', { avoidEscape: true }],
-      'no-unexpected-multiline': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
-      '@typescript-eslint/no-unused-expressions': 'warn',
-      '@typescript-eslint/no-this-alias': 'warn',
-      '@typescript-eslint/ban-ts-comment': 'warn'
     },
   }
 );
