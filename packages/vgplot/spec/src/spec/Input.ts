@@ -202,6 +202,12 @@ export interface Table {
    */
   align?: { [column: string]: 'left' | 'right' | 'center' | 'justify' };
   /**
+   * An object of per-column header labels.
+   * Column names should be object keys, which map to the label text to show
+   * in place of the column name.
+   */
+  header?: { [column: string]: string };
+  /**
    * If a number, sets the total width of the table widget, in pixels.
    * If an object, provides per-column pixel width values.
    * Column names should be object keys, mapped to numeric width values.

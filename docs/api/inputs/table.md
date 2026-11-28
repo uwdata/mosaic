@@ -17,6 +17,7 @@ The supported options are:
 - _columns_: An ordered array of columns to include. If unspecified, all columns will be included.
 - _align_: An object providing optional column -> alignment mappings. The supported alignment values are `"left"`, `"center"`, and `"right"`. If a column's alignment is not specified, a default alignment is chosen based on the data type.
 - _format_: An object providing optional column -> format function mappings. If provided, a format function will be invoked with the column value to produce a string to display. If a column's formatting is not provided, a default format is chosen based on the data type.
+- _header_: An object providing optional column -> header label mappings. A label may be a string or an HTML element. An element is moved into the header, not copied, so use a separate element for each column and table. If a column's label is not provided, the column name is shown.
 - _width_: If a number, sets the width of the table view in pixels. If an object, provides a column name -> pixel width mapping for individual columns.
 - _maxWidth_: The maximum width of the full table view in pixels.
 - _height_: The height of the table view in pixels (default 500).
